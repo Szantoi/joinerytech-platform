@@ -1,0 +1,1250 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>SpaceOS.Modules.Contracts</name>
+    </assembly>
+    <members>
+        <member name="T:SpaceOS.Modules.Contracts.CRM.Events.OpportunityConvertedToQuoteEvent">
+            <summary>
+            Published by CRM when an Opportunity is being converted to a Sales Quote.
+            Signals the Sales module to create a Quote from the Opportunity data.
+            Part of ADR-063 (CRM → Sales Integration Pattern).
+            </summary>
+        </member>
+        <member name="P:SpaceOS.Modules.Contracts.CRM.Events.OpportunityConvertedToQuoteEvent.OpportunityId">
+            <summary>Gets the Opportunity ID being converted.</summary>
+        </member>
+        <member name="P:SpaceOS.Modules.Contracts.CRM.Events.OpportunityConvertedToQuoteEvent.ConversionId">
+            <summary>Gets the idempotency key for this conversion (prevents duplicate quotes).</summary>
+        </member>
+        <member name="P:SpaceOS.Modules.Contracts.CRM.Events.OpportunityConvertedToQuoteEvent.CustomerId">
+            <summary>Gets the Customer ID for the quote.</summary>
+        </member>
+        <member name="P:SpaceOS.Modules.Contracts.CRM.Events.OpportunityConvertedToQuoteEvent.CustomerName">
+            <summary>Gets the Customer name.</summary>
+        </member>
+        <member name="P:SpaceOS.Modules.Contracts.CRM.Events.OpportunityConvertedToQuoteEvent.CustomerEmail">
+            <summary>Gets the Customer email.</summary>
+        </member>
+        <member name="P:SpaceOS.Modules.Contracts.CRM.Events.OpportunityConvertedToQuoteEvent.LineItems">
+            <summary>Gets the line items to be included in the quote.</summary>
+        </member>
+        <member name="P:SpaceOS.Modules.Contracts.CRM.Events.OpportunityConvertedToQuoteEvent.SpecialTerms">
+            <summary>Gets optional special terms for the quote.</summary>
+        </member>
+        <member name="P:SpaceOS.Modules.Contracts.CRM.Events.OpportunityConvertedToQuoteEvent.SalesRepId">
+            <summary>Gets the Sales Rep ID responsible for this quote.</summary>
+        </member>
+        <member name="T:SpaceOS.Modules.Contracts.CRM.Events.QuoteLineItemDto">
+            <summary>
+            DTO for line items in a quote conversion.
+            </summary>
+        </member>
+        <member name="P:SpaceOS.Modules.Contracts.CRM.Events.QuoteLineItemDto.ProductId">
+            <summary>Gets the Product ID.</summary>
+        </member>
+        <member name="P:SpaceOS.Modules.Contracts.CRM.Events.QuoteLineItemDto.ProductName">
+            <summary>Gets the Product name.</summary>
+        </member>
+        <member name="P:SpaceOS.Modules.Contracts.CRM.Events.QuoteLineItemDto.Quantity">
+            <summary>Gets the quantity.</summary>
+        </member>
+        <member name="P:SpaceOS.Modules.Contracts.CRM.Events.QuoteLineItemDto.UnitPrice">
+            <summary>Gets the unit price.</summary>
+        </member>
+        <member name="T:SpaceOS.Modules.Contracts.CRM.Events.QuoteCreatedFromOpportunityEvent">
+            <summary>
+            Published by Sales module when a Quote is successfully created from an Opportunity.
+            CRM consumes this to transition the Opportunity to Won status.
+            Part of ADR-063 (Sales → CRM Integration Pattern).
+            </summary>
+        </member>
+        <member name="P:SpaceOS.Modules.Contracts.CRM.Events.QuoteCreatedFromOpportunityEvent.ConversionId">
+            <summary>Gets the conversion ID (matches OpportunityConvertedToQuoteEvent.ConversionId).</summary>
+        </member>
+        <member name="P:SpaceOS.Modules.Contracts.CRM.Events.QuoteCreatedFromOpportunityEvent.QuoteId">
+            <summary>Gets the newly created Quote ID.</summary>
+        </member>
+        <member name="P:SpaceOS.Modules.Contracts.CRM.Events.QuoteCreatedFromOpportunityEvent.OpportunityId">
+            <summary>Gets the Opportunity ID that was converted.</summary>
+        </member>
+        <member name="T:SpaceOS.Modules.Contracts.CRM.Events.QuoteCreationFailedEvent">
+            <summary>
+            Published by Sales module when Quote creation fails during Opportunity conversion.
+            CRM consumes this to rollback the Opportunity to Negotiation status.
+            Part of ADR-063 (Sales → CRM Integration Pattern).
+            </summary>
+        </member>
+        <member name="P:SpaceOS.Modules.Contracts.CRM.Events.QuoteCreationFailedEvent.ConversionId">
+            <summary>Gets the conversion ID (matches OpportunityConvertedToQuoteEvent.ConversionId).</summary>
+        </member>
+        <member name="P:SpaceOS.Modules.Contracts.CRM.Events.QuoteCreationFailedEvent.OpportunityId">
+            <summary>Gets the Opportunity ID that failed conversion.</summary>
+        </member>
+        <member name="P:SpaceOS.Modules.Contracts.CRM.Events.QuoteCreationFailedEvent.Reason">
+            <summary>Gets the reason why the conversion failed.</summary>
+        </member>
+        <member name="T:SpaceOS.Modules.Contracts.Cutting.DTOs.CncInstructionDto">
+            <summary>
+            Represents a single CNC machining instruction associated with a component.
+            Operation: e.g. Bore, Groove, Route. Note: max 2000 chars.
+            </summary>
+        </member>
+        <member name="M:SpaceOS.Modules.Contracts.Cutting.DTOs.CncInstructionDto.#ctor(System.String,System.String,System.String,System.Nullable{System.Decimal},System.Nullable{System.Decimal},System.Nullable{System.Decimal},System.String)">
+            <summary>
+            Represents a single CNC machining instruction associated with a component.
+            Operation: e.g. Bore, Groove, Route. Note: max 2000 chars.
+            </summary>
+        </member>
+        <member name="T:SpaceOS.Modules.Contracts.Cutting.DTOs.CuttingLineDto">
+            <summary>
+            Represents a single line item in a cutting sheet — one component to be cut.
+            ComponentName: max 100 chars. CanRotate: allow 90 degree rotation in nesting.
+            </summary>
+        </member>
+        <member name="M:SpaceOS.Modules.Contracts.Cutting.DTOs.CuttingLineDto.#ctor(System.String,System.String,System.Decimal,System.Decimal,System.Decimal,System.Decimal,System.String,System.Decimal,System.Int32,System.Int32,System.Boolean)">
+            <summary>
+            Represents a single line item in a cutting sheet — one component to be cut.
+            ComponentName: max 100 chars. CanRotate: allow 90 degree rotation in nesting.
+            </summary>
+        </member>
+        <member name="T:SpaceOS.Modules.Contracts.Cutting.DTOs.CuttingOffcutResultDto">
+            <summary>Represents a resulting offcut from a cutting operation (Cutting-side ownership).</summary>
+        </member>
+        <member name="M:SpaceOS.Modules.Contracts.Cutting.DTOs.CuttingOffcutResultDto.#ctor(System.String,System.Decimal,System.Decimal,System.Decimal,System.Guid)">
+            <summary>Represents a resulting offcut from a cutting operation (Cutting-side ownership).</summary>
+        </member>
+        <member name="T:SpaceOS.Modules.Contracts.Cutting.DTOs.CuttingSheetDto">
+            <summary>
+            Output DTO representing a complete cutting sheet.
+            TenantId present as read-only (SEC-01 output side).
+            ContentHash is a SHA-256 hash of the sheet content for audit/immutability verification.
+            </summary>
+        </member>
+        <member name="M:SpaceOS.Modules.Contracts.Cutting.DTOs.CuttingSheetDto.#ctor(System.Guid,System.Guid,System.Guid,System.String,System.Nullable{System.Guid},System.String,System.Int32,System.Decimal,System.Decimal,System.String,System.String,System.DateTimeOffset,SpaceOS.Modules.Contracts.Cutting.Enums.CuttingSheetStatus,System.Collections.Generic.IReadOnlyList{SpaceOS.Modules.Contracts.Cutting.DTOs.CuttingLineDto},System.Collections.Generic.IReadOnlyList{SpaceOS.Modules.Contracts.Cutting.DTOs.CncInstructionDto},System.Collections.Generic.IReadOnlyList{SpaceOS.Modules.Contracts.Cutting.DTOs.ProcessStepDto})">
+            <summary>
+            Output DTO representing a complete cutting sheet.
+            TenantId present as read-only (SEC-01 output side).
+            ContentHash is a SHA-256 hash of the sheet content for audit/immutability verification.
+            </summary>
+        </member>
+        <member name="T:SpaceOS.Modules.Contracts.Cutting.DTOs.ExecutionStatusDto">
+            <summary>Current shop-floor execution status of a cutting sheet.</summary>
+        </member>
+        <member name="M:SpaceOS.Modules.Contracts.Cutting.DTOs.ExecutionStatusDto.#ctor(System.Guid,SpaceOS.Modules.Contracts.Cutting.Enums.CuttingExecutionStatus,System.Nullable{System.Guid},System.Nullable{System.DateTimeOffset},System.Nullable{System.DateTimeOffset})">
+            <summary>Current shop-floor execution status of a cutting sheet.</summary>
+        </member>
+        <member name="T:SpaceOS.Modules.Contracts.Cutting.DTOs.NestingResultDto">
+            <summary>Aggregated result of the nesting optimization run for a cutting sheet.</summary>
+        </member>
+        <member name="M:SpaceOS.Modules.Contracts.Cutting.DTOs.NestingResultDto.#ctor(System.Guid,System.Collections.Generic.IReadOnlyList{SpaceOS.Modules.Contracts.Cutting.DTOs.PanelAssignmentDto},System.Decimal,System.Int32)">
+            <summary>Aggregated result of the nesting optimization run for a cutting sheet.</summary>
+        </member>
+        <member name="T:SpaceOS.Modules.Contracts.Cutting.DTOs.PanelAssignmentDto">
+            <summary>Describes which pieces are placed on a single stock panel after nesting.</summary>
+        </member>
+        <member name="M:SpaceOS.Modules.Contracts.Cutting.DTOs.PanelAssignmentDto.#ctor(System.Guid,System.String,System.Decimal,System.Decimal,System.Collections.Generic.IReadOnlyList{SpaceOS.Modules.Contracts.Cutting.DTOs.PlacedPieceDto},System.Collections.Generic.IReadOnlyList{SpaceOS.Modules.Contracts.Cutting.DTOs.CuttingOffcutResultDto},System.Decimal)">
+            <summary>Describes which pieces are placed on a single stock panel after nesting.</summary>
+        </member>
+        <member name="T:SpaceOS.Modules.Contracts.Cutting.DTOs.PlacedPieceDto">
+            <summary>
+            Represents the physical placement of a cutting piece on a panel after nesting.
+            CuttingLineIndex links back to the source CuttingLineDto (CD-09).
+            </summary>
+        </member>
+        <member name="M:SpaceOS.Modules.Contracts.Cutting.DTOs.PlacedPieceDto.#ctor(System.Int32,System.String,System.Decimal,System.Decimal,System.Decimal,System.Decimal,System.Boolean)">
+            <summary>
+            Represents the physical placement of a cutting piece on a panel after nesting.
+            CuttingLineIndex links back to the source CuttingLineDto (CD-09).
+            </summary>
+        </member>
+        <member name="T:SpaceOS.Modules.Contracts.Cutting.DTOs.ProcessStepDto">
+            <summary>Represents a single production process step attached to a cutting sheet.</summary>
+        </member>
+        <member name="M:SpaceOS.Modules.Contracts.Cutting.DTOs.ProcessStepDto.#ctor(System.String,System.Int32,System.String,System.Int32)">
+            <summary>Represents a single production process step attached to a cutting sheet.</summary>
+        </member>
+        <member name="T:SpaceOS.Modules.Contracts.Cutting.DTOs.WasteByMaterialDto">
+            <summary>Waste breakdown for a single material within a waste report.</summary>
+        </member>
+        <member name="M:SpaceOS.Modules.Contracts.Cutting.DTOs.WasteByMaterialDto.#ctor(System.String,System.Decimal,System.Decimal)">
+            <summary>Waste breakdown for a single material within a waste report.</summary>
+        </member>
+        <member name="T:SpaceOS.Modules.Contracts.Cutting.DTOs.WasteReportDto">
+            <summary>Aggregated waste report for a given time window across all cutting operations.</summary>
+        </member>
+        <member name="M:SpaceOS.Modules.Contracts.Cutting.DTOs.WasteReportDto.#ctor(System.DateTimeOffset,System.DateTimeOffset,System.Decimal,System.Decimal,System.Decimal,System.Collections.Generic.IReadOnlyList{SpaceOS.Modules.Contracts.Cutting.DTOs.WasteByMaterialDto})">
+            <summary>Aggregated waste report for a given time window across all cutting operations.</summary>
+        </member>
+        <member name="T:SpaceOS.Modules.Contracts.Cutting.Enums.CuttingExecutionStatus">
+            <summary>Represents the execution lifecycle state of a cutting sheet on the shop floor.</summary>
+        </member>
+        <member name="F:SpaceOS.Modules.Contracts.Cutting.Enums.CuttingExecutionStatus.Planned">
+            <summary>The sheet has been scheduled but execution has not started.</summary>
+        </member>
+        <member name="F:SpaceOS.Modules.Contracts.Cutting.Enums.CuttingExecutionStatus.InProgress">
+            <summary>Cutting is currently in progress.</summary>
+        </member>
+        <member name="F:SpaceOS.Modules.Contracts.Cutting.Enums.CuttingExecutionStatus.Completed">
+            <summary>Cutting completed successfully.</summary>
+        </member>
+        <member name="F:SpaceOS.Modules.Contracts.Cutting.Enums.CuttingExecutionStatus.Failed">
+            <summary>Cutting failed; see associated CuttingFailed event for the reason.</summary>
+        </member>
+        <member name="T:SpaceOS.Modules.Contracts.Cutting.Enums.CuttingSheetStatus">
+            <summary>Represents the workflow state of a cutting sheet from submission to completion.</summary>
+        </member>
+        <member name="F:SpaceOS.Modules.Contracts.Cutting.Enums.CuttingSheetStatus.Received">
+            <summary>The sheet has been received and accepted.</summary>
+        </member>
+        <member name="F:SpaceOS.Modules.Contracts.Cutting.Enums.CuttingSheetStatus.Queued">
+            <summary>The sheet is queued for nesting.</summary>
+        </member>
+        <member name="F:SpaceOS.Modules.Contracts.Cutting.Enums.CuttingSheetStatus.InNesting">
+            <summary>Nesting optimization is running.</summary>
+        </member>
+        <member name="F:SpaceOS.Modules.Contracts.Cutting.Enums.CuttingSheetStatus.Nested">
+            <summary>Nesting has been completed; the sheet is ready for execution.</summary>
+        </member>
+        <member name="F:SpaceOS.Modules.Contracts.Cutting.Enums.CuttingSheetStatus.InExecution">
+            <summary>Physical cutting is in progress.</summary>
+        </member>
+        <member name="F:SpaceOS.Modules.Contracts.Cutting.Enums.CuttingSheetStatus.Completed">
+            <summary>Cutting has been completed successfully.</summary>
+        </member>
+        <member name="T:SpaceOS.Modules.Contracts.Cutting.Events.CuttingCompleted">
+            <summary>Raised when physical cutting of a sheet has been completed on the shop floor.</summary>
+        </member>
+        <member name="P:SpaceOS.Modules.Contracts.Cutting.Events.CuttingCompleted.SheetId">
+            <summary>Gets the identifier of the completed cutting sheet.</summary>
+        </member>
+        <member name="P:SpaceOS.Modules.Contracts.Cutting.Events.CuttingCompleted.OperatorId">
+            <summary>Gets the identifier of the operator who completed the cutting.</summary>
+        </member>
+        <member name="P:SpaceOS.Modules.Contracts.Cutting.Events.CuttingCompleted.OffcutIds">
+            <summary>Gets the identifiers of offcut stock items registered after cutting.</summary>
+        </member>
+        <member name="T:SpaceOS.Modules.Contracts.Cutting.Events.CuttingFailed">
+            <summary>
+            Raised when cutting of a sheet has failed on the shop floor.
+            Reason: max 2000 chars.
+            </summary>
+        </member>
+        <member name="P:SpaceOS.Modules.Contracts.Cutting.Events.CuttingFailed.SheetId">
+            <summary>Gets the identifier of the cutting sheet that failed.</summary>
+        </member>
+        <member name="P:SpaceOS.Modules.Contracts.Cutting.Events.CuttingFailed.Reason">
+            <summary>Gets the human-readable failure reason. Max 2000 characters.</summary>
+        </member>
+        <member name="T:SpaceOS.Modules.Contracts.Cutting.Events.CuttingSheetReceived">
+            <summary>Raised when a cutting sheet has been successfully received and accepted by the provider.</summary>
+        </member>
+        <member name="P:SpaceOS.Modules.Contracts.Cutting.Events.CuttingSheetReceived.SheetId">
+            <summary>Gets the identifier of the accepted cutting sheet.</summary>
+        </member>
+        <member name="P:SpaceOS.Modules.Contracts.Cutting.Events.CuttingSheetReceived.SourceEntityId">
+            <summary>Gets the identifier of the source entity that submitted the sheet.</summary>
+        </member>
+        <member name="P:SpaceOS.Modules.Contracts.Cutting.Events.CuttingSheetReceived.SourceModuleType">
+            <summary>Gets the name of the module type that submitted the sheet.</summary>
+        </member>
+        <member name="T:SpaceOS.Modules.Contracts.Cutting.Events.NestingCompleted">
+            <summary>Raised when nesting optimization has completed for a cutting sheet.</summary>
+        </member>
+        <member name="P:SpaceOS.Modules.Contracts.Cutting.Events.NestingCompleted.SheetId">
+            <summary>Gets the identifier of the cutting sheet that was nested.</summary>
+        </member>
+        <member name="P:SpaceOS.Modules.Contracts.Cutting.Events.NestingCompleted.PanelsUsed">
+            <summary>Gets the number of stock panels consumed by the nesting run.</summary>
+        </member>
+        <member name="P:SpaceOS.Modules.Contracts.Cutting.Events.NestingCompleted.WastePercentage">
+            <summary>Gets the overall waste percentage (0–100) achieved by nesting.</summary>
+        </member>
+        <member name="T:SpaceOS.Modules.Contracts.Cutting.ICuttingProvider">
+            <summary>
+            Contract for cutting services. Implementations: SpaceOS built-in, OptiCut, CutRite, manual.
+            TenantId is NOT in request DTOs — the implementation resolves it from JWT (SEC-01).
+            Consumer MUST verify Capabilities before calling optional methods (SEC-05).
+            </summary>
+        </member>
+        <member name="M:SpaceOS.Modules.Contracts.Cutting.ICuttingProvider.SubmitCuttingSheetAsync(SpaceOS.Modules.Contracts.Cutting.Requests.SubmitCuttingSheetRequest,System.Threading.CancellationToken)">
+            <summary>
+            Submits a new cutting sheet for processing.
+            Requires <see cref="F:SpaceOS.Modules.Contracts.Shared.ProviderCapability.CuttingSubmit"/> capability.
+            </summary>
+            <param name="request">The cutting sheet to submit.</param>
+            <param name="ct">Cancellation token.</param>
+            <returns>The new cutting sheet identifier on success.</returns>
+        </member>
+        <member name="M:SpaceOS.Modules.Contracts.Cutting.ICuttingProvider.GetCuttingSheetAsync(System.Guid,System.Threading.CancellationToken)">
+            <summary>
+            Retrieves a cutting sheet by its identifier.
+            </summary>
+            <param name="sheetId">The cutting sheet identifier.</param>
+            <param name="ct">Cancellation token.</param>
+            <returns>The cutting sheet DTO on success.</returns>
+        </member>
+        <member name="M:SpaceOS.Modules.Contracts.Cutting.ICuttingProvider.GetCuttingSheetsBySourceAsync(System.Guid,System.Threading.CancellationToken)">
+            <summary>
+            Queries all cutting sheets produced for a given source entity.
+            Needed by Joinery and Cabinet modules (BE-01).
+            </summary>
+            <param name="sourceEntityId">Identifier of the source entity.</param>
+            <param name="ct">Cancellation token.</param>
+            <returns>All cutting sheets for the entity.</returns>
+        </member>
+        <member name="M:SpaceOS.Modules.Contracts.Cutting.ICuttingProvider.GetNestingResultAsync(System.Guid,System.Threading.CancellationToken)">
+            <summary>
+            Retrieves the nesting result for a cutting sheet.
+            Requires <see cref="F:SpaceOS.Modules.Contracts.Shared.ProviderCapability.CuttingNesting"/> capability.
+            </summary>
+            <param name="sheetId">The cutting sheet identifier.</param>
+            <param name="ct">Cancellation token.</param>
+            <returns>The nesting result on success.</returns>
+        </member>
+        <member name="M:SpaceOS.Modules.Contracts.Cutting.ICuttingProvider.GetExecutionStatusAsync(System.Guid,System.Threading.CancellationToken)">
+            <summary>
+            Retrieves the current shop-floor execution status of a cutting sheet.
+            Requires <see cref="F:SpaceOS.Modules.Contracts.Shared.ProviderCapability.CuttingExecution"/> capability.
+            </summary>
+            <param name="sheetId">The cutting sheet identifier.</param>
+            <param name="ct">Cancellation token.</param>
+            <returns>The execution status on success.</returns>
+        </member>
+        <member name="M:SpaceOS.Modules.Contracts.Cutting.ICuttingProvider.GetWasteReportAsync(System.DateTimeOffset,System.DateTimeOffset,System.Threading.CancellationToken)">
+            <summary>
+            Retrieves a waste report for the specified time window.
+            Requires <see cref="F:SpaceOS.Modules.Contracts.Shared.ProviderCapability.CuttingWaste"/> capability.
+            Max 5s response time (BE-02).
+            </summary>
+            <param name="from">Start of the reporting window (inclusive).</param>
+            <param name="to">End of the reporting window (inclusive).</param>
+            <param name="ct">Cancellation token.</param>
+            <returns>The aggregated waste report on success.</returns>
+        </member>
+        <member name="M:SpaceOS.Modules.Contracts.Cutting.ICuttingProvider.SubmitAnonymousSheetAsync(SpaceOS.Modules.Contracts.Cutting.Requests.AnonymousSheetRequest,System.Threading.CancellationToken)">
+            <summary>
+            Submits a cutting sheet from an anonymous or partner channel.
+            Requires <see cref="F:SpaceOS.Modules.Contracts.Shared.ProviderCapability.CuttingAnonymous"/> capability (SEC-05).
+            v1: DIM throws NotSupportedException — providers opt-in by overriding.
+            v1.5 (FreeTier): CuttingProviderHttpAdapter overrides with synthetic tenant context.
+            </summary>
+            <param name="request">The anonymous sheet request including channel metadata.</param>
+            <param name="ct">Cancellation token.</param>
+            <returns>The new cutting sheet identifier on success.</returns>
+        </member>
+        <member name="T:SpaceOS.Modules.Contracts.Cutting.Requests.AnonymousSheetRequest">
+            <summary>
+            Request DTO for anonymous or partner cutting sheet submissions.
+            Wraps <see cref="T:SpaceOS.Modules.Contracts.Cutting.Requests.SubmitCuttingSheetRequest"/> with channel metadata.
+            Sheet: the cutting sheet input (same structure as authenticated flow).
+            Source: the channel — MUST NOT be Direct (use SubmitCuttingSheetAsync for Direct flows).
+            PartnerId: required when Source is Partner, null otherwise (SEC-11).
+            BrandingContextId: optional partner branding configuration reference.
+            SessionFingerprint: IP hash for rate-limiting; NOT stored in audit trail; max 128 chars; no PII (SEC-07).
+            </summary>
+            <remarks>
+            <para><b>SEC-10:</b> Lines ≤ 50 (vs 200 for authenticated). Server-side enforced.</para>
+            <para><b>SEC-11:</b> When Source is Partner, PartnerId MUST be a registered UUID. 403 on unknown.</para>
+            </remarks>
+        </member>
+        <member name="M:SpaceOS.Modules.Contracts.Cutting.Requests.AnonymousSheetRequest.#ctor(SpaceOS.Modules.Contracts.Cutting.Requests.SubmitCuttingSheetRequest,SpaceOS.Modules.Contracts.Shared.SourceChannel,System.Nullable{System.Guid},System.Nullable{System.Guid},System.String)">
+            <summary>
+            Request DTO for anonymous or partner cutting sheet submissions.
+            Wraps <see cref="T:SpaceOS.Modules.Contracts.Cutting.Requests.SubmitCuttingSheetRequest"/> with channel metadata.
+            Sheet: the cutting sheet input (same structure as authenticated flow).
+            Source: the channel — MUST NOT be Direct (use SubmitCuttingSheetAsync for Direct flows).
+            PartnerId: required when Source is Partner, null otherwise (SEC-11).
+            BrandingContextId: optional partner branding configuration reference.
+            SessionFingerprint: IP hash for rate-limiting; NOT stored in audit trail; max 128 chars; no PII (SEC-07).
+            </summary>
+            <remarks>
+            <para><b>SEC-10:</b> Lines ≤ 50 (vs 200 for authenticated). Server-side enforced.</para>
+            <para><b>SEC-11:</b> When Source is Partner, PartnerId MUST be a registered UUID. 403 on unknown.</para>
+            </remarks>
+        </member>
+        <member name="T:SpaceOS.Modules.Contracts.Cutting.Requests.SubmitCuttingSheetRequest">
+            <summary>
+            Input DTO for submitting a cutting sheet. TenantId is NOT included — resolved from JWT (SEC-01).
+            Max constraints: Lines le 200, CncInstructions le 500, ProcessSteps le 50 (SEC-02).
+            ComponentName le 100 chars, MaterialCode le 20 chars (SEC-04).
+            ParameterOverridesJson le 10KB.
+            </summary>
+        </member>
+        <member name="M:SpaceOS.Modules.Contracts.Cutting.Requests.SubmitCuttingSheetRequest.#ctor(System.Guid,System.String,System.Nullable{System.Guid},System.String,System.Int32,System.Decimal,System.Decimal,System.String,System.Collections.Generic.IReadOnlyList{SpaceOS.Modules.Contracts.Cutting.DTOs.CuttingLineDto},System.Collections.Generic.IReadOnlyList{SpaceOS.Modules.Contracts.Cutting.DTOs.CncInstructionDto},System.Collections.Generic.IReadOnlyList{SpaceOS.Modules.Contracts.Cutting.DTOs.ProcessStepDto})">
+            <summary>
+            Input DTO for submitting a cutting sheet. TenantId is NOT included — resolved from JWT (SEC-01).
+            Max constraints: Lines le 200, CncInstructions le 500, ProcessSteps le 50 (SEC-02).
+            ComponentName le 100 chars, MaterialCode le 20 chars (SEC-04).
+            ParameterOverridesJson le 10KB.
+            </summary>
+        </member>
+        <member name="T:SpaceOS.Modules.Contracts.EHS.Events.TrainingCompletedEvent">
+            <summary>
+            Published when an employee completes EHS training.
+            Consumed by HR module to update employee competency matrix.
+            </summary>
+        </member>
+        <member name="P:SpaceOS.Modules.Contracts.EHS.Events.TrainingCompletedEvent.EmployeeId">
+            <summary>
+            The employee who completed the training.
+            </summary>
+        </member>
+        <member name="P:SpaceOS.Modules.Contracts.EHS.Events.TrainingCompletedEvent.TrainingTypeId">
+            <summary>
+            The training type/course identifier.
+            </summary>
+        </member>
+        <member name="P:SpaceOS.Modules.Contracts.EHS.Events.TrainingCompletedEvent.TrainingName">
+            <summary>
+            Human-readable training name.
+            </summary>
+        </member>
+        <member name="P:SpaceOS.Modules.Contracts.EHS.Events.TrainingCompletedEvent.CertificationLevel">
+            <summary>
+            Certification level achieved (e.g., "Level 1", "Level 2", "Advanced").
+            </summary>
+        </member>
+        <member name="P:SpaceOS.Modules.Contracts.EHS.Events.TrainingCompletedEvent.CompletionDate">
+            <summary>
+            When the training was completed.
+            </summary>
+        </member>
+        <member name="P:SpaceOS.Modules.Contracts.EHS.Events.TrainingCompletedEvent.CertificationExpiry">
+            <summary>
+            When the certification expires (if applicable).
+            </summary>
+        </member>
+        <member name="T:SpaceOS.Modules.Contracts.Inventory.DTOs.ConsumptionTrendDto">
+            <summary>
+            Consumption trend analysis for a single material over a given time window.
+            EstimatedDaysUntilStockout is nullable — computed value, may be unavailable (CD-10).
+            Null when insufficient data or stock is at zero.
+            </summary>
+        </member>
+        <member name="M:SpaceOS.Modules.Contracts.Inventory.DTOs.ConsumptionTrendDto.#ctor(System.String,System.DateTimeOffset,System.DateTimeOffset,System.Decimal,System.Decimal,System.Nullable{System.Int32})">
+            <summary>
+            Consumption trend analysis for a single material over a given time window.
+            EstimatedDaysUntilStockout is nullable — computed value, may be unavailable (CD-10).
+            Null when insufficient data or stock is at zero.
+            </summary>
+        </member>
+        <member name="T:SpaceOS.Modules.Contracts.Inventory.DTOs.MaterialDto">
+            <summary>
+            Master data record describing a material type in the system.
+            Code: max 20 chars. Unit: e.g. m2, pcs, m. Null if not applicable.
+            </summary>
+        </member>
+        <member name="M:SpaceOS.Modules.Contracts.Inventory.DTOs.MaterialDto.#ctor(System.String,System.String,SpaceOS.Modules.Contracts.Inventory.Enums.MaterialCategory,System.Decimal,System.Decimal,System.Decimal,System.String)">
+            <summary>
+            Master data record describing a material type in the system.
+            Code: max 20 chars. Unit: e.g. m2, pcs, m. Null if not applicable.
+            </summary>
+        </member>
+        <member name="T:SpaceOS.Modules.Contracts.Inventory.DTOs.ReservationDto">
+            <summary>
+            Read model representing a soft stock reservation.
+            Id: unique identifier of the reservation.
+            TenantId: tenant that owns this reservation.
+            CorrelationId: consumer-provided idempotency key.
+            ConsumerModule: registered consumer module that created the reservation.
+            ConsumerContextJson: optional structured context provided by the consumer at creation time.
+            CreatedByUserId: user identity that created the reservation, if available.
+            CreatedAt: UTC timestamp when the reservation was created.
+            ExpiresAt: UTC timestamp after which the reservation expires if not consumed.
+            Status: current lifecycle status of the reservation.
+            Items: reserved line items; contains at least one item.
+            </summary>
+        </member>
+        <member name="M:SpaceOS.Modules.Contracts.Inventory.DTOs.ReservationDto.#ctor(System.Guid,System.Guid,System.Guid,System.String,System.Text.Json.JsonDocument,System.Nullable{System.Guid},System.DateTimeOffset,System.DateTimeOffset,SpaceOS.Modules.Contracts.Inventory.Enums.ReservationStatus,System.Collections.Generic.IReadOnlyList{SpaceOS.Modules.Contracts.Inventory.DTOs.ReservationItemDto})">
+            <summary>
+            Read model representing a soft stock reservation.
+            Id: unique identifier of the reservation.
+            TenantId: tenant that owns this reservation.
+            CorrelationId: consumer-provided idempotency key.
+            ConsumerModule: registered consumer module that created the reservation.
+            ConsumerContextJson: optional structured context provided by the consumer at creation time.
+            CreatedByUserId: user identity that created the reservation, if available.
+            CreatedAt: UTC timestamp when the reservation was created.
+            ExpiresAt: UTC timestamp after which the reservation expires if not consumed.
+            Status: current lifecycle status of the reservation.
+            Items: reserved line items; contains at least one item.
+            </summary>
+        </member>
+        <member name="T:SpaceOS.Modules.Contracts.Inventory.DTOs.ReservationFilter">
+            <summary>
+            Filter criteria for querying reservations via <c>IInventoryProvider.GetReservationsAsync</c>.
+            At least one filter property must be non-null/non-default — empty filter is rejected as a DoS guard.
+            Maximum Take is 500.
+            ConsumerModule: optional filter by consumer module name.
+            Status: optional filter by reservation lifecycle status.
+            CorrelationId: optional filter by exact consumer-provided correlation ID.
+            CreatedAfter: optional — returns only reservations created on or after this UTC timestamp.
+            CreatedBefore: optional — returns only reservations created on or before this UTC timestamp.
+            Skip: pagination offset (default 0).
+            Take: page size (default 100, max 500).
+            </summary>
+        </member>
+        <member name="M:SpaceOS.Modules.Contracts.Inventory.DTOs.ReservationFilter.#ctor(System.String,System.Nullable{SpaceOS.Modules.Contracts.Inventory.Enums.ReservationStatus},System.Nullable{System.Guid},System.Nullable{System.DateTimeOffset},System.Nullable{System.DateTimeOffset},System.Int32,System.Int32)">
+            <summary>
+            Filter criteria for querying reservations via <c>IInventoryProvider.GetReservationsAsync</c>.
+            At least one filter property must be non-null/non-default — empty filter is rejected as a DoS guard.
+            Maximum Take is 500.
+            ConsumerModule: optional filter by consumer module name.
+            Status: optional filter by reservation lifecycle status.
+            CorrelationId: optional filter by exact consumer-provided correlation ID.
+            CreatedAfter: optional — returns only reservations created on or after this UTC timestamp.
+            CreatedBefore: optional — returns only reservations created on or before this UTC timestamp.
+            Skip: pagination offset (default 0).
+            Take: page size (default 100, max 500).
+            </summary>
+        </member>
+        <member name="T:SpaceOS.Modules.Contracts.Inventory.DTOs.ReservationItemDto">
+            <summary>
+            A single reserved line item within a <see cref="T:SpaceOS.Modules.Contracts.Inventory.DTOs.ReservationDto"/>.
+            Id: unique item identifier.
+            StockItemId: identifier of the reserved stock item.
+            MaterialCode: material code of the reserved stock.
+            QuantityReserved: quantity held; always greater than zero (I-06).
+            QuantityConsumed: quantity consumed so far; never exceeds QuantityReserved (I-07).
+            </summary>
+        </member>
+        <member name="M:SpaceOS.Modules.Contracts.Inventory.DTOs.ReservationItemDto.#ctor(System.Guid,System.Guid,System.String,System.Decimal,System.Decimal)">
+            <summary>
+            A single reserved line item within a <see cref="T:SpaceOS.Modules.Contracts.Inventory.DTOs.ReservationDto"/>.
+            Id: unique item identifier.
+            StockItemId: identifier of the reserved stock item.
+            MaterialCode: material code of the reserved stock.
+            QuantityReserved: quantity held; always greater than zero (I-06).
+            QuantityConsumed: quantity consumed so far; never exceeds QuantityReserved (I-07).
+            </summary>
+        </member>
+        <member name="T:SpaceOS.Modules.Contracts.Inventory.DTOs.StockItemDto">
+            <summary>Represents a single stock item (full panel or offcut) in the inventory system.</summary>
+        </member>
+        <member name="M:SpaceOS.Modules.Contracts.Inventory.DTOs.StockItemDto.#ctor(System.Guid,System.String,System.Decimal,System.Decimal,System.Decimal,SpaceOS.Modules.Contracts.Inventory.Enums.StockItemType,System.Int32,System.String)">
+            <summary>Represents a single stock item (full panel or offcut) in the inventory system.</summary>
+        </member>
+        <member name="T:SpaceOS.Modules.Contracts.Inventory.DTOs.StockLocationDto">
+            <summary>Represents a named storage location within the warehouse.</summary>
+        </member>
+        <member name="M:SpaceOS.Modules.Contracts.Inventory.DTOs.StockLocationDto.#ctor(System.Guid,System.String,System.String)">
+            <summary>Represents a named storage location within the warehouse.</summary>
+        </member>
+        <member name="T:SpaceOS.Modules.Contracts.Inventory.DTOs.StockMovementDto">
+            <summary>
+            Records a single stock quantity change for audit and ledger purposes.
+            Quantity is positive for inbound movements; negative for consumption/scrap.
+            </summary>
+        </member>
+        <member name="M:SpaceOS.Modules.Contracts.Inventory.DTOs.StockMovementDto.#ctor(System.Guid,SpaceOS.Modules.Contracts.Inventory.Enums.StockMovementType,System.Int32,SpaceOS.Modules.Contracts.Inventory.Enums.StockReferenceType,System.Nullable{System.Guid})">
+            <summary>
+            Records a single stock quantity change for audit and ledger purposes.
+            Quantity is positive for inbound movements; negative for consumption/scrap.
+            </summary>
+        </member>
+        <member name="T:SpaceOS.Modules.Contracts.Inventory.Enums.MaterialCategory">
+            <summary>Top-level material classification used for reporting and purchasing rules.</summary>
+        </member>
+        <member name="F:SpaceOS.Modules.Contracts.Inventory.Enums.MaterialCategory.Board">
+            <summary>Structural board panels (MDF, chipboard, plywood, solid wood).</summary>
+        </member>
+        <member name="F:SpaceOS.Modules.Contracts.Inventory.Enums.MaterialCategory.Edge">
+            <summary>Edge banding strips.</summary>
+        </member>
+        <member name="F:SpaceOS.Modules.Contracts.Inventory.Enums.MaterialCategory.Veneer">
+            <summary>Veneer sheets or rolls.</summary>
+        </member>
+        <member name="F:SpaceOS.Modules.Contracts.Inventory.Enums.MaterialCategory.Hardware">
+            <summary>Hardware items (hinges, handles, drawer systems, etc.).</summary>
+        </member>
+        <member name="F:SpaceOS.Modules.Contracts.Inventory.Enums.MaterialCategory.Adhesive">
+            <summary>Adhesives and glues.</summary>
+        </member>
+        <member name="F:SpaceOS.Modules.Contracts.Inventory.Enums.MaterialCategory.Other">
+            <summary>Any material that does not fit the above categories.</summary>
+        </member>
+        <member name="T:SpaceOS.Modules.Contracts.Inventory.Enums.ReservationStatus">
+            <summary>Lifecycle status of a soft stock reservation.</summary>
+        </member>
+        <member name="F:SpaceOS.Modules.Contracts.Inventory.Enums.ReservationStatus.Active">
+            <summary>Reservation is active and stock is held.</summary>
+        </member>
+        <member name="F:SpaceOS.Modules.Contracts.Inventory.Enums.ReservationStatus.Released">
+            <summary>Reservation was explicitly released by the consumer.</summary>
+        </member>
+        <member name="F:SpaceOS.Modules.Contracts.Inventory.Enums.ReservationStatus.Expired">
+            <summary>Reservation expired because the TTL elapsed without consumption.</summary>
+        </member>
+        <member name="F:SpaceOS.Modules.Contracts.Inventory.Enums.ReservationStatus.Consumed">
+            <summary>Reservation was fully consumed via RecordConsumptionAsync.</summary>
+        </member>
+        <member name="T:SpaceOS.Modules.Contracts.Inventory.Enums.StockItemType">
+            <summary>Distinguishes whether a stock item is a full-size panel or a reusable offcut.</summary>
+        </member>
+        <member name="F:SpaceOS.Modules.Contracts.Inventory.Enums.StockItemType.FullPanel">
+            <summary>A full, uncut panel as received from the supplier.</summary>
+        </member>
+        <member name="F:SpaceOS.Modules.Contracts.Inventory.Enums.StockItemType.Offcut">
+            <summary>A remaining piece produced as a by-product of a previous cutting operation.</summary>
+        </member>
+        <member name="T:SpaceOS.Modules.Contracts.Inventory.Enums.StockMovementType">
+            <summary>Classifies the reason for a stock quantity change.</summary>
+        </member>
+        <member name="F:SpaceOS.Modules.Contracts.Inventory.Enums.StockMovementType.Inbound">
+            <summary>Stock arrived from a supplier or purchase order.</summary>
+        </member>
+        <member name="F:SpaceOS.Modules.Contracts.Inventory.Enums.StockMovementType.Consumed">
+            <summary>Stock was consumed during production.</summary>
+        </member>
+        <member name="F:SpaceOS.Modules.Contracts.Inventory.Enums.StockMovementType.OffcutCreated">
+            <summary>An offcut was created from a cutting operation and added to stock.</summary>
+        </member>
+        <member name="F:SpaceOS.Modules.Contracts.Inventory.Enums.StockMovementType.Scrapped">
+            <summary>Stock was scrapped due to damage or quality failure.</summary>
+        </member>
+        <member name="F:SpaceOS.Modules.Contracts.Inventory.Enums.StockMovementType.Adjusted">
+            <summary>Stock quantity was manually corrected (e.g. after stock count).</summary>
+        </member>
+        <member name="F:SpaceOS.Modules.Contracts.Inventory.Enums.StockMovementType.Returned">
+            <summary>Stock was returned from production back to the warehouse.</summary>
+        </member>
+        <member name="T:SpaceOS.Modules.Contracts.Inventory.Enums.StockReferenceType">
+            <summary>Identifies the type of external document that caused a stock movement.</summary>
+        </member>
+        <member name="F:SpaceOS.Modules.Contracts.Inventory.Enums.StockReferenceType.CuttingSheet">
+            <summary>Movement originated from a cutting sheet execution.</summary>
+        </member>
+        <member name="F:SpaceOS.Modules.Contracts.Inventory.Enums.StockReferenceType.PurchaseOrder">
+            <summary>Movement originated from a purchase order delivery.</summary>
+        </member>
+        <member name="F:SpaceOS.Modules.Contracts.Inventory.Enums.StockReferenceType.Manual">
+            <summary>Movement was recorded manually without an external reference.</summary>
+        </member>
+        <member name="F:SpaceOS.Modules.Contracts.Inventory.Enums.StockReferenceType.StockCount">
+            <summary>Movement resulted from a physical stock count correction.</summary>
+        </member>
+        <member name="F:SpaceOS.Modules.Contracts.Inventory.Enums.StockReferenceType.Return">
+            <summary>Movement is a return from production to the warehouse.</summary>
+        </member>
+        <member name="T:SpaceOS.Modules.Contracts.Inventory.Events.LowStockAlert">
+            <summary>Raised when a material's stock level falls at or below the configured reorder threshold.</summary>
+        </member>
+        <member name="P:SpaceOS.Modules.Contracts.Inventory.Events.LowStockAlert.MaterialCode">
+            <summary>Gets the material code whose stock is low.</summary>
+        </member>
+        <member name="P:SpaceOS.Modules.Contracts.Inventory.Events.LowStockAlert.CurrentQuantity">
+            <summary>Gets the current available quantity at the time the alert was raised.</summary>
+        </member>
+        <member name="P:SpaceOS.Modules.Contracts.Inventory.Events.LowStockAlert.ThresholdQuantity">
+            <summary>Gets the configured minimum threshold that triggered the alert.</summary>
+        </member>
+        <member name="T:SpaceOS.Modules.Contracts.Inventory.Events.OffcutRegistered">
+            <summary>Raised when a cutting offcut has been registered as a reusable stock item.</summary>
+        </member>
+        <member name="P:SpaceOS.Modules.Contracts.Inventory.Events.OffcutRegistered.OffcutId">
+            <summary>Gets the new stock item identifier assigned to the offcut.</summary>
+        </member>
+        <member name="P:SpaceOS.Modules.Contracts.Inventory.Events.OffcutRegistered.MaterialCode">
+            <summary>Gets the material code of the offcut panel.</summary>
+        </member>
+        <member name="P:SpaceOS.Modules.Contracts.Inventory.Events.OffcutRegistered.Width">
+            <summary>Gets the width of the offcut in millimetres.</summary>
+        </member>
+        <member name="P:SpaceOS.Modules.Contracts.Inventory.Events.OffcutRegistered.Height">
+            <summary>Gets the height of the offcut in millimetres.</summary>
+        </member>
+        <member name="T:SpaceOS.Modules.Contracts.Inventory.Events.ReservationConsumed">
+            <summary>Published when a reservation is fully consumed via RecordConsumptionAsync.</summary>
+            <remarks>Consumers MUST verify Event.TenantId matches their JWT TenantId (SEC-03).</remarks>
+        </member>
+        <member name="P:SpaceOS.Modules.Contracts.Inventory.Events.ReservationConsumed.ReservationId">
+            <summary>Gets the identifier of the consumed reservation.</summary>
+        </member>
+        <member name="P:SpaceOS.Modules.Contracts.Inventory.Events.ReservationConsumed.CorrelationId">
+            <summary>Gets the consumer-provided idempotency key of the consumed reservation.</summary>
+        </member>
+        <member name="P:SpaceOS.Modules.Contracts.Inventory.Events.ReservationConsumed.ConsumerModule">
+            <summary>Gets the registered consumer module that consumed the reservation.</summary>
+        </member>
+        <member name="T:SpaceOS.Modules.Contracts.Inventory.Events.ReservationExpired">
+            <summary>Published when a reservation expires because its TTL elapsed without consumption.</summary>
+            <remarks>Consumers MUST verify Event.TenantId matches their JWT TenantId (SEC-03).</remarks>
+        </member>
+        <member name="P:SpaceOS.Modules.Contracts.Inventory.Events.ReservationExpired.ReservationId">
+            <summary>Gets the identifier of the expired reservation.</summary>
+        </member>
+        <member name="P:SpaceOS.Modules.Contracts.Inventory.Events.ReservationExpired.CorrelationId">
+            <summary>Gets the consumer-provided idempotency key of the expired reservation.</summary>
+        </member>
+        <member name="P:SpaceOS.Modules.Contracts.Inventory.Events.ReservationExpired.ExpiredAt">
+            <summary>Gets the UTC timestamp at which the reservation expired.</summary>
+        </member>
+        <member name="T:SpaceOS.Modules.Contracts.Inventory.Events.ReservationReleased">
+            <summary>Published when an active reservation is explicitly released by the consumer.</summary>
+            <remarks>Consumers MUST verify Event.TenantId matches their JWT TenantId (SEC-03).</remarks>
+        </member>
+        <member name="P:SpaceOS.Modules.Contracts.Inventory.Events.ReservationReleased.ReservationId">
+            <summary>Gets the identifier of the released reservation.</summary>
+        </member>
+        <member name="P:SpaceOS.Modules.Contracts.Inventory.Events.ReservationReleased.CorrelationId">
+            <summary>Gets the consumer-provided idempotency key of the released reservation.</summary>
+        </member>
+        <member name="P:SpaceOS.Modules.Contracts.Inventory.Events.ReservationReleased.Reason">
+            <summary>Gets the optional reason provided by the consumer at release time.</summary>
+        </member>
+        <member name="T:SpaceOS.Modules.Contracts.Inventory.Events.StockConsumed">
+            <summary>Raised when stock has been consumed and the inventory ledger has been updated.</summary>
+        </member>
+        <member name="P:SpaceOS.Modules.Contracts.Inventory.Events.StockConsumed.MaterialCode">
+            <summary>Gets the material code of the consumed stock.</summary>
+        </member>
+        <member name="P:SpaceOS.Modules.Contracts.Inventory.Events.StockConsumed.Quantity">
+            <summary>Gets the number of units consumed.</summary>
+        </member>
+        <member name="P:SpaceOS.Modules.Contracts.Inventory.Events.StockConsumed.ReferenceType">
+            <summary>Gets the type of the document that triggered consumption.</summary>
+        </member>
+        <member name="P:SpaceOS.Modules.Contracts.Inventory.Events.StockConsumed.ReferenceId">
+            <summary>Gets the identifier of the triggering document, if available.</summary>
+        </member>
+        <member name="T:SpaceOS.Modules.Contracts.Inventory.Events.StockReceived">
+            <summary>Raised when inbound stock has been recorded in the inventory system.</summary>
+        </member>
+        <member name="P:SpaceOS.Modules.Contracts.Inventory.Events.StockReceived.MaterialCode">
+            <summary>Gets the material code of the received stock.</summary>
+        </member>
+        <member name="P:SpaceOS.Modules.Contracts.Inventory.Events.StockReceived.Quantity">
+            <summary>Gets the number of units received.</summary>
+        </member>
+        <member name="P:SpaceOS.Modules.Contracts.Inventory.Events.StockReceived.DeliveryReference">
+            <summary>Gets the supplier delivery reference number, if available.</summary>
+        </member>
+        <member name="T:SpaceOS.Modules.Contracts.Inventory.Events.StockReserved">
+            <summary>Published when a soft stock reservation is successfully created.</summary>
+            <remarks>Consumers MUST verify Event.TenantId matches their JWT TenantId (SEC-03).</remarks>
+        </member>
+        <member name="P:SpaceOS.Modules.Contracts.Inventory.Events.StockReserved.ActorUserId">
+            <summary>Gets the user identity that created the reservation, if available.</summary>
+        </member>
+        <member name="P:SpaceOS.Modules.Contracts.Inventory.Events.StockReserved.CorrelationId">
+            <summary>Gets the consumer-provided idempotency key.</summary>
+        </member>
+        <member name="P:SpaceOS.Modules.Contracts.Inventory.Events.StockReserved.ReservationId">
+            <summary>Gets the identifier of the new reservation.</summary>
+        </member>
+        <member name="P:SpaceOS.Modules.Contracts.Inventory.Events.StockReserved.ConsumerModule">
+            <summary>Gets the registered consumer module name.</summary>
+        </member>
+        <member name="P:SpaceOS.Modules.Contracts.Inventory.Events.StockReserved.ExpiresAt">
+            <summary>Gets the UTC timestamp after which the reservation will expire.</summary>
+        </member>
+        <member name="P:SpaceOS.Modules.Contracts.Inventory.Events.StockReserved.Items">
+            <summary>Gets the reserved line items.</summary>
+        </member>
+        <member name="T:SpaceOS.Modules.Contracts.Inventory.IInventoryProvider">
+            <summary>
+            Contract for inventory/stock management.
+            v1.2.0 — Reservation capability added (<see cref="F:SpaceOS.Modules.Contracts.Shared.ProviderCapability.InventoryReservation"/>).
+            TenantId resolved from JWT — not in request parameters (SEC-01).
+            </summary>
+        </member>
+        <member name="M:SpaceOS.Modules.Contracts.Inventory.IInventoryProvider.GetStockAsync(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Returns all stock items for the given material code.
+            Requires <see cref="F:SpaceOS.Modules.Contracts.Shared.ProviderCapability.InventoryStock"/> capability.
+            </summary>
+            <param name="materialCode">Material code to query.</param>
+            <param name="ct">Cancellation token.</param>
+            <returns>List of matching stock items.</returns>
+        </member>
+        <member name="M:SpaceOS.Modules.Contracts.Inventory.IInventoryProvider.GetUsableOffcutsAsync(System.String,System.Decimal,System.Decimal,System.Threading.CancellationToken)">
+            <summary>
+            Returns offcut stock items that meet minimum size requirements.
+            Requires <see cref="F:SpaceOS.Modules.Contracts.Shared.ProviderCapability.InventoryOffcut"/> capability.
+            </summary>
+            <param name="materialCode">Material code to filter offcuts.</param>
+            <param name="minWidth">Minimum required width in millimetres.</param>
+            <param name="minHeight">Minimum required height in millimetres.</param>
+            <param name="ct">Cancellation token.</param>
+            <returns>List of usable offcut items meeting the size constraints.</returns>
+        </member>
+        <member name="M:SpaceOS.Modules.Contracts.Inventory.IInventoryProvider.RecordConsumptionAsync(System.Collections.Generic.IReadOnlyList{SpaceOS.Modules.Contracts.Inventory.DTOs.StockMovementDto},System.Threading.CancellationToken)">
+            <summary>
+            Records one or more stock consumption movements.
+            </summary>
+            <param name="movements">List of stock movements to record.</param>
+            <param name="ct">Cancellation token.</param>
+            <returns>Success or failure result.</returns>
+        </member>
+        <member name="M:SpaceOS.Modules.Contracts.Inventory.IInventoryProvider.RecordOffcutAsync(SpaceOS.Modules.Contracts.Cutting.DTOs.CuttingOffcutResultDto,System.Threading.CancellationToken)">
+            <summary>
+            Registers a cutting offcut as a reusable stock item.
+            </summary>
+            <param name="offcut">Offcut data produced by the cutting provider.</param>
+            <param name="ct">Cancellation token.</param>
+            <returns>The new stock item identifier on success.</returns>
+        </member>
+        <member name="M:SpaceOS.Modules.Contracts.Inventory.IInventoryProvider.RecordInboundAsync(System.Collections.Generic.IReadOnlyList{SpaceOS.Modules.Contracts.Inventory.Requests.InboundReceiptDto},System.Threading.CancellationToken)">
+            <summary>
+            Records one or more inbound deliveries.
+            </summary>
+            <param name="items">List of items received from a delivery.</param>
+            <param name="ct">Cancellation token.</param>
+            <returns>Success or failure result.</returns>
+        </member>
+        <member name="M:SpaceOS.Modules.Contracts.Inventory.IInventoryProvider.GetConsumptionTrendAsync(System.String,System.DateTimeOffset,System.DateTimeOffset,System.Threading.CancellationToken)">
+            <summary>
+            Returns consumption trend data for a material over a time window.
+            Requires <see cref="F:SpaceOS.Modules.Contracts.Shared.ProviderCapability.InventoryTrend"/> capability.
+            </summary>
+            <param name="materialCode">Material code to analyse.</param>
+            <param name="from">Start of the analysis window (inclusive).</param>
+            <param name="to">End of the analysis window (inclusive).</param>
+            <param name="ct">Cancellation token.</param>
+            <returns>Consumption trend data on success.</returns>
+        </member>
+        <member name="M:SpaceOS.Modules.Contracts.Inventory.IInventoryProvider.ReserveAsync(SpaceOS.Modules.Contracts.Inventory.Requests.ReserveStockRequest,System.Threading.CancellationToken)">
+            <summary>
+            Creates a soft stock reservation with a TTL. Idempotent on (TenantId, CorrelationId)
+            for <c>Active</c> reservations only — terminal state reservations do not block new ones.
+            Requires <see cref="F:SpaceOS.Modules.Contracts.Shared.ProviderCapability.InventoryReservation"/> capability.
+            </summary>
+            <remarks>
+            <para>TTL range: 1 hour to 168 hours (7 days). Default enforced by tenant configuration.</para>
+            <para><b>SEC-07 / SEC-09 — ConsumerContextJson policy:</b> TRUSTED ONLY.
+            NO user input, NO PII, NO secrets. Schema validated on ingest.</para>
+            <para><b>SEC-13 — ConsumerModule allowlist:</b> Must be registered via IModuleRegistry.</para>
+            <para>Rate limit: 100 requests per minute per tenant. Exceeding returns 429 with Retry-After.</para>
+            </remarks>
+            <param name="request">Reservation request containing items, TTL, and correlation ID.</param>
+            <param name="ct">Cancellation token.</param>
+            <returns>The created (or idempotently returned) reservation on success.</returns>
+        </member>
+        <member name="M:SpaceOS.Modules.Contracts.Inventory.IInventoryProvider.ReleaseReservationAsync(System.Guid,System.String,System.Threading.CancellationToken)">
+            <summary>
+            Releases an active reservation identified by its correlation ID.
+            No-op if the reservation is already Released, Expired, or Consumed.
+            Rate limit: 100 requests per minute per tenant.
+            </summary>
+            <param name="correlationId">Consumer-provided correlation ID of the reservation to release.</param>
+            <param name="reason">Optional reason for releasing the reservation.</param>
+            <param name="ct">Cancellation token.</param>
+            <returns>Success result. NotFound if no active reservation matches the correlation ID.</returns>
+        </member>
+        <member name="M:SpaceOS.Modules.Contracts.Inventory.IInventoryProvider.GetReservationsAsync(SpaceOS.Modules.Contracts.Inventory.DTOs.ReservationFilter,System.Threading.CancellationToken)">
+            <summary>
+            Queries reservations by filter criteria. At least one filter property must be set (DoS guard).
+            Maximum Take is 500. Rate limit: 60 requests per minute per tenant.
+            </summary>
+            <param name="filter">Filter criteria. Must have at least one non-default property set.</param>
+            <param name="ct">Cancellation token.</param>
+            <returns>Matching reservations with their items.</returns>
+        </member>
+        <member name="T:SpaceOS.Modules.Contracts.Inventory.Requests.InboundReceiptDto">
+            <summary>
+            Input DTO for recording inbound stock from a supplier delivery.
+            No TenantId — resolved from JWT (SEC-01).
+            MaterialCode: max 20 chars. QualityNote: max 2000 chars.
+            </summary>
+        </member>
+        <member name="M:SpaceOS.Modules.Contracts.Inventory.Requests.InboundReceiptDto.#ctor(System.String,System.Int32,System.Decimal,System.Decimal,System.Decimal,System.String,System.String)">
+            <summary>
+            Input DTO for recording inbound stock from a supplier delivery.
+            No TenantId — resolved from JWT (SEC-01).
+            MaterialCode: max 20 chars. QualityNote: max 2000 chars.
+            </summary>
+        </member>
+        <member name="T:SpaceOS.Modules.Contracts.Inventory.Requests.ReserveStockRequest">
+            <summary>
+            Request to create a soft stock reservation with a TTL.
+            TenantId is NOT included — it is resolved from the JWT by the implementation (SEC-01).
+            ConsumerContextJson MUST NOT contain PII or user-supplied content (SEC-07, SEC-09).
+            CorrelationId: consumer-generated idempotency key; unique per active reservation per tenant.
+            ConsumerModule: registered consumer module name; must be in the allowlist (SEC-13); max 50 characters.
+            ConsumerContextJson: optional structured metadata from the consumer — TRUSTED ONLY, no PII, no user input.
+            Items: line items to reserve; must contain at least one item (I-01); max 200 items.
+            Ttl: reservation lifetime; must be between 1 hour and 168 hours (I-02, I-03).
+            </summary>
+        </member>
+        <member name="M:SpaceOS.Modules.Contracts.Inventory.Requests.ReserveStockRequest.#ctor(System.Guid,System.String,System.Text.Json.JsonDocument,System.Collections.Generic.IReadOnlyList{SpaceOS.Modules.Contracts.Inventory.Requests.ReserveItemRequest},System.TimeSpan)">
+            <summary>
+            Request to create a soft stock reservation with a TTL.
+            TenantId is NOT included — it is resolved from the JWT by the implementation (SEC-01).
+            ConsumerContextJson MUST NOT contain PII or user-supplied content (SEC-07, SEC-09).
+            CorrelationId: consumer-generated idempotency key; unique per active reservation per tenant.
+            ConsumerModule: registered consumer module name; must be in the allowlist (SEC-13); max 50 characters.
+            ConsumerContextJson: optional structured metadata from the consumer — TRUSTED ONLY, no PII, no user input.
+            Items: line items to reserve; must contain at least one item (I-01); max 200 items.
+            Ttl: reservation lifetime; must be between 1 hour and 168 hours (I-02, I-03).
+            </summary>
+        </member>
+        <member name="T:SpaceOS.Modules.Contracts.Inventory.Requests.ReserveItemRequest">
+            <summary>
+            A single line item within a <see cref="T:SpaceOS.Modules.Contracts.Inventory.Requests.ReserveStockRequest"/>.
+            StockItemId: identifier of the stock item to reserve.
+            MaterialCode: material code of the stock item; max 20 characters.
+            QuantityReserved: quantity to reserve; must be greater than zero (I-06).
+            </summary>
+        </member>
+        <member name="M:SpaceOS.Modules.Contracts.Inventory.Requests.ReserveItemRequest.#ctor(System.Guid,System.String,System.Decimal)">
+            <summary>
+            A single line item within a <see cref="T:SpaceOS.Modules.Contracts.Inventory.Requests.ReserveStockRequest"/>.
+            StockItemId: identifier of the stock item to reserve.
+            MaterialCode: material code of the stock item; max 20 characters.
+            QuantityReserved: quantity to reserve; must be greater than zero (I-06).
+            </summary>
+        </member>
+        <member name="T:SpaceOS.Modules.Contracts.Inventory.Validation.ConsumerContextJsonSchema">
+            <summary>
+            Shared validation patterns for ConsumerContextJson (SEC-07, SEC-09).
+            Implementations MUST apply all three layers: schema check, XSS regex, PII regex.
+            TRUSTED ONLY — no user input, no PII, no secrets permitted.
+            </summary>
+        </member>
+        <member name="F:SpaceOS.Modules.Contracts.Inventory.Validation.ConsumerContextJsonSchema.MaxSizeBytes">
+            <summary>Maximum allowed byte size of the serialised ConsumerContextJson payload (4 KB).</summary>
+        </member>
+        <member name="F:SpaceOS.Modules.Contracts.Inventory.Validation.ConsumerContextJsonSchema.MaxDepth">
+            <summary>Maximum allowed nesting depth of the JSON document.</summary>
+        </member>
+        <member name="F:SpaceOS.Modules.Contracts.Inventory.Validation.ConsumerContextJsonSchema.XssPattern">
+            <summary>
+            XSS and script-injection pattern (SEC-07, Layer 2).
+            Rejects payloads containing HTML tags, javascript: or data: URIs, or inline event handlers.
+            </summary>
+        </member>
+        <member name="F:SpaceOS.Modules.Contracts.Inventory.Validation.ConsumerContextJsonSchema.PiiPattern">
+            <summary>
+            PII detection pattern (SEC-09, Layer 2).
+            Rejects payloads that appear to contain e-mail addresses or bearer token strings.
+            </summary>
+        </member>
+        <member name="M:SpaceOS.Modules.Contracts.Inventory.Validation.ConsumerContextJsonSchema.IsValid(System.String,System.String@)">
+            <summary>
+            Validates the raw JSON string against XSS and PII patterns.
+            Returns true when the content is safe to store; false otherwise.
+            </summary>
+            <param name="rawJson">Serialised JSON payload to validate. May be null or empty.</param>
+            <param name="violatedPattern">Set to the name of the first violated pattern, or null when valid.</param>
+            <returns>True if the payload passes all checks; false if a violation is found.</returns>
+        </member>
+        <member name="T:SpaceOS.Modules.Contracts.Maintenance.Events.AssetDowntimeEvent">
+            <summary>
+            Raised when a production asset (machine, tool, equipment) goes down and becomes unavailable.
+            This event triggers production schedule adjustments in downstream modules.
+            </summary>
+        </member>
+        <member name="P:SpaceOS.Modules.Contracts.Maintenance.Events.AssetDowntimeEvent.AssetId">
+            <summary>Gets the identifier of the asset that went down.</summary>
+        </member>
+        <member name="P:SpaceOS.Modules.Contracts.Maintenance.Events.AssetDowntimeEvent.AssetName">
+            <summary>Gets the asset name (for logging/display).</summary>
+        </member>
+        <member name="P:SpaceOS.Modules.Contracts.Maintenance.Events.AssetDowntimeEvent.Reason">
+            <summary>Gets the reason for downtime (e.g., "Maintenance", "Breakdown", "Safety Issue").</summary>
+        </member>
+        <member name="P:SpaceOS.Modules.Contracts.Maintenance.Events.AssetDowntimeEvent.EstimatedFixDate">
+            <summary>Gets the estimated date when the asset will be fixed and available again.</summary>
+        </member>
+        <member name="P:SpaceOS.Modules.Contracts.Maintenance.Events.AssetDowntimeEvent.MaintenanceTicketId">
+            <summary>Gets the identifier of the maintenance ticket or work order.</summary>
+        </member>
+        <member name="T:SpaceOS.Modules.Contracts.Procurement.DTOs.DeliveryDto">
+            <summary>Represents a physical delivery received against a purchase order.</summary>
+        </member>
+        <member name="M:SpaceOS.Modules.Contracts.Procurement.DTOs.DeliveryDto.#ctor(System.Guid,System.DateTimeOffset,System.Collections.Generic.IReadOnlyList{SpaceOS.Modules.Contracts.Procurement.DTOs.DeliveryLineDto})">
+            <summary>Represents a physical delivery received against a purchase order.</summary>
+        </member>
+        <member name="T:SpaceOS.Modules.Contracts.Procurement.DTOs.DeliveryLineDto">
+            <summary>
+            Represents a single line of an actual delivery against a purchase order line.
+            QualityNote: max 2000 chars.
+            </summary>
+        </member>
+        <member name="M:SpaceOS.Modules.Contracts.Procurement.DTOs.DeliveryLineDto.#ctor(System.String,System.Int32,System.Int32,System.String)">
+            <summary>
+            Represents a single line of an actual delivery against a purchase order line.
+            QualityNote: max 2000 chars.
+            </summary>
+        </member>
+        <member name="T:SpaceOS.Modules.Contracts.Procurement.DTOs.PriceListEntryDto">
+            <summary>
+            A single entry from a supplier's current price list for a material.
+            Currency: ISO 4217 format (e.g. HUF, EUR, USD).
+            MinimumQuantity: null if no minimum order quantity required.
+            </summary>
+        </member>
+        <member name="M:SpaceOS.Modules.Contracts.Procurement.DTOs.PriceListEntryDto.#ctor(System.Guid,System.String,System.String,System.Decimal,System.String,System.Nullable{System.Int32},System.Nullable{System.DateTimeOffset})">
+            <summary>
+            A single entry from a supplier's current price list for a material.
+            Currency: ISO 4217 format (e.g. HUF, EUR, USD).
+            MinimumQuantity: null if no minimum order quantity required.
+            </summary>
+        </member>
+        <member name="T:SpaceOS.Modules.Contracts.Procurement.DTOs.PurchaseOrderDto">
+            <summary>
+            Output DTO representing a complete purchase order.
+            TenantId present as read-only (SEC-01 output side).
+            Notes: max 2000 chars.
+            </summary>
+        </member>
+        <member name="M:SpaceOS.Modules.Contracts.Procurement.DTOs.PurchaseOrderDto.#ctor(System.Guid,System.Guid,System.Guid,SpaceOS.Modules.Contracts.Procurement.Enums.PurchaseOrderStatus,System.Collections.Generic.IReadOnlyList{SpaceOS.Modules.Contracts.Procurement.DTOs.PurchaseOrderLineDto},System.Nullable{System.DateTimeOffset},System.DateTimeOffset,System.String)">
+            <summary>
+            Output DTO representing a complete purchase order.
+            TenantId present as read-only (SEC-01 output side).
+            Notes: max 2000 chars.
+            </summary>
+        </member>
+        <member name="T:SpaceOS.Modules.Contracts.Procurement.DTOs.PurchaseOrderLineDto">
+            <summary>
+            Represents a single line item within a purchase order.
+            Currency: ISO 4217, max 3 chars (CD-08).
+            </summary>
+        </member>
+        <member name="M:SpaceOS.Modules.Contracts.Procurement.DTOs.PurchaseOrderLineDto.#ctor(System.String,System.Int32,System.Nullable{System.Decimal},System.String)">
+            <summary>
+            Represents a single line item within a purchase order.
+            Currency: ISO 4217, max 3 chars (CD-08).
+            </summary>
+        </member>
+        <member name="T:SpaceOS.Modules.Contracts.Procurement.DTOs.SupplierDto">
+            <summary>Supplier master data record.</summary>
+        </member>
+        <member name="M:SpaceOS.Modules.Contracts.Procurement.DTOs.SupplierDto.#ctor(System.Guid,System.String,System.String,System.Int32,System.String)">
+            <summary>Supplier master data record.</summary>
+        </member>
+        <member name="T:SpaceOS.Modules.Contracts.Procurement.DTOs.SupplierRatingDto">
+            <summary>
+            Aggregated performance rating for a supplier based on historical order data.
+            DeliveryAccuracy, QualityScore, PriceCompetitiveness: scores in range 0 to 1.
+            </summary>
+        </member>
+        <member name="M:SpaceOS.Modules.Contracts.Procurement.DTOs.SupplierRatingDto.#ctor(System.Guid,System.Decimal,System.Decimal,System.Decimal,System.Int32,System.Int32)">
+            <summary>
+            Aggregated performance rating for a supplier based on historical order data.
+            DeliveryAccuracy, QualityScore, PriceCompetitiveness: scores in range 0 to 1.
+            </summary>
+        </member>
+        <member name="T:SpaceOS.Modules.Contracts.Procurement.Enums.PurchaseOrderStatus">
+            <summary>Represents the lifecycle state of a purchase order.</summary>
+        </member>
+        <member name="F:SpaceOS.Modules.Contracts.Procurement.Enums.PurchaseOrderStatus.Draft">
+            <summary>Order is being prepared and has not been sent to the supplier.</summary>
+        </member>
+        <member name="F:SpaceOS.Modules.Contracts.Procurement.Enums.PurchaseOrderStatus.Submitted">
+            <summary>Order has been submitted to the supplier.</summary>
+        </member>
+        <member name="F:SpaceOS.Modules.Contracts.Procurement.Enums.PurchaseOrderStatus.Confirmed">
+            <summary>Supplier has confirmed the order and delivery date.</summary>
+        </member>
+        <member name="F:SpaceOS.Modules.Contracts.Procurement.Enums.PurchaseOrderStatus.Shipped">
+            <summary>Order has been dispatched by the supplier.</summary>
+        </member>
+        <member name="F:SpaceOS.Modules.Contracts.Procurement.Enums.PurchaseOrderStatus.Delivered">
+            <summary>Goods have been received and the order is complete.</summary>
+        </member>
+        <member name="F:SpaceOS.Modules.Contracts.Procurement.Enums.PurchaseOrderStatus.Cancelled">
+            <summary>Order has been cancelled before delivery.</summary>
+        </member>
+        <member name="T:SpaceOS.Modules.Contracts.Procurement.Events.DeliveryReceived">
+            <summary>Raised when a physical delivery has been recorded against a purchase order.</summary>
+        </member>
+        <member name="P:SpaceOS.Modules.Contracts.Procurement.Events.DeliveryReceived.OrderId">
+            <summary>Gets the identifier of the purchase order that was fulfilled.</summary>
+        </member>
+        <member name="P:SpaceOS.Modules.Contracts.Procurement.Events.DeliveryReceived.DeliveryId">
+            <summary>Gets the identifier of the created delivery record.</summary>
+        </member>
+        <member name="T:SpaceOS.Modules.Contracts.Procurement.Events.PurchaseOrderCreated">
+            <summary>Raised when a new purchase order has been successfully created.</summary>
+        </member>
+        <member name="P:SpaceOS.Modules.Contracts.Procurement.Events.PurchaseOrderCreated.OrderId">
+            <summary>Gets the identifier of the newly created purchase order.</summary>
+        </member>
+        <member name="P:SpaceOS.Modules.Contracts.Procurement.Events.PurchaseOrderCreated.SupplierId">
+            <summary>Gets the identifier of the supplier the order was placed with.</summary>
+        </member>
+        <member name="T:SpaceOS.Modules.Contracts.Procurement.Events.ReorderAlertReceived">
+            <summary>Raised when the procurement system has detected that a material needs to be reordered.</summary>
+        </member>
+        <member name="P:SpaceOS.Modules.Contracts.Procurement.Events.ReorderAlertReceived.MaterialCode">
+            <summary>Gets the material code that needs reordering.</summary>
+        </member>
+        <member name="P:SpaceOS.Modules.Contracts.Procurement.Events.ReorderAlertReceived.CurrentQuantity">
+            <summary>Gets the current stock quantity at the time the alert was generated.</summary>
+        </member>
+        <member name="P:SpaceOS.Modules.Contracts.Procurement.Events.ReorderAlertReceived.SuggestedQuantity">
+            <summary>Gets the suggested order quantity based on consumption trends and lead time.</summary>
+        </member>
+        <member name="T:SpaceOS.Modules.Contracts.Procurement.IProcurementProvider">
+            <summary>
+            Contract for procurement/purchasing.
+            TenantId resolved from JWT — not in request parameters (SEC-01).
+            </summary>
+        </member>
+        <member name="M:SpaceOS.Modules.Contracts.Procurement.IProcurementProvider.CreatePurchaseOrderAsync(SpaceOS.Modules.Contracts.Procurement.Requests.CreatePurchaseOrderRequest,System.Threading.CancellationToken)">
+            <summary>
+            Creates a new purchase order.
+            Requires <see cref="F:SpaceOS.Modules.Contracts.Shared.ProviderCapability.ProcurementOrder"/> capability.
+            </summary>
+            <param name="request">Purchase order details.</param>
+            <param name="ct">Cancellation token.</param>
+            <returns>The new purchase order identifier on success.</returns>
+        </member>
+        <member name="M:SpaceOS.Modules.Contracts.Procurement.IProcurementProvider.GetPurchaseOrderAsync(System.Guid,System.Threading.CancellationToken)">
+            <summary>
+            Retrieves a purchase order by its identifier.
+            </summary>
+            <param name="orderId">The purchase order identifier.</param>
+            <param name="ct">Cancellation token.</param>
+            <returns>The purchase order DTO on success.</returns>
+        </member>
+        <member name="M:SpaceOS.Modules.Contracts.Procurement.IProcurementProvider.GetPricesAsync(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Returns the current price list entries for a material across all suppliers.
+            Requires <see cref="F:SpaceOS.Modules.Contracts.Shared.ProviderCapability.ProcurementPricing"/> capability.
+            </summary>
+            <param name="materialCode">Material code to query prices for.</param>
+            <param name="ct">Cancellation token.</param>
+            <returns>All active price list entries for the material.</returns>
+        </member>
+        <member name="M:SpaceOS.Modules.Contracts.Procurement.IProcurementProvider.RecordDeliveryAsync(SpaceOS.Modules.Contracts.Procurement.DTOs.DeliveryDto,System.Threading.CancellationToken)">
+            <summary>
+            Records a physical delivery against an existing purchase order.
+            </summary>
+            <param name="delivery">Delivery details including line-by-line received quantities.</param>
+            <param name="ct">Cancellation token.</param>
+            <returns>Success or failure result.</returns>
+        </member>
+        <member name="M:SpaceOS.Modules.Contracts.Procurement.IProcurementProvider.GetSupplierRatingAsync(System.Guid,System.Threading.CancellationToken)">
+            <summary>
+            Returns the aggregated performance rating for a supplier.
+            Requires <see cref="F:SpaceOS.Modules.Contracts.Shared.ProviderCapability.ProcurementRating"/> capability.
+            </summary>
+            <param name="supplierId">Identifier of the supplier to rate.</param>
+            <param name="ct">Cancellation token.</param>
+            <returns>The supplier rating on success.</returns>
+        </member>
+        <member name="T:SpaceOS.Modules.Contracts.Procurement.Requests.CreatePurchaseOrderRequest">
+            <summary>
+            Input DTO for creating a new purchase order. No TenantId — resolved from JWT (SEC-01).
+            Lines must contain at least one entry. Notes: max 2000 chars.
+            </summary>
+        </member>
+        <member name="M:SpaceOS.Modules.Contracts.Procurement.Requests.CreatePurchaseOrderRequest.#ctor(System.Guid,System.Collections.Generic.IReadOnlyList{SpaceOS.Modules.Contracts.Procurement.DTOs.PurchaseOrderLineDto},System.Nullable{System.DateTimeOffset},System.String)">
+            <summary>
+            Input DTO for creating a new purchase order. No TenantId — resolved from JWT (SEC-01).
+            Lines must contain at least one entry. Notes: max 2000 chars.
+            </summary>
+        </member>
+        <member name="T:SpaceOS.Modules.Contracts.Shared.IModuleProvider">
+            <summary>
+            Base interface for all module providers (cutting, inventory, procurement).
+            Every implementation MUST return within 5s on HealthCheckAsync — timeout = false.
+            Consumer MUST verify Capabilities before calling optional methods.
+            </summary>
+        </member>
+        <member name="P:SpaceOS.Modules.Contracts.Shared.IModuleProvider.ProviderName">
+            <summary>Gets the unique name identifying this provider implementation.</summary>
+        </member>
+        <member name="P:SpaceOS.Modules.Contracts.Shared.IModuleProvider.Capabilities">
+            <summary>Gets the composite set of capabilities this provider supports.</summary>
+        </member>
+        <member name="M:SpaceOS.Modules.Contracts.Shared.IModuleProvider.HealthCheckAsync(System.Threading.CancellationToken)">
+            <summary>
+            Checks whether the provider is healthy and ready to serve requests.
+            Implementations MUST respond within 5 seconds.
+            </summary>
+            <param name="ct">Cancellation token.</param>
+            <returns><c>true</c> if the provider is healthy; otherwise <c>false</c>.</returns>
+        </member>
+        <member name="T:SpaceOS.Modules.Contracts.Shared.ModuleEvent">
+            <summary>
+            Base record for all module events. EventId is auto-generated on construction.
+            CONSUMER MUST verify that TenantId matches the current JWT TenantId claim (SEC-03).
+            </summary>
+        </member>
+        <member name="P:SpaceOS.Modules.Contracts.Shared.ModuleEvent.EventId">
+            <summary>Gets the unique identifier for this event instance, auto-generated on construction.</summary>
+        </member>
+        <member name="P:SpaceOS.Modules.Contracts.Shared.ModuleEvent.TenantId">
+            <summary>Gets the tenant that owns this event. Must match the JWT TenantId claim (SEC-03).</summary>
+        </member>
+        <member name="P:SpaceOS.Modules.Contracts.Shared.ModuleEvent.OccurredAt">
+            <summary>Gets the UTC timestamp when this event occurred.</summary>
+        </member>
+        <member name="T:SpaceOS.Modules.Contracts.Shared.ProviderCapability">
+            <summary>
+            Composite capability flags for module providers.
+            Consumer MUST check HasFlag before calling optional methods (SEC-05).
+            If provider claims capability but doesn't implement it, throw NotSupportedException.
+            </summary>
+        </member>
+        <member name="F:SpaceOS.Modules.Contracts.Shared.ProviderCapability.None">
+            <summary>No capabilities declared.</summary>
+        </member>
+        <member name="F:SpaceOS.Modules.Contracts.Shared.ProviderCapability.CuttingSubmit">
+            <summary>Provider supports submitting cutting sheets.</summary>
+        </member>
+        <member name="F:SpaceOS.Modules.Contracts.Shared.ProviderCapability.CuttingNesting">
+            <summary>Provider supports nesting optimization.</summary>
+        </member>
+        <member name="F:SpaceOS.Modules.Contracts.Shared.ProviderCapability.CuttingExecution">
+            <summary>Provider supports execution tracking.</summary>
+        </member>
+        <member name="F:SpaceOS.Modules.Contracts.Shared.ProviderCapability.CuttingWaste">
+            <summary>Provider supports waste reporting.</summary>
+        </member>
+        <member name="F:SpaceOS.Modules.Contracts.Shared.ProviderCapability.InventoryStock">
+            <summary>Provider supports stock queries.</summary>
+        </member>
+        <member name="F:SpaceOS.Modules.Contracts.Shared.ProviderCapability.InventoryOffcut">
+            <summary>Provider supports offcut management.</summary>
+        </member>
+        <member name="F:SpaceOS.Modules.Contracts.Shared.ProviderCapability.InventoryTrend">
+            <summary>Provider supports consumption trend analysis.</summary>
+        </member>
+        <member name="F:SpaceOS.Modules.Contracts.Shared.ProviderCapability.InventoryLocation">
+            <summary>Provider supports stock location queries.</summary>
+        </member>
+        <member name="F:SpaceOS.Modules.Contracts.Shared.ProviderCapability.ProcurementOrder">
+            <summary>Provider supports purchase order creation.</summary>
+        </member>
+        <member name="F:SpaceOS.Modules.Contracts.Shared.ProviderCapability.ProcurementPricing">
+            <summary>Provider supports supplier price list queries.</summary>
+        </member>
+        <member name="F:SpaceOS.Modules.Contracts.Shared.ProviderCapability.ProcurementRating">
+            <summary>Provider supports supplier rating queries.</summary>
+        </member>
+        <member name="F:SpaceOS.Modules.Contracts.Shared.ProviderCapability.InventoryReservation">
+            <summary>Provider supports soft stock reservation with TTL (v1.2.0).</summary>
+        </member>
+        <member name="F:SpaceOS.Modules.Contracts.Shared.ProviderCapability.CuttingAnonymous">
+            <summary>
+            Provider supports anonymous/unauthenticated cutting sheet submission (v1.3.0).
+            Required for FreeTier and PartnerTier flows.
+            Consumer MUST check this flag before calling SubmitAnonymousSheetAsync (SEC-05).
+            </summary>
+        </member>
+        <member name="T:SpaceOS.Modules.Contracts.Shared.SourceChannel">
+            <summary>
+            Identifies the channel through which a request entered the system.
+            Used for audit trail, RBAC differentiation, and rate-limit policies.
+            v1.3.0 — introduced for FreeTier/PartnerTier extension points.
+            </summary>
+        </member>
+        <member name="F:SpaceOS.Modules.Contracts.Shared.SourceChannel.Direct">
+            <summary>Authenticated tenant user via Portal or BFF.</summary>
+        </member>
+        <member name="F:SpaceOS.Modules.Contracts.Shared.SourceChannel.FreeTier">
+            <summary>Anonymous workspace (FreeTier) — no tenant context, rate-limited by IP/session.</summary>
+        </member>
+        <member name="F:SpaceOS.Modules.Contracts.Shared.SourceChannel.Partner">
+            <summary>B2B2C embedded flow via partner integration (PartnerTier).</summary>
+        </member>
+        <member name="F:SpaceOS.Modules.Contracts.Shared.SourceChannel.Api">
+            <summary>Programmatic ERP/API integration (future).</summary>
+        </member>
+    </members>
+</doc>

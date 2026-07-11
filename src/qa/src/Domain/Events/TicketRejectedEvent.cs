@@ -1,0 +1,12 @@
+using SpaceOS.Kernel.Domain.Primitives;
+using SpaceOS.Modules.QA.Domain.StrongIds;
+
+namespace SpaceOS.Modules.QA.Domain.Events;
+
+public record TicketRejectedEvent(
+    TicketId TicketId,
+    Guid TenantId,
+    string RejectionReason) : IDomainEvent
+{
+    public DateTimeOffset OccurredOn { get; init; } = DateTimeOffset.UtcNow;
+}

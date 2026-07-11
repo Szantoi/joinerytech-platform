@@ -1,0 +1,79 @@
+/* ──────────────────────────────────────────────────────────────────────────
+   brand-apakovasz.css — BRAND réteg (ügyfelenként cserélhető)
+   Az apakovasz.hu valódi arculatából: meleg liszt-/búza-krém vászon, faszén
+   panelek krém szöveggel, kéreg-arany akcentus. Display: Marcellus (a wordmark
+   széles verzál-vonala), UI: Figtree (barátságos, jól olvasható).
+   ────────────────────────────────────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Marcellus&family=Figtree:ital,wght@0,400;0,500;0,600;0,700;0,800&display=swap');
+
+:root {
+  /* liszt / búza vászon */
+  --flour-50: #faf4e2;
+  --flour-100: #f3e9cb;
+  --flour:     #ecdcae;
+  --flour-deep:#e2cd95;
+  --canvas:    #efe4c4;   /* az oldal sand-tónusa */
+
+  /* faszén panel + krém szöveg */
+  --panel:    #211d16;
+  --panel-2:  #2b261d;
+  --panel-3:  #3a3327;
+  --cream:    #f5ecd4;
+  --cream-dim:#cbbd99;
+  --cream-faint: rgba(245,236,212,.55);
+
+  /* kéreg akcentusok */
+  --crust:      #bd7f1e;  /* arany kéreg */
+  --crust-soft: #dca844;
+  --crust-deep: #8a4d1c;  /* sült héj */
+  --rye:        #6f4a2a;
+
+  /* állapot */
+  --ok:   #5f7d39;
+  --warn: #c0821e;
+  --bad:  #a8402a;
+  --info: #3f6079;
+
+  /* vonalak a vásznon */
+  --line:      rgba(33,29,22,.12);
+  --line-soft: rgba(33,29,22,.07);
+  --ink:       #2a2419;
+  --ink-dim:   #6b5f49;
+}
+
+* { -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; }
+body {
+  font-family: 'Figtree', system-ui, -apple-system, sans-serif;
+  background: var(--canvas);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+.font-display { font-family: 'Marcellus', Georgia, serif; }
+.wordmark { font-family: 'Marcellus', Georgia, serif; letter-spacing: .34em; }
+.tracking-brand { letter-spacing: .28em; }
+
+/* finom liszt-szemcse a vásznon */
+.canvas-grain {
+  background-color: var(--canvas);
+  background-image:
+    radial-gradient(rgba(138,77,28,.05) 1px, transparent 1px),
+    radial-gradient(rgba(138,77,28,.04) 1px, transparent 1px);
+  background-size: 22px 22px, 22px 22px;
+  background-position: 0 0, 11px 11px;
+}
+
+/* görgetősáv */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: rgba(33,29,22,.18); border-radius: 99px; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* belépő-animáció */
+@keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.rise { animation: rise .4s cubic-bezier(.2,.7,.3,1) both; }
+@media (prefers-reduced-motion: reduce) { .rise { animation: none; } }
+
+/* tabszám-igazítás */
+.tnum { font-variant-numeric: tabular-nums; }

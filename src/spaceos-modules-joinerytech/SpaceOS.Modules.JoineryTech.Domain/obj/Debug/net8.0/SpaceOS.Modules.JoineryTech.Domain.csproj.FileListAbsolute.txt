@@ -1,0 +1,13 @@
+/opt/spaceos/backend/spaceos-modules-joinerytech/SpaceOS.Modules.JoineryTech.Domain/bin/Debug/net8.0/SpaceOS.Modules.JoineryTech.Domain.deps.json
+/opt/spaceos/backend/spaceos-modules-joinerytech/SpaceOS.Modules.JoineryTech.Domain/bin/Debug/net8.0/SpaceOS.Modules.JoineryTech.Domain.dll
+/opt/spaceos/backend/spaceos-modules-joinerytech/SpaceOS.Modules.JoineryTech.Domain/bin/Debug/net8.0/SpaceOS.Modules.JoineryTech.Domain.pdb
+/opt/spaceos/backend/spaceos-modules-joinerytech/SpaceOS.Modules.JoineryTech.Domain/obj/Debug/net8.0/SpaceOS.Modules.JoineryTech.Domain.csproj.AssemblyReference.cache
+/opt/spaceos/backend/spaceos-modules-joinerytech/SpaceOS.Modules.JoineryTech.Domain/obj/Debug/net8.0/SpaceOS.Modules.JoineryTech.Domain.GeneratedMSBuildEditorConfig.editorconfig
+/opt/spaceos/backend/spaceos-modules-joinerytech/SpaceOS.Modules.JoineryTech.Domain/obj/Debug/net8.0/SpaceOS.Modules.JoineryTech.Domain.AssemblyInfoInputs.cache
+/opt/spaceos/backend/spaceos-modules-joinerytech/SpaceOS.Modules.JoineryTech.Domain/obj/Debug/net8.0/SpaceOS.Modules.JoineryTech.Domain.AssemblyInfo.cs
+/opt/spaceos/backend/spaceos-modules-joinerytech/SpaceOS.Modules.JoineryTech.Domain/obj/Debug/net8.0/SpaceOS.Modules.JoineryTech.Domain.csproj.CoreCompileInputs.cache
+/opt/spaceos/backend/spaceos-modules-joinerytech/SpaceOS.Modules.JoineryTech.Domain/obj/Debug/net8.0/SpaceOS.Modules.JoineryTech.Domain.sourcelink.json
+/opt/spaceos/backend/spaceos-modules-joinerytech/SpaceOS.Modules.JoineryTech.Domain/obj/Debug/net8.0/SpaceOS.Modules.JoineryTech.Domain.dll
+/opt/spaceos/backend/spaceos-modules-joinerytech/SpaceOS.Modules.JoineryTech.Domain/obj/Debug/net8.0/refint/SpaceOS.Modules.JoineryTech.Domain.dll
+/opt/spaceos/backend/spaceos-modules-joinerytech/SpaceOS.Modules.JoineryTech.Domain/obj/Debug/net8.0/SpaceOS.Modules.JoineryTech.Domain.pdb
+/opt/spaceos/backend/spaceos-modules-joinerytech/SpaceOS.Modules.JoineryTech.Domain/obj/Debug/net8.0/ref/SpaceOS.Modules.JoineryTech.Domain.dll

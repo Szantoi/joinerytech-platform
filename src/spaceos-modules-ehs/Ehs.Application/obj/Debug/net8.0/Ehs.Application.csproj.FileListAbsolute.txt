@@ -1,0 +1,16 @@
+/opt/spaceos/backend/spaceos-modules-ehs/Ehs.Application/bin/Debug/net8.0/Ehs.Application.deps.json
+/opt/spaceos/backend/spaceos-modules-ehs/Ehs.Application/bin/Debug/net8.0/Ehs.Application.dll
+/opt/spaceos/backend/spaceos-modules-ehs/Ehs.Application/bin/Debug/net8.0/Ehs.Application.pdb
+/opt/spaceos/backend/spaceos-modules-ehs/Ehs.Application/bin/Debug/net8.0/Ehs.Domain.dll
+/opt/spaceos/backend/spaceos-modules-ehs/Ehs.Application/bin/Debug/net8.0/Ehs.Domain.pdb
+/opt/spaceos/backend/spaceos-modules-ehs/Ehs.Application/obj/Debug/net8.0/Ehs.Application.csproj.AssemblyReference.cache
+/opt/spaceos/backend/spaceos-modules-ehs/Ehs.Application/obj/Debug/net8.0/Ehs.Application.GeneratedMSBuildEditorConfig.editorconfig
+/opt/spaceos/backend/spaceos-modules-ehs/Ehs.Application/obj/Debug/net8.0/Ehs.Application.AssemblyInfoInputs.cache
+/opt/spaceos/backend/spaceos-modules-ehs/Ehs.Application/obj/Debug/net8.0/Ehs.Application.AssemblyInfo.cs
+/opt/spaceos/backend/spaceos-modules-ehs/Ehs.Application/obj/Debug/net8.0/Ehs.Application.csproj.CoreCompileInputs.cache
+/opt/spaceos/backend/spaceos-modules-ehs/Ehs.Application/obj/Debug/net8.0/Ehs.Application.sourcelink.json
+/opt/spaceos/backend/spaceos-modules-ehs/Ehs.Application/obj/Debug/net8.0/Ehs.Appl.CDAAA067.Up2Date
+/opt/spaceos/backend/spaceos-modules-ehs/Ehs.Application/obj/Debug/net8.0/Ehs.Application.dll
+/opt/spaceos/backend/spaceos-modules-ehs/Ehs.Application/obj/Debug/net8.0/refint/Ehs.Application.dll
+/opt/spaceos/backend/spaceos-modules-ehs/Ehs.Application/obj/Debug/net8.0/Ehs.Application.pdb
+/opt/spaceos/backend/spaceos-modules-ehs/Ehs.Application/obj/Debug/net8.0/ref/Ehs.Application.dll

@@ -1,0 +1,12 @@
+/opt/spaceos/backend/spaceos-modules-ehs/Ehs.Domain/bin/Debug/net8.0/Ehs.Domain.deps.json
+/opt/spaceos/backend/spaceos-modules-ehs/Ehs.Domain/bin/Debug/net8.0/Ehs.Domain.dll
+/opt/spaceos/backend/spaceos-modules-ehs/Ehs.Domain/bin/Debug/net8.0/Ehs.Domain.pdb
+/opt/spaceos/backend/spaceos-modules-ehs/Ehs.Domain/obj/Debug/net8.0/Ehs.Domain.GeneratedMSBuildEditorConfig.editorconfig
+/opt/spaceos/backend/spaceos-modules-ehs/Ehs.Domain/obj/Debug/net8.0/Ehs.Domain.AssemblyInfoInputs.cache
+/opt/spaceos/backend/spaceos-modules-ehs/Ehs.Domain/obj/Debug/net8.0/Ehs.Domain.AssemblyInfo.cs
+/opt/spaceos/backend/spaceos-modules-ehs/Ehs.Domain/obj/Debug/net8.0/Ehs.Domain.csproj.CoreCompileInputs.cache
+/opt/spaceos/backend/spaceos-modules-ehs/Ehs.Domain/obj/Debug/net8.0/Ehs.Domain.sourcelink.json
+/opt/spaceos/backend/spaceos-modules-ehs/Ehs.Domain/obj/Debug/net8.0/Ehs.Domain.dll
+/opt/spaceos/backend/spaceos-modules-ehs/Ehs.Domain/obj/Debug/net8.0/refint/Ehs.Domain.dll
+/opt/spaceos/backend/spaceos-modules-ehs/Ehs.Domain/obj/Debug/net8.0/Ehs.Domain.pdb
+/opt/spaceos/backend/spaceos-modules-ehs/Ehs.Domain/obj/Debug/net8.0/ref/Ehs.Domain.dll

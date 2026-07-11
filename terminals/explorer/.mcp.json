@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "spaceos-knowledge": {
+      "type": "http",
+      "url": "http://localhost:3456/mcp",
+      "headers": {
+        "Authorization": "Bearer IoUpLUgr4v6Mj5lt4u2XD1JOy5iGmVdxne473srMl2o="
+      }
+    },
+    "brave-search": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-brave-search"],
+      "env": {
+        "BRAVE_API_KEY": "BSAeacJqtvM6VpuJH0TPG1AjLAPN_K8"
+      }
+    }
+  }
+}

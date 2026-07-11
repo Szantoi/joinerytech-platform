@@ -1,0 +1,6 @@
+{
+  "SpaceOS.Modules.JoineryTech.Api, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "\/opt\/spaceos\/backend\/spaceos-modules-joinerytech\/SpaceOS.Modules.JoineryTech.Api",
+  "SpaceOS.Modules.JoineryTech.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "\/opt\/spaceos\/backend\/spaceos-modules-joinerytech\/SpaceOS.Modules.JoineryTech.Application",
+  "SpaceOS.Modules.JoineryTech.Domain, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "\/opt\/spaceos\/backend\/spaceos-modules-joinerytech\/SpaceOS.Modules.JoineryTech.Domain",
+  "SpaceOS.Modules.JoineryTech.Infrastructure, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "\/opt\/spaceos\/backend\/spaceos-modules-joinerytech\/SpaceOS.Modules.JoineryTech.Infrastructure"
+}

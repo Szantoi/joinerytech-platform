@@ -1,0 +1,16 @@
+/opt/spaceos/backend/spaceos-modules/spaceos-modules-kontrolling/src/bin/Debug/net8.0/SpaceOS.Modules.Kontrolling.deps.json
+/opt/spaceos/backend/spaceos-modules/spaceos-modules-kontrolling/src/bin/Debug/net8.0/SpaceOS.Modules.Kontrolling.dll
+/opt/spaceos/backend/spaceos-modules/spaceos-modules-kontrolling/src/bin/Debug/net8.0/SpaceOS.Modules.Kontrolling.pdb
+/opt/spaceos/backend/spaceos-modules/spaceos-modules-kontrolling/src/bin/Debug/net8.0/SpaceOS.Kernel.Domain.dll
+/opt/spaceos/backend/spaceos-modules/spaceos-modules-kontrolling/src/bin/Debug/net8.0/SpaceOS.Kernel.Domain.pdb
+/opt/spaceos/backend/spaceos-modules/spaceos-modules-kontrolling/src/obj/Debug/net8.0/SpaceOS.Modules.Kontrolling.csproj.AssemblyReference.cache
+/opt/spaceos/backend/spaceos-modules/spaceos-modules-kontrolling/src/obj/Debug/net8.0/SpaceOS.Modules.Kontrolling.GeneratedMSBuildEditorConfig.editorconfig
+/opt/spaceos/backend/spaceos-modules/spaceos-modules-kontrolling/src/obj/Debug/net8.0/SpaceOS.Modules.Kontrolling.AssemblyInfoInputs.cache
+/opt/spaceos/backend/spaceos-modules/spaceos-modules-kontrolling/src/obj/Debug/net8.0/SpaceOS.Modules.Kontrolling.AssemblyInfo.cs
+/opt/spaceos/backend/spaceos-modules/spaceos-modules-kontrolling/src/obj/Debug/net8.0/SpaceOS.Modules.Kontrolling.csproj.CoreCompileInputs.cache
+/opt/spaceos/backend/spaceos-modules/spaceos-modules-kontrolling/src/obj/Debug/net8.0/SpaceOS.Modules.Kontrolling.sourcelink.json
+/opt/spaceos/backend/spaceos-modules/spaceos-modules-kontrolling/src/obj/Debug/net8.0/SpaceOS..CCBE11D0.Up2Date
+/opt/spaceos/backend/spaceos-modules/spaceos-modules-kontrolling/src/obj/Debug/net8.0/SpaceOS.Modules.Kontrolling.dll
+/opt/spaceos/backend/spaceos-modules/spaceos-modules-kontrolling/src/obj/Debug/net8.0/refint/SpaceOS.Modules.Kontrolling.dll
+/opt/spaceos/backend/spaceos-modules/spaceos-modules-kontrolling/src/obj/Debug/net8.0/SpaceOS.Modules.Kontrolling.pdb
+/opt/spaceos/backend/spaceos-modules/spaceos-modules-kontrolling/src/obj/Debug/net8.0/ref/SpaceOS.Modules.Kontrolling.dll

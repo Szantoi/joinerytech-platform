@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="hu">
+<head>
+  <!-- DEV változat: Babel futásidőben fordít (~30s). A GYORS app a JoineryTech Portal.html (build/*.js). -->
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="color-scheme" content="light only" />
+  <title>JoineryTech Portal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <style>
+    html, body, #root { height: 100%; }
+    /* Native form controls must render in light appearance so the closed
+       select (dark text on white) is consistent. We pin color-scheme but do
+       NOT force option text color: on macOS the native dropdown popup may
+       stay dark regardless, and the OS draws its own readable option text —
+       overriding it would make the text invisible on a dark popup. */
+    :root { color-scheme: light; }
+    select, input, textarea, button { color-scheme: light; }
+    /* On Windows, Chrome renders text with subpixel (ClearType) antialiasing.
+       When a control lands on a fractional pixel position (common inside CSS
+       grid `1fr`/fixed-px tracks and flex layouts), the subpixel boundaries
+       misalign and the text shows heavy red/cyan/green colour fringing — the
+       "rainbow text" reported in selects. -webkit-font-smoothing is a no-op on
+       Windows, so we instead promote each control to its own compositing layer
+       (translateZ(0)): composited text falls back to grayscale AA, which is
+       immune to fractional positioning and renders crisply. */
+    select, input, textarea, button, option, optgroup {
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      text-rendering: optimizeLegibility;
+    }
+    select, input, textarea {
+      transform: translateZ(0);
+    }
+    /* The open native dropdown list inherits the OS popup color when the
+       option background is transparent — in dark mode that makes the dark
+       option text invisible. Force an explicit light popup (Chromium/Firefox
+       honour option styling; Safari relies on the color-scheme:light above). */
+    select option,
+    select optgroup {
+      background-color: #ffffff;
+      color: #1c1917;
+    }
+    select option:checked,
+    select option:hover {
+      background-color: #f5f5f4;
+      color: #1c1917;
+    }
+    body { font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
+           color: #1c1917; background: #f7f7f5;
+           font-feature-settings: "ss01","cv11";
+           -webkit-font-smoothing: antialiased;
+           -moz-osx-font-smoothing: grayscale; }
+    .font-mono, code, pre { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+    button { font-family: inherit; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script src="data.js?v=4"></script>
+  <script src="data-extra.js?v=4"></script>
+  <script src="data-extra-2.js?v=4"></script>
+  <script src="data-worlds.js?v=17"></script>
+  <script src="data-specs.js?v=1"></script>
+  <script src="specs-engine.js?v=2"></script>
+  <script src="data-configurator.js?v=1"></script>
+  <script src="data-composition.js?v=1"></script>
+  <script src="data-mfgprep.js?v=1"></script>
+  <script src="mfg-prep-engine.js?v=2"></script>
+  <script src="data-woodwork.js?v=1"></script>
+  <script src="data-sales-detail.js?v=1"></script>
+  <script src="data-procurement2.js?v=1"></script>
+  <script src="data-interior.js?v=7"></script>
+  <script src="data-trade.js?v=2"></script>
+  <script src="data-warehouse.js?v=1"></script>
+  <script src="data-finance.js?v=2"></script>
+  <script src="data-logistics.js?v=1"></script>
+  <script src="data-controlling.js?v=3"></script>
+  <script src="data-execbi.js?v=1"></script>
+  <script src="data-service.js?v=1"></script>
+  <script src="data-crm.js?v=1"></script>
+  <script src="data-quality.js?v=1"></script>
+  <script src="data-ehs.js?v=1"></script>
+  <script src="data-docs.js?v=1"></script>
+  <script src="data-attendance.js?v=1"></script>
+  <script src="data-hr.js?v=2"></script>
+  <script src="data-maintenance.js?v=1"></script>
+  <script src="data-ai.js?v=1"></script>
+  <script src="data-rfq.js?v=2"></script>
+  <script src="data-stocktake.js?v=1"></script>
+  <script src="data-prodsched.js?v=1"></script>
+  <script src="data-nesting.js?v=1"></script>
+  <script src="data-tasks.js?v=3"></script>
+  <script src="data-brief.js?v=1"></script>
+  <script src="data-auth.js?v=1"></script>
+  <script src="data-contracts.js?v=1"></script>
+  <script src="data-tplstudio.js?v=4"></script>
+  <script src="data-skeletons.js?v=1"></script>
+  <script src="param-geometry.js?v=2"></script>
+  <script src="skeleton-engine.js?v=2"></script>
+  <script type="text/babel" src="tweaks-panel.jsx"></script>
+  <script type="text/babel" src="ui.jsx"></script>
+  <script src="stores-bundle.js?v=1"></script>
+  <script type="text/babel" src="app-store.jsx?v=15"></script>
+  <script type="text/babel">console.log("[boot] app-store OK");</script>
+  <script type="text/babel" src="mobile-nav.jsx"></script>
+  <script type="text/babel" src="comm-hub.jsx"></script>
+  <script type="text/babel" src="portal.jsx"></script>
+  <script type="text/babel" src="linked-refs.jsx"></script>
+  <script type="text/babel">console.log("[boot] portal OK");</script>
+  <script src="image-slot.js"></script>
+  <script src="margin-util.js?v=2"></script>
+  <script type="text/babel" src="webshop.jsx?v=4"></script>
+  <script type="text/babel" src="webshop-finance.jsx?v=1"></script>
+  <script type="text/babel" src="webshop-project.jsx?v=1"></script>
+  <script type="text/babel" src="webshop-project-adapters.jsx?v=1"></script>
+  <script type="text/babel" src="item-builder.jsx"></script>
+  <script type="text/babel" src="design-item-wizard.jsx"></script>
+  <script type="text/babel" src="config-evaluator.jsx"></script>
+  <script type="text/babel" src="assembly.jsx"></script>
+  <script type="text/babel">console.log("[boot] assembly OK");</script>
+  <script type="text/babel" src="page-projects.jsx"></script>
+  <script type="text/babel" src="page-projects-board.jsx"></script>
+  <script type="text/babel" src="page-projects-epic.jsx"></script>
+  <script type="text/babel" src="page-templates.jsx"></script>
+  <script type="text/babel" src="page-process-model.jsx"></script>
+  <script type="text/babel" src="page-process-editor.jsx"></script>
+  <script type="text/babel" src="page-process-panel.jsx"></script>
+  <script type="text/babel" src="page-process-run.jsx"></script>
+  <script type="text/babel">console.log("[boot] process-run OK");</script>
+  <script type="text/babel" src="page-dashboard.jsx"></script>
+  <script type="text/babel" src="page-orders.jsx"></script>
+  <script type="text/babel" src="page-production.jsx"></script>
+  <script type="text/babel" src="page-nesting.jsx"></script>
+  <script type="text/babel" src="page-labels.jsx"></script>
+  <script type="text/babel" src="page-manufacturing-projects.jsx"></script>
+  <script type="text/babel" src="page-mfg-prep.jsx"></script>
+  <script type="text/babel" src="page-mfg-prep-release.jsx"></script>
+  <script type="text/babel" src="page-mfg-prep-flow.jsx"></script>
+  <script type="text/babel">console.log("[boot] mfg-flow OK");</script>
+  <script type="text/babel" src="page-outsource-settings.jsx"></script>
+  <script type="text/babel" src="page-rest.jsx"></script>
+  <script type="text/babel" src="page-procurement1.jsx"></script>
+  <script type="text/babel" src="page-workflow.jsx"></script>
+  <script type="text/babel" src="page-extras.jsx"></script>
+  <script type="text/babel" src="page-extras-2.jsx"></script>
+  <script type="text/babel" src="page-procurement2.jsx"></script>
+  <script type="text/babel" src="page-flow.jsx?v=2"></script>
+  <script type="text/babel" src="page-settings2.jsx"></script>
+  <script type="text/babel">console.log("[boot] settings2 OK");</script>
+  <script type="text/babel" src="catalog-manager.jsx"></script>
+  <script type="text/babel" src="catalog-world-view.jsx"></script>
+  <script type="text/babel" src="page-masterdata.jsx"></script>
+  <script type="text/babel" src="page-home.jsx"></script>
+  <script type="text/babel" src="page-design.jsx"></script>
+  <script type="text/babel">console.log("[boot] design OK");</script>
+  <script type="text/babel" src="page-param-views.jsx?v=2"></script>
+  <script type="text/babel">console.log("[boot] param-views OK");</script>
+  <script type="text/babel" src="page-skeleton.jsx?v=1"></script>
+  <script type="text/babel">console.log("[boot] skeleton OK");</script>
+  <script type="text/babel" src="page-skeleton-presets.jsx?v=1"></script>
+  <script type="text/babel">console.log("[boot] skel-presets OK");</script>
+  <script type="text/babel" src="page-design-engineer.jsx?v=4"></script>
+  <script type="text/babel" src="page-tech-request.jsx"></script>
+  <script type="text/babel" src="page-brief.jsx"></script>
+  <script type="text/babel" src="page-branding.jsx"></script>
+  <script type="text/babel">console.log("[boot] engineer OK");</script>
+  <script type="text/babel" src="page-configurator.jsx"></script>
+  <script type="text/babel" src="page-composition.jsx"></script>
+  <script type="text/babel" src="page-mfg-datasheet.jsx?v=3"></script>
+  <script type="text/babel" src="page-floorplan.jsx?v=2"></script>
+  <script type="text/babel" src="page-floorplan-2.jsx?v=2"></script>
+  <script type="text/babel" src="page-mfg-datasheet-2.jsx?v=1"></script>
+  <script type="text/babel" src="page-proj-assembly.jsx?v=1"></script>
+  <script type="text/babel">console.log("[boot] mfg-datasheet OK");</script>
+  <script type="text/babel" src="page-interior.jsx?v=4"></script>
+  <script type="text/babel" src="page-interior-2.jsx"></script>
+  <script type="text/babel" src="page-interior-3.jsx?v=4"></script>
+  <script type="text/babel" src="page-trade.jsx?v=3"></script>
+  <script type="text/babel" src="page-trade-2.jsx?v=2"></script>
+  <script type="text/babel" src="page-specs-schema.jsx"></script>
+  <script type="text/babel" src="page-specs.jsx"></script>
+  <script type="text/babel" src="page-sales.jsx"></script>
+  <script type="text/babel" src="page-sales-detail.jsx?v=2"></script>
+  <script type="text/babel" src="page-world-pages.jsx"></script>
+  <script type="text/babel" src="page-warehouse.jsx?v=1"></script>
+  <script type="text/babel" src="page-warehouse-2.jsx?v=2"></script>
+  <script type="text/babel" src="page-suppliermap.jsx?v=1"></script>
+  <script type="text/babel" src="page-finance.jsx?v=2"></script>
+  <script type="text/babel" src="page-finance-2.jsx?v=1"></script>
+  <script type="text/babel" src="page-logistics.jsx?v=1"></script>
+  <script type="text/babel" src="page-logistics-2.jsx?v=1"></script>
+  <script type="text/babel" src="page-controlling.jsx?v=7"></script>
+  <script type="text/babel" src="page-controlling-2.jsx?v=1"></script>
+  <script type="text/babel" src="page-execbi.jsx?v=4"></script>
+  <script type="text/babel" src="page-service.jsx?v=1"></script>
+  <script type="text/babel" src="page-service-2.jsx?v=1"></script>
+  <script type="text/babel" src="page-crm.jsx?v=1"></script>
+  <script type="text/babel" src="page-crm-2.jsx?v=1"></script>
+  <script type="text/babel" src="page-quality.jsx?v=1"></script>
+  <script type="text/babel" src="page-ehs.jsx?v=1"></script>
+  <script type="text/babel" src="page-ehs-2.jsx?v=1"></script>
+  <script type="text/babel" src="page-docs.jsx?v=1"></script>
+  <script type="text/babel" src="page-attendance.jsx?v=1"></script>
+  <script type="text/babel" src="page-hr.jsx?v=2"></script>
+  <script type="text/babel" src="page-hr-2.jsx?v=2"></script>
+  <script type="text/babel" src="page-maintenance.jsx?v=1"></script>
+  <script type="text/babel" src="page-maintenance-2.jsx?v=1"></script>
+  <script type="text/babel" src="page-rfq.jsx?v=1"></script>
+  <script type="text/babel" src="page-supplier.jsx?v=2"></script>
+  <script type="text/babel" src="page-partner.jsx?v=1"></script>
+  <script type="text/babel" src="page-stocktake.jsx?v=1"></script>
+  <script type="text/babel" src="page-prodsched.jsx?v=1"></script>
+  <script type="text/babel" src="page-supervisor.jsx?v=1"></script>
+  <script type="text/babel" src="page-prodterminal.jsx?v=1"></script>
+  <script type="text/babel" src="page-workshop.jsx?v=1"></script>
+  <script type="text/babel" src="page-tasks.jsx?v=1"></script>
+  <script type="text/babel" src="page-auth.jsx?v=1"></script>
+  <script type="text/babel" src="page-contracts.jsx?v=1"></script>
+  <script type="text/babel" src="page-ai.jsx?v=1"></script>
+  <script type="text/babel" src="page-ai-2.jsx?v=1"></script>
+  <script type="text/babel" src="page-login.jsx"></script>
+
+  <script>
+    // TWEAK_DEFAULTS — a Tweaks direct-edit (EDITMODE) blokkja ITT él
+    window.TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+      "lang": "hu",
+      "enabledModules": [
+        "tasks",
+        "warehouse",
+        "production",
+        "mfgprep",
+        "supervisor",
+        "sales",
+        "procurement",
+        "finance",
+        "kontrolling",
+        "service",
+        "crm",
+        "quality",
+        "ehs",
+        "docs",
+        "attendance",
+        "design",
+        "interior",
+        "projects",
+        "logistics",
+        "hr",
+        "maintenance",
+        "masterdata",
+        "shopfloor",
+        "shop",
+        "trade",
+        "ai",
+        "settings"
+      ],
+      "startWorld": "home",
+      "procRole": "requester"
+    }/*EDITMODE-END*/;
+  </script>
+  <script type="text/babel" src="app-main.jsx?v=2"></script>
+</body>
+</html>

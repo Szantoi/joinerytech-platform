@@ -1,0 +1,16 @@
+/opt/spaceos/backend/spaceos-modules-joinerytech/SpaceOS.Modules.JoineryTech.Application/bin/Debug/net8.0/SpaceOS.Modules.JoineryTech.Application.deps.json
+/opt/spaceos/backend/spaceos-modules-joinerytech/SpaceOS.Modules.JoineryTech.Application/bin/Debug/net8.0/SpaceOS.Modules.JoineryTech.Application.dll
+/opt/spaceos/backend/spaceos-modules-joinerytech/SpaceOS.Modules.JoineryTech.Application/bin/Debug/net8.0/SpaceOS.Modules.JoineryTech.Application.pdb
+/opt/spaceos/backend/spaceos-modules-joinerytech/SpaceOS.Modules.JoineryTech.Application/bin/Debug/net8.0/SpaceOS.Modules.JoineryTech.Domain.dll
+/opt/spaceos/backend/spaceos-modules-joinerytech/SpaceOS.Modules.JoineryTech.Application/bin/Debug/net8.0/SpaceOS.Modules.JoineryTech.Domain.pdb
+/opt/spaceos/backend/spaceos-modules-joinerytech/SpaceOS.Modules.JoineryTech.Application/obj/Debug/net8.0/SpaceOS.Modules.JoineryTech.Application.csproj.AssemblyReference.cache
+/opt/spaceos/backend/spaceos-modules-joinerytech/SpaceOS.Modules.JoineryTech.Application/obj/Debug/net8.0/SpaceOS.Modules.JoineryTech.Application.GeneratedMSBuildEditorConfig.editorconfig
+/opt/spaceos/backend/spaceos-modules-joinerytech/SpaceOS.Modules.JoineryTech.Application/obj/Debug/net8.0/SpaceOS.Modules.JoineryTech.Application.AssemblyInfoInputs.cache
+/opt/spaceos/backend/spaceos-modules-joinerytech/SpaceOS.Modules.JoineryTech.Application/obj/Debug/net8.0/SpaceOS.Modules.JoineryTech.Application.AssemblyInfo.cs
+/opt/spaceos/backend/spaceos-modules-joinerytech/SpaceOS.Modules.JoineryTech.Application/obj/Debug/net8.0/SpaceOS.Modules.JoineryTech.Application.csproj.CoreCompileInputs.cache
+/opt/spaceos/backend/spaceos-modules-joinerytech/SpaceOS.Modules.JoineryTech.Application/obj/Debug/net8.0/SpaceOS.Modules.JoineryTech.Application.sourcelink.json
+/opt/spaceos/backend/spaceos-modules-joinerytech/SpaceOS.Modules.JoineryTech.Application/obj/Debug/net8.0/SpaceOS..C59E73EE.Up2Date
+/opt/spaceos/backend/spaceos-modules-joinerytech/SpaceOS.Modules.JoineryTech.Application/obj/Debug/net8.0/SpaceOS.Modules.JoineryTech.Application.dll
+/opt/spaceos/backend/spaceos-modules-joinerytech/SpaceOS.Modules.JoineryTech.Application/obj/Debug/net8.0/refint/SpaceOS.Modules.JoineryTech.Application.dll
+/opt/spaceos/backend/spaceos-modules-joinerytech/SpaceOS.Modules.JoineryTech.Application/obj/Debug/net8.0/SpaceOS.Modules.JoineryTech.Application.pdb
+/opt/spaceos/backend/spaceos-modules-joinerytech/SpaceOS.Modules.JoineryTech.Application/obj/Debug/net8.0/ref/SpaceOS.Modules.JoineryTech.Application.dll

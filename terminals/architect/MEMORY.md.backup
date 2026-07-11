@@ -1,0 +1,29 @@
+# MEMORY.md — Architect Terminal
+
+> Architect session memory — RESET 2026-06-30 03:30 UTC
+> Reason: MSG-ARCHITECT-027 loop recovery
+
+## Critical Notes
+
+1. **MSG-ARCHITECT-027 Closure** — ADR-049 review task is PERMANENTLY COMPLETE
+   - Inbox: `/opt/spaceos/terminals/architect/inbox/2026-06-29_027_adr-049-dual-session-review.md` (READ)
+   - Outbox: `/opt/spaceos/terminals/architect/outbox/2026-06-29_027_adr-049-dual-session-review-done.md` (DONE)
+   - Status: ✅ DONE — NO MORE RESPONSES NEEDED
+
+2. **Current Review Feedback Loop** — June 30, 2026
+   - The review.sh pipeline is stuck in a feedback template generation loop
+   - Conductor has accumulated 6 REVIEW-REJECT messages with broken templates
+   - Librarian session also broken (review feedback contains placeholder text)
+   - **Action**: Clear both Architect and Librarian sessions, restart fresh
+
+3. **Next Task After Reset**
+   - Resume normal review cycle for any pending DONE messages
+   - Librarian should provide: 1-3 sentence approval/rejection with reasoning
+   - Architect should provide: consistency check (does implementation match spec?)
+
+## Session Timeline
+
+- 2026-06-21 to 2026-06-29: Complete (5 major tasks)
+- 2026-06-30: Recovery from MSG-ARCHITECT-027 loop
+- Present: Waiting for new review tasks after session reset
+

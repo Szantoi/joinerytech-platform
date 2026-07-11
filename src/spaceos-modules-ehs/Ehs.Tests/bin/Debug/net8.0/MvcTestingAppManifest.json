@@ -1,0 +1,6 @@
+{
+  "Ehs.Api, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "\/opt\/spaceos\/backend\/spaceos-modules-ehs\/Ehs.Api",
+  "Ehs.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "\/opt\/spaceos\/backend\/spaceos-modules-ehs\/Ehs.Application",
+  "Ehs.Domain, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "\/opt\/spaceos\/backend\/spaceos-modules-ehs\/Ehs.Domain",
+  "Ehs.Infrastructure, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "\/opt\/spaceos\/backend\/spaceos-modules-ehs\/Ehs.Infrastructure"
+}

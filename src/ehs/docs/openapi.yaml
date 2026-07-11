@@ -1,0 +1,1509 @@
+openapi: 3.1.0
+info:
+  title: SpaceOS JoineryTech EHS API
+  version: 1.0.0
+  description: |
+    Environmental Health & Safety (Munkavédelem/ISO 45001) API for the JoineryTech ERP system.
+
+    ## Features
+    - **Incident Management** — Accident, near-miss, and hazardous condition reporting with FSM workflow
+    - **Risk Assessment** — 5×5 risk matrix for hazard evaluation and control measures
+    - **Training/Competency Tracking** — Employee training records with expiration monitoring
+    - **ISO 45001 Compliance** — Occupational Health & Safety management system support
+    - **HR Integration** — Employee links for incident reporting and training records
+
+    ## Authentication
+    All endpoints require JWT Bearer token authentication. Tenant isolation is enforced via PostgreSQL RLS.
+
+    ## Multi-tenant Architecture
+    - TenantId extracted from JWT token
+    - All queries automatically filtered by tenant
+    - Cross-tenant access is not possible
+
+    ## 5×5 Risk Matrix
+    - Severity: 1 (Negligible) → 5 (Catastrophic)
+    - Likelihood: 1 (Rare) → 5 (Almost Certain)
+    - RiskScore = Severity × Likelihood (1-25)
+    - RiskLevel: Low (1-5), Medium (6-12), High (15-25)
+
+  contact:
+    name: SpaceOS Development Team
+    email: dev@spaceos.hu
+  license:
+    name: Proprietary
+    url: https://spaceos.hu/license
+
+servers:
+  - url: https://ehs.joinerytech.hu
+    description: Production (multi-tenant)
+  - url: http://localhost:5012
+    description: Local development
+
+tags:
+  - name: Incidents
+    description: Accident, near-miss, and hazardous condition reporting
+  - name: RiskAssessments
+    description: Hazard risk assessment with 5×5 matrix
+  - name: TrainingRecords
+    description: Employee training and competency management
+  - name: Metrics
+    description: EHS metrics and analytics
+
+security:
+  - BearerAuth: []
+
+paths:
+  # ========================================
+  # INCIDENT MANAGEMENT (12 endpoints)
+  # ========================================
+  /api/ehs/incidents:
+    get:
+      operationId: listIncidents
+      tags: [Incidents]
+      summary: List incidents
+      description: |
+        Returns all incidents with optional filtering by status, type, severity, and date range.
+        Supports pagination.
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/IncidentStatus'
+        - name: type
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/IncidentType'
+        - name: severity
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 5
+        - name: fromDate
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: toDate
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+        - name: pageSize
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+      responses:
+        '200':
+          description: Paginated list of incidents
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedIncidentResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    post:
+      operationId: createIncident
+      tags: [Incidents]
+      summary: Create incident
+      description: |
+        Reports a new incident (accident, near-miss, or hazardous condition).
+        Initial status: Reported.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateIncidentCommand'
+      responses:
+        '201':
+          description: Incident created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IncidentDto'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/ehs/incidents/{id}:
+    get:
+      operationId: getIncident
+      tags: [Incidents]
+      summary: Get incident by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Incident details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IncidentDto'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/ehs/incidents/{id}/investigate:
+    put:
+      operationId: startInvestigation
+      tags: [Incidents]
+      summary: Start incident investigation
+      description: |
+        FSM transition: Reported → Investigated.
+        Assigns investigator and records investigation start.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StartInvestigationCommand'
+      responses:
+        '200':
+          description: Investigation started successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IncidentDto'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Invalid FSM state transition
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/ehs/incidents/{id}/corrective-actions:
+    put:
+      operationId: addCorrectiveAction
+      tags: [Incidents]
+      summary: Add corrective action
+      description: |
+        FSM transition: Investigated → CorrectiveActionPlanned.
+        Records corrective measures to prevent recurrence.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddCorrectiveActionCommand'
+      responses:
+        '200':
+          description: Corrective action added successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IncidentDto'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Invalid FSM state transition
+
+  /api/ehs/incidents/{id}/close:
+    put:
+      operationId: closeIncident
+      tags: [Incidents]
+      summary: Close incident
+      description: |
+        FSM transition: CorrectiveActionPlanned → Closed.
+        Marks incident as resolved.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CloseIncidentCommand'
+      responses:
+        '200':
+          description: Incident closed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IncidentDto'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Invalid FSM state transition
+
+  /api/ehs/incidents/{id}/reopen:
+    put:
+      operationId: reopenIncident
+      tags: [Incidents]
+      summary: Reopen incident
+      description: |
+        FSM transition: Closed → Reopened.
+        Reopens a closed incident for additional investigation.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReopenIncidentCommand'
+      responses:
+        '200':
+          description: Incident reopened successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IncidentDto'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Invalid FSM state transition
+
+  /api/ehs/incidents/{id}/witnesses:
+    put:
+      operationId: addWitness
+      tags: [Incidents]
+      summary: Add witness to incident
+      description: Records a witness statement for the incident.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddWitnessCommand'
+      responses:
+        '200':
+          description: Witness added successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IncidentDto'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/ehs/incidents/summary:
+    get:
+      operationId: getIncidentSummary
+      tags: [Incidents, Metrics]
+      summary: Get incident summary statistics
+      description: |
+        Returns incident count by type, severity, and status.
+        Used for dashboard KPI cards.
+      responses:
+        '200':
+          description: Incident summary statistics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IncidentSummaryDto'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/ehs/incidents/trends:
+    get:
+      operationId: getIncidentTrends
+      tags: [Incidents, Metrics]
+      summary: Get incident trends (monthly aggregation)
+      description: |
+        Returns monthly incident count aggregated by type and severity.
+        Used for trend analysis charts.
+      parameters:
+        - name: fromDate
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: toDate
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Monthly incident trends
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IncidentTrendsDto'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  # ========================================
+  # RISK ASSESSMENT (8 endpoints)
+  # ========================================
+  /api/ehs/risk-assessments:
+    get:
+      operationId: listRiskAssessments
+      tags: [RiskAssessments]
+      summary: List risk assessments
+      description: |
+        Returns all risk assessments with optional filtering by risk level, review due date, and status.
+      parameters:
+        - name: riskLevel
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/RiskLevel'
+        - name: reviewDueBefore
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/RiskAssessmentStatus'
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+        - name: pageSize
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+      responses:
+        '200':
+          description: Paginated list of risk assessments
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedRiskAssessmentResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    post:
+      operationId: createRiskAssessment
+      tags: [RiskAssessments]
+      summary: Create risk assessment
+      description: |
+        Creates a new risk assessment using the 5×5 matrix.
+        RiskScore and RiskLevel are calculated automatically.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRiskAssessmentCommand'
+      responses:
+        '201':
+          description: Risk assessment created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RiskAssessmentDto'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/ehs/risk-assessments/{id}:
+    get:
+      operationId: getRiskAssessment
+      tags: [RiskAssessments]
+      summary: Get risk assessment by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Risk assessment details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RiskAssessmentDto'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    put:
+      operationId: updateRiskAssessment
+      tags: [RiskAssessments]
+      summary: Update risk assessment
+      description: |
+        Updates severity, likelihood, or hazard description.
+        RiskScore and RiskLevel are recalculated automatically.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateRiskAssessmentCommand'
+      responses:
+        '200':
+          description: Risk assessment updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RiskAssessmentDto'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/ehs/risk-assessments/{id}/controls:
+    put:
+      operationId: addRiskControl
+      tags: [RiskAssessments]
+      summary: Add risk control measure
+      description: Records a mitigation measure for the hazard.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddRiskControlCommand'
+      responses:
+        '200':
+          description: Risk control added successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RiskAssessmentDto'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/ehs/risk-assessments/{id}/archive:
+    put:
+      operationId: archiveRiskAssessment
+      tags: [RiskAssessments]
+      summary: Archive risk assessment
+      description: Marks risk assessment as archived (no longer active).
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Risk assessment archived successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RiskAssessmentDto'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/ehs/risk-assessments/matrix:
+    get:
+      operationId: getRiskMatrix
+      tags: [RiskAssessments, Metrics]
+      summary: Get 5×5 risk matrix visualization data
+      description: |
+        Returns risk assessment distribution across the 5×5 matrix.
+        Used for heat map visualization.
+      responses:
+        '200':
+          description: Risk matrix data (5×5 grid)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RiskMatrixDto'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  # ========================================
+  # TRAINING RECORDS (8 endpoints)
+  # ========================================
+  /api/ehs/training-records:
+    get:
+      operationId: listTrainingRecords
+      tags: [TrainingRecords]
+      summary: List training records
+      description: |
+        Returns all training records with optional filtering by employee, status, and expiration.
+      parameters:
+        - name: employeeId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/TrainingStatus'
+        - name: expiringWithinDays
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+          description: Filter by trainings expiring within N days
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+        - name: pageSize
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+      responses:
+        '200':
+          description: Paginated list of training records
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedTrainingRecordResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    post:
+      operationId: createTrainingRecord
+      tags: [TrainingRecords]
+      summary: Create training record
+      description: |
+        Records a completed training for an employee.
+        Links to HR module via EmployeeId.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTrainingRecordCommand'
+      responses:
+        '201':
+          description: Training record created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrainingRecordDto'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/ehs/training-records/{id}:
+    get:
+      operationId: getTrainingRecord
+      tags: [TrainingRecords]
+      summary: Get training record by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Training record details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrainingRecordDto'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/ehs/training-records/{id}/renew:
+    put:
+      operationId: renewTrainingRecord
+      tags: [TrainingRecords]
+      summary: Renew training record
+      description: |
+        Renews an expiring or expired training.
+        Updates CompletedAt and ExpiresAt dates.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RenewTrainingRecordCommand'
+      responses:
+        '200':
+          description: Training record renewed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrainingRecordDto'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/ehs/training-records/expiring:
+    get:
+      operationId: getExpiringTrainings
+      tags: [TrainingRecords, Metrics]
+      summary: Get expiring trainings (alert dashboard)
+      description: |
+        Returns trainings expiring within the next 30 days.
+        Used for proactive renewal alerts.
+      parameters:
+        - name: withinDays
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 30
+            minimum: 1
+      responses:
+        '200':
+          description: List of expiring trainings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TrainingRecordDto'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/ehs/training-records/by-employee/{employeeId}:
+    get:
+      operationId: getEmployeeTrainings
+      tags: [TrainingRecords]
+      summary: Get all trainings for an employee
+      description: |
+        Returns all training records for a specific employee.
+        HR module integration (EmployeeId FK).
+      parameters:
+        - name: employeeId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Employee training records
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TrainingRecordDto'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+# ========================================
+# COMPONENTS (Schemas, Responses, SecuritySchemes)
+# ========================================
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    # ========================================
+    # INCIDENT AGGREGATE
+    # ========================================
+    IncidentDto:
+      type: object
+      required:
+        - incidentId
+        - tenantId
+        - incidentType
+        - incidentDate
+        - location
+        - description
+        - severity
+        - status
+        - reportedBy
+        - reportedAt
+      properties:
+        incidentId:
+          type: string
+          format: uuid
+        tenantId:
+          type: string
+          format: uuid
+        incidentType:
+          $ref: '#/components/schemas/IncidentType'
+        incidentDate:
+          type: string
+          format: date-time
+        location:
+          type: string
+        description:
+          type: string
+          description: Markdown-formatted incident description
+        severity:
+          type: integer
+          minimum: 1
+          maximum: 5
+          description: "1=Negligible, 5=Catastrophic"
+        status:
+          $ref: '#/components/schemas/IncidentStatus'
+        reportedBy:
+          type: string
+          format: uuid
+          description: EmployeeId (FK to HR module)
+        reportedAt:
+          type: string
+          format: date-time
+        investigatedBy:
+          type: ['string', 'null']
+          format: uuid
+          description: EmployeeId (nullable)
+        investigatedAt:
+          type: ['string', 'null']
+          format: date-time
+        closedAt:
+          type: ['string', 'null']
+          format: date-time
+        investigation:
+          oneOf:
+            - $ref: '#/components/schemas/IncidentInvestigationDto'
+            - type: 'null'
+        correctiveActions:
+          type: array
+          items:
+            $ref: '#/components/schemas/CorrectiveActionDto'
+        witnesses:
+          type: array
+          items:
+            $ref: '#/components/schemas/IncidentWitnessDto'
+
+    IncidentType:
+      type: string
+      enum:
+        - Accident
+        - NearMiss
+        - HazardousCondition
+
+    IncidentStatus:
+      type: string
+      enum:
+        - Reported
+        - Investigated
+        - CorrectiveActionPlanned
+        - Closed
+        - Reopened
+      description: |
+        FSM states:
+        Reported → Investigated → CorrectiveActionPlanned → Closed
+        Closed → Reopened (optional)
+
+    IncidentInvestigationDto:
+      type: object
+      required:
+        - findings
+        - rootCause
+      properties:
+        findings:
+          type: string
+          description: Markdown-formatted investigation findings
+        rootCause:
+          type: string
+          description: Identified root cause
+
+    CorrectiveActionDto:
+      type: object
+      required:
+        - description
+        - responsiblePerson
+        - dueDate
+      properties:
+        description:
+          type: string
+        responsiblePerson:
+          type: string
+          format: uuid
+          description: EmployeeId
+        dueDate:
+          type: string
+          format: date
+        completedAt:
+          type: ['string', 'null']
+          format: date
+
+    IncidentWitnessDto:
+      type: object
+      required:
+        - employeeId
+        - statement
+      properties:
+        employeeId:
+          type: string
+          format: uuid
+          description: EmployeeId (FK to HR module)
+        statement:
+          type: string
+          description: Witness statement
+
+    CreateIncidentCommand:
+      type: object
+      required:
+        - incidentType
+        - incidentDate
+        - location
+        - description
+        - severity
+      properties:
+        incidentType:
+          $ref: '#/components/schemas/IncidentType'
+        incidentDate:
+          type: string
+          format: date-time
+        location:
+          type: string
+        description:
+          type: string
+        severity:
+          type: integer
+          minimum: 1
+          maximum: 5
+
+    StartInvestigationCommand:
+      type: object
+      required:
+        - investigatedBy
+      properties:
+        investigatedBy:
+          type: string
+          format: uuid
+          description: EmployeeId
+
+    AddCorrectiveActionCommand:
+      type: object
+      required:
+        - description
+        - responsiblePerson
+        - dueDate
+      properties:
+        description:
+          type: string
+        responsiblePerson:
+          type: string
+          format: uuid
+        dueDate:
+          type: string
+          format: date
+        findings:
+          type: string
+          description: Investigation findings (optional)
+        rootCause:
+          type: string
+          description: Root cause analysis (optional)
+
+    CloseIncidentCommand:
+      type: object
+      required:
+        - closureNotes
+      properties:
+        closureNotes:
+          type: string
+
+    ReopenIncidentCommand:
+      type: object
+      required:
+        - reopenReason
+      properties:
+        reopenReason:
+          type: string
+
+    AddWitnessCommand:
+      type: object
+      required:
+        - employeeId
+        - statement
+      properties:
+        employeeId:
+          type: string
+          format: uuid
+        statement:
+          type: string
+
+    IncidentSummaryDto:
+      type: object
+      required:
+        - totalIncidents
+        - byType
+        - bySeverity
+        - byStatus
+      properties:
+        totalIncidents:
+          type: integer
+        byType:
+          type: object
+          properties:
+            accidents:
+              type: integer
+            nearMisses:
+              type: integer
+            hazardousConditions:
+              type: integer
+        bySeverity:
+          type: object
+          properties:
+            severity1:
+              type: integer
+            severity2:
+              type: integer
+            severity3:
+              type: integer
+            severity4:
+              type: integer
+            severity5:
+              type: integer
+        byStatus:
+          type: object
+          properties:
+            reported:
+              type: integer
+            investigated:
+              type: integer
+            correctiveActionPlanned:
+              type: integer
+            closed:
+              type: integer
+            reopened:
+              type: integer
+
+    IncidentTrendsDto:
+      type: object
+      required:
+        - months
+      properties:
+        months:
+          type: array
+          items:
+            type: object
+            required:
+              - month
+              - totalIncidents
+              - byType
+            properties:
+              month:
+                type: string
+                format: date
+                description: "YYYY-MM-01 format"
+              totalIncidents:
+                type: integer
+              byType:
+                type: object
+                properties:
+                  accidents:
+                    type: integer
+                  nearMisses:
+                    type: integer
+                  hazardousConditions:
+                    type: integer
+
+    PagedIncidentResponse:
+      type: object
+      required:
+        - items
+        - totalCount
+        - page
+        - pageSize
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/IncidentDto'
+        totalCount:
+          type: integer
+        page:
+          type: integer
+        pageSize:
+          type: integer
+
+    # ========================================
+    # RISK ASSESSMENT AGGREGATE
+    # ========================================
+    RiskAssessmentDto:
+      type: object
+      required:
+        - riskAssessmentId
+        - tenantId
+        - hazardDescription
+        - severity
+        - likelihood
+        - riskScore
+        - riskLevel
+        - assessedBy
+        - assessedAt
+        - reviewDueDate
+        - status
+      properties:
+        riskAssessmentId:
+          type: string
+          format: uuid
+        tenantId:
+          type: string
+          format: uuid
+        hazardDescription:
+          type: string
+        severity:
+          type: integer
+          minimum: 1
+          maximum: 5
+          description: "1=Negligible, 5=Catastrophic"
+        likelihood:
+          type: integer
+          minimum: 1
+          maximum: 5
+          description: "1=Rare, 5=Almost Certain"
+        riskScore:
+          type: integer
+          minimum: 1
+          maximum: 25
+          description: "Calculated: Severity × Likelihood"
+        riskLevel:
+          $ref: '#/components/schemas/RiskLevel'
+        assessedBy:
+          type: string
+          format: uuid
+          description: EmployeeId (FK to HR module)
+        assessedAt:
+          type: string
+          format: date-time
+        reviewDueDate:
+          type: string
+          format: date
+        status:
+          $ref: '#/components/schemas/RiskAssessmentStatus'
+        controls:
+          type: array
+          items:
+            $ref: '#/components/schemas/RiskControlDto'
+
+    RiskLevel:
+      type: string
+      enum:
+        - Low
+        - Medium
+        - High
+      description: |
+        Calculated based on RiskScore:
+        Low: 1-5
+        Medium: 6-12
+        High: 15-25
+
+    RiskAssessmentStatus:
+      type: string
+      enum:
+        - Active
+        - Archived
+
+    RiskControlDto:
+      type: object
+      required:
+        - description
+        - implementationDate
+      properties:
+        description:
+          type: string
+        implementationDate:
+          type: string
+          format: date
+        responsiblePerson:
+          type: ['string', 'null']
+          format: uuid
+          description: EmployeeId (optional)
+
+    CreateRiskAssessmentCommand:
+      type: object
+      required:
+        - hazardDescription
+        - severity
+        - likelihood
+        - reviewDueDate
+      properties:
+        hazardDescription:
+          type: string
+        severity:
+          type: integer
+          minimum: 1
+          maximum: 5
+        likelihood:
+          type: integer
+          minimum: 1
+          maximum: 5
+        reviewDueDate:
+          type: string
+          format: date
+
+    UpdateRiskAssessmentCommand:
+      type: object
+      properties:
+        hazardDescription:
+          type: string
+        severity:
+          type: integer
+          minimum: 1
+          maximum: 5
+        likelihood:
+          type: integer
+          minimum: 1
+          maximum: 5
+        reviewDueDate:
+          type: string
+          format: date
+
+    AddRiskControlCommand:
+      type: object
+      required:
+        - description
+        - implementationDate
+      properties:
+        description:
+          type: string
+        implementationDate:
+          type: string
+          format: date
+        responsiblePerson:
+          type: string
+          format: uuid
+          description: EmployeeId (optional)
+
+    RiskMatrixDto:
+      type: object
+      required:
+        - matrix
+      properties:
+        matrix:
+          type: array
+          items:
+            type: array
+            items:
+              type: integer
+              description: "Count of risk assessments in this cell"
+          description: "5×5 grid: matrix[severity-1][likelihood-1]"
+        legend:
+          type: object
+          properties:
+            low:
+              type: array
+              items:
+                type: object
+                properties:
+                  severity:
+                    type: integer
+                  likelihood:
+                    type: integer
+            medium:
+              type: array
+              items:
+                type: object
+                properties:
+                  severity:
+                    type: integer
+                  likelihood:
+                    type: integer
+            high:
+              type: array
+              items:
+                type: object
+                properties:
+                  severity:
+                    type: integer
+                  likelihood:
+                    type: integer
+
+    PagedRiskAssessmentResponse:
+      type: object
+      required:
+        - items
+        - totalCount
+        - page
+        - pageSize
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/RiskAssessmentDto'
+        totalCount:
+          type: integer
+        page:
+          type: integer
+        pageSize:
+          type: integer
+
+    # ========================================
+    # TRAINING RECORD AGGREGATE
+    # ========================================
+    TrainingRecordDto:
+      type: object
+      required:
+        - trainingRecordId
+        - tenantId
+        - employeeId
+        - trainingType
+        - completedAt
+        - status
+      properties:
+        trainingRecordId:
+          type: string
+          format: uuid
+        tenantId:
+          type: string
+          format: uuid
+        employeeId:
+          type: string
+          format: uuid
+          description: EmployeeId (FK to HR module)
+        trainingType:
+          type: string
+          description: "e.g., 'First Aid', 'Fire Safety', 'Machine Operation'"
+        completedAt:
+          type: string
+          format: date-time
+        expiresAt:
+          type: ['string', 'null']
+          format: date-time
+        issuedBy:
+          type: ['string', 'null']
+          description: Certifying authority
+        certificateNumber:
+          type: ['string', 'null']
+        status:
+          $ref: '#/components/schemas/TrainingStatus'
+
+    TrainingStatus:
+      type: string
+      enum:
+        - Valid
+        - Expiring
+        - Expired
+      description: |
+        Calculated based on ExpiresAt:
+        Valid: >30 days until expiration
+        Expiring: ≤30 days until expiration
+        Expired: Past expiration date
+
+    CreateTrainingRecordCommand:
+      type: object
+      required:
+        - employeeId
+        - trainingType
+        - completedAt
+      properties:
+        employeeId:
+          type: string
+          format: uuid
+        trainingType:
+          type: string
+        completedAt:
+          type: string
+          format: date-time
+        expiresAt:
+          type: string
+          format: date-time
+          description: Optional expiration date
+        issuedBy:
+          type: string
+        certificateNumber:
+          type: string
+
+    RenewTrainingRecordCommand:
+      type: object
+      required:
+        - completedAt
+      properties:
+        completedAt:
+          type: string
+          format: date-time
+        expiresAt:
+          type: string
+          format: date-time
+
+    PagedTrainingRecordResponse:
+      type: object
+      required:
+        - items
+        - totalCount
+        - page
+        - pageSize
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/TrainingRecordDto'
+        totalCount:
+          type: integer
+        page:
+          type: integer
+        pageSize:
+          type: integer
+
+    # ========================================
+    # COMMON ERROR RESPONSES
+    # ========================================
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        details:
+          type: ['object', 'null']
+
+  responses:
+    Unauthorized:
+      description: Unauthorized (missing or invalid JWT token)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    Forbidden:
+      description: Forbidden (insufficient permissions or RLS violation)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    BadRequest:
+      description: Bad request (validation error)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'

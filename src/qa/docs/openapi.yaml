@@ -1,0 +1,1712 @@
+openapi: 3.1.0
+info:
+  title: SpaceOS JoineryTech QA API
+  version: 1.0.0
+  description: |
+    Quality Assurance API for the JoineryTech ERP system.
+
+    ## Features
+    - **Inspection Workflow** — Plan, execute, and track quality inspections with FSM-enforced workflow
+    - **Ticket Management** — Handle customer complaints, warranty claims, and repair requests
+    - **Production Blocking** — Critical failed inspections automatically block production
+    - **Pareto Analysis** — Root cause analysis for Kontrolling dashboard
+
+    ## Authentication
+    All endpoints require JWT Bearer token authentication. Tenant isolation is enforced via PostgreSQL RLS.
+
+    ## Multi-tenant Architecture
+    - TenantId extracted from JWT token
+    - All queries automatically filtered by tenant
+    - Cross-tenant access is not possible
+  contact:
+    name: SpaceOS Development Team
+    email: dev@spaceos.hu
+  license:
+    name: Proprietary
+    url: https://spaceos.hu/license
+
+servers:
+  - url: https://qa.joinerytech.hu
+    description: Production (multi-tenant)
+  - url: http://localhost:5011
+    description: Local development
+
+tags:
+  - name: QACheckpoints
+    description: Quality control checkpoint definitions
+  - name: Inspections
+    description: Inspection execution and FSM workflow
+  - name: Tickets
+    description: Customer complaint and warranty ticket management
+  - name: Metrics
+    description: QA metrics and analytics (Kontrolling integration)
+
+security:
+  - BearerAuth: []
+
+paths:
+  /api/qa/checkpoints:
+    get:
+      operationId: listCheckpoints
+      tags: [QACheckpoints]
+      summary: List quality checkpoints
+      description: Returns all checkpoints with optional filtering by type and active status.
+      parameters:
+        - name: type
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/CheckpointType'
+        - name: active
+          in: query
+          required: false
+          schema:
+            type: boolean
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+        - name: pageSize
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+      responses:
+        '200':
+          description: Paginated list of checkpoints
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedQACheckpointResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      operationId: createCheckpoint
+      tags: [QACheckpoints]
+      summary: Create quality checkpoint
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateQACheckpointCommand'
+      responses:
+        '201':
+          description: Checkpoint created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QACheckpointDto'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          description: Checkpoint name already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/qa/checkpoints/{id}:
+    get:
+      operationId: getCheckpoint
+      tags: [QACheckpoints]
+      summary: Get checkpoint by ID
+      parameters:
+        - $ref: '#/components/parameters/CheckpointId'
+      responses:
+        '200':
+          description: Checkpoint details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QACheckpointDto'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      operationId: updateCheckpoint
+      tags: [QACheckpoints]
+      summary: Update checkpoint
+      parameters:
+        - $ref: '#/components/parameters/CheckpointId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateQACheckpointCommand'
+      responses:
+        '200':
+          description: Checkpoint updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QACheckpointDto'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      operationId: deactivateCheckpoint
+      tags: [QACheckpoints]
+      summary: Deactivate checkpoint (soft delete)
+      parameters:
+        - $ref: '#/components/parameters/CheckpointId'
+      responses:
+        '204':
+          description: Checkpoint deactivated
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Cannot deactivate - pending inspections exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/qa/checkpoints/{id}/reactivate:
+    post:
+      operationId: reactivateCheckpoint
+      tags: [QACheckpoints]
+      summary: Reactivate checkpoint
+      parameters:
+        - $ref: '#/components/parameters/CheckpointId'
+      responses:
+        '200':
+          description: Checkpoint reactivated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QACheckpointDto'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/qa/checkpoints/{id}/criteria:
+    post:
+      operationId: addCriteria
+      tags: [QACheckpoints]
+      summary: Add inspection criteria
+      parameters:
+        - $ref: '#/components/parameters/CheckpointId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddInspectionCriteriaCommand'
+      responses:
+        '201':
+          description: Criteria added
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QACheckpointDto'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/qa/checkpoints/{id}/criteria/{criteriaId}:
+    delete:
+      operationId: removeCriteria
+      tags: [QACheckpoints]
+      summary: Remove inspection criteria
+      parameters:
+        - $ref: '#/components/parameters/CheckpointId'
+        - name: criteriaId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Criteria removed
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/qa/checkpoints/critical:
+    get:
+      operationId: listCriticalCheckpoints
+      tags: [QACheckpoints]
+      summary: List critical checkpoints
+      responses:
+        '200':
+          description: List of critical checkpoints
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/QACheckpointDto'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/qa/inspections:
+    get:
+      operationId: listInspections
+      tags: [Inspections]
+      summary: List inspections
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/InspectionStatus'
+        - name: result
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/InspectionResult'
+        - name: checkpointId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: orderId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: startDate
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Paginated list of inspections
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedInspectionResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      operationId: createInspection
+      tags: [Inspections]
+      summary: Create inspection (Planned state)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateInspectionCommand'
+      responses:
+        '201':
+          description: Inspection created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InspectionDto'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/qa/inspections/{id}:
+    get:
+      operationId: getInspection
+      tags: [Inspections]
+      summary: Get inspection by ID
+      parameters:
+        - $ref: '#/components/parameters/InspectionId'
+      responses:
+        '200':
+          description: Inspection details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InspectionDto'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/qa/inspections/{id}/start:
+    post:
+      operationId: startInspection
+      tags: [Inspections]
+      summary: Start inspection (Planned → InProgress)
+      parameters:
+        - $ref: '#/components/parameters/InspectionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StartInspectionCommand'
+      responses:
+        '200':
+          description: Inspection started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InspectionDto'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Invalid state transition
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/qa/inspections/{id}/complete:
+    post:
+      operationId: completeInspection
+      tags: [Inspections]
+      summary: Complete inspection with Pass result
+      parameters:
+        - $ref: '#/components/parameters/InspectionId'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompleteInspectionCommand'
+      responses:
+        '200':
+          description: Inspection completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InspectionDto'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Invalid state transition
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/qa/inspections/{id}/fail:
+    post:
+      operationId: failInspection
+      tags: [Inspections]
+      summary: Fail inspection (CRITICAL - may block production)
+      description: |
+        Transitions inspection to Completed with Fail result.
+        **CRITICAL:** If checkpoint is Critical level, this blocks production!
+      parameters:
+        - $ref: '#/components/parameters/InspectionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FailInspectionCommand'
+      responses:
+        '200':
+          description: Inspection failed (recorded)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InspectionDto'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Invalid state transition
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/qa/inspections/{id}/conditional:
+    post:
+      operationId: conditionalInspection
+      tags: [Inspections]
+      summary: Complete with Conditional result
+      parameters:
+        - $ref: '#/components/parameters/InspectionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConditionalInspectionCommand'
+      responses:
+        '200':
+          description: Inspection completed conditionally
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InspectionDto'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Invalid state transition
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/qa/inspections/blocking:
+    get:
+      operationId: getBlockingInspections
+      tags: [Inspections]
+      summary: Get blocking inspections for production (CRITICAL)
+      description: |
+        **CRITICAL ENDPOINT** — Production module queries this to check if production is blocked.
+        Returns all failed critical inspections for the specified order.
+      parameters:
+        - name: orderId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Blocking inspections response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BlockingInspectionsResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/qa/inspections/pending:
+    get:
+      operationId: listPendingInspections
+      tags: [Inspections]
+      summary: List pending inspections
+      responses:
+        '200':
+          description: List of pending inspections
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/InspectionDto'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/qa/inspections/failed:
+    get:
+      operationId: listFailedInspections
+      tags: [Inspections]
+      summary: List failed inspections
+      parameters:
+        - name: startDate
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: List of failed inspections
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/InspectionDto'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/qa/tickets:
+    get:
+      operationId: listTickets
+      tags: [Tickets]
+      summary: List tickets
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/TicketStatus'
+        - name: type
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/TicketType'
+        - name: priority
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/TicketPriority'
+        - name: assigneeEmployeeId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: orderId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Paginated list of tickets
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedTicketResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      operationId: createTicket
+      tags: [Tickets]
+      summary: Create ticket (Reported state)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTicketCommand'
+      responses:
+        '201':
+          description: Ticket created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TicketDto'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/qa/tickets/{id}:
+    get:
+      operationId: getTicket
+      tags: [Tickets]
+      summary: Get ticket by ID
+      parameters:
+        - $ref: '#/components/parameters/TicketId'
+      responses:
+        '200':
+          description: Ticket details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TicketDto'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/qa/tickets/{id}/assign:
+    post:
+      operationId: assignTicket
+      tags: [Tickets]
+      summary: Assign ticket (Reported → Assigned)
+      parameters:
+        - $ref: '#/components/parameters/TicketId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignTicketCommand'
+      responses:
+        '200':
+          description: Ticket assigned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TicketDto'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Invalid state transition
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/qa/tickets/{id}/start:
+    post:
+      operationId: startTicket
+      tags: [Tickets]
+      summary: Start work on ticket (Assigned → InProgress)
+      parameters:
+        - $ref: '#/components/parameters/TicketId'
+      responses:
+        '200':
+          description: Ticket work started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TicketDto'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Invalid state transition
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/qa/tickets/{id}/resolve:
+    post:
+      operationId: resolveTicket
+      tags: [Tickets]
+      summary: Resolve ticket (InProgress → Resolved)
+      parameters:
+        - $ref: '#/components/parameters/TicketId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResolveTicketCommand'
+      responses:
+        '200':
+          description: Ticket resolved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TicketDto'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Invalid state transition
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/qa/tickets/{id}/reject:
+    post:
+      operationId: rejectTicket
+      tags: [Tickets]
+      summary: Reject ticket (InProgress → Rejected)
+      parameters:
+        - $ref: '#/components/parameters/TicketId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RejectTicketCommand'
+      responses:
+        '200':
+          description: Ticket rejected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TicketDto'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Invalid state transition
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/qa/tickets/{id}/reopen:
+    post:
+      operationId: reopenTicket
+      tags: [Tickets]
+      summary: Reopen ticket (Rejected → Reported)
+      parameters:
+        - $ref: '#/components/parameters/TicketId'
+      responses:
+        '200':
+          description: Ticket reopened
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TicketDto'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Invalid state transition
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/qa/tickets/{id}/escalate:
+    post:
+      operationId: escalateTicket
+      tags: [Tickets]
+      summary: Escalate ticket priority
+      parameters:
+        - $ref: '#/components/parameters/TicketId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EscalateTicketCommand'
+      responses:
+        '200':
+          description: Ticket escalated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TicketDto'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/qa/tickets/{id}/resolution-actions:
+    post:
+      operationId: addResolutionAction
+      tags: [Tickets]
+      summary: Add resolution action to ticket
+      parameters:
+        - $ref: '#/components/parameters/TicketId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddResolutionActionCommand'
+      responses:
+        '201':
+          description: Resolution action added
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TicketDto'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/qa/tickets/overdue:
+    get:
+      operationId: listOverdueTickets
+      tags: [Tickets]
+      summary: List overdue tickets
+      responses:
+        '200':
+          description: List of overdue tickets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TicketDto'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/qa/metrics/pareto:
+    get:
+      operationId: getParetoAnalysis
+      tags: [Metrics]
+      summary: Get Pareto analysis (Kontrolling integration)
+      description: Returns Pareto analysis of failure types for the specified date range.
+      parameters:
+        - name: startDate
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Pareto analysis response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParetoAnalysisResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/qa/metrics/summary:
+    get:
+      operationId: getQASummary
+      tags: [Metrics]
+      summary: Get QA dashboard summary
+      parameters:
+        - name: startDate
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: QA summary response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QASummaryResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/qa/metrics/ticket-root-causes:
+    get:
+      operationId: getTicketRootCauses
+      tags: [Metrics]
+      summary: Get ticket root cause analysis
+      parameters:
+        - name: startDate
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Ticket root cause analysis
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TicketRootCauseAnalysisResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token with tenant_id claim for RLS
+
+  parameters:
+    CheckpointId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    InspectionId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    TicketId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+  responses:
+    BadRequest:
+      description: Bad request - validation error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Unauthorized:
+      description: Unauthorized - missing or invalid JWT token
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Forbidden:
+      description: Forbidden - insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+  schemas:
+    CheckpointType:
+      type: string
+      enum: [Incoming, InProcess, Final]
+
+    CriticalLevel:
+      type: string
+      enum: [Critical, Major, Minor]
+
+    CriteriaType:
+      type: string
+      enum: [Visual, Dimensional, Functional]
+
+    InspectionStatus:
+      type: string
+      enum: [Planned, InProgress, Completed]
+
+    InspectionResult:
+      type: string
+      enum: [Pass, Fail, Conditional]
+
+    FailureType:
+      type: string
+      enum: [Scratch, Gap, Misalignment, Color, Dimension, Surface, Functional, Missing, Damage, Other]
+
+    TicketType:
+      type: string
+      enum: [Warranty, Repair, Missing]
+
+    TicketStatus:
+      type: string
+      enum: [Reported, Assigned, InProgress, Resolved, Rejected]
+
+    TicketPriority:
+      type: string
+      enum: [Critical, High, Medium, Low]
+
+    ActionType:
+      type: string
+      enum: [Repair, Replace, Refund, NoAction]
+
+    QACheckpointDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        tenantId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        type:
+          $ref: '#/components/schemas/CheckpointType'
+        criticalLevel:
+          $ref: '#/components/schemas/CriticalLevel'
+        description:
+          type:
+            - string
+            - 'null'
+        criteria:
+          type: array
+          items:
+            $ref: '#/components/schemas/InspectionCriteriaDto'
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, tenantId, name, type, criticalLevel, isActive]
+
+    InspectionCriteriaDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          $ref: '#/components/schemas/CriteriaType'
+        description:
+          type: string
+        acceptanceThreshold:
+          type:
+            - string
+            - 'null'
+      required: [id, type, description]
+
+    InspectionDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        tenantId:
+          type: string
+          format: uuid
+        checkpointId:
+          type: string
+          format: uuid
+        checkpoint:
+          $ref: '#/components/schemas/QACheckpointDto'
+        orderId:
+          type:
+            - string
+            - 'null'
+          format: uuid
+        projectId:
+          type:
+            - string
+            - 'null'
+          format: uuid
+        inspectorEmployeeId:
+          type:
+            - string
+            - 'null'
+          format: uuid
+        inspectorName:
+          type:
+            - string
+            - 'null'
+        status:
+          $ref: '#/components/schemas/InspectionStatus'
+        result:
+          oneOf:
+            - $ref: '#/components/schemas/InspectionResult'
+            - type: 'null'
+        scheduledDate:
+          type:
+            - string
+            - 'null'
+          format: date
+        startedAt:
+          type:
+            - string
+            - 'null'
+          format: date-time
+        completedAt:
+          type:
+            - string
+            - 'null'
+          format: date-time
+        failureNotes:
+          type: array
+          items:
+            $ref: '#/components/schemas/FailureNoteDto'
+        notes:
+          type:
+            - string
+            - 'null'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, tenantId, checkpointId, status]
+
+    FailureNoteDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        failureType:
+          $ref: '#/components/schemas/FailureType'
+        description:
+          type: string
+        photoUrl:
+          type:
+            - string
+            - 'null'
+          format: uri
+      required: [id, failureType, description]
+
+    TicketDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        tenantId:
+          type: string
+          format: uuid
+        ticketNumber:
+          type: string
+        type:
+          $ref: '#/components/schemas/TicketType'
+        status:
+          $ref: '#/components/schemas/TicketStatus'
+        priority:
+          $ref: '#/components/schemas/TicketPriority'
+        orderId:
+          type:
+            - string
+            - 'null'
+          format: uuid
+        projectId:
+          type:
+            - string
+            - 'null'
+          format: uuid
+        customerDescription:
+          type: string
+        assigneeEmployeeId:
+          type:
+            - string
+            - 'null'
+          format: uuid
+        assigneeName:
+          type:
+            - string
+            - 'null'
+        rootCause:
+          type:
+            - string
+            - 'null'
+        resolutionActions:
+          type: array
+          items:
+            $ref: '#/components/schemas/ResolutionActionDto'
+        rejectionReason:
+          type:
+            - string
+            - 'null'
+        reportedAt:
+          type: string
+          format: date-time
+        assignedAt:
+          type:
+            - string
+            - 'null'
+          format: date-time
+        startedAt:
+          type:
+            - string
+            - 'null'
+          format: date-time
+        resolvedAt:
+          type:
+            - string
+            - 'null'
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, tenantId, ticketNumber, type, status, priority, customerDescription, reportedAt]
+
+    ResolutionActionDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        actionType:
+          $ref: '#/components/schemas/ActionType'
+        description:
+          type: string
+        cost:
+          $ref: '#/components/schemas/MoneyDto'
+      required: [id, actionType, description, cost]
+
+    MoneyDto:
+      type: object
+      properties:
+        amount:
+          type: number
+          format: double
+        currency:
+          type: string
+          default: HUF
+      required: [amount, currency]
+
+    CreateQACheckpointCommand:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        type:
+          $ref: '#/components/schemas/CheckpointType'
+        criticalLevel:
+          $ref: '#/components/schemas/CriticalLevel'
+        description:
+          type:
+            - string
+            - 'null'
+          maxLength: 1000
+      required: [name, type, criticalLevel]
+
+    UpdateQACheckpointCommand:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description:
+          type:
+            - string
+            - 'null'
+          maxLength: 1000
+        criticalLevel:
+          $ref: '#/components/schemas/CriticalLevel'
+      required: [name, criticalLevel]
+
+    AddInspectionCriteriaCommand:
+      type: object
+      properties:
+        type:
+          $ref: '#/components/schemas/CriteriaType'
+        description:
+          type: string
+          minLength: 1
+          maxLength: 500
+        acceptanceThreshold:
+          type:
+            - string
+            - 'null'
+          maxLength: 200
+      required: [type, description]
+
+    CreateInspectionCommand:
+      type: object
+      properties:
+        checkpointId:
+          type: string
+          format: uuid
+        orderId:
+          type:
+            - string
+            - 'null'
+          format: uuid
+        projectId:
+          type:
+            - string
+            - 'null'
+          format: uuid
+        scheduledDate:
+          type:
+            - string
+            - 'null'
+          format: date
+        notes:
+          type:
+            - string
+            - 'null'
+          maxLength: 2000
+      required: [checkpointId]
+
+    StartInspectionCommand:
+      type: object
+      properties:
+        inspectorEmployeeId:
+          type: string
+          format: uuid
+      required: [inspectorEmployeeId]
+
+    CompleteInspectionCommand:
+      type: object
+      properties:
+        notes:
+          type:
+            - string
+            - 'null'
+          maxLength: 2000
+
+    FailInspectionCommand:
+      type: object
+      properties:
+        failureNotes:
+          type: array
+          items:
+            $ref: '#/components/schemas/CreateFailureNoteCommand'
+          minItems: 1
+        notes:
+          type:
+            - string
+            - 'null'
+          maxLength: 2000
+      required: [failureNotes]
+
+    ConditionalInspectionCommand:
+      type: object
+      properties:
+        notes:
+          type: string
+          minLength: 1
+          maxLength: 2000
+      required: [notes]
+
+    CreateFailureNoteCommand:
+      type: object
+      properties:
+        failureType:
+          $ref: '#/components/schemas/FailureType'
+        description:
+          type: string
+          minLength: 10
+          maxLength: 1000
+        photoUrl:
+          type:
+            - string
+            - 'null'
+          format: uri
+      required: [failureType, description]
+
+    CreateTicketCommand:
+      type: object
+      properties:
+        type:
+          $ref: '#/components/schemas/TicketType'
+        priority:
+          $ref: '#/components/schemas/TicketPriority'
+        orderId:
+          type:
+            - string
+            - 'null'
+          format: uuid
+        projectId:
+          type:
+            - string
+            - 'null'
+          format: uuid
+        customerDescription:
+          type: string
+          minLength: 1
+          maxLength: 4000
+      required: [type, priority, customerDescription]
+
+    AssignTicketCommand:
+      type: object
+      properties:
+        assigneeEmployeeId:
+          type: string
+          format: uuid
+      required: [assigneeEmployeeId]
+
+    ResolveTicketCommand:
+      type: object
+      properties:
+        rootCause:
+          type:
+            - string
+            - 'null'
+          maxLength: 2000
+        resolutionActions:
+          type: array
+          items:
+            $ref: '#/components/schemas/AddResolutionActionCommand'
+          minItems: 1
+      required: [resolutionActions]
+
+    RejectTicketCommand:
+      type: object
+      properties:
+        rejectionReason:
+          type: string
+          minLength: 10
+          maxLength: 2000
+      required: [rejectionReason]
+
+    EscalateTicketCommand:
+      type: object
+      properties:
+        newPriority:
+          $ref: '#/components/schemas/TicketPriority'
+      required: [newPriority]
+
+    AddResolutionActionCommand:
+      type: object
+      properties:
+        actionType:
+          $ref: '#/components/schemas/ActionType'
+        description:
+          type: string
+          minLength: 1
+          maxLength: 1000
+        cost:
+          $ref: '#/components/schemas/MoneyDto'
+      required: [actionType, description, cost]
+
+    BlockingInspectionsResponse:
+      type: object
+      properties:
+        isBlocked:
+          type: boolean
+        blockingInspections:
+          type: array
+          items:
+            $ref: '#/components/schemas/BlockingInspectionDto'
+      required: [isBlocked, blockingInspections]
+
+    BlockingInspectionDto:
+      type: object
+      properties:
+        inspectionId:
+          type: string
+          format: uuid
+        checkpointName:
+          type: string
+        failureNotes:
+          type: array
+          items:
+            $ref: '#/components/schemas/FailureNoteDto'
+        inspectionDate:
+          type: string
+          format: date-time
+      required: [inspectionId, checkpointName, failureNotes, inspectionDate]
+
+    ParetoAnalysisResponse:
+      type: object
+      properties:
+        totalInspections:
+          type: integer
+        passedInspections:
+          type: integer
+        failedInspections:
+          type: integer
+        passRate:
+          type: number
+          format: double
+        failureCategories:
+          type: array
+          items:
+            $ref: '#/components/schemas/FailureCategoryDto'
+      required: [totalInspections, passedInspections, failedInspections, passRate, failureCategories]
+
+    FailureCategoryDto:
+      type: object
+      properties:
+        failureType:
+          $ref: '#/components/schemas/FailureType'
+        count:
+          type: integer
+        percentage:
+          type: number
+          format: double
+        cumulativePercentage:
+          type: number
+          format: double
+        examples:
+          type: array
+          items:
+            type: string
+          maxItems: 3
+      required: [failureType, count, percentage, cumulativePercentage]
+
+    QASummaryResponse:
+      type: object
+      properties:
+        totalInspections:
+          type: integer
+        passRate:
+          type: number
+          format: double
+        pendingInspections:
+          type: integer
+        failedCriticalInspections:
+          type: integer
+        totalTickets:
+          type: integer
+        openTickets:
+          type: integer
+        resolvedTickets:
+          type: integer
+        overdueTickets:
+          type: integer
+        avgTicketResolutionDays:
+          type: number
+          format: double
+      required: [totalInspections, passRate, pendingInspections, failedCriticalInspections, totalTickets, openTickets, resolvedTickets, overdueTickets]
+
+    TicketRootCauseAnalysisResponse:
+      type: object
+      properties:
+        totalResolvedTickets:
+          type: integer
+        rootCauses:
+          type: array
+          items:
+            $ref: '#/components/schemas/TicketRootCauseDto'
+        totalResolutionCost:
+          $ref: '#/components/schemas/MoneyDto'
+      required: [totalResolvedTickets, rootCauses, totalResolutionCost]
+
+    TicketRootCauseDto:
+      type: object
+      properties:
+        rootCause:
+          type: string
+        count:
+          type: integer
+        percentage:
+          type: number
+          format: double
+        totalCost:
+          $ref: '#/components/schemas/MoneyDto'
+      required: [rootCause, count, percentage, totalCost]
+
+    PagedQACheckpointResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/QACheckpointDto'
+        totalCount:
+          type: integer
+        page:
+          type: integer
+        pageSize:
+          type: integer
+        totalPages:
+          type: integer
+      required: [items, totalCount, page, pageSize, totalPages]
+
+    PagedInspectionResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/InspectionDto'
+        totalCount:
+          type: integer
+        page:
+          type: integer
+        pageSize:
+          type: integer
+        totalPages:
+          type: integer
+      required: [items, totalCount, page, pageSize, totalPages]
+
+    PagedTicketResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/TicketDto'
+        totalCount:
+          type: integer
+        page:
+          type: integer
+        pageSize:
+          type: integer
+        totalPages:
+          type: integer
+      required: [items, totalCount, page, pageSize, totalPages]
+
+    ErrorResponse:
+      type: object
+      properties:
+        type:
+          type: string
+          format: uri
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        instance:
+          type: string
+          format: uri
+        errors:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+      required: [type, title, status]

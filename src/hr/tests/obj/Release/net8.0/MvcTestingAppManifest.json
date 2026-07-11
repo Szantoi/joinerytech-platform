@@ -1,0 +1,4 @@
+{
+  "SpaceOS.Kernel.Domain, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "\/opt\/spaceos\/backend\/spaceos-kernel\/SpaceOS.Kernel.Domain",
+  "SpaceOS.Modules.HR, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "\/opt\/spaceos\/spaceos-modules-hr\/src"
+}

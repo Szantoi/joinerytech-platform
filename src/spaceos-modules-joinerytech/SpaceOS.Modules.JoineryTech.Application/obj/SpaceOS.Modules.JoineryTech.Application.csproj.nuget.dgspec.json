@@ -1,0 +1,198 @@
+{
+  "format": 1,
+  "restore": {
+    "/opt/spaceos/backend/spaceos-modules-joinerytech/SpaceOS.Modules.JoineryTech.Application/SpaceOS.Modules.JoineryTech.Application.csproj": {}
+  },
+  "projects": {
+    "/opt/spaceos/backend/spaceos-modules-joinerytech/SpaceOS.Modules.JoineryTech.Application/SpaceOS.Modules.JoineryTech.Application.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "/opt/spaceos/backend/spaceos-modules-joinerytech/SpaceOS.Modules.JoineryTech.Application/SpaceOS.Modules.JoineryTech.Application.csproj",
+        "projectName": "SpaceOS.Modules.JoineryTech.Application",
+        "projectPath": "/opt/spaceos/backend/spaceos-modules-joinerytech/SpaceOS.Modules.JoineryTech.Application/SpaceOS.Modules.JoineryTech.Application.csproj",
+        "packagesPath": "/home/gabor/.nuget/packages/",
+        "outputPath": "/opt/spaceos/backend/spaceos-modules-joinerytech/SpaceOS.Modules.JoineryTech.Application/obj/",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "/home/gabor/.nuget/NuGet/NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "targetAlias": "net8.0",
+            "projectReferences": {
+              "/opt/spaceos/backend/spaceos-modules-joinerytech/SpaceOS.Modules.JoineryTech.Domain/SpaceOS.Modules.JoineryTech.Domain.csproj": {
+                "projectPath": "/opt/spaceos/backend/spaceos-modules-joinerytech/SpaceOS.Modules.JoineryTech.Domain/SpaceOS.Modules.JoineryTech.Domain.csproj"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "10.0.200"
+      },
+      "frameworks": {
+        "net8.0": {
+          "targetAlias": "net8.0",
+          "dependencies": {
+            "Ardalis.Result": {
+              "target": "Package",
+              "version": "[10.1.0, )"
+            },
+            "Ardalis.Result.FluentValidation": {
+              "target": "Package",
+              "version": "[10.1.0, )"
+            },
+            "FluentValidation": {
+              "target": "Package",
+              "version": "[12.1.1, )"
+            },
+            "FluentValidation.DependencyInjectionExtensions": {
+              "target": "Package",
+              "version": "[12.1.1, )"
+            },
+            "MediatR": {
+              "target": "Package",
+              "version": "[12.4.1, )"
+            },
+            "Microsoft.EntityFrameworkCore": {
+              "target": "Package",
+              "version": "[8.0.11, )"
+            },
+            "Microsoft.EntityFrameworkCore.Relational": {
+              "target": "Package",
+              "version": "[8.0.11, )"
+            },
+            "Microsoft.Extensions.DependencyInjection.Abstractions": {
+              "target": "Package",
+              "version": "[8.0.2, )"
+            },
+            "Microsoft.Extensions.Logging.Abstractions": {
+              "target": "Package",
+              "version": "[8.0.2, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "downloadDependencies": [
+            {
+              "name": "Microsoft.AspNetCore.App.Ref",
+              "version": "[8.0.26, 8.0.26]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Ref",
+              "version": "[8.0.26, 8.0.26]"
+            }
+          ],
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "/opt/dotnet/sdk/10.0.203/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "/opt/spaceos/backend/spaceos-modules-joinerytech/SpaceOS.Modules.JoineryTech.Domain/SpaceOS.Modules.JoineryTech.Domain.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "/opt/spaceos/backend/spaceos-modules-joinerytech/SpaceOS.Modules.JoineryTech.Domain/SpaceOS.Modules.JoineryTech.Domain.csproj",
+        "projectName": "SpaceOS.Modules.JoineryTech.Domain",
+        "projectPath": "/opt/spaceos/backend/spaceos-modules-joinerytech/SpaceOS.Modules.JoineryTech.Domain/SpaceOS.Modules.JoineryTech.Domain.csproj",
+        "packagesPath": "/home/gabor/.nuget/packages/",
+        "outputPath": "/opt/spaceos/backend/spaceos-modules-joinerytech/SpaceOS.Modules.JoineryTech.Domain/obj/",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "/home/gabor/.nuget/NuGet/NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "targetAlias": "net8.0",
+            "projectReferences": {}
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "10.0.200"
+      },
+      "frameworks": {
+        "net8.0": {
+          "targetAlias": "net8.0",
+          "dependencies": {
+            "Ardalis.Specification": {
+              "target": "Package",
+              "version": "[8.0.0, )"
+            },
+            "MediatR.Contracts": {
+              "target": "Package",
+              "version": "[2.0.1, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "downloadDependencies": [
+            {
+              "name": "Microsoft.AspNetCore.App.Ref",
+              "version": "[8.0.26, 8.0.26]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Ref",
+              "version": "[8.0.26, 8.0.26]"
+            }
+          ],
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "/opt/dotnet/sdk/10.0.203/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    }
+  }
+}

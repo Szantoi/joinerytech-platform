@@ -1,0 +1,16 @@
+/opt/spaceos/spaceos-modules-ehs/src/Domain/bin/Debug/net8.0/SpaceOS.Modules.Ehs.Domain.deps.json
+/opt/spaceos/spaceos-modules-ehs/src/Domain/bin/Debug/net8.0/SpaceOS.Modules.Ehs.Domain.dll
+/opt/spaceos/spaceos-modules-ehs/src/Domain/bin/Debug/net8.0/SpaceOS.Modules.Ehs.Domain.pdb
+/opt/spaceos/spaceos-modules-ehs/src/Domain/bin/Debug/net8.0/SpaceOS.Kernel.Domain.dll
+/opt/spaceos/spaceos-modules-ehs/src/Domain/bin/Debug/net8.0/SpaceOS.Kernel.Domain.pdb
+/opt/spaceos/spaceos-modules-ehs/src/Domain/obj/Debug/net8.0/SpaceOS.Modules.Ehs.Domain.csproj.AssemblyReference.cache
+/opt/spaceos/spaceos-modules-ehs/src/Domain/obj/Debug/net8.0/SpaceOS.Modules.Ehs.Domain.GeneratedMSBuildEditorConfig.editorconfig
+/opt/spaceos/spaceos-modules-ehs/src/Domain/obj/Debug/net8.0/SpaceOS.Modules.Ehs.Domain.AssemblyInfoInputs.cache
+/opt/spaceos/spaceos-modules-ehs/src/Domain/obj/Debug/net8.0/SpaceOS.Modules.Ehs.Domain.AssemblyInfo.cs
+/opt/spaceos/spaceos-modules-ehs/src/Domain/obj/Debug/net8.0/SpaceOS.Modules.Ehs.Domain.csproj.CoreCompileInputs.cache
+/opt/spaceos/spaceos-modules-ehs/src/Domain/obj/Debug/net8.0/SpaceOS.Modules.Ehs.Domain.sourcelink.json
+/opt/spaceos/spaceos-modules-ehs/src/Domain/obj/Debug/net8.0/SpaceOS..B6F503A9.Up2Date
+/opt/spaceos/spaceos-modules-ehs/src/Domain/obj/Debug/net8.0/SpaceOS.Modules.Ehs.Domain.dll
+/opt/spaceos/spaceos-modules-ehs/src/Domain/obj/Debug/net8.0/refint/SpaceOS.Modules.Ehs.Domain.dll
+/opt/spaceos/spaceos-modules-ehs/src/Domain/obj/Debug/net8.0/SpaceOS.Modules.Ehs.Domain.pdb
+/opt/spaceos/spaceos-modules-ehs/src/Domain/obj/Debug/net8.0/ref/SpaceOS.Modules.Ehs.Domain.dll

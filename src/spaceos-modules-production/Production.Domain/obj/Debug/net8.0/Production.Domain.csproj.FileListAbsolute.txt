@@ -1,0 +1,12 @@
+/opt/spaceos/backend/spaceos-modules-production/Production.Domain/bin/Debug/net8.0/Production.Domain.deps.json
+/opt/spaceos/backend/spaceos-modules-production/Production.Domain/bin/Debug/net8.0/Production.Domain.dll
+/opt/spaceos/backend/spaceos-modules-production/Production.Domain/bin/Debug/net8.0/Production.Domain.pdb
+/opt/spaceos/backend/spaceos-modules-production/Production.Domain/obj/Debug/net8.0/Production.Domain.GeneratedMSBuildEditorConfig.editorconfig
+/opt/spaceos/backend/spaceos-modules-production/Production.Domain/obj/Debug/net8.0/Production.Domain.AssemblyInfoInputs.cache
+/opt/spaceos/backend/spaceos-modules-production/Production.Domain/obj/Debug/net8.0/Production.Domain.AssemblyInfo.cs
+/opt/spaceos/backend/spaceos-modules-production/Production.Domain/obj/Debug/net8.0/Production.Domain.csproj.CoreCompileInputs.cache
+/opt/spaceos/backend/spaceos-modules-production/Production.Domain/obj/Debug/net8.0/Production.Domain.sourcelink.json
+/opt/spaceos/backend/spaceos-modules-production/Production.Domain/obj/Debug/net8.0/Production.Domain.dll
+/opt/spaceos/backend/spaceos-modules-production/Production.Domain/obj/Debug/net8.0/refint/Production.Domain.dll
+/opt/spaceos/backend/spaceos-modules-production/Production.Domain/obj/Debug/net8.0/Production.Domain.pdb
+/opt/spaceos/backend/spaceos-modules-production/Production.Domain/obj/Debug/net8.0/ref/Production.Domain.dll

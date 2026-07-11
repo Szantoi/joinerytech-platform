@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="hu">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="color-scheme" content="light only" />
+  <title>JoineryTech Portal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <!-- Babel CDN eltávolítva: előfordított build/*.js fut. Forrás-szerkesztéshez: JoineryTech Portal (dev).html -->
+  <style>
+    html, body, #root { height: 100%; }
+    /* Native form controls must render in light appearance so the closed
+       select (dark text on white) is consistent. We pin color-scheme but do
+       NOT force option text color: on macOS the native dropdown popup may
+       stay dark regardless, and the OS draws its own readable option text —
+       overriding it would make the text invisible on a dark popup. */
+    :root { color-scheme: light; }
+    select, input, textarea, button { color-scheme: light; }
+    /* On Windows, Chrome renders text with subpixel (ClearType) antialiasing.
+       When a control lands on a fractional pixel position (common inside CSS
+       grid `1fr`/fixed-px tracks and flex layouts), the subpixel boundaries
+       misalign and the text shows heavy red/cyan/green colour fringing — the
+       "rainbow text" reported in selects. -webkit-font-smoothing is a no-op on
+       Windows, so we instead promote each control to its own compositing layer
+       (translateZ(0)): composited text falls back to grayscale AA, which is
+       immune to fractional positioning and renders crisply. */
+    select, input, textarea, button, option, optgroup {
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      text-rendering: optimizeLegibility;
+    }
+    select, input, textarea {
+      transform: translateZ(0);
+    }
+    /* The open native dropdown list inherits the OS popup color when the
+       option background is transparent — in dark mode that makes the dark
+       option text invisible. Force an explicit light popup (Chromium/Firefox
+       honour option styling; Safari relies on the color-scheme:light above). */
+    select option,
+    select optgroup {
+      background-color: #ffffff;
+      color: #1c1917;
+    }
+    select option:checked,
+    select option:hover {
+      background-color: #f5f5f4;
+      color: #1c1917;
+    }
+    body { font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
+           color: #1c1917; background: #f7f7f5;
+           font-feature-settings: "ss01","cv11";
+           -webkit-font-smoothing: antialiased;
+           -moz-osx-font-smoothing: grayscale; }
+    .font-mono, code, pre { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+    button { font-family: inherit; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script src="data.js?v=4"></script>
+  <script src="data-extra.js?v=4"></script>
+  <script src="data-extra-2.js?v=4"></script>
+  <script src="data-worlds.js?v=17"></script>
+  <script src="data-specs.js?v=1"></script>
+  <script src="specs-engine.js?v=2"></script>
+  <script src="data-configurator.js?v=1"></script>
+  <script src="data-composition.js?v=1"></script>
+  <script src="data-mfgprep.js?v=1"></script>
+  <script src="mfg-prep-engine.js?v=2"></script>
+  <script src="data-woodwork.js?v=1"></script>
+  <script src="data-sales-detail.js?v=1"></script>
+  <script src="data-procurement2.js?v=1"></script>
+  <script src="data-interior.js?v=7"></script>
+  <script src="data-trade.js?v=2"></script>
+  <script src="data-warehouse.js?v=1"></script>
+  <script src="data-finance.js?v=2"></script>
+  <script src="data-logistics.js?v=1"></script>
+  <script src="data-controlling.js?v=3"></script>
+  <script src="data-execbi.js?v=1"></script>
+  <script src="data-service.js?v=1"></script>
+  <script src="data-crm.js?v=1"></script>
+  <script src="data-quality.js?v=1"></script>
+  <script src="data-ehs.js?v=1"></script>
+  <script src="data-docs.js?v=1"></script>
+  <script src="data-attendance.js?v=1"></script>
+  <script src="data-hr.js?v=2"></script>
+  <script src="data-maintenance.js?v=1"></script>
+  <script src="data-ai.js?v=1"></script>
+  <script src="data-rfq.js?v=2"></script>
+  <script src="data-stocktake.js?v=1"></script>
+  <script src="data-prodsched.js?v=1"></script>
+  <script src="data-nesting.js?v=1"></script>
+  <script src="data-tasks.js?v=3"></script>
+  <script src="data-brief.js?v=1"></script>
+  <script src="data-auth.js?v=1"></script>
+  <script src="data-contracts.js?v=1"></script>
+  <script src="data-tplstudio.js?v=4"></script>
+  <script src="data-skeletons.js?v=1"></script>
+  <script src="param-geometry.js?v=2"></script>
+  <script src="skeleton-engine.js?v=2"></script>
+  <script src="build/tweaks-panel.js"></script>
+  <script src="build/ui.js"></script>
+  <script src="build/app-store.js?v=40"></script>
+  <script>console.log("[boot] app-store OK");</script>
+  <script src="build/mobile-nav.js"></script>
+  <script src="build/comm-hub.js"></script>
+  <script src="build/portal.js?v=4"></script>
+  <script src="build/linked-refs.js?v=3"></script>
+  <script>console.log("[boot] portal OK");</script>
+  <script src="image-slot.js"></script>
+  <script src="margin-util.js?v=2"></script>
+  <script src="build/webshop.js?v=4"></script>
+  <script src="build/webshop-finance.js?v=1"></script>
+  <script src="build/webshop-project.js?v=1"></script>
+  <script src="build/webshop-project-adapters.js?v=1"></script>
+  <script src="build/item-builder.js"></script>
+  <script src="build/design-item-wizard.js"></script>
+  <script src="build/config-evaluator.js"></script>
+  <script src="build/assembly.js"></script>
+  <script>console.log("[boot] assembly OK");</script>
+  <script src="build/page-projects.js?v=3"></script>
+  <script src="build/page-projects-board.js"></script>
+  <script src="build/page-projects-epic.js"></script>
+  <script src="build/page-templates.js"></script>
+  <script src="build/page-process-model.js"></script>
+  <script src="build/page-process-editor.js"></script>
+  <script src="build/page-process-panel.js"></script>
+  <script src="build/page-process-run.js"></script>
+  <script>console.log("[boot] process-run OK");</script>
+  <script src="build/page-dashboard.js"></script>
+  <script src="build/page-orders.js"></script>
+  <script src="build/page-production.js"></script>
+  <script src="build/page-nesting.js"></script>
+  <script src="build/page-labels.js"></script>
+  <script src="build/page-manufacturing-projects.js"></script>
+  <script src="build/page-mfg-prep.js"></script>
+  <script src="build/page-mfg-prep-release.js"></script>
+  <script src="build/page-mfg-prep-flow.js"></script>
+  <script>console.log("[boot] mfg-flow OK");</script>
+  <script src="build/page-outsource-settings.js"></script>
+  <script src="build/page-rest.js?v=3"></script>
+  <script src="build/page-procurement1.js"></script>
+  <script src="build/page-workflow.js"></script>
+  <script src="build/page-extras.js"></script>
+  <script src="build/page-extras-2.js?v=2"></script>
+  <script src="build/page-procurement2.js?v=3"></script>
+  <script src="build/page-flow.js?v=3"></script>
+  <script src="build/page-settings2.js?v=3"></script>
+  <script>console.log("[boot] settings2 OK");</script>
+  <script src="build/catalog-manager.js"></script>
+  <script src="build/catalog-world-view.js"></script>
+  <script src="build/page-masterdata.js"></script>
+  <script src="build/page-home.js?v=2"></script>
+  <script src="build/page-design.js"></script>
+  <script>console.log("[boot] design OK");</script>
+  <script src="build/page-param-views.js?v=2"></script>
+  <script>console.log("[boot] param-views OK");</script>
+  <script src="build/page-skeleton.js?v=1"></script>
+  <script>console.log("[boot] skeleton OK");</script>
+  <script src="build/page-skeleton-presets.js?v=1"></script>
+  <script>console.log("[boot] skel-presets OK");</script>
+  <script src="build/page-design-engineer.js?v=6"></script>
+  <script src="build/page-tech-request.js?v=4"></script>
+  <script src="build/page-brief.js?v=3"></script>
+  <script src="build/page-branding.js?v=3"></script>
+  <script>console.log("[boot] engineer OK");</script>
+  <script src="build/page-configurator.js"></script>
+  <script src="build/page-composition.js?v=2"></script>
+  <script src="build/page-mfg-datasheet.js?v=3"></script>
+  <script src="build/page-floorplan.js?v=2"></script>
+  <script src="build/page-floorplan-2.js?v=2"></script>
+  <script src="build/page-mfg-datasheet-2.js?v=1"></script>
+  <script src="build/page-proj-assembly.js?v=2"></script>
+  <script>console.log("[boot] mfg-datasheet OK");</script>
+  <script src="build/page-interior.js?v=7"></script>
+  <script src="build/page-interior-2.js"></script>
+  <script src="build/page-interior-3.js?v=4"></script>
+  <script src="build/page-trade.js?v=3"></script>
+  <script src="build/page-trade-2.js?v=2"></script>
+  <script src="build/page-specs-schema.js"></script>
+  <script src="build/page-specs.js"></script>
+  <script src="build/page-sales.js"></script>
+  <script src="build/page-sales-detail.js?v=17"></script>
+  <script src="build/page-world-pages.js"></script>
+  <script src="build/page-warehouse.js?v=1"></script>
+  <script src="build/page-warehouse-2.js?v=2"></script>
+  <script src="build/page-suppliermap.js?v=1"></script>
+  <script src="build/page-finance.js?v=2"></script>
+  <script src="build/page-finance-2.js?v=1"></script>
+  <script src="build/page-logistics.js?v=1"></script>
+  <script src="build/page-logistics-2.js?v=3"></script>
+  <script src="build/page-controlling.js?v=7"></script>
+  <script src="build/page-controlling-2.js?v=1"></script>
+  <script src="build/page-execbi.js?v=4"></script>
+  <script src="build/page-service.js?v=1"></script>
+  <script src="build/page-service-2.js?v=1"></script>
+  <script src="build/page-crm.js?v=1"></script>
+  <script src="build/page-crm-2.js?v=3"></script>
+  <script src="build/page-quality.js?v=1"></script>
+  <script src="build/page-ehs.js?v=1"></script>
+  <script src="build/page-ehs-2.js?v=1"></script>
+  <script src="build/page-docs.js?v=1"></script>
+  <script src="build/page-attendance.js?v=1"></script>
+  <script src="build/page-hr.js?v=2"></script>
+  <script src="build/page-hr-2.js?v=2"></script>
+  <script src="build/page-maintenance.js?v=1"></script>
+  <script src="build/page-maintenance-2.js?v=1"></script>
+  <script src="build/page-rfq.js?v=1"></script>
+  <script src="build/page-supplier.js?v=2"></script>
+  <script src="build/page-partner.js?v=2"></script>
+  <script src="build/page-stocktake.js?v=1"></script>
+  <script src="build/page-prodsched.js?v=2"></script>
+  <script src="build/page-supervisor.js?v=1"></script>
+  <script src="build/page-prodterminal.js?v=1"></script>
+  <script src="build/page-workshop.js?v=1"></script>
+  <script src="build/page-tasks.js?v=1"></script>
+  <script src="build/page-auth.js?v=1"></script>
+  <script src="build/page-contracts.js?v=1"></script>
+  <script src="build/page-ai.js?v=1"></script>
+  <script src="build/page-ai-2.js?v=1"></script>
+  <script src="build/page-login.js"></script>
+
+  <script>
+    // TWEAK_DEFAULTS — a Tweaks direct-edit (EDITMODE) blokkja ITT él
+    window.TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+      "lang": "hu",
+      "enabledModules": [
+        "tasks",
+        "warehouse",
+        "production",
+        "mfgprep",
+        "supervisor",
+        "sales",
+        "procurement",
+        "finance",
+        "kontrolling",
+        "service",
+        "crm",
+        "quality",
+        "ehs",
+        "docs",
+        "attendance",
+        "design",
+        "interior",
+        "projects",
+        "logistics",
+        "hr",
+        "maintenance",
+        "masterdata",
+        "shopfloor",
+        "shop",
+        "trade",
+        "ai",
+        "settings"
+      ],
+      "startWorld": "home",
+      "procRole": "approver"
+    }/*EDITMODE-END*/;
+  </script>
+  <script src="build/app-main.js?v=5"></script>
+</body>
+</html>

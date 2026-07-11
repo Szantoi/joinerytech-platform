@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Kernel Domain Primitives (AggregateRoot, IDomainEvent) -->
+    <ProjectReference Include="../../../backend/spaceos-kernel/SpaceOS.Kernel.Domain/SpaceOS.Kernel.Domain.csproj" />
+  </ItemGroup>
+
+</Project>

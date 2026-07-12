@@ -1,0 +1,43 @@
+[submodule "src/spaceos-kernel"]
+	path = src/spaceos-kernel
+	url = git@github.com:Szantoi/spaceos-kernel.git
+
+[submodule "src/spaceos-orchestrator"]
+	path = src/spaceos-orchestrator
+	url = git@github.com:Szantoi/spaceos-orchestrator.git
+
+[submodule "src/joinerytech-portal"]
+	path = src/joinerytech-portal
+	url = git@github.com:Szantoi/joinerytech-portal.git
+
+[submodule "src/spaceos-modules-abstractions"]
+	path = src/spaceos-modules-abstractions
+	url = git@github.com:Szantoi/spaceos-modules-abstractions.git
+
+[submodule "src/spaceos-modules-contracts"]
+	path = src/spaceos-modules-contracts
+	url = git@github.com:Szantoi/spaceos-modules-contracts.git
+
+[submodule "src/spaceos-modules-cabinet"]
+	path = src/spaceos-modules-cabinet
+	url = git@github.com:Szantoi/spaceos-modules-cabinet.git
+
+[submodule "src/spaceos-modules-joinery"]
+	path = src/spaceos-modules-joinery
+	url = git@github.com:Szantoi/spaceos-modules-joinery.git
+
+[submodule "src/spaceos-modules-cutting"]
+	path = src/spaceos-modules-cutting
+	url = git@github.com:Szantoi/spaceos-modules-cutting.git
+
+[submodule "src/spaceos-modules-inventory"]
+	path = src/spaceos-modules-inventory
+	url = git@github.com:Szantoi/spaceos-modules-inventory.git
+
+[submodule "src/spaceos-modules-procurement"]
+	path = src/spaceos-modules-procurement
+	url = git@github.com:Szantoi/spaceos-modules-procurement.git
+
+[submodule "src/spaceos-nesting-algorithms"]
+	path = src/spaceos-nesting-algorithms
+	url = git@github.com:Szantoi/spaceos-nesting-algorithms.git

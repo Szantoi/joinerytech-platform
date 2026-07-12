@@ -8,24 +8,25 @@
     "net8.0": []
   },
   "packageFolders": {
-    "/home/gabor/.nuget/packages/": {}
+    "C:\\Users\\szant\\.nuget\\packages\\": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "/opt/spaceos/backend/spaceos-modules-production/Production.Domain/Production.Domain.csproj",
+      "projectUniqueName": "C:\\Users\\szant\\Documents\\Development\\joinerytech-platform\\src\\spaceos-modules-production\\Production.Domain\\Production.Domain.csproj",
       "projectName": "Production.Domain",
-      "projectPath": "/opt/spaceos/backend/spaceos-modules-production/Production.Domain/Production.Domain.csproj",
-      "packagesPath": "/home/gabor/.nuget/packages/",
-      "outputPath": "/opt/spaceos/backend/spaceos-modules-production/Production.Domain/obj/",
+      "projectPath": "C:\\Users\\szant\\Documents\\Development\\joinerytech-platform\\src\\spaceos-modules-production\\Production.Domain\\Production.Domain.csproj",
+      "packagesPath": "C:\\Users\\szant\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\szant\\Documents\\Development\\joinerytech-platform\\src\\spaceos-modules-production\\Production.Domain\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
-        "/home/gabor/.nuget/NuGet/NuGet.Config"
+        "C:\\Users\\szant\\AppData\\Roaming\\NuGet\\NuGet.Config"
       ],
       "originalTargetFrameworks": [
         "net8.0"
       ],
       "sources": {
+        "C:\\NugetOffline": {},
         "https://api.nuget.org/v3/index.json": {}
       },
       "frameworks": {
@@ -43,7 +44,8 @@
         "enableAudit": "true",
         "auditLevel": "low",
         "auditMode": "direct"
-      }
+      },
+      "SdkAnalysisLevel": "10.0.100"
     },
     "frameworks": {
       "net8.0": {
@@ -59,12 +61,26 @@
         ],
         "assetTargetFallback": true,
         "warn": true,
+        "downloadDependencies": [
+          {
+            "name": "Microsoft.AspNetCore.App.Ref",
+            "version": "[8.0.23, 8.0.23]"
+          },
+          {
+            "name": "Microsoft.NETCore.App.Ref",
+            "version": "[8.0.23, 8.0.23]"
+          },
+          {
+            "name": "Microsoft.WindowsDesktop.App.Ref",
+            "version": "[8.0.23, 8.0.23]"
+          }
+        ],
         "frameworkReferences": {
           "Microsoft.NETCore.App": {
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "/opt/dotnet/sdk/8.0.422/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.102/PortableRuntimeIdentifierGraph.json"
       }
     }
   }

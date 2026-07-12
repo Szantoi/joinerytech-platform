@@ -1,33 +1,34 @@
 {
   "format": 1,
   "restore": {
-    "/opt/spaceos/backend/spaceos-modules-joinerytech/SpaceOS.Modules.JoineryTech.Application/SpaceOS.Modules.JoineryTech.Application.csproj": {}
+    "C:\\Users\\szant\\Documents\\Development\\joinerytech-platform\\src\\spaceos-modules-joinerytech\\SpaceOS.Modules.JoineryTech.Application\\SpaceOS.Modules.JoineryTech.Application.csproj": {}
   },
   "projects": {
-    "/opt/spaceos/backend/spaceos-modules-joinerytech/SpaceOS.Modules.JoineryTech.Application/SpaceOS.Modules.JoineryTech.Application.csproj": {
+    "C:\\Users\\szant\\Documents\\Development\\joinerytech-platform\\src\\spaceos-modules-joinerytech\\SpaceOS.Modules.JoineryTech.Application\\SpaceOS.Modules.JoineryTech.Application.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/opt/spaceos/backend/spaceos-modules-joinerytech/SpaceOS.Modules.JoineryTech.Application/SpaceOS.Modules.JoineryTech.Application.csproj",
+        "projectUniqueName": "C:\\Users\\szant\\Documents\\Development\\joinerytech-platform\\src\\spaceos-modules-joinerytech\\SpaceOS.Modules.JoineryTech.Application\\SpaceOS.Modules.JoineryTech.Application.csproj",
         "projectName": "SpaceOS.Modules.JoineryTech.Application",
-        "projectPath": "/opt/spaceos/backend/spaceos-modules-joinerytech/SpaceOS.Modules.JoineryTech.Application/SpaceOS.Modules.JoineryTech.Application.csproj",
-        "packagesPath": "/home/gabor/.nuget/packages/",
-        "outputPath": "/opt/spaceos/backend/spaceos-modules-joinerytech/SpaceOS.Modules.JoineryTech.Application/obj/",
+        "projectPath": "C:\\Users\\szant\\Documents\\Development\\joinerytech-platform\\src\\spaceos-modules-joinerytech\\SpaceOS.Modules.JoineryTech.Application\\SpaceOS.Modules.JoineryTech.Application.csproj",
+        "packagesPath": "C:\\Users\\szant\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\szant\\Documents\\Development\\joinerytech-platform\\src\\spaceos-modules-joinerytech\\SpaceOS.Modules.JoineryTech.Application\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "/home/gabor/.nuget/NuGet/NuGet.Config"
+          "C:\\Users\\szant\\AppData\\Roaming\\NuGet\\NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net8.0"
         ],
         "sources": {
+          "C:\\NugetOffline": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
           "net8.0": {
             "targetAlias": "net8.0",
             "projectReferences": {
-              "/opt/spaceos/backend/spaceos-modules-joinerytech/SpaceOS.Modules.JoineryTech.Domain/SpaceOS.Modules.JoineryTech.Domain.csproj": {
-                "projectPath": "/opt/spaceos/backend/spaceos-modules-joinerytech/SpaceOS.Modules.JoineryTech.Domain/SpaceOS.Modules.JoineryTech.Domain.csproj"
+              "C:\\Users\\szant\\Documents\\Development\\joinerytech-platform\\src\\spaceos-modules-joinerytech\\SpaceOS.Modules.JoineryTech.Domain\\SpaceOS.Modules.JoineryTech.Domain.csproj": {
+                "projectPath": "C:\\Users\\szant\\Documents\\Development\\joinerytech-platform\\src\\spaceos-modules-joinerytech\\SpaceOS.Modules.JoineryTech.Domain\\SpaceOS.Modules.JoineryTech.Domain.csproj"
               }
             }
           }
@@ -42,7 +43,7 @@
           "auditLevel": "low",
           "auditMode": "direct"
         },
-        "SdkAnalysisLevel": "10.0.200"
+        "SdkAnalysisLevel": "10.0.100"
       },
       "frameworks": {
         "net8.0": {
@@ -99,11 +100,15 @@
           "downloadDependencies": [
             {
               "name": "Microsoft.AspNetCore.App.Ref",
-              "version": "[8.0.26, 8.0.26]"
+              "version": "[8.0.23, 8.0.23]"
             },
             {
               "name": "Microsoft.NETCore.App.Ref",
-              "version": "[8.0.26, 8.0.26]"
+              "version": "[8.0.23, 8.0.23]"
+            },
+            {
+              "name": "Microsoft.WindowsDesktop.App.Ref",
+              "version": "[8.0.23, 8.0.23]"
             }
           ],
           "frameworkReferences": {
@@ -111,26 +116,27 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "/opt/dotnet/sdk/10.0.203/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.102/PortableRuntimeIdentifierGraph.json"
         }
       }
     },
-    "/opt/spaceos/backend/spaceos-modules-joinerytech/SpaceOS.Modules.JoineryTech.Domain/SpaceOS.Modules.JoineryTech.Domain.csproj": {
+    "C:\\Users\\szant\\Documents\\Development\\joinerytech-platform\\src\\spaceos-modules-joinerytech\\SpaceOS.Modules.JoineryTech.Domain\\SpaceOS.Modules.JoineryTech.Domain.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/opt/spaceos/backend/spaceos-modules-joinerytech/SpaceOS.Modules.JoineryTech.Domain/SpaceOS.Modules.JoineryTech.Domain.csproj",
+        "projectUniqueName": "C:\\Users\\szant\\Documents\\Development\\joinerytech-platform\\src\\spaceos-modules-joinerytech\\SpaceOS.Modules.JoineryTech.Domain\\SpaceOS.Modules.JoineryTech.Domain.csproj",
         "projectName": "SpaceOS.Modules.JoineryTech.Domain",
-        "projectPath": "/opt/spaceos/backend/spaceos-modules-joinerytech/SpaceOS.Modules.JoineryTech.Domain/SpaceOS.Modules.JoineryTech.Domain.csproj",
-        "packagesPath": "/home/gabor/.nuget/packages/",
-        "outputPath": "/opt/spaceos/backend/spaceos-modules-joinerytech/SpaceOS.Modules.JoineryTech.Domain/obj/",
+        "projectPath": "C:\\Users\\szant\\Documents\\Development\\joinerytech-platform\\src\\spaceos-modules-joinerytech\\SpaceOS.Modules.JoineryTech.Domain\\SpaceOS.Modules.JoineryTech.Domain.csproj",
+        "packagesPath": "C:\\Users\\szant\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\szant\\Documents\\Development\\joinerytech-platform\\src\\spaceos-modules-joinerytech\\SpaceOS.Modules.JoineryTech.Domain\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "/home/gabor/.nuget/NuGet/NuGet.Config"
+          "C:\\Users\\szant\\AppData\\Roaming\\NuGet\\NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net8.0"
         ],
         "sources": {
+          "C:\\NugetOffline": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
@@ -149,7 +155,7 @@
           "auditLevel": "low",
           "auditMode": "direct"
         },
-        "SdkAnalysisLevel": "10.0.200"
+        "SdkAnalysisLevel": "10.0.100"
       },
       "frameworks": {
         "net8.0": {
@@ -178,11 +184,15 @@
           "downloadDependencies": [
             {
               "name": "Microsoft.AspNetCore.App.Ref",
-              "version": "[8.0.26, 8.0.26]"
+              "version": "[8.0.23, 8.0.23]"
             },
             {
               "name": "Microsoft.NETCore.App.Ref",
-              "version": "[8.0.26, 8.0.26]"
+              "version": "[8.0.23, 8.0.23]"
+            },
+            {
+              "name": "Microsoft.WindowsDesktop.App.Ref",
+              "version": "[8.0.23, 8.0.23]"
             }
           ],
           "frameworkReferences": {
@@ -190,7 +200,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "/opt/dotnet/sdk/10.0.203/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.102/PortableRuntimeIdentifierGraph.json"
         }
       }
     }

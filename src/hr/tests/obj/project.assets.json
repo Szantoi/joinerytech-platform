@@ -2148,20 +2148,6 @@
           "build/net6.0/xunit.runner.visualstudio.props": {}
         }
       },
-      "SpaceOS.Kernel.Domain/1.0.0": {
-        "type": "project",
-        "framework": ".NETCoreApp,Version=v8.0",
-        "dependencies": {
-          "Ardalis.Specification": "8.0.0",
-          "MediatR.Contracts": "2.0.1"
-        },
-        "compile": {
-          "bin/placeholder/SpaceOS.Kernel.Domain.dll": {}
-        },
-        "runtime": {
-          "bin/placeholder/SpaceOS.Kernel.Domain.dll": {}
-        }
-      },
       "SpaceOS.Modules.HR/1.0.0": {
         "type": "project",
         "framework": ".NETCoreApp,Version=v8.0",
@@ -2174,8 +2160,7 @@
           "Microsoft.EntityFrameworkCore.Design": "8.0.7",
           "Microsoft.Extensions.Configuration.Abstractions": "8.0.0",
           "Microsoft.Extensions.DependencyInjection.Abstractions": "8.0.0",
-          "Npgsql.EntityFrameworkCore.PostgreSQL": "8.0.0",
-          "SpaceOS.Kernel.Domain": "1.0.0"
+          "Npgsql.EntityFrameworkCore.PostgreSQL": "8.0.0"
         },
         "compile": {
           "bin/placeholder/SpaceOS.Modules.HR.dll": {}
@@ -5353,11 +5338,6 @@
         "xunit.runner.visualstudio.nuspec"
       ]
     },
-    "SpaceOS.Kernel.Domain/1.0.0": {
-      "type": "project",
-      "path": "../../backend/spaceos-kernel/SpaceOS.Kernel.Domain/SpaceOS.Kernel.Domain.csproj",
-      "msbuildProject": "../../backend/spaceos-kernel/SpaceOS.Kernel.Domain/SpaceOS.Kernel.Domain.csproj"
-    },
     "SpaceOS.Modules.HR/1.0.0": {
       "type": "project",
       "path": "../src/SpaceOS.Modules.HR.csproj",
@@ -5385,32 +5365,33 @@
     ]
   },
   "packageFolders": {
-    "/home/gabor/.nuget/packages/": {}
+    "C:\\Users\\szant\\.nuget\\packages\\": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "/opt/spaceos/spaceos-modules-hr/tests/SpaceOS.Modules.HR.Tests.csproj",
+      "projectUniqueName": "C:\\Users\\szant\\Documents\\Development\\joinerytech-platform\\src\\hr\\tests\\SpaceOS.Modules.HR.Tests.csproj",
       "projectName": "SpaceOS.Modules.HR.Tests",
-      "projectPath": "/opt/spaceos/spaceos-modules-hr/tests/SpaceOS.Modules.HR.Tests.csproj",
-      "packagesPath": "/home/gabor/.nuget/packages/",
-      "outputPath": "/opt/spaceos/spaceos-modules-hr/tests/obj/",
+      "projectPath": "C:\\Users\\szant\\Documents\\Development\\joinerytech-platform\\src\\hr\\tests\\SpaceOS.Modules.HR.Tests.csproj",
+      "packagesPath": "C:\\Users\\szant\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\szant\\Documents\\Development\\joinerytech-platform\\src\\hr\\tests\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
-        "/home/gabor/.nuget/NuGet/NuGet.Config"
+        "C:\\Users\\szant\\AppData\\Roaming\\NuGet\\NuGet.Config"
       ],
       "originalTargetFrameworks": [
         "net8.0"
       ],
       "sources": {
+        "C:\\NugetOffline": {},
         "https://api.nuget.org/v3/index.json": {}
       },
       "frameworks": {
         "net8.0": {
           "targetAlias": "net8.0",
           "projectReferences": {
-            "/opt/spaceos/spaceos-modules-hr/src/SpaceOS.Modules.HR.csproj": {
-              "projectPath": "/opt/spaceos/spaceos-modules-hr/src/SpaceOS.Modules.HR.csproj"
+            "C:\\Users\\szant\\Documents\\Development\\joinerytech-platform\\src\\hr\\src\\SpaceOS.Modules.HR.csproj": {
+              "projectPath": "C:\\Users\\szant\\Documents\\Development\\joinerytech-platform\\src\\hr\\src\\SpaceOS.Modules.HR.csproj"
             }
           }
         }
@@ -5425,7 +5406,7 @@
         "auditLevel": "low",
         "auditMode": "direct"
       },
-      "SdkAnalysisLevel": "10.0.200"
+      "SdkAnalysisLevel": "10.0.100"
     },
     "frameworks": {
       "net8.0": {
@@ -5510,11 +5491,15 @@
         "downloadDependencies": [
           {
             "name": "Microsoft.AspNetCore.App.Ref",
-            "version": "[8.0.26, 8.0.26]"
+            "version": "[8.0.23, 8.0.23]"
           },
           {
             "name": "Microsoft.NETCore.App.Ref",
-            "version": "[8.0.26, 8.0.26]"
+            "version": "[8.0.23, 8.0.23]"
+          },
+          {
+            "name": "Microsoft.WindowsDesktop.App.Ref",
+            "version": "[8.0.23, 8.0.23]"
           }
         ],
         "frameworkReferences": {
@@ -5522,7 +5507,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "/opt/dotnet/sdk/10.0.203/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.102/PortableRuntimeIdentifierGraph.json"
       }
     }
   }

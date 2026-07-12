@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("SpaceOS.Modules.Kontrolling.Tests")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+7bdfc29dd03e561ddcbf9b482b74180d8d7d49b2")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+8a2eda462e95a7db48055a853533ea8652830713")]
 [assembly: System.Reflection.AssemblyProductAttribute("SpaceOS.Modules.Kontrolling.Tests")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SpaceOS.Modules.Kontrolling.Tests")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

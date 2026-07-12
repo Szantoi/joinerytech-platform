@@ -11,19 +11,6 @@
           "lib/net8.0/Ardalis.Result.dll": {}
         }
       },
-      "Ardalis.Specification/8.0.0": {
-        "type": "package",
-        "compile": {
-          "lib/net8.0/Ardalis.Specification.dll": {
-            "related": ".pdb;.xml"
-          }
-        },
-        "runtime": {
-          "lib/net8.0/Ardalis.Specification.dll": {
-            "related": ".pdb;.xml"
-          }
-        }
-      },
       "AutoMapper/14.0.0": {
         "type": "package",
         "dependencies": {
@@ -520,20 +507,6 @@
           }
         }
       },
-      "SpaceOS.Kernel.Domain/1.0.0": {
-        "type": "project",
-        "framework": ".NETCoreApp,Version=v8.0",
-        "dependencies": {
-          "Ardalis.Specification": "8.0.0",
-          "MediatR.Contracts": "2.0.1"
-        },
-        "compile": {
-          "bin/placeholder/SpaceOS.Kernel.Domain.dll": {}
-        },
-        "runtime": {
-          "bin/placeholder/SpaceOS.Kernel.Domain.dll": {}
-        }
-      },
       "SpaceOS.Modules.Ehs.Application/1.0.0": {
         "type": "project",
         "framework": ".NETCoreApp,Version=v8.0",
@@ -555,9 +528,6 @@
       "SpaceOS.Modules.Ehs.Domain/1.0.0": {
         "type": "project",
         "framework": ".NETCoreApp,Version=v8.0",
-        "dependencies": {
-          "SpaceOS.Kernel.Domain": "1.0.0"
-        },
         "compile": {
           "bin/placeholder/SpaceOS.Modules.Ehs.Domain.dll": {}
         },
@@ -599,30 +569,6 @@
         "lib/net7.0/Ardalis.Result.dll",
         "lib/net8.0/Ardalis.Result.dll",
         "lib/netstandard2.0/Ardalis.Result.dll"
-      ]
-    },
-    "Ardalis.Specification/8.0.0": {
-      "sha512": "1/YP932oZJtaDlm85rWfqvgOjALbk2+VDZaj36sM2TdsJMNkVqMbF5UzY6f7OfzA8eymv3hnCXIgYmEBEiUOhQ==",
-      "type": "package",
-      "path": "ardalis.specification/8.0.0",
-      "files": [
-        ".nupkg.metadata",
-        ".signature.p7s",
-        "ardalis.specification.8.0.0.nupkg.sha512",
-        "ardalis.specification.nuspec",
-        "icon.png",
-        "lib/net6.0/Ardalis.Specification.dll",
-        "lib/net6.0/Ardalis.Specification.pdb",
-        "lib/net6.0/Ardalis.Specification.xml",
-        "lib/net7.0/Ardalis.Specification.dll",
-        "lib/net7.0/Ardalis.Specification.pdb",
-        "lib/net7.0/Ardalis.Specification.xml",
-        "lib/net8.0/Ardalis.Specification.dll",
-        "lib/net8.0/Ardalis.Specification.pdb",
-        "lib/net8.0/Ardalis.Specification.xml",
-        "lib/netstandard2.0/Ardalis.Specification.dll",
-        "lib/netstandard2.0/Ardalis.Specification.pdb",
-        "lib/netstandard2.0/Ardalis.Specification.xml"
       ]
     },
     "AutoMapper/14.0.0": {
@@ -1556,11 +1502,6 @@
         "version.txt"
       ]
     },
-    "SpaceOS.Kernel.Domain/1.0.0": {
-      "type": "project",
-      "path": "../../../backend/spaceos-kernel/SpaceOS.Kernel.Domain/SpaceOS.Kernel.Domain.csproj",
-      "msbuildProject": "../../../backend/spaceos-kernel/SpaceOS.Kernel.Domain/SpaceOS.Kernel.Domain.csproj"
-    },
     "SpaceOS.Modules.Ehs.Application/1.0.0": {
       "type": "project",
       "path": "../Application/SpaceOS.Modules.Ehs.Application.csproj",
@@ -1587,38 +1528,39 @@
     ]
   },
   "packageFolders": {
-    "/home/gabor/.nuget/packages/": {}
+    "C:\\Users\\szant\\.nuget\\packages\\": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "/opt/spaceos/spaceos-modules-ehs/src/Api/SpaceOS.Modules.Ehs.Api.csproj",
+      "projectUniqueName": "C:\\Users\\szant\\Documents\\Development\\joinerytech-platform\\src\\ehs\\src\\Api\\SpaceOS.Modules.Ehs.Api.csproj",
       "projectName": "SpaceOS.Modules.Ehs.Api",
-      "projectPath": "/opt/spaceos/spaceos-modules-ehs/src/Api/SpaceOS.Modules.Ehs.Api.csproj",
-      "packagesPath": "/home/gabor/.nuget/packages/",
-      "outputPath": "/opt/spaceos/spaceos-modules-ehs/src/Api/obj/",
+      "projectPath": "C:\\Users\\szant\\Documents\\Development\\joinerytech-platform\\src\\ehs\\src\\Api\\SpaceOS.Modules.Ehs.Api.csproj",
+      "packagesPath": "C:\\Users\\szant\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\szant\\Documents\\Development\\joinerytech-platform\\src\\ehs\\src\\Api\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
-        "/home/gabor/.nuget/NuGet/NuGet.Config"
+        "C:\\Users\\szant\\AppData\\Roaming\\NuGet\\NuGet.Config"
       ],
       "originalTargetFrameworks": [
         "net8.0"
       ],
       "sources": {
+        "C:\\NugetOffline": {},
         "https://api.nuget.org/v3/index.json": {}
       },
       "frameworks": {
         "net8.0": {
           "targetAlias": "net8.0",
           "projectReferences": {
-            "/opt/spaceos/spaceos-modules-ehs/src/Application/SpaceOS.Modules.Ehs.Application.csproj": {
-              "projectPath": "/opt/spaceos/spaceos-modules-ehs/src/Application/SpaceOS.Modules.Ehs.Application.csproj"
+            "C:\\Users\\szant\\Documents\\Development\\joinerytech-platform\\src\\ehs\\src\\Application\\SpaceOS.Modules.Ehs.Application.csproj": {
+              "projectPath": "C:\\Users\\szant\\Documents\\Development\\joinerytech-platform\\src\\ehs\\src\\Application\\SpaceOS.Modules.Ehs.Application.csproj"
             },
-            "/opt/spaceos/spaceos-modules-ehs/src/Domain/SpaceOS.Modules.Ehs.Domain.csproj": {
-              "projectPath": "/opt/spaceos/spaceos-modules-ehs/src/Domain/SpaceOS.Modules.Ehs.Domain.csproj"
+            "C:\\Users\\szant\\Documents\\Development\\joinerytech-platform\\src\\ehs\\src\\Domain\\SpaceOS.Modules.Ehs.Domain.csproj": {
+              "projectPath": "C:\\Users\\szant\\Documents\\Development\\joinerytech-platform\\src\\ehs\\src\\Domain\\SpaceOS.Modules.Ehs.Domain.csproj"
             },
-            "/opt/spaceos/spaceos-modules-ehs/src/Infrastructure/SpaceOS.Modules.Ehs.Infrastructure.csproj": {
-              "projectPath": "/opt/spaceos/spaceos-modules-ehs/src/Infrastructure/SpaceOS.Modules.Ehs.Infrastructure.csproj"
+            "C:\\Users\\szant\\Documents\\Development\\joinerytech-platform\\src\\ehs\\src\\Infrastructure\\SpaceOS.Modules.Ehs.Infrastructure.csproj": {
+              "projectPath": "C:\\Users\\szant\\Documents\\Development\\joinerytech-platform\\src\\ehs\\src\\Infrastructure\\SpaceOS.Modules.Ehs.Infrastructure.csproj"
             }
           }
         }
@@ -1633,7 +1575,7 @@
         "auditLevel": "low",
         "auditMode": "direct"
       },
-      "SdkAnalysisLevel": "10.0.200"
+      "SdkAnalysisLevel": "10.0.100"
     },
     "frameworks": {
       "net8.0": {
@@ -1662,15 +1604,19 @@
         "downloadDependencies": [
           {
             "name": "Microsoft.AspNetCore.App.Ref",
-            "version": "[8.0.26, 8.0.26]"
+            "version": "[8.0.23, 8.0.23]"
           },
           {
-            "name": "Microsoft.NETCore.App.Host.linux-x64",
-            "version": "[8.0.26, 8.0.26]"
+            "name": "Microsoft.NETCore.App.Host.win-x64",
+            "version": "[8.0.23, 8.0.23]"
           },
           {
             "name": "Microsoft.NETCore.App.Ref",
-            "version": "[8.0.26, 8.0.26]"
+            "version": "[8.0.23, 8.0.23]"
+          },
+          {
+            "name": "Microsoft.WindowsDesktop.App.Ref",
+            "version": "[8.0.23, 8.0.23]"
           }
         ],
         "frameworkReferences": {
@@ -1681,7 +1627,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "/opt/dotnet/sdk/10.0.203/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.102/PortableRuntimeIdentifierGraph.json"
       }
     }
   },

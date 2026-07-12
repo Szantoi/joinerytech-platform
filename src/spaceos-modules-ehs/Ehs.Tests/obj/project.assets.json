@@ -4848,38 +4848,39 @@
     ]
   },
   "packageFolders": {
-    "/home/gabor/.nuget/packages/": {}
+    "C:\\Users\\szant\\.nuget\\packages\\": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "/opt/spaceos/backend/spaceos-modules-ehs/Ehs.Tests/Ehs.Tests.csproj",
+      "projectUniqueName": "C:\\Users\\szant\\Documents\\Development\\joinerytech-platform\\src\\spaceos-modules-ehs\\Ehs.Tests\\Ehs.Tests.csproj",
       "projectName": "Ehs.Tests",
-      "projectPath": "/opt/spaceos/backend/spaceos-modules-ehs/Ehs.Tests/Ehs.Tests.csproj",
-      "packagesPath": "/home/gabor/.nuget/packages/",
-      "outputPath": "/opt/spaceos/backend/spaceos-modules-ehs/Ehs.Tests/obj/",
+      "projectPath": "C:\\Users\\szant\\Documents\\Development\\joinerytech-platform\\src\\spaceos-modules-ehs\\Ehs.Tests\\Ehs.Tests.csproj",
+      "packagesPath": "C:\\Users\\szant\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\szant\\Documents\\Development\\joinerytech-platform\\src\\spaceos-modules-ehs\\Ehs.Tests\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
-        "/home/gabor/.nuget/NuGet/NuGet.Config"
+        "C:\\Users\\szant\\AppData\\Roaming\\NuGet\\NuGet.Config"
       ],
       "originalTargetFrameworks": [
         "net8.0"
       ],
       "sources": {
+        "C:\\NugetOffline": {},
         "https://api.nuget.org/v3/index.json": {}
       },
       "frameworks": {
         "net8.0": {
           "targetAlias": "net8.0",
           "projectReferences": {
-            "/opt/spaceos/backend/spaceos-modules-ehs/Ehs.Api/Ehs.Api.csproj": {
-              "projectPath": "/opt/spaceos/backend/spaceos-modules-ehs/Ehs.Api/Ehs.Api.csproj"
+            "C:\\Users\\szant\\Documents\\Development\\joinerytech-platform\\src\\spaceos-modules-ehs\\Ehs.Api\\Ehs.Api.csproj": {
+              "projectPath": "C:\\Users\\szant\\Documents\\Development\\joinerytech-platform\\src\\spaceos-modules-ehs\\Ehs.Api\\Ehs.Api.csproj"
             },
-            "/opt/spaceos/backend/spaceos-modules-ehs/Ehs.Application/Ehs.Application.csproj": {
-              "projectPath": "/opt/spaceos/backend/spaceos-modules-ehs/Ehs.Application/Ehs.Application.csproj"
+            "C:\\Users\\szant\\Documents\\Development\\joinerytech-platform\\src\\spaceos-modules-ehs\\Ehs.Application\\Ehs.Application.csproj": {
+              "projectPath": "C:\\Users\\szant\\Documents\\Development\\joinerytech-platform\\src\\spaceos-modules-ehs\\Ehs.Application\\Ehs.Application.csproj"
             },
-            "/opt/spaceos/backend/spaceos-modules-ehs/Ehs.Infrastructure/Ehs.Infrastructure.csproj": {
-              "projectPath": "/opt/spaceos/backend/spaceos-modules-ehs/Ehs.Infrastructure/Ehs.Infrastructure.csproj"
+            "C:\\Users\\szant\\Documents\\Development\\joinerytech-platform\\src\\spaceos-modules-ehs\\Ehs.Infrastructure\\Ehs.Infrastructure.csproj": {
+              "projectPath": "C:\\Users\\szant\\Documents\\Development\\joinerytech-platform\\src\\spaceos-modules-ehs\\Ehs.Infrastructure\\Ehs.Infrastructure.csproj"
             }
           }
         }
@@ -4894,7 +4895,7 @@
         "auditLevel": "low",
         "auditMode": "direct"
       },
-      "SdkAnalysisLevel": "10.0.200"
+      "SdkAnalysisLevel": "10.0.100"
     },
     "frameworks": {
       "net8.0": {
@@ -4947,11 +4948,15 @@
         "downloadDependencies": [
           {
             "name": "Microsoft.AspNetCore.App.Ref",
-            "version": "[8.0.26, 8.0.26]"
+            "version": "[8.0.23, 8.0.23]"
           },
           {
             "name": "Microsoft.NETCore.App.Ref",
-            "version": "[8.0.26, 8.0.26]"
+            "version": "[8.0.23, 8.0.23]"
+          },
+          {
+            "name": "Microsoft.WindowsDesktop.App.Ref",
+            "version": "[8.0.23, 8.0.23]"
           }
         ],
         "frameworkReferences": {
@@ -4959,7 +4964,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "/opt/dotnet/sdk/10.0.203/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.102/PortableRuntimeIdentifierGraph.json"
       }
     }
   }

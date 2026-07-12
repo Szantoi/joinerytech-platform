@@ -11,19 +11,6 @@
           "lib/net8.0/Ardalis.Result.dll": {}
         }
       },
-      "Ardalis.Specification/8.0.0": {
-        "type": "package",
-        "compile": {
-          "lib/net8.0/Ardalis.Specification.dll": {
-            "related": ".pdb;.xml"
-          }
-        },
-        "runtime": {
-          "lib/net8.0/Ardalis.Specification.dll": {
-            "related": ".pdb;.xml"
-          }
-        }
-      },
       "FluentValidation/11.10.0": {
         "type": "package",
         "compile": {
@@ -928,20 +915,6 @@
         "build": {
           "buildTransitive/netcoreapp3.1/_._": {}
         }
-      },
-      "SpaceOS.Kernel.Domain/1.0.0": {
-        "type": "project",
-        "framework": ".NETCoreApp,Version=v8.0",
-        "dependencies": {
-          "Ardalis.Specification": "8.0.0",
-          "MediatR.Contracts": "2.0.1"
-        },
-        "compile": {
-          "bin/placeholder/SpaceOS.Kernel.Domain.dll": {}
-        },
-        "runtime": {
-          "bin/placeholder/SpaceOS.Kernel.Domain.dll": {}
-        }
       }
     }
   },
@@ -960,30 +933,6 @@
         "lib/net7.0/Ardalis.Result.dll",
         "lib/net8.0/Ardalis.Result.dll",
         "lib/netstandard2.0/Ardalis.Result.dll"
-      ]
-    },
-    "Ardalis.Specification/8.0.0": {
-      "sha512": "1/YP932oZJtaDlm85rWfqvgOjALbk2+VDZaj36sM2TdsJMNkVqMbF5UzY6f7OfzA8eymv3hnCXIgYmEBEiUOhQ==",
-      "type": "package",
-      "path": "ardalis.specification/8.0.0",
-      "files": [
-        ".nupkg.metadata",
-        ".signature.p7s",
-        "ardalis.specification.8.0.0.nupkg.sha512",
-        "ardalis.specification.nuspec",
-        "icon.png",
-        "lib/net6.0/Ardalis.Specification.dll",
-        "lib/net6.0/Ardalis.Specification.pdb",
-        "lib/net6.0/Ardalis.Specification.xml",
-        "lib/net7.0/Ardalis.Specification.dll",
-        "lib/net7.0/Ardalis.Specification.pdb",
-        "lib/net7.0/Ardalis.Specification.xml",
-        "lib/net8.0/Ardalis.Specification.dll",
-        "lib/net8.0/Ardalis.Specification.pdb",
-        "lib/net8.0/Ardalis.Specification.xml",
-        "lib/netstandard2.0/Ardalis.Specification.dll",
-        "lib/netstandard2.0/Ardalis.Specification.pdb",
-        "lib/netstandard2.0/Ardalis.Specification.xml"
       ]
     },
     "FluentValidation/11.10.0": {
@@ -2428,11 +2377,6 @@
         "system.threading.channels.nuspec",
         "useSharedDesignerContext.txt"
       ]
-    },
-    "SpaceOS.Kernel.Domain/1.0.0": {
-      "type": "project",
-      "path": "../../backend/spaceos-kernel/SpaceOS.Kernel.Domain/SpaceOS.Kernel.Domain.csproj",
-      "msbuildProject": "../../backend/spaceos-kernel/SpaceOS.Kernel.Domain/SpaceOS.Kernel.Domain.csproj"
     }
   },
   "projectFileDependencyGroups": {
@@ -2444,39 +2388,35 @@
       "Microsoft.EntityFrameworkCore.Design >= 8.0.7",
       "Microsoft.Extensions.Configuration.Abstractions >= 8.0.0",
       "Microsoft.Extensions.DependencyInjection.Abstractions >= 8.0.0",
-      "Npgsql.EntityFrameworkCore.PostgreSQL >= 8.0.0",
-      "SpaceOS.Kernel.Domain >= 1.0.0"
+      "Npgsql.EntityFrameworkCore.PostgreSQL >= 8.0.0"
     ]
   },
   "packageFolders": {
-    "/home/gabor/.nuget/packages/": {}
+    "C:\\Users\\szant\\.nuget\\packages\\": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "/opt/spaceos/spaceos-modules-maintenance/src/SpaceOS.Modules.Maintenance.csproj",
+      "projectUniqueName": "C:\\Users\\szant\\Documents\\Development\\joinerytech-platform\\src\\maintenance\\src\\SpaceOS.Modules.Maintenance.csproj",
       "projectName": "SpaceOS.Modules.Maintenance",
-      "projectPath": "/opt/spaceos/spaceos-modules-maintenance/src/SpaceOS.Modules.Maintenance.csproj",
-      "packagesPath": "/home/gabor/.nuget/packages/",
-      "outputPath": "/opt/spaceos/spaceos-modules-maintenance/src/obj/",
+      "projectPath": "C:\\Users\\szant\\Documents\\Development\\joinerytech-platform\\src\\maintenance\\src\\SpaceOS.Modules.Maintenance.csproj",
+      "packagesPath": "C:\\Users\\szant\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\szant\\Documents\\Development\\joinerytech-platform\\src\\maintenance\\src\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
-        "/home/gabor/.nuget/NuGet/NuGet.Config"
+        "C:\\Users\\szant\\AppData\\Roaming\\NuGet\\NuGet.Config"
       ],
       "originalTargetFrameworks": [
         "net8.0"
       ],
       "sources": {
+        "C:\\NugetOffline": {},
         "https://api.nuget.org/v3/index.json": {}
       },
       "frameworks": {
         "net8.0": {
           "targetAlias": "net8.0",
-          "projectReferences": {
-            "/opt/spaceos/backend/spaceos-kernel/SpaceOS.Kernel.Domain/SpaceOS.Kernel.Domain.csproj": {
-              "projectPath": "/opt/spaceos/backend/spaceos-kernel/SpaceOS.Kernel.Domain/SpaceOS.Kernel.Domain.csproj"
-            }
-          }
+          "projectReferences": {}
         }
       },
       "warningProperties": {
@@ -2489,7 +2429,7 @@
         "auditLevel": "low",
         "auditMode": "direct"
       },
-      "SdkAnalysisLevel": "10.0.200"
+      "SdkAnalysisLevel": "10.0.100"
     },
     "frameworks": {
       "net8.0": {
@@ -2542,11 +2482,15 @@
         "downloadDependencies": [
           {
             "name": "Microsoft.AspNetCore.App.Ref",
-            "version": "[8.0.26, 8.0.26]"
+            "version": "[8.0.23, 8.0.23]"
           },
           {
             "name": "Microsoft.NETCore.App.Ref",
-            "version": "[8.0.26, 8.0.26]"
+            "version": "[8.0.23, 8.0.23]"
+          },
+          {
+            "name": "Microsoft.WindowsDesktop.App.Ref",
+            "version": "[8.0.23, 8.0.23]"
           }
         ],
         "frameworkReferences": {
@@ -2557,7 +2501,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "/opt/dotnet/sdk/10.0.203/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.102/PortableRuntimeIdentifierGraph.json"
       }
     }
   }

@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Ehs.Infrastructure")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+4c515347f891dcae03c914087d73be09a9774c86")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+8a2eda462e95a7db48055a853533ea8652830713")]
 [assembly: System.Reflection.AssemblyProductAttribute("Ehs.Infrastructure")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Ehs.Infrastructure")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

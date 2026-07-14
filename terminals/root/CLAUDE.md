@@ -20,3 +20,9 @@
 ## KONTEXTUS
 
 - Sziget-identitás: a repó gyökér `CLAUDE.md`-je (port range: 3458-3459, tmux prefix: jt-)
+
+## MINŐSÉGI ELVÁRÁSOK
+
+Kötelező: **[QUALITY.md](../../QUALITY.md)** — Gábor minőségi elvárásai minden munkára
+(clean code + DDD, config-vezérelt, logolás, tesztek, goal-fókusz, token-tudatosság,
+memento minden nagyobb lépés végén).

@@ -99,3 +99,9 @@ Doorstar (ügyfél) ◄─── specifikus testreszabás
 ---
 
 _JoineryTech Sziget — Faipar SaaS Platform_
+
+## MINŐSÉGI ELVÁRÁSOK
+
+Kötelező: **[QUALITY.md](QUALITY.md)** — Gábor minőségi elvárásai minden munkára
+(clean code + DDD, config-vezérelt, logolás, tesztek, goal-fókusz, token-tudatosság,
+memento minden nagyobb lépés végén).

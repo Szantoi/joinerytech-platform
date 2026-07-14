@@ -34,6 +34,7 @@
 |----------|--------|
 | **root** | Platform stratégia, modul prioritizálás |
 | **conductor** | Feladatkiosztás, sprint koordináció |
+| **monitor** | Health-monitoring, eszkaláció-figyelés |
 | **backend** | .NET 8 + Node.js backend fejlesztés |
 | **frontend** | React 18 + TypeScript UI fejlesztés |
 | **designer** | UI/UX review, design system |

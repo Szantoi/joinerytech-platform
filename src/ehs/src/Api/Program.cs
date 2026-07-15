@@ -25,5 +25,10 @@ app.UseHttpsRedirection();
 app.MapIncidentEndpoints();
 app.MapRiskAssessmentEndpoints();
 app.MapTrainingRecordEndpoints();
+app.MapLocationEndpoints();
+app.MapHazardousMaterialEndpoints();
+app.MapPpeEndpoints();
+app.MapSafetyWalkEndpoints();
+app.MapCorrectiveActionEndpoints();
 
 app.Run();

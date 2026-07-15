@@ -1,0 +1,55 @@
+:root{color-scheme:light}
+body{font-family:'Inter',ui-sans-serif,system-ui,sans-serif;color:#1c1917;background:#f7f7f5;margin:0;font-feature-settings:"ss01","cv11";-webkit-font-smoothing:antialiased}
+code,pre,.mono{font-family:'JetBrains Mono',ui-monospace,monospace}
+a{color:#0f766e;text-decoration:none}a:hover{color:#115e59;text-decoration:underline}
+.ds-side a,.ds-side a:hover{text-decoration:none}
+body{display:flex;min-height:100vh}
+.ds-side{width:248px;flex-shrink:0;background:#0b1220;color:rgba(255,255,255,.85);position:sticky;top:0;height:100vh;display:flex;flex-direction:column;padding:20px 12px 14px}
+.ds-brand{display:flex;align-items:center;gap:8px;padding:0 10px 16px;font-size:15px}
+.ds-brand svg rect,.ds-brand svg path{stroke:#fff}
+.ds-brand svg path:nth-of-type(2){stroke:#5eead4}
+.ds-brand b{font-weight:600;letter-spacing:-.01em;color:#fff}
+.ds-brand i{color:#5eead4;font-style:normal;font-weight:300;margin:0 -3px}
+.ds-brand em{color:rgba(255,255,255,.55);font-style:normal;font-weight:500}
+.ds-side-cap{font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,.4);padding:0 10px 8px}
+.ds-side a{display:block;padding:9px 10px;border-radius:8px;color:rgba(255,255,255,.7);margin-bottom:2px;position:relative}
+.ds-side a span{display:block;font-size:13px;font-weight:500}
+.ds-side a small{display:block;font-size:10.5px;color:rgba(255,255,255,.38);margin-top:1px}
+.ds-side a:hover{background:rgba(255,255,255,.05);color:#fff}
+.ds-side a.on{background:rgba(255,255,255,.08);color:#fff}
+.ds-side a.on::before{content:"";position:absolute;left:0;top:8px;bottom:8px;width:2px;border-radius:0 2px 2px 0;background:#5eead4}
+.ds-side-foot{margin-top:auto;font-size:10.5px;color:rgba(255,255,255,.3);padding:12px 10px 0;border-top:1px solid rgba(255,255,255,.06)}
+main{flex:1;min-width:0;padding:44px 56px 96px;max-width:980px}
+.crumb{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:#a8a29e;margin-bottom:6px}
+main h1{font-size:28px;font-weight:600;letter-spacing:-.02em;margin:0 0 8px}
+.lead{font-size:14.5px;color:#57534e;max-width:640px;line-height:1.55;margin:0 0 36px}
+main section{margin-bottom:52px}
+main h2{font-size:18px;font-weight:600;letter-spacing:-.01em;margin:0 0 4px;padding-top:8px;border-top:1px solid #e7e5e4}
+main h2:first-of-type{border-top:0;padding-top:0}
+.h2sub{font-size:13px;color:#78716c;margin:0 0 16px;max-width:620px;line-height:1.5}
+main h3{font-size:13.5px;font-weight:600;margin:22px 0 8px}
+.demo{background:#fff;border:1px solid rgba(231,229,228,.9);border-radius:12px;padding:22px;margin-bottom:10px}
+.demo.tinted{background:#f7f7f5}
+.demo-row{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.snip{border:1px solid #e7e5e4;border-radius:10px;overflow:hidden;margin-bottom:10px}
+.snip-head{display:flex;justify-content:space-between;align-items:center;background:#fafaf9;border-bottom:1px solid #e7e5e4;padding:6px 12px;font-size:11px;color:#78716c}
+.snip-copy{font:inherit;font-size:11px;border:1px solid #d6d3d1;background:#fff;border-radius:6px;padding:3px 10px;cursor:pointer;color:#44403c}
+.snip-copy:hover{background:#f5f5f4}
+.snip pre{margin:0;padding:14px 16px;background:#0b1220;color:#d7e0ea;font-size:11.5px;line-height:1.6;overflow-x:auto}
+.icon-cell{display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 4px;border:1px solid #e7e5e4;border-radius:10px;background:#fff;cursor:pointer;font:inherit;color:#44403c}
+.icon-cell span{font-size:9.5px;color:#78716c;font-family:'JetBrains Mono',monospace}
+.icon-cell:hover{border-color:#a8a29e}
+.icon-cell.copied{border-color:#0f766e;color:#0f766e}
+.grid-icons{display:grid;grid-template-columns:repeat(auto-fill,minmax(86px,1fr));gap:8px}
+table.ds{width:100%;border-collapse:collapse;font-size:12.5px;background:#fff;border:1px solid #e7e5e4;border-radius:10px;overflow:hidden}
+table.ds th{text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:#78716c;font-weight:600;background:#fafaf9;padding:8px 12px;border-bottom:1px solid #e7e5e4}
+table.ds td{padding:9px 12px;border-bottom:1px solid #f5f5f4;vertical-align:middle}
+table.ds tr:last-child td{border-bottom:0}
+.sw{display:inline-block;width:28px;height:28px;border-radius:7px;border:1px solid rgba(0,0,0,.08);vertical-align:middle}
+.sw-lg{width:100%;height:56px;border-radius:9px;border:1px solid rgba(0,0,0,.07)}
+.tag{display:inline-block;font-size:10px;font-weight:600;padding:2px 7px;border-radius:99px;background:#f5f5f4;color:#57534e;vertical-align:middle}
+.tag.do{background:#d1fae5;color:#047857}.tag.dont{background:#ffe4e6;color:#be123c}
+.note{font-size:12px;color:#78716c;background:#fafaf9;border:1px solid #e7e5e4;border-radius:8px;padding:10px 14px;margin:10px 0;line-height:1.55}
+.note b{color:#44403c}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:900px){.two{grid-template-columns:1fr}main{padding:28px 20px 80px}.ds-side{display:none}}

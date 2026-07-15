@@ -25,7 +25,10 @@ public class IncidentRepository : IIncidentRepository
     /// </summary>
     public async Task<Incident?> GetByIdAsync(Guid incidentId, Guid tenantId, CancellationToken ct = default)
     {
+        // CorrectiveActions is a regular navigation since the unified-CAPA
+        // promotion (owned entities load automatically, regular ones do not).
         return await _context.Incidents
+            .Include(i => i.CorrectiveActions)
             .FirstOrDefaultAsync(i => i.IncidentId == incidentId && i.TenantId == tenantId, ct)
             .ConfigureAwait(false);
     }

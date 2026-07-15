@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="hu">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>JoineryTech DS — Komponensek</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+<link rel="stylesheet" href="ds.css">
+<script src="ds-icons.js"></script><script src="ds-shell.js"></script>
+</head>
+<body>
+<main>
+<div class="crumb">JoineryTech Design System</div>
+<h1>Komponensek</h1>
+<p class="lead">Az élő <span class="mono">ui.jsx</span> primitívek és a leggyakoribb modul-minták — élő példával és másolható kóddal. A JSX-komponensek a <span class="mono">window</span>-ra exportálva mindenhonnan elérhetők.</p>
+
+<section id="wordmark">
+<h2>Wordmark + GrainMark</h2>
+<p class="h2sub">Az évgyűrű-jel (GrainMark) + „joinery/tech" szóvédjegy. Sötét és világos tónusban él; a per-jel mindig teal-300.</p>
+<div class="demo demo-row" style="gap:0;padding:0;overflow:hidden">
+<div style="flex:1;background:#0b1220;padding:26px;display:flex;justify-content:center"><span style="display:flex;align-items:center;gap:8px;font-size:15px"><svg width="22" height="22" viewBox="0 0 22 22"><rect x="1" y="1" width="20" height="20" rx="5" fill="none" stroke="#fff" stroke-opacity=".22"></rect><path d="M5 16 Q 11 6, 17 16" fill="none" stroke="#fff" stroke-opacity=".95" stroke-width="1.4" stroke-linecap="round"></path><path d="M5 13 Q 11 5, 17 13" fill="none" stroke="#5eead4" stroke-width="1.4" stroke-linecap="round"></path><path d="M5 19 Q 11 9, 17 19" fill="none" stroke="#fff" stroke-opacity=".4" stroke-width="1.4" stroke-linecap="round"></path></svg><span style="color:#fff;font-weight:600;letter-spacing:-.01em">joinery</span><span style="color:#5eead4;font-weight:300;margin:0 -3px">/</span><span style="color:rgba(255,255,255,.55);font-weight:500">tech</span></span></div>
+<div style="flex:1;background:#fff;padding:26px;display:flex;justify-content:center"><span style="display:flex;align-items:center;gap:8px;font-size:15px"><svg width="22" height="22" viewBox="0 0 22 22"><rect x="1" y="1" width="20" height="20" rx="5" fill="none" stroke="#0c1322" stroke-opacity=".22"></rect><path d="M5 16 Q 11 6, 17 16" fill="none" stroke="#0c1322" stroke-opacity=".95" stroke-width="1.4" stroke-linecap="round"></path><path d="M5 13 Q 11 5, 17 13" fill="none" stroke="#5eead4" stroke-width="1.4" stroke-linecap="round"></path><path d="M5 19 Q 11 9, 17 19" fill="none" stroke="#0c1322" stroke-opacity=".4" stroke-width="1.4" stroke-linecap="round"></path></svg><span style="color:#0c1322;font-weight:600;letter-spacing:-.01em">joinery</span><span style="color:#0d9488;font-weight:300;margin:0 -3px">/</span><span style="color:#78716c;font-weight:500">tech</span></span></div>
+</div>
+<script type="text/plain" class="snippet" data-title="Wordmark — ui.jsx">
+<Wordmark tone="dark" size={15} />   // sötét sidebar-on
+<Wordmark tone="light" size={13} />  // világos topbar-on
+</script>
+</section>
+
+<section id="ikonok">
+<h2>Ikonok</h2>
+<p class="h2sub">Saját 61 darabos line-készlet (24-es viewBox, 1.6 stroke, kerek végek) — <b>nem</b> Lucide-import, de a nyelve azonos. Új ikon a meglévő geometriával készül a <span class="mono">ui.jsx Icon</span> switch-be. Kattints a névre a másoláshoz.</p>
+<div data-icon-grid class="grid-icons"></div>
+<script type="text/plain" class="snippet" data-title="Icon — ui.jsx">
+<Icon name="factory" size={17} className="text-teal-700" />
+// méretek: 14–15 (inline/pill) · 16–18 (gomb, nav) · 20+ (empty state)
+</script>
+</section>
+
+<section id="gombok">
+<h2>Gombok</h2>
+<p class="h2sub">Két alap-variáns + a kötelező „lezárt" állapot. Magasság 36px (h-9), felirat 12.5px/500, ige elöl.</p>
+<div class="demo demo-row">
+<button class="inline-flex items-center gap-1.5 px-3 h-9 rounded-lg bg-teal-700 text-white text-[12.5px] font-medium hover:bg-teal-800 shadow-sm shadow-teal-900/10"><i data-icon="plus" data-size="15"></i>Új megrendelés</button>
+<button class="inline-flex items-center gap-1.5 px-3 h-9 rounded-lg bg-white border border-stone-200 text-stone-700 text-[12.5px] font-medium hover:bg-stone-50"><i data-icon="download" data-size="15"></i>Exportálás</button>
+<button class="inline-flex items-center gap-1.5 px-3 h-9 rounded-lg bg-stone-100 text-stone-400 text-[12.5px] font-medium cursor-not-allowed" title="A jóváhagyáshoz hiányzik: Eladási ár" disabled><i data-icon="lock" data-size="15"></i>Jóváhagyás</button>
+<button class="w-9 h-9 grid place-items-center rounded-lg text-stone-500 hover:bg-stone-100"><i data-icon="more" data-size="17"></i></button>
+</div>
+<script type="text/plain" class="snippet" data-title="PrimaryBtn / GhostBtn — ui.jsx + lezárt minta">
+<PrimaryBtn icon="plus" onClick={...}>Új megrendelés</PrimaryBtn>
+<GhostBtn icon="download">Exportálás</GhostBtn>
+
+// LEZÁRT (perm-gate): disabled + tooltip a hiányzó feltétellel — SOHA nem rejtett
+<button disabled title={"A jóváhagyáshoz hiányzik: " + missing.join(", ")}
+  className="inline-flex items-center gap-1.5 px-3 h-9 rounded-lg bg-stone-100 text-stone-400 text-[12.5px] font-medium cursor-not-allowed">
+  <Icon name="lock" size={15} /> Jóváhagyás
+</button>
+</script>
+</section>
+
+<section id="form">
+<h2>Form elemek</h2>
+<p class="h2sub">Címke felül (11px/600 uppercase stone-500), mező 36–38px, fókusz teal-ringgel. Kötelező mező jelölése a címkében.</p>
+<div class="demo">
+<div class="grid sm:grid-cols-2 gap-4 max-w-xl">
+<label class="block"><span class="block text-[11px] font-semibold uppercase tracking-wide text-stone-500 mb-1.5">Ügyfél *</span><input placeholder="pl. Balogh Ádám" class="w-full h-9 rounded-md border-stone-300 text-[13px] focus:border-teal-600 focus:ring-teal-600 placeholder:text-stone-400"></label>
+<label class="block"><span class="block text-[11px] font-semibold uppercase tracking-wide text-stone-500 mb-1.5">Típus</span><select class="w-full h-9 rounded-md border-stone-300 text-[13px] focus:border-teal-600 focus:ring-teal-600"><option>Konyhabútor</option><option>Gardrób</option></select></label>
+<label class="block sm:col-span-2"><span class="block text-[11px] font-semibold uppercase tracking-wide text-stone-500 mb-1.5">Megjegyzés</span><textarea rows="2" class="w-full rounded-md border-stone-300 text-[13px] focus:border-teal-600 focus:ring-teal-600" placeholder="Opcionális"></textarea></label>
+</div>
+</div>
+<script type="text/plain" class="snippet" data-title="Input-minta (Tailwind forms plugin)">
+<label className="block">
+  <span className="block text-[11px] font-semibold uppercase tracking-wide text-stone-500 mb-1.5">Ügyfél *</span>
+  <input className="w-full h-9 rounded-md border-stone-300 text-[13px]
+    focus:border-teal-600 focus:ring-teal-600 placeholder:text-stone-400" />
+</label>
+</script>
+<div class="note"><b>Natív kontrollok:</b> a fő HTML pinneli a <span class="mono">color-scheme: light</span>-ot és a select-option világos hátterét — sötét OS-téma alatt is olvasható dropdown. Ne írd felül.</div>
+</section>
+
+<section id="pill">
+<h2>StatusPill + badge</h2>
+<p class="h2sub">A pill a státuszé (pont + tint), a badge a darabszámé / címkéé. FSM-státusz mindig pill; a tónus-térkép a Színek oldalon.</p>
+<div class="demo demo-row">
+<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium bg-stone-100 text-stone-600"><span class="w-1.5 h-1.5 rounded-full bg-stone-400"></span>Vázlat</span>
+<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium bg-amber-50 text-amber-700"><span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>Kalkuláció</span>
+<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium bg-sky-50 text-sky-700"><span class="w-1.5 h-1.5 rounded-full bg-sky-500"></span>Kiadható</span>
+<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium bg-teal-50 text-teal-700"><span class="w-1.5 h-1.5 rounded-full bg-teal-500"></span>Folyamatban</span>
+<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium bg-emerald-50 text-emerald-700"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>Kiadva</span>
+<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium bg-rose-50 text-rose-700"><span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>Kritikus</span>
+<span style="width:1px;height:22px;background:#e7e5e4"></span>
+<span class="text-[10px] px-1.5 py-0.5 rounded bg-stone-100 text-stone-600 font-medium">12</span>
+<span class="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 font-medium">3 lejárt</span>
+<span class="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700 font-semibold">webshop</span>
+</div>
+<script type="text/plain" class="snippet" data-title="StatusPill — ui.jsx">
+<StatusPill status="released" label="Kiadva" />
+// badge (darabszám): text-[10px] px-1.5 py-0.5 rounded bg-stone-100 text-stone-600
+</script>
+</section>
+
+<section id="kartya">
+<h2>Kártyák</h2>
+<p class="h2sub">Fehér felület + stone-border + rounded-xl. Interaktív kártya border-erősödéssel jelez, nem árnyékkal. A KPI-kártya a dashboardok alapegysége.</p>
+<div class="demo tinted">
+<div class="grid sm:grid-cols-3 gap-3">
+<div class="bg-white border border-stone-200/80 rounded-xl p-4"><div class="text-[11px] font-semibold uppercase tracking-wide text-stone-500">Kintlévőség</div><div class="text-[22px] font-semibold text-stone-900 mt-1">4,2 M Ft</div><div class="text-[11.5px] text-amber-700 mt-0.5">870 e Ft lejárt</div></div>
+<div class="bg-white border border-stone-200/80 rounded-xl p-4 hover:border-stone-300 transition cursor-pointer"><div class="flex items-center gap-2"><span class="w-8 h-8 rounded-lg bg-teal-100 text-teal-700 grid place-items-center"><i data-icon="factory" data-size="16"></i></span><div><div class="text-[13px] font-semibold text-stone-900">Gyártás</div><div class="text-[11px] text-stone-500">6 aktív munka</div></div></div><div class="text-[11.5px] text-stone-500 mt-3">Interaktív: hover-re border-stone-300</div></div>
+<div class="bg-white border border-stone-200/80 rounded-xl p-4"><div class="text-[11px] font-semibold uppercase tracking-wide text-stone-500">Heti terhelés</div><div class="text-[22px] font-semibold text-stone-900 mt-1">83%</div><div class="mt-2 h-1.5 rounded-full bg-stone-100 overflow-hidden"><div class="h-full bg-teal-600 rounded-full" style="width:83%"></div></div></div>
+</div>
+</div>
+<script type="text/plain" class="snippet" data-title="Card — ui.jsx">
+<Card className="p-4">…</Card>
+<Card interactive className="p-4">…</Card>  // hover:border-stone-300 + cursor-pointer
+</script>
+</section>
+
+<section id="slideover">
+<h2>SlideOver / bottom-sheet</h2>
+<p class="h2sub">Minden detail-nézet és szerkesztő-lap ebben él: desktopon jobbról csúszó panel (alap 520px), mobilon alulról jövő lap 18px-es lekerekítéssel és fogantyúval. Escape zár, footer a műveleteké.</p>
+<div class="demo demo-row">
+<button id="so-demo-btn" class="inline-flex items-center gap-1.5 px-3 h-9 rounded-lg bg-teal-700 text-white text-[12.5px] font-medium hover:bg-teal-800 shadow-sm shadow-teal-900/10">SlideOver megnyitása</button>
+<span class="text-[12px] text-stone-500">← élő demo</span>
+</div>
+<script type="text/plain" class="snippet" data-title="SlideOver — page-extras-2.jsx (window.SlideOver)">
+<window.SlideOver open={!!openId} onClose={close} width={640}
+  title="MSZ-2426-018 · Konyhabútor" subtitle="Balogh Ádám · határidő: 08. 02."
+  footer={<>
+    <GhostBtn onClick={close}>Mégse</GhostBtn>
+    <PrimaryBtn onClick={save}>Mentés</PrimaryBtn>
+  </>}>
+  {/* tartalom: px-5 py-4 szekciók */}
+</window.SlideOver>
+</script>
+</section>
+
+<section id="nav">
+<h2>Navigáció</h2>
+<p class="h2sub">Három rétege van: sötét fő-sidebar (világ-szint), világ-alnav a WorldShell-ben (akcentus-színnel), mobil alsó nav. Aktív elem: bal oldali 2px teal-csík + világosított háttér.</p>
+<div class="demo" style="padding:0;overflow:hidden;display:flex;gap:0">
+<div style="width:232px;background:#0b1220;padding:14px 8px;flex-shrink:0">
+<div class="flex flex-col gap-0.5">
+<button class="flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[13px] relative bg-white/10 text-white"><span style="position:absolute;left:0;top:8px;bottom:8px;width:2px;border-radius:0 2px 2px 0;background:#5eead4"></span><i data-icon="dashboard" data-size="17" style="color:#5eead4"></i><span class="flex-1 text-left">Áttekintés</span></button>
+<button class="flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[13px] text-white/70 hover:bg-white/5"><i data-icon="orders" data-size="17" style="color:rgba(255,255,255,.55)"></i><span class="flex-1 text-left">Megrendelések</span><span class="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-white/65">12</span></button>
+<button class="flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[13px] text-white/70 hover:bg-white/5"><i data-icon="inventory" data-size="17" style="color:rgba(255,255,255,.55)"></i><span class="flex-1 text-left">Raktár</span><span class="text-[10px] px-1.5 py-0.5 rounded bg-amber-400/20 text-amber-200">3</span></button>
+</div>
+</div>
+<div style="flex:1;padding:16px 18px">
+<div class="text-[11px] font-semibold uppercase tracking-wide text-stone-500 mb-2">Világ-alnav (WorldShell, akcentus: blue)</div>
+<div class="flex flex-col gap-0.5 max-w-[220px]">
+<button class="text-left px-3 py-2 rounded-md text-[12.5px] font-medium bg-blue-50/60 text-blue-700 border-l-2 border-blue-600">Áttekintés</button>
+<button class="text-left px-3 py-2 rounded-md text-[12.5px] text-stone-600 hover:bg-blue-50">Pipeline</button>
+<button class="text-left px-3 py-2 rounded-md text-[12.5px] text-stone-600 hover:bg-blue-50">Lead-ek</button>
+</div>
+<div class="text-[11px] font-semibold uppercase tracking-wide text-stone-500 mb-2 mt-5">Mobil alsó nav (&lt;768px)</div>
+<div class="border border-stone-200 rounded-xl overflow-hidden max-w-[340px]"><div class="grid grid-cols-4 bg-white border-t border-stone-200">
+<button class="flex flex-col items-center gap-0.5 py-2 text-teal-700"><i data-icon="dashboard" data-size="18"></i><span class="text-[9.5px] font-medium">Áttekintés</span></button>
+<button class="flex flex-col items-center gap-0.5 py-2 text-stone-500"><i data-icon="workflow" data-size="18"></i><span class="text-[9.5px] font-medium">Folyamat</span></button>
+<button class="flex flex-col items-center gap-0.5 py-2 text-stone-500"><i data-icon="production" data-size="18"></i><span class="text-[9.5px] font-medium">Gyártás</span></button>
+<button class="flex flex-col items-center gap-0.5 py-2 text-stone-500"><i data-icon="settings" data-size="18"></i><span class="text-[9.5px] font-medium">Beállítás</span></button>
+</div></div>
+</div>
+</div>
+<script type="text/plain" class="snippet" data-title="Aktív nav-elem (sötét sidebar)">
+<button className={active ? "bg-white/8 text-white …" : "text-white/70 hover:bg-white/5 …"}>
+  {active && <span className="absolute left-0 top-2 bottom-2 w-[2px] rounded-r bg-teal-300" />}
+  <Icon name={icon} size={17} className={active ? "text-teal-300" : "text-white/55"} />
+  …
+</button>
+</script>
+</section>
+</main>
+<div id="so-root"></div>
+<script>
+(function(){
+var btn=document.getElementById("so-demo-btn"),root=document.getElementById("so-root");
+function close(){root.innerHTML="";document.removeEventListener("keydown",esc);}
+function esc(e){if(e.key==="Escape")close();}
+btn.addEventListener("click",function(){
+ root.innerHTML='<div class="fixed inset-0 z-50"><div class="absolute inset-0 bg-stone-900/30 backdrop-blur-[2px]" data-close></div>'+
+ '<aside class="absolute right-0 top-0 h-full w-[min(520px,100vw)] bg-white shadow-2xl flex flex-col">'+
+ '<div class="px-5 py-4 border-b border-stone-200 flex items-start gap-3"><div class="flex-1 min-w-0"><div class="text-[15px] font-semibold text-stone-900">MSZ-2426-018 · Konyhabútor</div><div class="text-[11.5px] text-stone-500 mt-0.5">Balogh Ádám · határidő: 08. 02.</div></div><button data-close class="w-8 h-8 grid place-items-center rounded-md text-stone-400 hover:bg-stone-100 hover:text-stone-700">✕</button></div>'+
+ '<div class="flex-1 overflow-y-auto px-5 py-4 text-[13px] text-stone-600"><div class="mb-3"><span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium bg-teal-50 text-teal-700"><span class="w-1.5 h-1.5 rounded-full bg-teal-500"></span>Folyamatban</span></div>Itt él a detail-tartalom: szekciók px-5 py-4 ritmusban, kapcsolódó entitások RefPanel-ben.</div>'+
+ '<div class="px-5 py-3 border-t border-stone-200 bg-stone-50/60 flex items-center gap-2 justify-end"><button data-close class="px-3 h-9 rounded-lg bg-white border border-stone-200 text-stone-700 text-[12.5px] font-medium hover:bg-stone-50">Mégse</button><button data-close class="px-3 h-9 rounded-lg bg-teal-700 text-white text-[12.5px] font-medium hover:bg-teal-800">Mentés</button></div></aside></div>';
+ root.querySelectorAll("[data-close]").forEach(function(el){el.addEventListener("click",close);});
+ document.addEventListener("keydown",esc);
+});
+})();
+</script>
+</body>
+</html>

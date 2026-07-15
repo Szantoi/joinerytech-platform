@@ -69,9 +69,15 @@ public abstract class PostgresTestBase : IAsyncLifetime
     /// </summary>
     protected async Task ClearDatabaseAsync()
     {
+        DbContext.CorrectiveActions.RemoveRange(DbContext.CorrectiveActions);
         DbContext.Incidents.RemoveRange(DbContext.Incidents);
         DbContext.RiskAssessments.RemoveRange(DbContext.RiskAssessments);
         DbContext.TrainingRecords.RemoveRange(DbContext.TrainingRecords);
+        DbContext.SafetyWalks.RemoveRange(DbContext.SafetyWalks);
+        DbContext.PpeIssuances.RemoveRange(DbContext.PpeIssuances);
+        DbContext.PpeItems.RemoveRange(DbContext.PpeItems);
+        DbContext.HazardousMaterials.RemoveRange(DbContext.HazardousMaterials);
+        DbContext.Locations.RemoveRange(DbContext.Locations);
         await DbContext.SaveChangesAsync().ConfigureAwait(false);
     }
 }

@@ -19,6 +19,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Infrastructure.Tests is a separate nested project — exclude it from this compilation -->
+    <Compile Remove="Infrastructure.Tests/**" />
+    <None Remove="Infrastructure.Tests/**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="../src/Domain/SpaceOS.Modules.Ehs.Domain.csproj" />
   </ItemGroup>
 

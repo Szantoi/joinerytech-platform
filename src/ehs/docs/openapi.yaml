@@ -48,6 +48,18 @@ tags:
     description: Employee training and competency management
   - name: Metrics
     description: EHS metrics and analytics
+  - name: Locations
+    description: Hierarchical location registry (Site → Building/Hall → Zone)
+  - name: HazardousMaterials
+    description: Hazardous material / SDS registry with computed validity
+  - name: PpeItems
+    description: PPE (EVE) catalogue master data
+  - name: PpeIssuances
+    description: PPE issuance FSM (kiadva → atvett → visszavett | cserelve)
+  - name: SafetyWalks
+    description: Safety walk FSM (utemezett → folyamatban → intezkedes → lezart, +elmaradt)
+  - name: CorrectiveActions
+    description: Unified CAPA board (incident + safety walk + risk assessment sources)
 
 security:
   - BearerAuth: []
@@ -818,6 +830,879 @@ paths:
         '403':
           $ref: '#/components/responses/Forbidden'
 
+  # ========================================
+  # LOCATION REGISTRY (5 endpoints)
+  # ========================================
+  /api/ehs/locations:
+    get:
+      operationId: listLocations
+      tags: [Locations]
+      summary: List locations (flat list)
+      description: |
+        Returns the flat location list; clients build the tree from parentLocationId.
+        Resolves the portal EhsPage mock-locations TODO.
+      parameters:
+        - name: activeOnly
+          in: query
+          required: false
+          schema:
+            type: boolean
+        - name: kind
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/LocationKind'
+        - name: parentLocationId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Flat list of location nodes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EhsLocationDto'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    post:
+      operationId: createLocation
+      tags: [Locations]
+      summary: Create location node
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateLocationRequest'
+      responses:
+        '201':
+          description: Location created (returns the new id)
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/ehs/locations/{id}:
+    get:
+      operationId: getLocation
+      tags: [Locations]
+      summary: Get location by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Location details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EhsLocationDto'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    put:
+      operationId: updateLocation
+      tags: [Locations]
+      summary: Rename / re-classify / move a location
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateLocationRequest'
+      responses:
+        '204':
+          description: Location updated
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /api/ehs/locations/{id}/deactivate:
+    post:
+      operationId: deactivateLocation
+      tags: [Locations]
+      summary: Soft-deactivate a location
+      description: Guard rejects deactivation while the node has ACTIVE children (409).
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Location deactivated
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  # ========================================
+  # HAZARDOUS MATERIAL / SDS REGISTRY (7 endpoints)
+  # ========================================
+  /api/ehs/hazardous-materials:
+    get:
+      operationId: listHazardousMaterials
+      tags: [HazardousMaterials]
+      summary: List hazardous materials
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/MaterialStatus'
+        - name: locationId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: validity
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/SdsValidity'
+      responses:
+        '200':
+          description: Material list rows with computed SDS validity
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/HazardousMaterialListItemDto'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      operationId: registerHazardousMaterial
+      tags: [HazardousMaterials]
+      summary: Register hazardous material with SDS metadata
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterHazardousMaterialRequest'
+      responses:
+        '201':
+          description: Material registered (returns the new id)
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /api/ehs/hazardous-materials/expiring:
+    get:
+      operationId: getExpiringSds
+      tags: [HazardousMaterials]
+      summary: Active materials with SDS expiring within the window (dashboard)
+      parameters:
+        - name: withinDays
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 30
+      responses:
+        '200':
+          description: Expiring SDS list ordered by expiry date
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/HazardousMaterialListItemDto'
+
+  /api/ehs/hazardous-materials/{id}:
+    get:
+      operationId: getHazardousMaterial
+      tags: [HazardousMaterials]
+      summary: Get hazardous material by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Material detail with computed SDS validity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HazardousMaterialDto'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      operationId: updateHazardousMaterial
+      tags: [HazardousMaterials]
+      summary: Update material master data (SDS dates change via renew-sds)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateHazardousMaterialRequest'
+      responses:
+        '204':
+          description: Material updated
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /api/ehs/hazardous-materials/{id}/renew-sds:
+    post:
+      operationId: renewSds
+      tags: [HazardousMaterials]
+      summary: Register a new SDS version
+      description: New issue/expiry dates + optional new DMS document link (RenewTrainingRecord pattern).
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RenewSdsRequest'
+      responses:
+        '204':
+          description: SDS renewed
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /api/ehs/hazardous-materials/{id}/archive:
+    post:
+      operationId: archiveHazardousMaterial
+      tags: [HazardousMaterials]
+      summary: Archive (phase out) a material — lifecycle Active → Archived
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Material archived
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  # ========================================
+  # PPE CATALOGUE + ISSUANCE FSM (13 endpoints)
+  # ========================================
+  /api/ehs/ppe-items:
+    get:
+      operationId: listPpeItems
+      tags: [PpeItems]
+      summary: List PPE catalogue items
+      parameters:
+        - name: activeOnly
+          in: query
+          required: false
+          schema:
+            type: boolean
+        - name: category
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/PpeCategory'
+      responses:
+        '200':
+          description: PPE catalogue
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PpeItemDto'
+
+    post:
+      operationId: createPpeItem
+      tags: [PpeItems]
+      summary: Create PPE catalogue item
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePpeItemRequest'
+      responses:
+        '201':
+          description: Item created (returns the new id)
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/ehs/ppe-items/{id}:
+    get:
+      operationId: getPpeItem
+      tags: [PpeItems]
+      summary: Get PPE catalogue item by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: PPE item detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PpeItemDto'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      operationId: updatePpeItem
+      tags: [PpeItems]
+      summary: Update PPE catalogue item
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePpeItemRequest'
+      responses:
+        '204':
+          description: Item updated
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /api/ehs/ppe-items/{id}/deactivate:
+    post:
+      operationId: deactivatePpeItem
+      tags: [PpeItems]
+      summary: Soft-deactivate a PPE catalogue item
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Item deactivated
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /api/ehs/ppe-issuances:
+    get:
+      operationId: listPpeIssuances
+      tags: [PpeIssuances]
+      summary: List PPE issuances
+      parameters:
+        - name: employeeId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/PpeIssuanceStatus'
+        - name: expiringWithinDays
+          in: query
+          required: false
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Issuance list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PpeIssuanceDto'
+
+    post:
+      operationId: issuePpe
+      tags: [PpeIssuances]
+      summary: Record a PPE hand-out (FSM entry — Issued/kiadva)
+      description: |
+        When expiresAt is omitted it is derived from PpeItem.defaultLifetimeMonths.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IssuePpeRequest'
+      responses:
+        '201':
+          description: Issuance created (returns the new id)
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /api/ehs/ppe-issuances/expiring:
+    get:
+      operationId: listExpiringPpeIssuances
+      tags: [PpeIssuances]
+      summary: Outstanding issuances expiring within the window (dashboard)
+      parameters:
+        - name: withinDays
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 30
+      responses:
+        '200':
+          description: Expiring outstanding issuances
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PpeIssuanceDto'
+
+  /api/ehs/ppe-issuances/by-employee/{employeeId}:
+    get:
+      operationId: getEmployeePpeSheet
+      tags: [PpeIssuances]
+      summary: Employee PPE sheet (portal view)
+      parameters:
+        - name: employeeId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Every issuance of the employee
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PpeIssuanceDto'
+
+  /api/ehs/ppe-issuances/{id}:
+    get:
+      operationId: getPpeIssuance
+      tags: [PpeIssuances]
+      summary: Get PPE issuance by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Issuance detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PpeIssuanceDto'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/ehs/ppe-issuances/{id}/acknowledge:
+    post:
+      operationId: acknowledgePpeIssuance
+      tags: [PpeIssuances]
+      summary: "FSM: Issued → Acknowledged (atvett)"
+      description: Illegal transition returns 409 with the domain guard message.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Acknowledged
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /api/ehs/ppe-issuances/{id}/return:
+    post:
+      operationId: returnPpeIssuance
+      tags: [PpeIssuances]
+      summary: "FSM: Acknowledged → Returned (visszavett, terminal)"
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Returned
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /api/ehs/ppe-issuances/{id}/replace:
+    post:
+      operationId: replacePpeIssuance
+      tags: [PpeIssuances]
+      summary: "FSM: Acknowledged → Replaced (cserelve) — spawns a new issuance"
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReplacePpeIssuanceRequest'
+      responses:
+        '201':
+          description: Replacement issuance created (returns the NEW issuance id)
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  # ========================================
+  # SAFETY WALKS + UNIFIED CAPA (10 endpoints)
+  # ========================================
+  /api/ehs/safety-walks:
+    get:
+      operationId: listSafetyWalks
+      tags: [SafetyWalks]
+      summary: List safety walks
+      parameters:
+        - name: locationId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/SafetyWalkStatus'
+        - name: scheduledAfter
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: scheduledBefore
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Safety walk list rows
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SafetyWalkListItemDto'
+
+    post:
+      operationId: scheduleSafetyWalk
+      tags: [SafetyWalks]
+      summary: Schedule a safety walk (FSM entry — Scheduled/utemezett)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScheduleSafetyWalkRequest'
+      responses:
+        '201':
+          description: Walk scheduled (returns the new id)
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /api/ehs/safety-walks/{id}:
+    get:
+      operationId: getSafetyWalk
+      tags: [SafetyWalks]
+      summary: Get safety walk by ID (with findings)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Walk detail with findings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SafetyWalkDto'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/ehs/safety-walks/{id}/start:
+    post:
+      operationId: startSafetyWalk
+      tags: [SafetyWalks]
+      summary: "FSM: Scheduled → InProgress (folyamatban)"
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Walk started
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /api/ehs/safety-walks/{id}/findings:
+    post:
+      operationId: addSafetyWalkFinding
+      tags: [SafetyWalks]
+      summary: Record a finding (+ optional CAPA generation)
+      description: |
+        Only allowed while the walk is InProgress (otherwise 409).
+        When requiresAction=true and capaAssignedTo+capaDueDate are provided,
+        a corrective action is spawned through the UNIFIED CAPA mechanism
+        (same table incidents use) and linked to the finding.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddSafetyWalkFindingRequest'
+      responses:
+        '201':
+          description: Finding recorded (returns findingId + optional correctiveActionId)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddSafetyWalkFindingResult'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /api/ehs/safety-walks/{id}/complete:
+    post:
+      operationId: completeSafetyWalk
+      tags: [SafetyWalks]
+      summary: "FSM: InProgress → ActionRequired (intezkedes) or Closed (lezart)"
+      description: |
+        Transitions to ActionRequired when any finding requires action,
+        otherwise closes the walk directly. Returns the resulting status.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Resulting FSM status
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /api/ehs/safety-walks/{id}/close:
+    post:
+      operationId: closeSafetyWalk
+      tags: [SafetyWalks]
+      summary: "FSM: ActionRequired → Closed (guard: all linked CAPAs completed)"
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Walk closed
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /api/ehs/safety-walks/{id}/cancel:
+    post:
+      operationId: cancelSafetyWalk
+      tags: [SafetyWalks]
+      summary: "FSM: Scheduled → Cancelled (elmaradt)"
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Walk cancelled
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /api/ehs/corrective-actions:
+    get:
+      operationId: listCorrectiveActions
+      tags: [CorrectiveActions]
+      summary: Unified CAPA board
+      description: |
+        One list for corrective actions from every source
+        (incident investigation, safety walk finding, risk assessment).
+      parameters:
+        - name: completed
+          in: query
+          required: false
+          schema:
+            type: boolean
+        - name: assignedTo
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: source
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/CapaSource'
+        - name: sourceId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: CAPA board rows ordered by due date
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CapaDto'
+
+  /api/ehs/corrective-actions/{id}/complete:
+    post:
+      operationId: completeCorrectiveAction
+      tags: [CorrectiveActions]
+      summary: Complete a corrective action (any source)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: CAPA completed
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
 # ========================================
 # COMPONENTS (Schemas, Responses, SecuritySchemes)
 # ========================================
@@ -1479,6 +2364,552 @@ components:
         details:
           type: ['object', 'null']
 
+    # ========================================
+    # LOCATION REGISTRY
+    # ========================================
+    LocationKind:
+      type: string
+      enum: [Site, Building, Hall, Zone, Outdoor]
+      description: Kind of a node in the hierarchical location registry
+
+    EhsLocationDto:
+      type: object
+      required: [locationId, tenantId, code, name, kind, isActive, createdAt]
+      properties:
+        locationId:
+          type: string
+          format: uuid
+        tenantId:
+          type: string
+          format: uuid
+        code:
+          type: string
+          description: Short unique code per tenant, e.g. "VAC-A"
+        name:
+          type: string
+          description: Display name, e.g. "Vác — főüzem / A csarnok"
+        parentLocationId:
+          type: ['string', 'null']
+          format: uuid
+          description: Parent node (null = root/site level)
+        kind:
+          $ref: '#/components/schemas/LocationKind'
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+
+    CreateLocationRequest:
+      type: object
+      required: [code, name, kind]
+      properties:
+        code:
+          type: string
+          maxLength: 50
+        name:
+          type: string
+          maxLength: 200
+        kind:
+          $ref: '#/components/schemas/LocationKind'
+        parentLocationId:
+          type: ['string', 'null']
+          format: uuid
+
+    # ========================================
+    # HAZARDOUS MATERIAL / SDS REGISTRY
+    # ========================================
+    MaterialStatus:
+      type: string
+      enum: [Active, Archived]
+      description: Material registry lifecycle (Active → Archived)
+
+    SdsValidity:
+      type: string
+      enum: [Valid, Expiring, Expired]
+      description: "CALCULATED from sdsExpiresAt: Valid (>30d), Expiring (≤30d), Expired"
+
+    HazardousMaterialDto:
+      type: object
+      required: [materialId, tenantId, name, supplier, storageLocationId, quantityOnSite, unit, sdsIssuedAt, sdsExpiresAt, status, sdsValidity]
+      properties:
+        materialId:
+          type: string
+          format: uuid
+        tenantId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        supplier:
+          type: string
+        casNumber:
+          type: ['string', 'null']
+          description: CAS registry number, e.g. "67-64-1"
+        ghsHazardClasses:
+          type: array
+          items:
+            type: string
+          description: GHS pictogram codes, e.g. "GHS02"
+        storageLocationId:
+          type: string
+          format: uuid
+          description: FK to EhsLocation
+        quantityOnSite:
+          type: number
+        unit:
+          type: string
+        sdsDocumentId:
+          type: ['string', 'null']
+          format: uuid
+          description: FK to DMS document
+        sdsIssuedAt:
+          type: string
+          format: date-time
+        sdsExpiresAt:
+          type: string
+          format: date-time
+        status:
+          $ref: '#/components/schemas/MaterialStatus'
+        sdsValidity:
+          $ref: '#/components/schemas/SdsValidity'
+        registeredAt:
+          type: string
+          format: date-time
+
+    HazardousMaterialListItemDto:
+      type: object
+      required: [materialId, name, supplier, storageLocationId, sdsExpiresAt, status, sdsValidity]
+      properties:
+        materialId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        supplier:
+          type: string
+        storageLocationId:
+          type: string
+          format: uuid
+        quantityOnSite:
+          type: number
+        unit:
+          type: string
+        sdsExpiresAt:
+          type: string
+          format: date-time
+        status:
+          $ref: '#/components/schemas/MaterialStatus'
+        sdsValidity:
+          $ref: '#/components/schemas/SdsValidity'
+
+    RegisterHazardousMaterialRequest:
+      type: object
+      required: [name, supplier, storageLocationId, quantityOnSite, unit, sdsIssuedAt, sdsExpiresAt]
+      properties:
+        name:
+          type: string
+          maxLength: 200
+        supplier:
+          type: string
+          maxLength: 200
+        storageLocationId:
+          type: string
+          format: uuid
+        quantityOnSite:
+          type: number
+          minimum: 0
+        unit:
+          type: string
+          maxLength: 20
+        sdsIssuedAt:
+          type: string
+          format: date-time
+        sdsExpiresAt:
+          type: string
+          format: date-time
+        casNumber:
+          type: ['string', 'null']
+        ghsHazardClasses:
+          type: array
+          items:
+            type: string
+        sdsDocumentId:
+          type: ['string', 'null']
+          format: uuid
+
+    UpdateHazardousMaterialRequest:
+      type: object
+      required: [name, supplier, storageLocationId, quantityOnSite, unit]
+      properties:
+        name:
+          type: string
+          maxLength: 200
+        supplier:
+          type: string
+          maxLength: 200
+        storageLocationId:
+          type: string
+          format: uuid
+        quantityOnSite:
+          type: number
+          minimum: 0
+        unit:
+          type: string
+          maxLength: 20
+        casNumber:
+          type: ['string', 'null']
+        ghsHazardClasses:
+          type: array
+          items:
+            type: string
+
+    RenewSdsRequest:
+      type: object
+      required: [newIssuedAt, newExpiresAt]
+      properties:
+        newIssuedAt:
+          type: string
+          format: date-time
+        newExpiresAt:
+          type: string
+          format: date-time
+        newSdsDocumentId:
+          type: ['string', 'null']
+          format: uuid
+
+    # ========================================
+    # PPE CATALOGUE + ISSUANCE FSM
+    # ========================================
+    PpeCategory:
+      type: string
+      enum: [Head, Eye, Hearing, Respiratory, Hand, Foot, Body, Fall]
+
+    PpeIssuanceStatus:
+      type: string
+      enum: [Issued, Acknowledged, Returned, Replaced]
+      description: "FSM: Issued(kiadva) → Acknowledged(atvett) → Returned(visszavett) | Replaced(cserelve)"
+
+    PpeItemDto:
+      type: object
+      required: [ppeItemId, tenantId, name, category, isActive, createdAt]
+      properties:
+        ppeItemId:
+          type: string
+          format: uuid
+        tenantId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        category:
+          $ref: '#/components/schemas/PpeCategory'
+        standardRef:
+          type: ['string', 'null']
+          description: Reference standard, e.g. "EN 388"
+        defaultLifetimeMonths:
+          type: ['integer', 'null']
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+
+    CreatePpeItemRequest:
+      type: object
+      required: [name, category]
+      properties:
+        name:
+          type: string
+          maxLength: 200
+        category:
+          $ref: '#/components/schemas/PpeCategory'
+        standardRef:
+          type: ['string', 'null']
+        defaultLifetimeMonths:
+          type: ['integer', 'null']
+          minimum: 1
+
+    PpeIssuanceDto:
+      type: object
+      required: [issuanceId, tenantId, employeeId, ppeItemId, issuedAt, issuedBy, quantity, status, isExpired]
+      properties:
+        issuanceId:
+          type: string
+          format: uuid
+        tenantId:
+          type: string
+          format: uuid
+        employeeId:
+          type: string
+          format: uuid
+          description: FK to HR module
+        ppeItemId:
+          type: string
+          format: uuid
+        issuedAt:
+          type: string
+          format: date-time
+        issuedBy:
+          type: string
+          format: uuid
+        quantity:
+          type: integer
+        expiresAt:
+          type: ['string', 'null']
+          format: date-time
+        status:
+          $ref: '#/components/schemas/PpeIssuanceStatus'
+        acknowledgedAt:
+          type: ['string', 'null']
+          format: date-time
+        returnedAt:
+          type: ['string', 'null']
+          format: date-time
+        replacedAt:
+          type: ['string', 'null']
+          format: date-time
+        replacementIssuanceId:
+          type: ['string', 'null']
+          format: uuid
+          description: Set on Replaced — the new issuance
+        isExpired:
+          type: boolean
+          description: CALCULATED — expiresAt passed while the PPE is still out
+
+    IssuePpeRequest:
+      type: object
+      required: [employeeId, ppeItemId, issuedBy, quantity]
+      properties:
+        employeeId:
+          type: string
+          format: uuid
+        ppeItemId:
+          type: string
+          format: uuid
+        issuedBy:
+          type: string
+          format: uuid
+        quantity:
+          type: integer
+          minimum: 1
+        expiresAt:
+          type: ['string', 'null']
+          format: date-time
+          description: Optional — derived from defaultLifetimeMonths when omitted
+
+    ReplacePpeIssuanceRequest:
+      type: object
+      required: [replacedBy]
+      properties:
+        replacedBy:
+          type: string
+          format: uuid
+        newExpiresAt:
+          type: ['string', 'null']
+          format: date-time
+
+    # ========================================
+    # SAFETY WALKS + UNIFIED CAPA
+    # ========================================
+    SafetyWalkStatus:
+      type: string
+      enum: [Scheduled, InProgress, ActionRequired, Closed, Cancelled]
+      description: "FSM: Scheduled(utemezett) → InProgress(folyamatban) → ActionRequired(intezkedes) → Closed(lezart), +Cancelled(elmaradt)"
+
+    CapaSource:
+      type: string
+      enum: [Incident, SafetyWalk, RiskAssessment]
+      description: Which mechanism spawned the corrective action
+
+    SafetyWalkDto:
+      type: object
+      required: [safetyWalkId, tenantId, locationId, scheduledDate, conductedBy, status, findings]
+      properties:
+        safetyWalkId:
+          type: string
+          format: uuid
+        tenantId:
+          type: string
+          format: uuid
+        locationId:
+          type: string
+          format: uuid
+          description: FK to EhsLocation
+        scheduledDate:
+          type: string
+          format: date-time
+        conductedBy:
+          type: string
+          format: uuid
+        participants:
+          type: array
+          items:
+            type: string
+            format: uuid
+        status:
+          $ref: '#/components/schemas/SafetyWalkStatus'
+        startedAt:
+          type: ['string', 'null']
+          format: date-time
+        completedAt:
+          type: ['string', 'null']
+          format: date-time
+        closedAt:
+          type: ['string', 'null']
+          format: date-time
+        cancelledAt:
+          type: ['string', 'null']
+          format: date-time
+        findings:
+          type: array
+          items:
+            $ref: '#/components/schemas/SafetyWalkFindingDto'
+
+    SafetyWalkFindingDto:
+      type: object
+      required: [findingId, description, severity, requiresAction, recordedAt]
+      properties:
+        findingId:
+          type: string
+          format: uuid
+        description:
+          type: string
+        severity:
+          type: string
+          enum: [Negligible, Minor, Moderate, Major, Catastrophic]
+        photoS3Key:
+          type: ['string', 'null']
+          description: Evidence photo (mobile intake integration)
+        requiresAction:
+          type: boolean
+        correctiveActionId:
+          type: ['string', 'null']
+          format: uuid
+          description: Linked unified CAPA
+        linkedRiskAssessmentId:
+          type: ['string', 'null']
+          format: uuid
+        recordedAt:
+          type: string
+          format: date-time
+
+    SafetyWalkListItemDto:
+      type: object
+      required: [safetyWalkId, locationId, scheduledDate, conductedBy, status, findingCount]
+      properties:
+        safetyWalkId:
+          type: string
+          format: uuid
+        locationId:
+          type: string
+          format: uuid
+        scheduledDate:
+          type: string
+          format: date-time
+        conductedBy:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/SafetyWalkStatus'
+        findingCount:
+          type: integer
+
+    ScheduleSafetyWalkRequest:
+      type: object
+      required: [locationId, scheduledDate, conductedBy]
+      properties:
+        locationId:
+          type: string
+          format: uuid
+        scheduledDate:
+          type: string
+          format: date-time
+        conductedBy:
+          type: string
+          format: uuid
+        participants:
+          type: array
+          items:
+            type: string
+            format: uuid
+
+    AddSafetyWalkFindingRequest:
+      type: object
+      required: [description, severity, requiresAction]
+      properties:
+        description:
+          type: string
+          maxLength: 2000
+        severity:
+          type: string
+          enum: [Negligible, Minor, Moderate, Major, Catastrophic]
+        requiresAction:
+          type: boolean
+        photoS3Key:
+          type: ['string', 'null']
+        linkedRiskAssessmentId:
+          type: ['string', 'null']
+          format: uuid
+        capaDescription:
+          type: ['string', 'null']
+          description: CAPA description (defaults to the finding description)
+        capaAssignedTo:
+          type: ['string', 'null']
+          format: uuid
+          description: Providing capaAssignedTo + capaDueDate spawns a unified CAPA
+        capaDueDate:
+          type: ['string', 'null']
+          format: date-time
+
+    AddSafetyWalkFindingResult:
+      type: object
+      required: [findingId]
+      properties:
+        findingId:
+          type: string
+          format: uuid
+        correctiveActionId:
+          type: ['string', 'null']
+          format: uuid
+          description: Set when a CAPA was spawned for the finding
+
+    CapaDto:
+      type: object
+      required: [correctiveActionId, tenantId, source, sourceId, description, assignedTo, dueDate, isCompleted]
+      properties:
+        correctiveActionId:
+          type: string
+          format: uuid
+        tenantId:
+          type: string
+          format: uuid
+        source:
+          $ref: '#/components/schemas/CapaSource'
+        sourceId:
+          type: string
+          format: uuid
+          description: IncidentId or SafetyWalkId that spawned the CAPA
+        incidentId:
+          type: ['string', 'null']
+          format: uuid
+        findingId:
+          type: ['string', 'null']
+          format: uuid
+        description:
+          type: string
+        assignedTo:
+          type: string
+          format: uuid
+        dueDate:
+          type: string
+          format: date-time
+        completedAt:
+          type: ['string', 'null']
+          format: date-time
+        isCompleted:
+          type: boolean
+
   responses:
     Unauthorized:
       description: Unauthorized (missing or invalid JWT token)
@@ -1503,6 +2934,13 @@ components:
 
     BadRequest:
       description: Bad request (validation error)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    Conflict:
+      description: Domain guard violation (illegal FSM transition or business rule)
       content:
         application/json:
           schema:

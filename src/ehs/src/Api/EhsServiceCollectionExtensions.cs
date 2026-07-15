@@ -43,6 +43,12 @@ public static class EhsServiceCollectionExtensions
         services.AddScoped<IIncidentRepository, IncidentRepository>();
         services.AddScoped<IRiskAssessmentRepository, RiskAssessmentRepository>();
         services.AddScoped<ITrainingRecordRepository, TrainingRecordRepository>();
+        services.AddScoped<IEhsLocationRepository, EhsLocationRepository>();
+        services.AddScoped<IHazardousMaterialRepository, HazardousMaterialRepository>();
+        services.AddScoped<IPpeItemRepository, PpeItemRepository>();
+        services.AddScoped<IPpeIssuanceRepository, PpeIssuanceRepository>();
+        services.AddScoped<ISafetyWalkRepository, SafetyWalkRepository>();
+        services.AddScoped<ICorrectiveActionRepository, CorrectiveActionRepository>();
 
         // 5. Notification Service
         services.AddScoped<IEhsNotificationService, EhsNotificationService>();

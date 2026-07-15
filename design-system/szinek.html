@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="hu">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>JoineryTech DS — Színek</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="ds.css">
+<script src="ds-icons.js"></script><script src="ds-shell.js"></script>
+<style>
+.pill{display:inline-flex;align-items:center;gap:6px;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:500}
+.pill i{width:6px;height:6px;border-radius:99px;display:inline-block}
+.acc-pair{display:grid;grid-template-columns:110px 1fr 1fr;gap:8px;align-items:center;font-size:11.5px}
+</style>
+</head>
+<body>
+<main>
+<div class="crumb">JoineryTech Design System</div>
+<h1>Színek</h1>
+<p class="lead">Meleg stone-neutrálok + teal márka-akcentus + világonkénti hue. Erős szín kizárólag jelentéssel jelenik meg: márka, világ-azonosítás vagy státusz.</p>
+
+<section id="neutral">
+<h2>Neutrálok — stone</h2>
+<p class="h2sub">Az egész app a Tailwind <b>stone</b> skálán él (meleg szürke — fához illő). Slate/gray/zinc keverése tilos; a sötét felület (sidebar) egyedi navy.</p>
+<table class="ds">
+<thead><tr><th></th><th>Token</th><th>Hex</th><th>Használat</th></tr></thead>
+<tbody>
+<tr><td><span class="sw" style="background:#f7f7f5"></span></td><td class="mono">app háttér</td><td class="mono">#f7f7f5</td><td>body-háttér (stone-50 közeli, egyedi)</td></tr>
+<tr><td><span class="sw" style="background:#fafaf9"></span></td><td class="mono">stone-50</td><td class="mono">#fafaf9</td><td>táblázat-fejléc, footer-sáv, hover</td></tr>
+<tr><td><span class="sw" style="background:#f5f5f4"></span></td><td class="mono">stone-100</td><td class="mono">#f5f5f4</td><td>keresőmező, semleges pill, hover</td></tr>
+<tr><td><span class="sw" style="background:#e7e5e4"></span></td><td class="mono">stone-200</td><td class="mono">#e7e5e4</td><td>border (gyakran /80 opacitással)</td></tr>
+<tr><td><span class="sw" style="background:#d6d3d1"></span></td><td class="mono">stone-300</td><td class="mono">#d6d3d1</td><td>erősebb border, kbd-keret</td></tr>
+<tr><td><span class="sw" style="background:#a8a29e"></span></td><td class="mono">stone-400</td><td class="mono">#a8a29e</td><td>placeholder, inaktív ikon</td></tr>
+<tr><td><span class="sw" style="background:#78716c"></span></td><td class="mono">stone-500</td><td class="mono">#78716c</td><td>másodlagos szöveg, felirat</td></tr>
+<tr><td><span class="sw" style="background:#57534e"></span></td><td class="mono">stone-600</td><td class="mono">#57534e</td><td>szöveg semleges pill-en</td></tr>
+<tr><td><span class="sw" style="background:#44403c"></span></td><td class="mono">stone-700</td><td class="mono">#44403c</td><td>gomb-szöveg (ghost)</td></tr>
+<tr><td><span class="sw" style="background:#1c1917"></span></td><td class="mono">stone-900</td><td class="mono">#1c1917</td><td>elsődleges szöveg</td></tr>
+<tr><td><span class="sw" style="background:#0b1220"></span></td><td class="mono">sidebar navy</td><td class="mono">#0b1220</td><td>sötét sidebar / kód-blokk háttér (egyedi)</td></tr>
+</tbody>
+</table>
+</section>
+
+<section id="brand">
+<h2>Márka — teal</h2>
+<p class="h2sub">A teal a JoineryTech hangja: primer gomb, aktív nav-jelölő, fókusz. Világos felületen <b>teal-700</b>, sötéten <b>teal-300</b>.</p>
+<div class="demo demo-row">
+<div style="text-align:center"><span class="sw" style="width:64px;height:44px;background:#0f766e"></span><div class="mono" style="font-size:10.5px;color:#78716c;margin-top:4px">teal-700<br>primer gomb</div></div>
+<div style="text-align:center"><span class="sw" style="width:64px;height:44px;background:#115e59"></span><div class="mono" style="font-size:10.5px;color:#78716c;margin-top:4px">teal-800<br>hover</div></div>
+<div style="text-align:center"><span class="sw" style="width:64px;height:44px;background:#14b8a6"></span><div class="mono" style="font-size:10.5px;color:#78716c;margin-top:4px">teal-500<br>jelölő-pont</div></div>
+<div style="text-align:center"><span class="sw" style="width:64px;height:44px;background:#5eead4"></span><div class="mono" style="font-size:10.5px;color:#78716c;margin-top:4px">teal-300<br>sötét felületen</div></div>
+<div style="text-align:center"><span class="sw" style="width:64px;height:44px;background:#f0fdfa"></span><div class="mono" style="font-size:10.5px;color:#78716c;margin-top:4px">teal-50<br>tint</div></div>
+</div>
+<div class="note"><b>Szabály:</b> a teal egyszerre márka- ÉS világ-akcentus (gyártás, törzsadat, webshop). Világ-kontextusban a világé az elsőbbség — ott a primer gomb maradhat teal, de a kiemelések a világ hue-ját használják.</div>
+</section>
+
+<section id="status">
+<h2>Státusz-tónusok — <span class="mono" style="font-size:14px">STATUS_TONES</span></h2>
+<p class="h2sub">Minden FSM-státusz pill formában, ponttal. A tónus a <b>jelentésé</b>, nem a világé — a „kész" mindenhol emerald, a „kritikus" mindenhol rose. Új státusz-szín bevezetése tilos.</p>
+<div class="demo">
+<div class="demo-row" style="row-gap:10px">
+<span class="pill" style="background:#f5f5f4;color:#57534e"><i style="background:#a8a29e"></i>vázlat / tervezett</span>
+<span class="pill" style="background:#fffbeb;color:#b45309"><i style="background:#f59e0b"></i>kalkuláció / alacsony</span>
+<span class="pill" style="background:#f0f9ff;color:#0369a1"><i style="background:#0ea5e9"></i>kiadható</span>
+<span class="pill" style="background:#f0fdfa;color:#0f766e"><i style="background:#14b8a6"></i>folyamatban</span>
+<span class="pill" style="background:#ecfdf5;color:#047857"><i style="background:#10b981"></i>kész / kiadva / ok</span>
+<span class="pill" style="background:#fff1f2;color:#be123c"><i style="background:#f43f5e"></i>kritikus</span>
+</div>
+</div>
+<table class="ds">
+<thead><tr><th>Kulcs</th><th>bg / fg / dot</th><th>Jelentés</th></tr></thead>
+<tbody>
+<tr><td class="mono">draft, planned</td><td class="mono">stone-100 / stone-600 / stone-400</td><td>még nem él — vázlat, tervezett</td></tr>
+<tr><td class="mono">calc, low</td><td class="mono">amber-50 / amber-700 / amber-500</td><td>figyelmet kér — számítás, alacsony készlet</td></tr>
+<tr><td class="mono">ready</td><td class="mono">sky-50 / sky-700 / sky-500</td><td>következő lépésre kész</td></tr>
+<tr><td class="mono">running</td><td class="mono">teal-50 / teal-700 / teal-500</td><td>aktívan folyamatban</td></tr>
+<tr><td class="mono">done, released, ok</td><td class="mono">emerald-50 / emerald-700 / emerald-500</td><td>lezárt, sikeres</td></tr>
+<tr><td class="mono">critical</td><td class="mono">rose-50 / rose-700 / rose-500</td><td>blokkoló hiba, kritikus</td></tr>
+</tbody>
+</table>
+<script type="text/plain" class="snippet" data-title="StatusPill — ui.jsx (kanonikus)">
+<StatusPill status="running" label="Folyamatban" />
+
+// új FSM-státusznál a meglévő hat tónus egyikére képezz le:
+const MY_STATUS_TONE = { nyitott:"draft", folyamatban:"running", megfelelt:"done", selejt:"critical" };
+</script>
+</section>
+
+<section id="worlds">
+<h2>World-akcentusok — jelenlegi térkép</h2>
+<p class="h2sub">Minden világ egy Tailwind-hue-t kap (<span class="mono">data-worlds.js → accent</span>, tokenek: <span class="mono">page-home.jsx → ACCENT_MAP</span>). Egy hue több világé is lehet, ha nem jelennek meg egymás mellett.</p>
+<table class="ds">
+<thead><tr><th></th><th>Hue</th><th>Világok</th></tr></thead>
+<tbody>
+<tr><td><span class="sw" style="background:#0f766e"></span></td><td class="mono">teal</td><td>Gyártás · Gyártás-előkészítés · Törzsadat · Webshop</td></tr>
+<tr><td><span class="sw" style="background:#4338ca"></span></td><td class="mono">indigo</td><td>Feladataim · Értékesítés · AI munkaterület</td></tr>
+<tr><td><span class="sw" style="background:#1d4ed8"></span></td><td class="mono">blue</td><td>CRM</td></tr>
+<tr><td><span class="sw" style="background:#b45309"></span></td><td class="mono">amber</td><td>Tervezés · Beszerzés · HR</td></tr>
+<tr><td><span class="sw" style="background:#047857"></span></td><td class="mono">emerald</td><td>Pénzügy · Műhely-terminál</td></tr>
+<tr><td><span class="sw" style="background:#6d28d9"></span></td><td class="mono">violet</td><td>Projektek · Dokumentumtár</td></tr>
+<tr><td><span class="sw" style="background:#be123c"></span></td><td class="mono">rose</td><td>Belsőépítészet · Reklamáció</td></tr>
+<tr><td><span class="sw" style="background:#0369a1"></span></td><td class="mono">sky</td><td>Logisztika</td></tr>
+<tr><td><span class="sw" style="background:#c2410c"></span></td><td class="mono">orange</td><td>Kereskedelem · Jelenlét</td></tr>
+<tr><td><span class="sw" style="background:#0e7490"></span></td><td class="mono">cyan</td><td>Karbantartás</td></tr>
+<tr><td><span class="sw" style="background:#4d7c0f"></span></td><td class="mono">lime</td><td>Minőség (QA)</td></tr>
+<tr><td><span class="sw" style="background:#b91c1c"></span></td><td class="mono">red</td><td>Munkavédelem (EHS)</td></tr>
+<tr><td><span class="sw" style="background:#334155"></span></td><td class="mono">slate</td><td>Üzemvezető · Kontrolling</td></tr>
+<tr><td><span class="sw" style="background:#44403c"></span></td><td class="mono">stone</td><td>Raktár · Beállítások</td></tr>
+</tbody>
+</table>
+<script type="text/plain" class="snippet" data-title="ACCENT_MAP használat">
+const accent = ACCENT_MAP[world.accent] || ACCENT_MAP.teal;
+// accent.tint · accent.iconBg · accent.iconFg · accent.fg
+// accent.sideBg · accent.sideAccent · accent.sideHover
+</script>
+</section>
+
+<section id="oklch">
+<h2>Egységesített akcentus-skála — oklch javaslat</h2>
+<p class="h2sub">A Tailwind-hue-k 700-as fokozatai eltérő világosságúak (a lime-700 sokkal világosabb, mint az indigo-700) — a világok így nem egyenrangúak. A javaslat: <b>közös lightness + chroma, csak a hue változik</b>. Három szerep elegendő:</p>
+<script type="text/plain" class="snippet" data-title="CSS tokenek — akcentus-recept">
+:root {
+  /* szerepenként közös L/C — világonként csak a --hue változik */
+  --acc-strong: oklch(0.52 0.11 var(--hue));  /* szöveg, ikon, aktív border */
+  --acc-mid:    oklch(0.65 0.13 var(--hue));  /* jelölő-pont, chart */
+  --acc-tint:   oklch(0.96 0.025 var(--hue)); /* háttér-tint, sideBg */
+}
+/* hue-térkép */
+.w-teal{--hue:183} .w-indigo{--hue:277} .w-blue{--hue:255} .w-amber{--hue:75}
+.w-emerald{--hue:163} .w-violet{--hue:300} .w-rose{--hue:12} .w-sky{--hue:235}
+.w-orange{--hue:55} .w-cyan{--hue:210} .w-lime{--hue:130} .w-red{--hue:27}
+.w-slate{--hue:260; --acc-strong:oklch(0.45 0.03 260); --acc-mid:oklch(0.6 0.03 260); --acc-tint:oklch(0.96 0.006 260)}
+.w-stone{--hue:60;  --acc-strong:oklch(0.45 0.012 60); --acc-mid:oklch(0.6 0.012 60); --acc-tint:oklch(0.965 0.004 60)}
+</script>
+<h3>Összevetés: Tailwind-700 (bal) vs. egységesített oklch (jobb)</h3>
+<div class="demo" style="display:flex;flex-direction:column;gap:8px">
+<div class="acc-pair"><span class="mono" style="color:#78716c">teal</span><span class="sw-lg" style="background:#0f766e"></span><span class="sw-lg" style="background:oklch(0.52 0.11 183)"></span></div>
+<div class="acc-pair"><span class="mono" style="color:#78716c">indigo</span><span class="sw-lg" style="background:#4338ca"></span><span class="sw-lg" style="background:oklch(0.52 0.11 277)"></span></div>
+<div class="acc-pair"><span class="mono" style="color:#78716c">blue</span><span class="sw-lg" style="background:#1d4ed8"></span><span class="sw-lg" style="background:oklch(0.52 0.11 255)"></span></div>
+<div class="acc-pair"><span class="mono" style="color:#78716c">amber</span><span class="sw-lg" style="background:#b45309"></span><span class="sw-lg" style="background:oklch(0.52 0.11 75)"></span></div>
+<div class="acc-pair"><span class="mono" style="color:#78716c">emerald</span><span class="sw-lg" style="background:#047857"></span><span class="sw-lg" style="background:oklch(0.52 0.11 163)"></span></div>
+<div class="acc-pair"><span class="mono" style="color:#78716c">violet</span><span class="sw-lg" style="background:#6d28d9"></span><span class="sw-lg" style="background:oklch(0.52 0.11 300)"></span></div>
+<div class="acc-pair"><span class="mono" style="color:#78716c">rose</span><span class="sw-lg" style="background:#be123c"></span><span class="sw-lg" style="background:oklch(0.52 0.11 12)"></span></div>
+<div class="acc-pair"><span class="mono" style="color:#78716c">sky</span><span class="sw-lg" style="background:#0369a1"></span><span class="sw-lg" style="background:oklch(0.52 0.11 235)"></span></div>
+<div class="acc-pair"><span class="mono" style="color:#78716c">orange</span><span class="sw-lg" style="background:#c2410c"></span><span class="sw-lg" style="background:oklch(0.52 0.11 55)"></span></div>
+<div class="acc-pair"><span class="mono" style="color:#78716c">cyan</span><span class="sw-lg" style="background:#0e7490"></span><span class="sw-lg" style="background:oklch(0.52 0.11 210)"></span></div>
+<div class="acc-pair"><span class="mono" style="color:#78716c">lime</span><span class="sw-lg" style="background:#4d7c0f"></span><span class="sw-lg" style="background:oklch(0.52 0.11 130)"></span></div>
+<div class="acc-pair"><span class="mono" style="color:#78716c">red</span><span class="sw-lg" style="background:#b91c1c"></span><span class="sw-lg" style="background:oklch(0.52 0.11 27)"></span></div>
+</div>
+<div class="note"><b>Bevezetés:</b> nem azonnali refaktor. Új felület (pl. exec-cockpit chart-színek, jelentések) már az oklch-tokent használja; a meglévő Tailwind-osztályos ACCENT_MAP marad, amíg egy célzott csere-kör ki nem váltja. A tint (96%-os lightness) minden hue-nál garantáltan olvasható stone-900 szöveggel.</div>
+</section>
+
+<section id="szabalyok">
+<h2>Szín-szabályok</h2>
+<div class="demo">
+<ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.55;display:flex;flex-direction:column;gap:8px">
+<li>Egy képernyőn <b>egy világ-akcentus</b> + a státusz-tónusok — más hue csak kereszt-világ hivatkozásnál (RefPanel), ott is csak pill-ben.</li>
+<li>Tint-hátteret (50/100) mindig a hue 700-as szövege kísérje — 400–500-as szöveg tinten tilos (kontraszt).</li>
+<li>Piros (red/rose) csak veszély, hiba, kritikus státusz, EHS — dekorációra soha.</li>
+<li>Gradiens egyetlen helyen él: avatar (<span class="mono">from-teal-400 to-teal-600</span>). Máshol ne.</li>
+</ul>
+</div>
+</section>
+</main>
+</body>
+</html>

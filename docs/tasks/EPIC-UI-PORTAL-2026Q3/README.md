@@ -36,6 +36,8 @@
 | F2-KONTROLLING-FIX | frontend | ✅ done | [F2-KONTROLLING-FIX.md](F2-KONTROLLING-FIX.md) |
 | F2-HR-FE | frontend | ✅ done | [F2-HR-FE.md](F2-HR-FE.md) |
 | F2-HR-REVIEW | designer | ✅ **APPROVED** (fix-kör nélkül) | [review-jelentés](../../knowledge/qa/F2_HR_DESIGN_REVIEW_2026-07-15.md) |
+| F2-MAINTENANCE-FE | frontend | ✅ done | [F2-MAINTENANCE-FE.md](F2-MAINTENANCE-FE.md) |
+| F2-MAINTENANCE-REVIEW | designer | ✅ **APPROVED** (fix-kör nélkül) | [review-jelentés](../../knowledge/qa/F2_MAINTENANCE_DESIGN_REVIEW_2026-07-15.md) |
 
 ## Modul-státusz összefoglaló
 | Modul | Backend | Frontend | Review |
@@ -44,7 +46,8 @@
 | CRM | ⏸ nincs host (G0.1) — MSW-first | ✅ 6 képernyő, 68 teszt | ✅ APPROVED |
 | Kontrolling | ⏸ kész domain, nincs host — MSW-first | ✅ 5 képernyő, 35 teszt (calc.ts-tükör) | ✅ APPROVED |
 | HR | ⏸ kész domain (Absence FSM), nincs host — MSW-first | ✅ 6 képernyő, 57 teszt (calc.ts kapacitás-tükör) | ✅ APPROVED (M1 follow-up) |
-| Maintenance / QA / DMS | — | ⏭ várólistán / folyamatban | — |
+| Maintenance | ⏸ kész domain, 5 hiányzó WO-endpoint — MSW-first | ✅ 4 képernyő + 2 SlideOver, 56 teszt (calc.ts kettős tükör) | ✅ APPROVED (M1 follow-up) |
+| QA / DMS | — | ⏭ várólistán / folyamatban | — |
 
 ## Backlog
-FIX-PREEXISTING-TESTS (19 örökölt tesztbukás) · DS-RECONCILE (Gábor styleguide-ja ↔ spec) · RISKS-5X5-BE (EHS mátrix backend) · EHS-WIZARD-HU · fsm.ts→fsmGuards.ts migráció (EHS) · CRM N1-N5 nitek · Kontrolling N1+N3-N6 nitek · HR-M1-THRESHOLD (HrDashboard hardcode-olt küszöb) + HR N1-N4 nitek (QueryGate-promótálás — közös CRM/Kontrolling/HR tétel) · Forecast+MarginTrend dark-chart-hexek (közös token-epic)
+FIX-PREEXISTING-TESTS (19 örökölt tesztbukás) · DS-RECONCILE (Gábor styleguide-ja ↔ spec) · RISKS-5X5-BE (EHS mátrix backend) · EHS-WIZARD-HU · fsm.ts→fsmGuards.ts migráció (EHS) · CRM N1-N5 nitek · Kontrolling N1+N3-N6 nitek · HR-M1-THRESHOLD (HrDashboard hardcode-olt küszöb — Maintenance-review-ban újra ellenőrizve: még nyitva) + HR N1-N4 nitek · Maintenance M1 (labels.ts UTC-parse → parseDay / közös dateUtils) + N1-N4 nitek (QueryGate-promótálás — immár 5 importőr, közös CRM/Kontrolling/HR/Maintenance tétel) · Forecast+MarginTrend dark-chart-hexek (közös token-epic)

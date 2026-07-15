@@ -63,13 +63,15 @@ epics:
           - { id: F2-KONTROLLING-REVIEW, role: designer, title: "Kontrolling világ designer-review (+re-review)", status: done, verdict: "✅ APPROVED (re-review 2026-07-15, main@9a54a30) — S1 kategória-tábla scroll-region, S2 chip-affordanciák, M1 soronkénti delete-mutation, M2 küszöb configból, M3 sr-only trend-táblázat, N2 badge: mind kódban igazolva; 35/35 teszt zöld; N1+N3-N6 tracked backlog", report: docs/knowledge/qa/F2_KONTROLLING_DESIGN_REVIEW_2026-07-15.md }
           - { id: F2-KONTROLLING-FIX, role: frontend, title: "Kontrolling review-javítások (S1, S2 + M1-M3 + N2)", status: done, tests: "35/35 célzott zöld + 1231/1251 teljes (20 pre-existing: 19 baseline + ismert flaky configurator), build+eslint tiszta", note: "restart-helyreállítás: félbemaradt M1-refaktor befejezve; ControllingPage route-tesztek bő timeouttal flake-mentesítve; re-review kérés a designer inboxban" }
           - { id: F2-HR-FE, role: frontend, title: "HR frontend: kapacitás-rács + távollét-FSM + készség-mátrix + munkaidő-napló (MSW-first, amber)", status: done, tests: "57/57 új + 1272/1292 teljes (20 pre-existing), build+tsc+eslint tiszta", note: "ABSENCE_FSM a közös fsmGuards-szal (backend AbsenceStatusTransitions tükör); calc.ts kapacitás-tükör (UI+MSW közös); rule-6: absences+absence+capacity kereszt-invalidáció; hr.manage UI-stub + timelog→Kontrolling push-stub follow-uppal" }
-        modules_done: [ehs, crm, kontrolling]
+          - { id: F2-HR-REVIEW, role: designer, title: "HR világ designer-review", status: done, verdict: "✅ APPROVED (2026-07-15, main@8831603) — az ELSŐ fix-kör nélküli modul: S1/S2-minták + rule-6 + FSM-egy-igazságforrás mind beépült; 57/57 teszt zöld; M1 (HrDashboard hardcode-olt 85-ös küszöb-literál → loadBand/config) kérve follow-upként, N1-N4 tracked backlog", report: docs/knowledge/qa/F2_HR_DESIGN_REVIEW_2026-07-15.md }
+        modules_done: [ehs, crm, kontrolling, hr]
         decisions:
           - "ADR 2026-07-14 (root): EHS incidens FSM — elutasitva ág NINCS; a backend Closed→Reopened a kanonikus (tervdoksi frissítve)."
         backlog_f2:
           - { id: DS-RECONCILE, title: "design-system/ styleguide (Gábor, 2026-07-14) egyeztetése a DESIGN_SYSTEM_SPEC_V1-gyel + portal-tokenekkel — a régi prototípus-akcentek (indigo/emerald/rose) cseréje, forrás-igazság hivatkozás a portalra", status: pending, role: designer }
           - { id: RISKS-5X5-BE, title: "EHS 5×5 kockázati mátrix backend-migráció (RisksScreen még statikus mockon)", status: pending }
           - { id: EHS-WIZARD-HU, title: "IncidentReportWizard angol szövegeinek magyarítása", status: pending, note: "F2-EHS-REVIEW javítócsomagjába" }
+          - { id: HR-M1-THRESHOLD, title: "HrDashboard.tsx:212 hardcode-olt 85-ös küszöb → loadBand/UTILIZATION_WARN_THRESHOLD (HR review M1) + N1-N4 nitek (QueryGate-promótálás, formFields, mobil számpár, avatar-kontraszt)", status: pending, role: frontend, note: "1-soros M1 fix a következő HR-t érintő körrel; a Maintenance-review-ban ellenőrizve" }
       - id: F3-minosegkapu
         status: pending
         done_when: "7×APPROVED, build+test zöld, bundle-riport, root release-döntés"

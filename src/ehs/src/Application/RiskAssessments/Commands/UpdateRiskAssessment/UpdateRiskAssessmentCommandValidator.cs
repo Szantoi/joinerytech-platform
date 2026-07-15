@@ -1,14 +1,17 @@
 using FluentValidation;
 
-namespace SpaceOS.Modules.Ehs.Application.RiskAssessments.Commands.CreateRiskAssessment;
+namespace SpaceOS.Modules.Ehs.Application.RiskAssessments.Commands.UpdateRiskAssessment;
 
 /// <summary>
 /// Input validation: required fields + 1-5 rating scale (→ HTTP 400).
 /// </summary>
-public class CreateRiskAssessmentCommandValidator : AbstractValidator<CreateRiskAssessmentCommand>
+public class UpdateRiskAssessmentCommandValidator : AbstractValidator<UpdateRiskAssessmentCommand>
 {
-    public CreateRiskAssessmentCommandValidator()
+    public UpdateRiskAssessmentCommandValidator()
     {
+        RuleFor(x => x.RiskAssessmentId)
+            .NotEmpty();
+
         RuleFor(x => x.TenantId)
             .NotEmpty();
 
@@ -23,9 +26,6 @@ public class CreateRiskAssessmentCommandValidator : AbstractValidator<CreateRisk
         RuleFor(x => x.Likelihood)
             .IsInEnum()
             .WithMessage("Likelihood must be within the 1-5 scale");
-
-        RuleFor(x => x.AssessedBy)
-            .NotEmpty();
 
         RuleFor(x => x.ReviewDueDate)
             .GreaterThan(DateTimeOffset.UtcNow)

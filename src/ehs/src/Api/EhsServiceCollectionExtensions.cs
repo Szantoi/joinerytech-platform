@@ -2,6 +2,7 @@ using System.Reflection;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using SpaceOS.Modules.Ehs.Application.Contracts;
+using SpaceOS.Modules.Ehs.Domain.Aggregates.RiskAssessmentAggregate;
 using SpaceOS.Modules.Ehs.Infrastructure.Data;
 using SpaceOS.Modules.Ehs.Infrastructure.Notifications;
 using SpaceOS.Modules.Ehs.Infrastructure.Repositories;
@@ -52,6 +53,15 @@ public static class EhsServiceCollectionExtensions
 
         // 5. Notification Service
         services.AddScoped<IEhsNotificationService, EhsNotificationService>();
+
+        // 5b. Risk matrix band boundaries — CONFIG-DRIVEN (section "Ehs:RiskMatrix:Bands",
+        // keys: LowMax/MediumMax/HighMax; missing keys fall back to the domain defaults 4/9/16).
+        // Invalid configuration fails fast at startup (value object constructor throws).
+        var bandsSection = configuration.GetSection("Ehs:RiskMatrix:Bands");
+        services.AddSingleton(new RiskBandConfiguration(
+            bandsSection.GetValue("LowMax", RiskBandConfiguration.Default.LowMax),
+            bandsSection.GetValue("MediumMax", RiskBandConfiguration.Default.MediumMax),
+            bandsSection.GetValue("HighMax", RiskBandConfiguration.Default.HighMax)));
 
         // 6. MediatR (CQRS handlers)
         services.AddMediatR(cfg =>

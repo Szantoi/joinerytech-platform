@@ -7,6 +7,12 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// Enums travel as strings on the wire (matches docs/openapi.yaml — e.g. Severity: "Major",
+// RiskStatus: "Draft"); integer values remain accepted on input for backward compatibility.
+builder.Services.ConfigureHttpJsonOptions(options =>
+    options.SerializerOptions.Converters.Add(
+        new System.Text.Json.Serialization.JsonStringEnumConverter()));
+
 // Add EHS module services (DbContext, Repositories, MediatR, AutoMapper, Validators)
 builder.Services.AddEhsModule(builder.Configuration);
 

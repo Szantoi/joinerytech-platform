@@ -120,6 +120,28 @@ public class CorrectiveAction
     }
 
     /// <summary>
+    /// Factory for risk-assessment-sourced CAPAs — spawned by a risk control
+    /// measure. The control links back via RiskControl.CorrectiveActionId.
+    /// </summary>
+    public static CorrectiveAction CreateForRiskAssessment(
+        Guid tenantId,
+        Guid riskAssessmentId,
+        string description,
+        Guid assignedTo,
+        DateTimeOffset dueDate)
+    {
+        return new CorrectiveAction(
+            tenantId,
+            CapaSource.RiskAssessment,
+            riskAssessmentId,
+            incidentId: null,
+            findingId: null,
+            description,
+            assignedTo,
+            dueDate);
+    }
+
+    /// <summary>
     /// Mark the CAPA completed. Guard: cannot complete twice.
     /// Public so the unified CAPA endpoint can complete actions from any source.
     /// </summary>

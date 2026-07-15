@@ -31,8 +31,21 @@ Tenant-izoláció: `ITenantContext` + PostgreSQL RLS interceptor.
 ### Incident (meglévő)
 `Reported → Investigated → CorrectiveActionPlanned → Closed → Reopened` — guard metódusok az aggregátumban.
 
-### RiskAssessment / TrainingRecord (meglévő)
-5×5 kockázati mátrix (`Active/Archived`); tréning-lejárat **számított** (`Valid/Expiring/Expired`).
+### RiskAssessment — 5×5 kockázati mátrix *(kibővítve, RISKS-5X5-BE)*
+- Pontszám: `RiskScore = Severity × Likelihood` (1-25); a sáv (`Low/Medium/High/Critical`)
+  **KONFIGURÁLHATÓ határokkal** számítódik — `Ehs:RiskMatrix:Bands` szekció
+  (`LowMax/MediumMax/HighMax`, default 4/9/16; hiányzó kulcsnál a domain-default él,
+  érvénytelen configra induláskor hibázik).
+- FSM: **`Draft (vazlat) → UnderReview (felulvizsgalat) → Approved (jovahagyva) → Archived (archivalva)`**,
+  + `UnderReview → Draft` (return-to-draft). Részletek csak Draft-ban módosíthatók; illegális átmenet = 409.
+- Opcionális `LocationId` (EhsLocation-referencia, tenant-en belül létezés-guard → 409).
+- Intézkedés: `AddControl` + opcionális CAPA-spawn az **egységes CAPA**-mechanizmuson
+  (`Source=RiskAssessment`, a control `CorrectiveActionId`-vel linkel — safety walk finding minta).
+- Mátrix-összesítő: `GET /risk-assessments/risk-matrix` — mind a 25 cella darabszámmal
+  (a cellaaggregáció domain-logika: `RiskMatrix.BuildCells`).
+
+### TrainingRecord (meglévő)
+Tréning-lejárat **számított** (`Valid/Expiring/Expired`).
 
 ### EhsLocation — hierarchikus telephely-törzs *(új, Fázis 2)*
 - `Site → Building/Hall → Zone` fa a `ParentLocationId`-n keresztül (lapos lista + kliens-oldali fa).
@@ -81,14 +94,16 @@ Tenant-izoláció: `ITenantContext` + PostgreSQL RLS interceptor.
 | EVE-kiadás | `GET/POST /api/ehs/ppe-issuances`, `GET /expiring`, `GET /by-employee/{employeeId}`, `GET /{id}`, `POST /{id}/acknowledge`, `POST /{id}/return`, `POST /{id}/replace` |
 | Bejárás | `GET/POST /api/ehs/safety-walks`, `GET /{id}`, `POST /{id}/start`, `POST /{id}/findings`, `POST /{id}/complete`, `POST /{id}/close`, `POST /{id}/cancel` |
 | Egységes CAPA | `GET /api/ehs/corrective-actions`, `POST /{id}/complete` |
+| Kockázatok (5×5) | `GET/POST /api/ehs/risk-assessments`, `GET /risk-matrix`, `GET/PUT /{id}`, `POST /{id}/submit-for-review`, `POST /{id}/approve`, `POST /{id}/return-to-draft`, `POST /{id}/archive`, `POST /{id}/add-control` |
 
 **Hibakontraktus az új endpointokon:**
 - `404` — az erőforrás nem található (handler `KeyNotFoundException`)
 - `409 Conflict` — illegális FSM-átmenet / domain guard sértés (`InvalidOperationException`, a hibaüzenettel)
 - `400` — validációs hiba (`ArgumentException` / FluentValidation)
 
-A teljes kontraktus: `docs/openapi.yaml` (46 path). A futó Swagger UI a `src/Api` hosztból jön
-(`dotnet run --project src/Api`).
+A teljes kontraktus: `docs/openapi.yaml` (49 path). A futó Swagger UI a `src/Api` hosztból jön
+(`dotnet run --project src/Api`). Az enumok a dróton **stringként** utaznak
+(`JsonStringEnumConverter` a Programban — az openapi.yaml string-enumjaival összhangban).
 
 ## Build, teszt, migráció
 
@@ -107,4 +122,6 @@ dotnet ef database update --project src/Infrastructure
 ```
 
 Migrációk: `20260708140947_InitialEhsSchema`, `20260714184914_EhsPhase2LocationsSdsPpeSafetyWalks`
-(utóbbi kézzel igazított, adatmegőrző CAPA-promócióval — lásd a fájl kommentjeit).
+(utóbbi kézzel igazított, adatmegőrző CAPA-promócióval — lásd a fájl kommentjeit),
+`20260715204959_RiskAssessment5x5Fsm` (location_id + FSM-időbélyegek + CAPA-link;
+kézi, adatmegőrző státusz-remap: `Active` → `Approved`, reverzibilis Down).

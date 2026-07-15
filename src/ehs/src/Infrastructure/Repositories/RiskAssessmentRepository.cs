@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using SpaceOS.Modules.Ehs.Application.Contracts;
-using SpaceOS.Modules.Ehs.Application.RiskAssessments.DTOs;
 using SpaceOS.Modules.Ehs.Domain.Aggregates.RiskAssessmentAggregate;
 using SpaceOS.Modules.Ehs.Domain.Enums;
 using SpaceOS.Modules.Ehs.Infrastructure.Data;
@@ -8,9 +7,9 @@ using SpaceOS.Modules.Ehs.Infrastructure.Data;
 namespace SpaceOS.Modules.Ehs.Infrastructure.Repositories;
 
 /// <summary>
-/// Repository implementation for RiskAssessment aggregate.
-/// Provides risk assessment listing, filtering, 5×5 risk matrix aggregations, and CRUD operations.
-/// ISO 45001 compliant.
+/// Repository implementation for the RiskAssessment aggregate.
+/// Listing/filtering runs SQL-side; the 5×5 matrix aggregation itself is domain
+/// logic (RiskMatrix.BuildCells) — this class only supplies the flat projection.
 /// </summary>
 public class RiskAssessmentRepository : IRiskAssessmentRepository
 {
@@ -22,7 +21,7 @@ public class RiskAssessmentRepository : IRiskAssessmentRepository
     }
 
     /// <summary>
-    /// Get risk assessment by ID with tenant filtering and owned entities loaded.
+    /// Get risk assessment by ID with tenant filtering (controls are owned entities — auto-included).
     /// </summary>
     public async Task<RiskAssessment?> GetByIdAsync(Guid riskAssessmentId, Guid tenantId, CancellationToken ct = default)
     {
@@ -32,8 +31,8 @@ public class RiskAssessmentRepository : IRiskAssessmentRepository
     }
 
     /// <summary>
-    /// List risk assessments with filtering support.
-    /// Filters: RiskLevel, Status, ReviewDueBefore
+    /// List risk assessments with SQL-side filtering.
+    /// Filters: RiskLevel, Status, LocationId, ReviewDueBefore.
     /// </summary>
     public async Task<List<RiskAssessment>> ListAsync(RiskAssessmentFilter filter, Guid tenantId, CancellationToken ct = default)
     {
@@ -46,6 +45,9 @@ public class RiskAssessmentRepository : IRiskAssessmentRepository
         if (filter.Status.HasValue)
             query = query.Where(r => r.Status == filter.Status.Value);
 
+        if (filter.LocationId.HasValue)
+            query = query.Where(r => r.LocationId == filter.LocationId.Value);
+
         if (filter.ReviewDueBefore.HasValue)
             query = query.Where(r => r.ReviewDueDate <= filter.ReviewDueBefore.Value);
 
@@ -57,84 +59,20 @@ public class RiskAssessmentRepository : IRiskAssessmentRepository
     }
 
     /// <summary>
-    /// Get 5×5 risk matrix data (Severity × Likelihood → Count).
-    /// Returns RiskMatrixData with cell counts for visualization.
+    /// Flat projection of the non-archived assessments for the 5×5 matrix summary.
+    /// Archived entries are excluded — the dashboard shows the live risk register.
     /// </summary>
-    public async Task<RiskMatrixData> GetRiskMatrixAsync(Guid tenantId, CancellationToken ct = default)
+    public async Task<List<RiskMatrixProjection>> GetMatrixProjectionAsync(Guid tenantId, CancellationToken ct = default)
     {
-        var assessments = await _context.RiskAssessments
-            .Where(r => r.TenantId == tenantId && r.Status == RiskStatus.Active)
-            .Select(r => new { r.Severity, r.Likelihood })
+        return await _context.RiskAssessments
+            .Where(r => r.TenantId == tenantId && r.Status != RiskStatus.Archived)
+            .Select(r => new RiskMatrixProjection(r.Severity, r.Likelihood, r.RiskLevel, r.Status))
             .ToListAsync(ct)
             .ConfigureAwait(false);
-
-        var cellCounts = assessments
-            .GroupBy(r => (r.Severity, r.Likelihood))
-            .ToDictionary(g => g.Key, g => g.Count());
-
-        return new RiskMatrixData(cellCounts);
     }
 
     /// <summary>
-    /// Get risk matrix summary with DTO format (RiskMatrixCellDto list).
-    /// Materializes all 25 cells (5 Severity × 5 Likelihood) including empty cells (count=0).
-    /// </summary>
-    public async Task<RiskMatrixSummaryDto> GetRiskMatrixSummaryAsync(Guid tenantId, CancellationToken ct = default)
-    {
-        var assessments = await _context.RiskAssessments
-            .Where(r => r.TenantId == tenantId && r.Status == RiskStatus.Active)
-            .Select(r => new { r.Severity, r.Likelihood, r.RiskLevel, r.Status })
-            .ToListAsync(ct)
-            .ConfigureAwait(false);
-
-        var total = assessments.Count;
-
-        // Aggregate by risk level
-        var byRiskLevel = assessments
-            .GroupBy(r => r.RiskLevel.ToString())
-            .ToDictionary(g => g.Key, g => g.Count());
-
-        // Aggregate by status
-        var byStatus = assessments
-            .GroupBy(r => r.Status.ToString())
-            .ToDictionary(g => g.Key, g => g.Count());
-
-        var cells = new List<RiskMatrixCellDto>();
-
-        // Generate all 25 cells (5×5 matrix)
-        for (int severity = 1; severity <= 5; severity++)
-        {
-            for (int likelihood = 1; likelihood <= 5; likelihood++)
-            {
-                var sev = (Severity)severity;
-                var like = (Likelihood)likelihood;
-                var riskScore = severity * likelihood;
-
-                // Calculate RiskLevel from score
-                var riskLevel = riskScore switch
-                {
-                    >= 1 and <= 5 => RiskLevel.Low,
-                    >= 6 and <= 12 => RiskLevel.Medium,
-                    >= 15 and <= 25 => RiskLevel.High,
-                    _ => RiskLevel.Low
-                };
-
-                var count = assessments.Count(r => r.Severity == sev && r.Likelihood == like);
-
-                cells.Add(new RiskMatrixCellDto(
-                    sev,
-                    like,
-                    count,
-                    riskLevel
-                ));
-            }
-        }
-
-        return new RiskMatrixSummaryDto(total, byRiskLevel, byStatus, cells);
-    }
-
-    /// <summary>
-    /// Add a new risk assessment to the database.
+    /// Add a new risk assessment.
     /// </summary>
     public async Task AddAsync(RiskAssessment assessment, CancellationToken ct = default)
     {

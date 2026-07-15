@@ -71,7 +71,7 @@ epics:
           - "ADR 2026-07-14 (root): EHS incidens FSM — elutasitva ág NINCS; a backend Closed→Reopened a kanonikus (tervdoksi frissítve)."
         backlog_f2:
           - { id: DS-RECONCILE, title: "design-system/ styleguide (Gábor, 2026-07-14) egyeztetése a DESIGN_SYSTEM_SPEC_V1-gyel + portal-tokenekkel — a régi prototípus-akcentek (indigo/emerald/rose) cseréje, forrás-igazság hivatkozás a portalra", status: pending, role: designer }
-          - { id: RISKS-5X5-BE, title: "EHS 5×5 kockázati mátrix backend-migráció (RisksScreen még statikus mockon)", status: pending }
+          - { id: RISKS-5X5-BE, title: "EHS 5×5 kockázati mátrix backend-migráció (RisksScreen még statikus mockon)", status: done, role: backend, note: "2026-07-15: RiskAssessment FSM (Draft→UnderReview→Approved→Archived) + config-vezérelt sávok + lokáció + egységes CAPA; 10 endpoint, domain-teszt 92→130 zöld, Api build+smoke OK; task-doksi: RISKS-5X5-BE.md; follow-up: RISKS-5X5-FE (portal RisksScreen mock→API migráció, 3×3→5×5)" }
           - { id: EHS-WIZARD-HU, title: "IncidentReportWizard angol szövegeinek magyarítása", status: pending, note: "F2-EHS-REVIEW javítócsomagjába" }
           - { id: HR-M1-THRESHOLD, title: "HrDashboard.tsx:212 hardcode-olt 85-ös küszöb → loadBand/UTILIZATION_WARN_THRESHOLD (HR review M1) + N1-N4 nitek (QueryGate-promótálás, formFields, mobil számpár, avatar-kontraszt)", status: pending, role: frontend, note: "1-soros M1 fix a következő HR-t érintő körrel; a Maintenance-review-ban ellenőrizve" }
       - id: F3-minosegkapu

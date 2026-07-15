@@ -13,6 +13,6 @@ public enum CapaSource
     /// <summary>Corrective action spawned by a safety walk finding</summary>
     SafetyWalk = 2,
 
-    /// <summary>Corrective action spawned by a risk assessment (reserved)</summary>
+    /// <summary>Corrective action spawned by a risk assessment control measure</summary>
     RiskAssessment = 3
 }

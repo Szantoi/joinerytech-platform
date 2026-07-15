@@ -14,6 +14,9 @@ public class RiskControl
     public DateTimeOffset? VerifiedAt { get; private set; }
     public bool IsVerified => VerifiedAt.HasValue;
 
+    /// <summary>Linked corrective action (unified CAPA, Source = RiskAssessment), set after CAPA creation</summary>
+    public Guid? CorrectiveActionId { get; private set; }
+
     private RiskControl() { }  // EF Core
 
     internal RiskControl(
@@ -43,5 +46,20 @@ public class RiskControl
             throw new InvalidOperationException("Control measure already verified");
 
         VerifiedAt = DateTimeOffset.UtcNow;
+    }
+
+    /// <summary>
+    /// Link the control to its corrective action (unified CAPA).
+    /// Guards: must not be linked yet; the CAPA id must be valid.
+    /// </summary>
+    internal void LinkCorrectiveAction(Guid correctiveActionId)
+    {
+        if (CorrectiveActionId.HasValue)
+            throw new InvalidOperationException("Risk control is already linked to a corrective action");
+
+        if (correctiveActionId == Guid.Empty)
+            throw new ArgumentException("CorrectiveActionId is required", nameof(correctiveActionId));
+
+        CorrectiveActionId = correctiveActionId;
     }
 }

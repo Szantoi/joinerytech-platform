@@ -1,14 +1,14 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using SpaceOS.Modules.Ehs.Domain.Aggregates.RiskAssessmentAggregate;
-using SpaceOS.Modules.Ehs.Domain.Enums;
 
 namespace SpaceOS.Modules.Ehs.Infrastructure.Data.Configurations;
 
 /// <summary>
 /// Entity Type Configuration for RiskAssessment aggregate.
-/// Maps RiskAssessment with owned collection Controls (0-n)
-/// ISO 45001 compliant 5×5 risk matrix
+/// Maps RiskAssessment with owned collection Controls (0-n).
+/// ISO 45001 compliant 5×5 risk matrix — FSM: Draft/UnderReview/Approved/Archived,
+/// optional EhsLocation reference, unified CAPA link on controls.
 /// </summary>
 public class RiskAssessmentEntityTypeConfiguration : IEntityTypeConfiguration<RiskAssessment>
 {
@@ -28,6 +28,12 @@ public class RiskAssessmentEntityTypeConfiguration : IEntityTypeConfiguration<Ri
             .HasColumnName("tenant_id");
         builder.HasIndex(r => r.TenantId)
             .HasDatabaseName("ix_risk_assessments_tenant_id");
+
+        // Optional reference to EhsLocation (érintett terület)
+        builder.Property(r => r.LocationId)
+            .HasColumnName("location_id");
+        builder.HasIndex(r => r.LocationId)
+            .HasDatabaseName("ix_risk_assessments_location_id");
 
         // Enums as strings
         builder.Property(r => r.Severity)
@@ -78,6 +84,19 @@ public class RiskAssessmentEntityTypeConfiguration : IEntityTypeConfiguration<Ri
             .HasColumnType("timestamp with time zone")
             .HasColumnName("review_due_date");
 
+        // FSM transition timestamps
+        builder.Property(r => r.SubmittedAt)
+            .HasColumnType("timestamp with time zone")
+            .HasColumnName("submitted_at");
+
+        builder.Property(r => r.ApprovedAt)
+            .HasColumnType("timestamp with time zone")
+            .HasColumnName("approved_at");
+
+        builder.Property(r => r.ArchivedAt)
+            .HasColumnType("timestamp with time zone")
+            .HasColumnName("archived_at");
+
         // Indexes
         builder.HasIndex(r => r.RiskLevel)
             .HasDatabaseName("ix_risk_assessments_risk_level");
@@ -120,6 +139,10 @@ public class RiskAssessmentEntityTypeConfiguration : IEntityTypeConfiguration<Ri
             controls.Property(c => c.VerifiedAt)
                 .HasColumnType("timestamp with time zone")
                 .HasColumnName("verified_at");
+
+            // Unified CAPA link (Source = RiskAssessment)
+            controls.Property(c => c.CorrectiveActionId)
+                .HasColumnName("corrective_action_id");
 
             controls.HasIndex("risk_assessment_id")
                 .HasDatabaseName("ix_risk_controls_risk_assessment_id");

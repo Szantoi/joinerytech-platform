@@ -3,25 +3,24 @@ using Microsoft.Extensions.Logging;
 using SpaceOS.Modules.Ehs.Application.Contracts;
 using SpaceOS.Modules.Ehs.Domain.Aggregates.RiskAssessmentAggregate;
 
-namespace SpaceOS.Modules.Ehs.Application.RiskAssessments.Commands.CreateRiskAssessment;
+namespace SpaceOS.Modules.Ehs.Application.RiskAssessments.Commands.UpdateRiskAssessment;
 
 /// <summary>
-/// Handler for CreateRiskAssessmentCommand.
-/// Band thresholds come from the DI-registered RiskBandConfiguration (config-driven).
-/// When a location is referenced it must exist within the tenant → otherwise 409.
+/// Handler for UpdateRiskAssessmentCommand.
+/// Not-found → KeyNotFoundException (404); non-Draft state → InvalidOperationException (409).
 /// </summary>
-public class CreateRiskAssessmentCommandHandler : IRequestHandler<CreateRiskAssessmentCommand, Guid>
+public class UpdateRiskAssessmentCommandHandler : IRequestHandler<UpdateRiskAssessmentCommand, Unit>
 {
     private readonly IRiskAssessmentRepository _repository;
     private readonly IEhsLocationRepository _locationRepository;
     private readonly RiskBandConfiguration _bands;
-    private readonly ILogger<CreateRiskAssessmentCommandHandler> _logger;
+    private readonly ILogger<UpdateRiskAssessmentCommandHandler> _logger;
 
-    public CreateRiskAssessmentCommandHandler(
+    public UpdateRiskAssessmentCommandHandler(
         IRiskAssessmentRepository repository,
         IEhsLocationRepository locationRepository,
         RiskBandConfiguration bands,
-        ILogger<CreateRiskAssessmentCommandHandler> logger)
+        ILogger<UpdateRiskAssessmentCommandHandler> logger)
     {
         _repository = repository;
         _locationRepository = locationRepository;
@@ -29,8 +28,13 @@ public class CreateRiskAssessmentCommandHandler : IRequestHandler<CreateRiskAsse
         _logger = logger;
     }
 
-    public async Task<Guid> Handle(CreateRiskAssessmentCommand request, CancellationToken ct)
+    public async Task<Unit> Handle(UpdateRiskAssessmentCommand request, CancellationToken ct)
     {
+        var riskAssessment = await _repository
+            .GetByIdAsync(request.RiskAssessmentId, request.TenantId, ct)
+            .ConfigureAwait(false)
+            ?? throw new KeyNotFoundException($"RiskAssessment {request.RiskAssessmentId} not found");
+
         // Guard: the referenced location must exist within the same tenant
         if (request.LocationId.HasValue)
         {
@@ -42,23 +46,21 @@ public class CreateRiskAssessmentCommandHandler : IRequestHandler<CreateRiskAsse
                 throw new InvalidOperationException($"Location {request.LocationId} not found");
         }
 
-        var riskAssessment = RiskAssessment.Create(
-            request.TenantId,
+        riskAssessment.UpdateDetails(
             request.HazardDescription,
             request.Severity,
             request.Likelihood,
-            request.AssessedBy,
             request.ReviewDueDate,
             _bands,
             request.LocationId
         );
 
-        await _repository.AddAsync(riskAssessment, ct).ConfigureAwait(false);
+        await _repository.UpdateAsync(riskAssessment, ct).ConfigureAwait(false);
 
         _logger.LogInformation(
-            "Risk assessment {RiskAssessmentId} created in Draft (score {RiskScore}, level {RiskLevel})",
+            "Risk assessment {RiskAssessmentId} updated (score {RiskScore}, level {RiskLevel})",
             riskAssessment.RiskAssessmentId, riskAssessment.RiskScore, riskAssessment.RiskLevel);
 
-        return riskAssessment.RiskAssessmentId;
+        return Unit.Value;
     }
 }

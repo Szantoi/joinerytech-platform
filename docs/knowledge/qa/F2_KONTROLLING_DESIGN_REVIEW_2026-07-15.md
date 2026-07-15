@@ -306,3 +306,41 @@ PORTÁL-implementációra vonatkozik, a CLAUDE.md-t nem módosítottam.
 ---
 
 _Designer terminál — JoineryTech sziget. Re-review: az S1/S2 fix után jelezz a designer mailboxba._
+
+---
+
+## RE-REVIEW: ✅ APPROVED — 2026-07-15 (F2-KONTROLLING-REREVIEW)
+
+> **Scope:** az F2-KONTROLLING-FIX (`docs/tasks/EPIC-UI-PORTAL-2026Q3/F2-KONTROLLING-FIX.md`)
+> blokkolóinak (S1, S2) és kért tételeinek (M1–M3) célzott ellenőrzése kódolvasással +
+> tesztfuttatással, az adatréteg/calc/MSW mag újranyitása NÉLKÜL. Vizsgált állapot:
+> `main` @ `9a54a30`.
+
+| # | Ellenőrzés eredménye | Verdikt |
+|---|---|---|
+| S1 | `ProjectDetailSlideOver.tsx:61-104`: a kategória-tábla SAJÁT scroll-konténert kapott — `role="region"` + `aria-label="Kategória-bontás"` + `tabIndex={0}` + `overflow-x-auto` + fókusz-ring (a DataTable.tsx:114-119 recept), a fix indoklása kommentben. Bónusz: a tábla sr-only `<caption>`-t és `th[scope="col"]`-t is kapott. Mobil bottom sheeten már csak a tábla görög, a SlideOver többi tartalma nem csúszik. | ✅ |
+| S2 | `PortfolioScreen.tsx:74-97`: az aktív chip check-ikon (`aria-hidden`) + `font-semibold` nem-szín jelzést kapott, a 28 px-es pill körül `before:inset-x-0 before:-inset-y-2` pszeudó adja a 44 px-es függőleges touch-célfelületet (a CRM `LeadsScreen.tsx:79-95` mintája, kommentben hivatkozva); `role="group"` + `aria-pressed` változatlan. Teszt: `controllingScreens.smoke.test.tsx:67-73` — aktív chipen svg + font-semibold, inaktívon nincs ikon, `pressed` állapottal lekérdezve. | ✅ |
+| M1 | `AdjustmentsScreen.tsx:8-25`: a törlés kiemelt `AdjustmentDeleteButton` komponensbe került SAJÁT `useDeleteAdjustment` példánnyal (EHS PpeScreen / CRM TaskRow minta, kommentben hivatkozva) + soronkénti `aria-label` („Korrekció törlése: {indok}") — a pending már csak a kattintott sort tiltja. | ✅ |
+| M2 | `DashboardScreen.tsx:3,53,57`: a KPI-tónus és a felirat egyaránt az importált `AT_RISK_MARGIN_THRESHOLD`-ból jön (`config.ts:22`, = `MARGIN_WEAK_THRESHOLD`), a felirat `formatPct`-tel számított — küszöb-módosításnál nem szakadhat el az MSW-oldali besorolástól (`handlers.portfolio.ts:36` ugyanazt a konstansot használja). Teszt: `controllingScreens.smoke.test.tsx:37-40` a számított feliratot assertálja. | ✅ |
+| M3 | `MarginTrendChart.tsx:45-66`: teljes hozzáférhető adat-alternatíva — sr-only `<table>` `<caption>` + `th[scope="col"]` + soronként `th[scope="row"]`, a trend MINDEN pontja (terv- és tény-fedezet %) olvasható; a diagram `aria-hidden` marad. Teszt: `controllingScreens.smoke.test.tsx:45-51` a caption-t assertálja. | ✅ |
+| N2 | `mocks/worlds.ts:304`: a világ-kártya badge „6 projekt" — a seed-del szinkronban. | ✅ |
+
+**Tesztfuttatás:** `npx vitest run src/pages/controlling src/services/controlling
+src/pages/__tests__/ControllingPage.test.tsx` — **5 fájl / 35 teszt zöld** (a fix a
+review-kori 35-be épített be új asszerteket: S2 chip-affordanciák, M2 számított
+felirat, M3 sr-only táblázat — a darabszám ezért változatlan, a lefedés bővült).
+
+**Maradék megjegyzés (nem blokkoló):** az S1-hez javasolt régió-asszert
+(`role="region"` + `aria-label` a kategória-tábla konténerén) nem került tesztbe —
+a `ProjectDetailSlideOver`-nek jelenleg nincs saját tesztfájlja (a review-kori
+állapotban sem volt). A fix kódban igazolt; az asszert a SlideOver első saját
+tesztjével együtt pótolandó (backlog-nit, az N1–N6 sorba illesztve).
+
+**Döntés:** mindkét blokkoló (S1, S2) és mindhárom kért tétel (M1–M3) + az N2
+helyesen javítva — a Kontrolling modul **✅ APPROVED**. Az N1 (trend-diagram
+dark-hexek — a CRM N1-gyel közös tokenszintű dark-epic tétel), N3–N6 tracked
+backlogként élnek tovább. A `calc.ts` számítás-tükör minta a hátralévő
+számítás-nehéz modulokhoz (Maintenance állásidő, QA statisztika) változatlanul
+ajánlott sablon.
+
+_Designer terminál — F2-KONTROLLING re-review lezárva: ✅ APPROVED._

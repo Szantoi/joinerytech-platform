@@ -34,6 +34,8 @@
 | F2-KONTROLLING-FE | frontend | ✅ done | [F2-KONTROLLING-FE.md](F2-KONTROLLING-FE.md) |
 | F2-KONTROLLING-REVIEW(+RE) | designer | ✅ **APPROVED** | [review-jelentés](../../knowledge/qa/F2_KONTROLLING_DESIGN_REVIEW_2026-07-15.md) |
 | F2-KONTROLLING-FIX | frontend | ✅ done | [F2-KONTROLLING-FIX.md](F2-KONTROLLING-FIX.md) |
+| F2-HR-FE | frontend | ✅ done | [F2-HR-FE.md](F2-HR-FE.md) |
+| F2-HR-REVIEW | designer | ✅ **APPROVED** (fix-kör nélkül) | [review-jelentés](../../knowledge/qa/F2_HR_DESIGN_REVIEW_2026-07-15.md) |
 
 ## Modul-státusz összefoglaló
 | Modul | Backend | Frontend | Review |
@@ -41,7 +43,8 @@
 | EHS | ✅ 27 endpoint, 92/92 teszt | ✅ 5 képernyő + adatréteg-SABLON | ✅ APPROVED |
 | CRM | ⏸ nincs host (G0.1) — MSW-first | ✅ 6 képernyő, 68 teszt | ✅ APPROVED |
 | Kontrolling | ⏸ kész domain, nincs host — MSW-first | ✅ 5 képernyő, 35 teszt (calc.ts-tükör) | ✅ APPROVED |
-| HR / Maintenance / QA / DMS | — | ⏭ várólistán | — |
+| HR | ⏸ kész domain (Absence FSM), nincs host — MSW-first | ✅ 6 képernyő, 57 teszt (calc.ts kapacitás-tükör) | ✅ APPROVED (M1 follow-up) |
+| Maintenance / QA / DMS | — | ⏭ várólistán / folyamatban | — |
 
 ## Backlog
-FIX-PREEXISTING-TESTS (19 örökölt tesztbukás) · DS-RECONCILE (Gábor styleguide-ja ↔ spec) · RISKS-5X5-BE (EHS mátrix backend) · EHS-WIZARD-HU · fsm.ts→fsmGuards.ts migráció (EHS) · CRM N1-N5 nitek · Kontrolling N1+N3-N6 nitek · Forecast+MarginTrend dark-chart-hexek (közös token-epic)
+FIX-PREEXISTING-TESTS (19 örökölt tesztbukás) · DS-RECONCILE (Gábor styleguide-ja ↔ spec) · RISKS-5X5-BE (EHS mátrix backend) · EHS-WIZARD-HU · fsm.ts→fsmGuards.ts migráció (EHS) · CRM N1-N5 nitek · Kontrolling N1+N3-N6 nitek · HR-M1-THRESHOLD (HrDashboard hardcode-olt küszöb) + HR N1-N4 nitek (QueryGate-promótálás — közös CRM/Kontrolling/HR tétel) · Forecast+MarginTrend dark-chart-hexek (közös token-epic)

@@ -24,7 +24,9 @@ info:
     - Severity: 1 (Negligible) → 5 (Catastrophic)
     - Likelihood: 1 (Rare) → 5 (Almost Certain)
     - RiskScore = Severity × Likelihood (1-25)
-    - RiskLevel: Low (1-5), Medium (6-12), High (15-25)
+    - RiskLevel: CONFIG-DRIVEN bands (Ehs:RiskMatrix:Bands) —
+      defaults: Low 1-4, Medium 5-9, High 10-16, Critical 17-25
+    - FSM: Draft → UnderReview → Approved → Archived (+ return-to-draft)
 
   contact:
     name: SpaceOS Development Team
@@ -415,7 +417,8 @@ paths:
           $ref: '#/components/responses/Forbidden'
 
   # ========================================
-  # RISK ASSESSMENT (8 endpoints)
+  # ========================================
+  # RISK ASSESSMENT (10 endpoints) — 5×5 matrix, FSM: Draft → UnderReview → Approved → Archived
   # ========================================
   /api/ehs/risk-assessments:
     get:
@@ -423,46 +426,40 @@ paths:
       tags: [RiskAssessments]
       summary: List risk assessments
       description: |
-        Returns all risk assessments with optional filtering by risk level, review due date, and status.
+        Returns risk assessments with optional filtering by risk level, status,
+        location, and review due date. Ordered by risk score (descending).
       parameters:
         - name: riskLevel
           in: query
           required: false
           schema:
             $ref: '#/components/schemas/RiskLevel'
-        - name: reviewDueBefore
-          in: query
-          required: false
-          schema:
-            type: string
-            format: date
         - name: status
           in: query
           required: false
           schema:
             $ref: '#/components/schemas/RiskAssessmentStatus'
-        - name: page
+        - name: locationId
           in: query
           required: false
           schema:
-            type: integer
-            default: 1
-            minimum: 1
-        - name: pageSize
+            type: string
+            format: uuid
+        - name: reviewDueBefore
           in: query
           required: false
           schema:
-            type: integer
-            default: 20
-            minimum: 1
-            maximum: 100
+            type: string
+            format: date-time
       responses:
         '200':
-          description: Paginated list of risk assessments
+          description: List of risk assessments
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PagedRiskAssessmentResponse'
+                type: array
+                items:
+                  $ref: '#/components/schemas/RiskAssessmentListItemDto'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -471,25 +468,33 @@ paths:
     post:
       operationId: createRiskAssessment
       tags: [RiskAssessments]
-      summary: Create risk assessment
+      summary: "Create risk assessment (FSM entry: Draft / vazlat)"
       description: |
         Creates a new risk assessment using the 5×5 matrix.
-        RiskScore and RiskLevel are calculated automatically.
+        RiskScore and RiskLevel are calculated automatically — the band
+        boundaries are config-driven (Ehs:RiskMatrix:Bands, defaults 4/9/16).
+        409 when the referenced location does not exist.
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateRiskAssessmentCommand'
+              $ref: '#/components/schemas/CreateRiskAssessmentRequest'
       responses:
         '201':
-          description: Risk assessment created successfully
+          description: Risk assessment created (Draft)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RiskAssessmentDto'
+                type: object
+                properties:
+                  riskAssessmentId:
+                    type: string
+                    format: uuid
         '400':
           $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -499,7 +504,7 @@ paths:
     get:
       operationId: getRiskAssessment
       tags: [RiskAssessments]
-      summary: Get risk assessment by ID
+      summary: Get risk assessment by ID (with control measures)
       parameters:
         - name: id
           in: path
@@ -524,10 +529,11 @@ paths:
     put:
       operationId: updateRiskAssessment
       tags: [RiskAssessments]
-      summary: Update risk assessment
+      summary: Update risk assessment details (Draft only)
       description: |
-        Updates severity, likelihood, or hazard description.
+        Updates hazard description, ratings, location, and review due date.
         RiskScore and RiskLevel are recalculated automatically.
+        409 when the assessment is not in Draft.
       parameters:
         - name: id
           in: path
@@ -540,25 +546,22 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateRiskAssessmentCommand'
+              $ref: '#/components/schemas/UpdateRiskAssessmentRequest'
       responses:
-        '200':
-          description: Risk assessment updated successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RiskAssessmentDto'
+        '204':
+          description: Risk assessment updated
         '400':
           $ref: '#/components/responses/BadRequest'
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
 
-  /api/ehs/risk-assessments/{id}/controls:
-    put:
-      operationId: addRiskControl
+  /api/ehs/risk-assessments/{id}/submit-for-review:
+    post:
+      operationId: submitRiskAssessmentForReview
       tags: [RiskAssessments]
-      summary: Add risk control measure
-      description: Records a mitigation measure for the hazard.
+      summary: "FSM: Draft → UnderReview (felulvizsgalatra)"
       parameters:
         - name: id
           in: path
@@ -566,30 +569,59 @@ paths:
           schema:
             type: string
             format: uuid
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AddRiskControlCommand'
       responses:
-        '200':
-          description: Risk control added successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RiskAssessmentDto'
-        '400':
-          $ref: '#/components/responses/BadRequest'
+        '204':
+          description: Submitted for review
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /api/ehs/risk-assessments/{id}/approve:
+    post:
+      operationId: approveRiskAssessment
+      tags: [RiskAssessments]
+      summary: "FSM: UnderReview → Approved (jovahagyva)"
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Approved
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /api/ehs/risk-assessments/{id}/return-to-draft:
+    post:
+      operationId: returnRiskAssessmentToDraft
+      tags: [RiskAssessments]
+      summary: "FSM: UnderReview → Draft (visszakuldes atdolgozasra)"
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Returned to draft
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
 
   /api/ehs/risk-assessments/{id}/archive:
-    put:
+    post:
       operationId: archiveRiskAssessment
       tags: [RiskAssessments]
-      summary: Archive risk assessment
-      description: Marks risk assessment as archived (no longer active).
+      summary: "FSM: Approved → Archived (archivalva)"
       parameters:
         - name: id
           in: path
@@ -598,30 +630,66 @@ paths:
             type: string
             format: uuid
       responses:
-        '200':
-          description: Risk assessment archived successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RiskAssessmentDto'
+        '204':
+          description: Archived
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
 
-  /api/ehs/risk-assessments/matrix:
-    get:
-      operationId: getRiskMatrix
-      tags: [RiskAssessments, Metrics]
-      summary: Get 5×5 risk matrix visualization data
+  /api/ehs/risk-assessments/{id}/add-control:
+    post:
+      operationId: addRiskControlMeasure
+      tags: [RiskAssessments]
+      summary: Add a control measure (+ optional CAPA via the unified mechanism)
       description: |
-        Returns risk assessment distribution across the 5×5 matrix.
-        Used for heat map visualization.
+        Records a mitigation measure for the hazard. When capaAssignedTo and
+        capaDueDate are provided, a CorrectiveAction is spawned through the
+        unified CAPA mechanism (source: RiskAssessment) and linked to the control.
+        409 when the assessment is archived.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddRiskControlRequest'
       responses:
-        '200':
-          description: Risk matrix data (5×5 grid)
+        '201':
+          description: Control measure added
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RiskMatrixDto'
+                $ref: '#/components/schemas/AddControlMeasureResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /api/ehs/risk-assessments/risk-matrix:
+    get:
+      operationId: getRiskMatrixSummary
+      tags: [RiskAssessments, Metrics]
+      summary: 5×5 risk matrix summary (per-cell counts)
+      description: |
+        Returns the dashboard summary of the live (non-archived) risk register:
+        total count, breakdown by risk level and status, and all 25 matrix cells
+        (Severity × Likelihood) with per-cell counts — empty cells included.
+      responses:
+        '200':
+          description: Risk matrix summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RiskMatrixSummaryDto'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -2032,6 +2100,16 @@ components:
     # ========================================
     # RISK ASSESSMENT AGGREGATE
     # ========================================
+    Severity:
+      type: string
+      enum: [Negligible, Minor, Moderate, Major, Catastrophic]
+      description: "Consequence rating 1-5 (sulyossag): 1=Negligible … 5=Catastrophic"
+
+    Likelihood:
+      type: string
+      enum: [Rare, Unlikely, Possible, Likely, AlmostCertain]
+      description: "Probability rating 1-5 (valoszinuseg): 1=Rare … 5=AlmostCertain"
+
     RiskAssessmentDto:
       type: object
       required:
@@ -2042,10 +2120,10 @@ components:
         - likelihood
         - riskScore
         - riskLevel
+        - status
         - assessedBy
         - assessedAt
         - reviewDueDate
-        - status
       properties:
         riskAssessmentId:
           type: string
@@ -2055,16 +2133,15 @@ components:
           format: uuid
         hazardDescription:
           type: string
+          maxLength: 1000
+        locationId:
+          type: ['string', 'null']
+          format: uuid
+          description: Affected area — optional FK to EhsLocation
         severity:
-          type: integer
-          minimum: 1
-          maximum: 5
-          description: "1=Negligible, 5=Catastrophic"
+          $ref: '#/components/schemas/Severity'
         likelihood:
-          type: integer
-          minimum: 1
-          maximum: 5
-          description: "1=Rare, 5=Almost Certain"
+          $ref: '#/components/schemas/Likelihood'
         riskScore:
           type: integer
           minimum: 1
@@ -2072,6 +2149,8 @@ components:
           description: "Calculated: Severity × Likelihood"
         riskLevel:
           $ref: '#/components/schemas/RiskLevel'
+        status:
+          $ref: '#/components/schemas/RiskAssessmentStatus'
         assessedBy:
           type: string
           format: uuid
@@ -2081,13 +2160,60 @@ components:
           format: date-time
         reviewDueDate:
           type: string
-          format: date
-        status:
-          $ref: '#/components/schemas/RiskAssessmentStatus'
-        controls:
+          format: date-time
+        submittedAt:
+          type: ['string', 'null']
+          format: date-time
+        approvedAt:
+          type: ['string', 'null']
+          format: date-time
+        archivedAt:
+          type: ['string', 'null']
+          format: date-time
+        controlMeasures:
           type: array
           items:
             $ref: '#/components/schemas/RiskControlDto'
+
+    RiskAssessmentListItemDto:
+      type: object
+      required:
+        - riskAssessmentId
+        - hazardDescription
+        - severity
+        - likelihood
+        - riskScore
+        - riskLevel
+        - status
+        - assessedAt
+        - reviewDueDate
+      properties:
+        riskAssessmentId:
+          type: string
+          format: uuid
+        hazardDescription:
+          type: string
+        locationId:
+          type: ['string', 'null']
+          format: uuid
+        severity:
+          $ref: '#/components/schemas/Severity'
+        likelihood:
+          $ref: '#/components/schemas/Likelihood'
+        riskScore:
+          type: integer
+          minimum: 1
+          maximum: 25
+        riskLevel:
+          $ref: '#/components/schemas/RiskLevel'
+        status:
+          $ref: '#/components/schemas/RiskAssessmentStatus'
+        assessedAt:
+          type: string
+          format: date-time
+        reviewDueDate:
+          type: string
+          format: date-time
 
     RiskLevel:
       type: string
@@ -2095,35 +2221,80 @@ components:
         - Low
         - Medium
         - High
+        - Critical
       description: |
-        Calculated based on RiskScore:
-        Low: 1-5
-        Medium: 6-12
-        High: 15-25
+        Calculated from RiskScore with CONFIG-DRIVEN band boundaries
+        (Ehs:RiskMatrix:Bands — defaults: Low 1-4, Medium 5-9, High 10-16, Critical 17-25).
 
     RiskAssessmentStatus:
       type: string
       enum:
-        - Active
+        - Draft
+        - UnderReview
+        - Approved
         - Archived
+      description: "FSM: Draft(vazlat) → UnderReview(felulvizsgalat) → Approved(jovahagyva) → Archived(archivalva), + UnderReview → Draft (return-to-draft)"
 
     RiskControlDto:
       type: object
       required:
-        - description
-        - implementationDate
+        - riskControlId
+        - controlMeasure
+        - responsiblePerson
+        - implementedAt
+        - isVerified
       properties:
-        description:
+        riskControlId:
           type: string
-        implementationDate:
+          format: uuid
+        controlMeasure:
           type: string
-          format: date
+          maxLength: 1000
         responsiblePerson:
+          type: string
+          maxLength: 200
+        implementedAt:
+          type: string
+          format: date-time
+        verifiedAt:
+          type: ['string', 'null']
+          format: date-time
+        isVerified:
+          type: boolean
+        correctiveActionId:
           type: ['string', 'null']
           format: uuid
-          description: EmployeeId (optional)
+          description: Linked unified CAPA (source = RiskAssessment)
 
-    CreateRiskAssessmentCommand:
+    CreateRiskAssessmentRequest:
+      type: object
+      required:
+        - hazardDescription
+        - severity
+        - likelihood
+        - assessedBy
+        - reviewDueDate
+      properties:
+        hazardDescription:
+          type: string
+          maxLength: 1000
+        severity:
+          $ref: '#/components/schemas/Severity'
+        likelihood:
+          $ref: '#/components/schemas/Likelihood'
+        assessedBy:
+          type: string
+          format: uuid
+        reviewDueDate:
+          type: string
+          format: date-time
+          description: Must be in the future
+        locationId:
+          type: ['string', 'null']
+          format: uuid
+          description: Optional FK to EhsLocation (must exist → otherwise 409)
+
+    UpdateRiskAssessmentRequest:
       type: object
       required:
         - hazardDescription
@@ -2133,113 +2304,101 @@ components:
       properties:
         hazardDescription:
           type: string
+          maxLength: 1000
         severity:
-          type: integer
-          minimum: 1
-          maximum: 5
+          $ref: '#/components/schemas/Severity'
         likelihood:
-          type: integer
-          minimum: 1
-          maximum: 5
+          $ref: '#/components/schemas/Likelihood'
         reviewDueDate:
           type: string
-          format: date
+          format: date-time
+        locationId:
+          type: ['string', 'null']
+          format: uuid
 
-    UpdateRiskAssessmentCommand:
-      type: object
-      properties:
-        hazardDescription:
-          type: string
-        severity:
-          type: integer
-          minimum: 1
-          maximum: 5
-        likelihood:
-          type: integer
-          minimum: 1
-          maximum: 5
-        reviewDueDate:
-          type: string
-          format: date
-
-    AddRiskControlCommand:
+    AddRiskControlRequest:
       type: object
       required:
-        - description
-        - implementationDate
+        - controlMeasure
+        - responsiblePerson
       properties:
-        description:
+        controlMeasure:
           type: string
-        implementationDate:
-          type: string
-          format: date
+          maxLength: 1000
         responsiblePerson:
           type: string
+          maxLength: 200
+        capaDescription:
+          type: ['string', 'null']
+          maxLength: 1000
+          description: Defaults to controlMeasure when a CAPA is spawned
+        capaAssignedTo:
+          type: ['string', 'null']
           format: uuid
-          description: EmployeeId (optional)
+          description: Provide together with capaDueDate to spawn a unified CAPA
+        capaDueDate:
+          type: ['string', 'null']
+          format: date-time
 
-    RiskMatrixDto:
+    AddControlMeasureResult:
       type: object
       required:
-        - matrix
+        - riskControlId
       properties:
-        matrix:
-          type: array
-          items:
-            type: array
-            items:
-              type: integer
-              description: "Count of risk assessments in this cell"
-          description: "5×5 grid: matrix[severity-1][likelihood-1]"
-        legend:
+        riskControlId:
+          type: string
+          format: uuid
+        correctiveActionId:
+          type: ['string', 'null']
+          format: uuid
+          description: The spawned unified CAPA (when requested)
+
+    RiskMatrixSummaryDto:
+      type: object
+      required:
+        - totalAssessments
+        - byRiskLevel
+        - byStatus
+        - matrixCells
+      properties:
+        totalAssessments:
+          type: integer
+          description: Non-archived assessments
+        byRiskLevel:
           type: object
-          properties:
-            low:
-              type: array
-              items:
-                type: object
-                properties:
-                  severity:
-                    type: integer
-                  likelihood:
-                    type: integer
-            medium:
-              type: array
-              items:
-                type: object
-                properties:
-                  severity:
-                    type: integer
-                  likelihood:
-                    type: integer
-            high:
-              type: array
-              items:
-                type: object
-                properties:
-                  severity:
-                    type: integer
-                  likelihood:
-                    type: integer
+          additionalProperties:
+            type: integer
+          description: "Count per risk level (keys: Low/Medium/High/Critical)"
+        byStatus:
+          type: object
+          additionalProperties:
+            type: integer
+          description: "Count per status (keys: Draft/UnderReview/Approved)"
+        matrixCells:
+          type: array
+          minItems: 25
+          maxItems: 25
+          items:
+            $ref: '#/components/schemas/RiskMatrixCellDto'
+          description: All 25 cells (5 Severity × 5 Likelihood), empty cells included
 
-    PagedRiskAssessmentResponse:
+    RiskMatrixCellDto:
       type: object
       required:
-        - items
-        - totalCount
-        - page
-        - pageSize
+        - severity
+        - likelihood
+        - count
+        - riskLevel
       properties:
-        items:
-          type: array
-          items:
-            $ref: '#/components/schemas/RiskAssessmentDto'
-        totalCount:
+        severity:
+          $ref: '#/components/schemas/Severity'
+        likelihood:
+          $ref: '#/components/schemas/Likelihood'
+        count:
           type: integer
-        page:
-          type: integer
-        pageSize:
-          type: integer
+          description: Number of assessments in this cell
+        riskLevel:
+          $ref: '#/components/schemas/RiskLevel'
 
     # ========================================
     # TRAINING RECORD AGGREGATE

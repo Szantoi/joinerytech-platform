@@ -93,7 +93,7 @@ Doorstar (ügyfél) ◄─── specifikus testreszabás
 | HR | ✅ | ✅ | ✅ APPROVED |
 | Maintenance | ✅ | ✅ | ✅ APPROVED |
 | QA | ✅ | ✅ | ✅ APPROVED |
-| EHS | ✅ | ✅ | ⚠️ CHANGES REQUESTED |
+| EHS | ✅ | ✅ | ✅ APPROVED |
 | DMS | ✅ | ✅ | ✅ APPROVED |
 
 ---

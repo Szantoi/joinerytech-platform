@@ -131,41 +131,15 @@ public class IncidentEntityTypeConfiguration : IEntityTypeConfiguration<Incident
                 .HasDatabaseName("ix_incident_investigations_incident_id");
         });
 
-        // Owned collection: CorrectiveActions (0-n) → incident_corrective_actions table
-        builder.OwnsMany(i => i.CorrectiveActions, actions =>
-        {
-            actions.ToTable("incident_corrective_actions", "ehs");
-            actions.WithOwner().HasForeignKey("incident_id");
-
-            actions.Property(a => a.CorrectiveActionId)
-                .IsRequired()
-                .HasColumnName("corrective_action_id");
-
-            actions.Property(a => a.IncidentId)
-                .IsRequired()
-                .HasColumnName("incident_id");
-
-            actions.Property(a => a.Description)
-                .IsRequired()
-                .HasMaxLength(1000)
-                .HasColumnName("description");
-
-            actions.Property(a => a.AssignedTo)
-                .IsRequired()
-                .HasColumnName("assigned_to");
-
-            actions.Property(a => a.DueDate)
-                .IsRequired()
-                .HasColumnType("timestamp with time zone")
-                .HasColumnName("due_date");
-
-            actions.Property(a => a.CompletedAt)
-                .HasColumnType("timestamp with time zone")
-                .HasColumnName("completed_at");
-
-            actions.HasIndex("incident_id")
-                .HasDatabaseName("ix_incident_corrective_actions_incident_id");
-        });
+        // CorrectiveActions (0-n) → UNIFIED corrective_actions table.
+        // No longer an owned collection: CorrectiveAction is a first-class
+        // entity shared with SafetyWalk (unified CAPA). The relationship uses
+        // the nullable incident_id FK; column mapping lives in
+        // CorrectiveActionEntityTypeConfiguration.
+        builder.HasMany(i => i.CorrectiveActions)
+            .WithOne()
+            .HasForeignKey(a => a.IncidentId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         // Owned collection: Witnesses (0-n) → incident_witnesses table
         builder.OwnsMany(i => i.Witnesses, witnesses =>

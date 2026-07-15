@@ -24,3 +24,12 @@ Thumbs.db
 .vscode/
 .idea/
 
+
+# .NET build artifacts (QUALITY.md 7. pont — futtatási/köztes fájl nem kerül gitre)
+**/bin/Debug/
+**/bin/Release/
+**/obj/
+TestResults/
+
+# Nexus runtime data (SQLite DB-k, retry-sor)
+src/joinerytech-nexus/knowledge-service/data/

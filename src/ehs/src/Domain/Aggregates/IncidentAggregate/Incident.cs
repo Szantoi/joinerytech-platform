@@ -137,7 +137,7 @@ public class Incident : AggregateRoot
         if (Status != IncidentStatus.Investigated)
             throw new InvalidOperationException("Corrective actions can only be added to investigated incidents");
 
-        var action = new CorrectiveAction(IncidentId, description, assignedTo, dueDate);
+        var action = CorrectiveAction.CreateForIncident(TenantId, IncidentId, description, assignedTo, dueDate);
         _correctiveActions.Add(action);
         Status = IncidentStatus.CorrectiveActionPlanned;
 

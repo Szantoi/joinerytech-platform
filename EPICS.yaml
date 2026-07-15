@@ -1,0 +1,79 @@
+# EPICS.yaml — goal-config (QUALITY.md 1. pont szerint)
+# A projekt állapota ITT él, nem a beszélgetés-kontextusban.
+# Frissíti: root (fázisváltás, release-döntés), conductor (task-státuszok).
+
+program: JoineryTech Platform
+epics:
+  - id: EPIC-UI-PORTAL-2026Q3
+    title: "Prototípus UI terv → joinerytech-portal megvalósítás"
+    owner: root
+    coordinator: conductor
+    started: 2026-07-14
+    status: in_progress
+    goal: >
+      A docs/joinerytech prototípus UI-terve fut az éles portálon
+      (src/joinerytech-portal): worlds→screens navigáció, 7 modul-világ a
+      spec-FSM-ekkel, a11y (WCAG-AA) + dark mode + mobil-első minták.
+    stop_condition: >
+      Mind a 7 modul designer-review APPROVED, npm run build + test zöld,
+      route-alapú code-splitting él, EHS nyitott scope (SDS, PPE,
+      bejárás→CAPA, locations) lezárva. Ekkor: root release-döntés,
+      submodule bump, epic CLOSED.
+    plan_doc: docs/knowledge/architecture/UI_IMPLEMENTATION_PLAN_2026-07-14.md
+    milestones:
+      - id: F0-felmeres
+        status: done
+        started: 2026-07-14
+        completed: 2026-07-14
+        done_when: "gap-analízis + design-system spec + API-audit doksik léteznek a docs/knowledge/ alatt"
+        tasks:
+          - { id: MSG-FRONTEND-001, role: frontend, title: "Gap-analízis", status: done, output: docs/knowledge/architecture/UI_GAP_ANALYSIS.md }
+          - { id: MSG-DESIGNER-002, role: designer, title: "Design-system spec v1", status: done, output: docs/knowledge/patterns/DESIGN_SYSTEM_SPEC_V1.md }
+          - { id: MSG-BACKEND-001, role: backend, title: "API kontraktus-audit + EHS előfeltételek", status: done, output: docs/knowledge/architecture/API_CONTRACT_AUDIT_2026-07-14.md }
+      - id: F1-shell-primitivek
+        status: done
+        started: 2026-07-14
+        completed: 2026-07-14
+        note: "S1/S2/M1 javítva; F1 a review-findingok zárásával KÉSZ. Task-fájlok: docs/tasks/EPIC-UI-PORTAL-2026Q3/"
+        done_when: "egységes worlds→screens nav + a11y/dark-mode primitívek + code-splitting a portalban, teszttel"
+        tasks:
+          - { id: F1-A, role: frontend, title: "Tokenek + dark mode + akcent-javítás + StatusPill/FSM_TONES", status: done, tests: "42/42 zöld" }
+          - { id: F1-B, role: frontend, title: "A11y primitívek: SlideOver, Tabs, DataTable, Toast", status: done, tests: "47/47 zöld" }
+          - { id: F1-C, role: frontend, title: "Code-splitting + MobileBottomNav + shell-integráció + build-verify", status: done, depends_on: [F1-A, F1-B], tests: "1113 zöld / 19 pre-existing hiba", bundle: "index.js 462→111 kB gzip (-80%)", report: docs/knowledge/architecture/BUNDLE_REPORT_F1.md }
+          - { id: F1-REVIEW, role: designer, title: "Fázis 1 UI/a11y review (shell + primitívek vs spec)", status: changes_requested, verdict: "tokenek+theme+primitívek APPROVED; shell CHANGES REQUESTED (S1 drawer fókusz, S2 ACCENT_MAP dark-kontraszt, M1 aria-labelek)", report: docs/knowledge/qa/F1_DESIGN_REVIEW_2026-07-14.md }
+          - { id: F1-FIX, role: frontend, title: "F1 review-javítások: S1 drawer inert+dialog, S2 accent dark-tokenizálás, M1 aria-labelek", status: done, tests: "35/35 + 10/10 zöld, tsc+eslint tiszta" }
+        backlog:
+          - { id: FIX-PREEXISTING-TESTS, title: "19 pre-existing tesztbukás javítása (BOMPreviewCard, configurator HU számformátum, catalogFilterPersistence, ProcurementPage Router-hiány)", status: pending, note: "HEAD db57ae3-en is bukik, nem F1-regresszió" }
+      - id: F2-modulok
+        status: in_progress
+        started: 2026-07-14
+        order: [ehs, crm, kontrolling, hr, maintenance, qa, dms]
+        done_when: "modulonként: képernyők a spec szerint + FSM-stepper + designer review APPROVED"
+        tasks:
+          - { id: F2-EHS-BE, role: backend, title: "EHS backend: EhsLocation + HazardousMaterial/SDS + PpeIssuance FSM + SafetyWalk FSM (src/ehs)", status: done, tests: "92/92 domain zöld; integrációs Docker-hiány miatt CI-re vár", endpoints: 27 }
+          - { id: F2-EHS-FE, role: frontend, title: "EHS frontend: wizard bekötés + locations + SDS/PPE/bejárás képernyők + FSM-átmenetek", status: done, depends_on: [F1-C, F2-EHS-BE], tests: "64 új EHS-teszt + 1157/1176 zöld (19 pre-existing)", note: "adatréteg-minta: src/services/ehs/README.md" }
+          - { id: F2-EHS-REVIEW, role: designer, title: "EHS világ designer-review (cél: APPROVED — a sziget-CLAUDE.md CHANGES REQUESTED státuszának feloldása)", status: changes_requested, verdict: "adatréteg-minta APPROVED sablonként; 2 blokkoló: S1 dashboard dark-tokenek, S2 FAB↔bottom-nav átfedés; M1 cache-invalidáció, N1 KPI-link", report: docs/knowledge/qa/F2_EHS_DESIGN_REVIEW_2026-07-14.md }
+          - { id: F2-EHS-FIX, role: frontend, title: "EHS review-javítások (S1, S2, M1, N1 + N2/N3 bónusz)", status: done, tests: "64+26 célzott teszt zöld, tsc+eslint tiszta" }
+          - { id: F2-EHS-REREVIEW, role: designer, title: "EHS re-review (dark mód + mobil vizuális check) → APPROVED esetén CLAUDE.md státusz-átbillentés", status: done, verdict: "✅ APPROVED — CLAUDE.md EHS sor átbillentve, 90/90 teszt zöld" }
+          - { id: F2-CRM-FE, role: frontend, title: "CRM frontend: pipeline kanban + lead/opp FSM + adatréteg az EHS-mintára (MSW-first)", status: done, tests: "60/60 új + 1201/1220 teljes (19 pre-existing)", note: "backend-gap dokumentálva: nincs host + Lead FSM nurturing hiányzik (follow-up)" }
+          - { id: F2-CRM-REVIEW, role: designer, title: "CRM világ designer-review", status: changes_requested, verdict: "3 kis blokkoló: S1 quote-gomb UI-guard, S2 detail-kulcs invalidáció (README 6. szabály), S3 kanban-affordanciák; M1/M2 kérve; adatréteg+tokenek APPROVED", report: docs/knowledge/qa/F2_CRM_DESIGN_REVIEW_2026-07-14.md }
+          - { id: F2-CRM-FIX, role: frontend, title: "CRM review-javítások (S1-S3 + M1/M2)", status: done, tests: "68 célzott teszt zöld (60 baseline + 8 új), tsc+eslint tiszta" }
+          - { id: F2-CRM-REREVIEW, role: designer, title: "CRM re-review (S1-S3 célzott ellenőrzés)", status: done, verdict: "✅ APPROVED — mind az 5 finding kódban igazolva, 68 teszt zöld" }
+          - { id: F2-KONTROLLING-FE, role: frontend, title: "Kontrolling frontend: vezetői áttekintés + portfólió + projekt-fedezet + eltérés-elemzés + utókalkuláció (MSW-first)", status: done, tests: "35/35 új + 1232/1251 teljes (19 pre-existing)", note: "calc.ts = backend ProjectCostCalculation tükör; tudatosan nincs FSM (lifecycle-címkék); rule-6 teljes invalidáció" }
+          - { id: F2-KONTROLLING-REVIEW, role: designer, title: "Kontrolling világ designer-review", status: changes_requested, verdict: "2 blokkoló: S1 kategória-táblázat mobil-görgetés affordancia nélkül, S2 szűrő-chip 28px hit area (CRM M2 lecke ismétlődése); calc.ts backend-tükör + rule-6 APPROVED", report: docs/knowledge/qa/F2_KONTROLLING_DESIGN_REVIEW_2026-07-15.md }
+          - { id: F2-KONTROLLING-FIX, role: frontend, title: "Kontrolling review-javítások (S1, S2 + M1-M3)", status: in_progress }
+          - { id: F2-HR-FE, role: frontend, title: "HR frontend: kapacitás-rács + távollét-FSM + készség-mátrix (MSW-first, amber)", status: in_progress }
+        modules_done: [ehs, crm]
+        decisions:
+          - "ADR 2026-07-14 (root): EHS incidens FSM — elutasitva ág NINCS; a backend Closed→Reopened a kanonikus (tervdoksi frissítve)."
+        backlog_f2:
+          - { id: DS-RECONCILE, title: "design-system/ styleguide (Gábor, 2026-07-14) egyeztetése a DESIGN_SYSTEM_SPEC_V1-gyel + portal-tokenekkel — a régi prototípus-akcentek (indigo/emerald/rose) cseréje, forrás-igazság hivatkozás a portalra", status: pending, role: designer }
+          - { id: RISKS-5X5-BE, title: "EHS 5×5 kockázati mátrix backend-migráció (RisksScreen még statikus mockon)", status: pending }
+          - { id: EHS-WIZARD-HU, title: "IncidentReportWizard angol szövegeinek magyarítása", status: pending, note: "F2-EHS-REVIEW javítócsomagjába" }
+      - id: F3-minosegkapu
+        status: pending
+        done_when: "7×APPROVED, build+test zöld, bundle-riport, root release-döntés"
+    coordination:
+      mailbox: "Nexus MCP (localhost:3458) — create_task/submit_done, epic_id-vel"
+      tasks_issued:
+        [MSG-CONDUCTOR-002, MSG-FRONTEND-001, MSG-DESIGNER-002, MSG-BACKEND-001, MSG-MONITOR-001]

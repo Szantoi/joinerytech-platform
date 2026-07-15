@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="hu">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>JoineryTech DS — Alapok</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="ds.css">
+<script src="ds-icons.js"></script><script src="ds-shell.js"></script>
+</head>
+<body>
+<main>
+<div class="crumb">JoineryTech Design System</div>
+<h1>Alapok</h1>
+<p class="lead">A JoineryTech Portal vizuális nyelvének kanonikus leírása — az élő appból auditálva, ahol inkonzisztens volt, ott feltisztítva. Minden itt szereplő minta másolható kóddal jön; a forrás-igazság a <span class="mono">ui.jsx</span> és a <span class="mono">page-home.jsx ACCENT_MAP</span>.</p>
+
+<section id="elvek">
+<h2>Design elvek</h2>
+<p class="h2sub">Öt elv, ami minden képernyőn visszaköszön:</p>
+<div class="demo">
+<ol style="margin:0;padding-left:20px;font-size:13.5px;line-height:1.5;display:flex;flex-direction:column;gap:12px">
+<li><b>Műhely-nyugalom.</b> Meleg stone-neutrálok, fehér kártyák, halvány tintek — az adat beszél, nem a felület. Erős szín csak jelentéssel: akcentus, státusz, riasztás.</li>
+<li><b>Egy világ, egy hue.</b> Minden modul (világ) kap egy akcentus-hue-t; a világon belül csak annak a tintjei jelennek meg. A teal a márkáé és a gyártásé.</li>
+<li><b>A státusz szent.</b> FSM-státusz mindig pill formában, ponttal, a kanonikus tónussal. Új státusz-szín kitalálása tilos — a <span class="mono">STATUS_TONES</span> a törvény.</li>
+<li><b>Lezárt, nem rejtett.</b> Jogosultság vagy előfeltétel hiányában a gomb disabled + tooltip a hiányzó feltétellel — soha nem tűnik el. A felhasználó lássa, mi lenne lehetséges.</li>
+<li><b>Mobil-első sűrűség.</b> 12–13px-es alap-szövegméret, 44px-nél nem kisebb érintőfelület, bottom-sheet mobil / slide-over desktop.</li>
+</ol>
+</div>
+</section>
+
+<section id="hangnem">
+<h2>Copywriting hangnem</h2>
+<p class="h2sub">Magyar, közvetlen, tegeződő ahol a felhasználóhoz szólunk; tárgyilagos, ahol adatot címkézünk. Rövid mondatok, ige elöl a CTA-ban.</p>
+<div class="two">
+<div class="demo"><span class="tag do">Így</span>
+<ul style="margin:10px 0 0;padding-left:18px;font-size:13px;line-height:1.5;display:flex;flex-direction:column;gap:8px">
+<li>„Hogyan folytatod?" — művelet utáni navigáció (askNextStep)</li>
+<li>„Kiadás a műhelynek" — ige elöl, konkrét</li>
+<li>„A jóváhagyáshoz hiányzik: Eladási ár" — tooltip lezárt gombon</li>
+<li>„Nincs még ellenőrzés — hozz létre egyet a + gombbal"</li>
+</ul></div>
+<div class="demo"><span class="tag dont">Ne</span>
+<ul style="margin:10px 0 0;padding-left:18px;font-size:13px;line-height:1.5;display:flex;flex-direction:column;gap:8px">
+<li>„Sikeres művelet végrehajtva!" — üres udvariaskodás</li>
+<li>„Submit" / vegyes angol-magyar UI-szöveg</li>
+<li>„Hiba történt." — indok és következő lépés nélkül</li>
+<li>Felkiáltójel-halmozás, emoji (a brand nem használ)</li>
+</ul></div>
+</div>
+<div class="note"><b>Terminológia:</b> világ (nem „modul" a UI-ban) · munkaszám · cikkszám · ajánlat → megrendelés → kiadás · Feladataim · Áttekintés (dashboard-képernyő neve). Az en-fordítás mindig a <span class="mono">data-worlds.js</span> screens-listájából jön.</div>
+</section>
+
+<section id="spacing">
+<h2>Spacing</h2>
+<p class="h2sub">Tailwind 4px-es rács. A portál sűrű, ezért a skála alja hangsúlyos — kártyán belül 8–16px, kártyák között 12–16px, szekciók között 24–32px.</p>
+<div class="demo">
+<div style="display:flex;flex-direction:column;gap:10px;font-size:12px">
+<div style="display:flex;align-items:center;gap:14px"><span class="mono" style="width:120px;color:#78716c">gap-1 · 4px</span><span style="height:14px;width:4px;background:#0f766e;border-radius:2px"></span><span style="color:#a8a29e">ikon–szöveg pill-en belül</span></div>
+<div style="display:flex;align-items:center;gap:14px"><span class="mono" style="width:120px;color:#78716c">gap-2 · 8px</span><span style="height:14px;width:8px;background:#0f766e;border-radius:2px"></span><span style="color:#a8a29e">gomb-csoport, chip-sor</span></div>
+<div style="display:flex;align-items:center;gap:14px"><span class="mono" style="width:120px;color:#78716c">gap-3 · 12px</span><span style="height:14px;width:12px;background:#0f766e;border-radius:2px"></span><span style="color:#a8a29e">kártya-rács, lista-sorok</span></div>
+<div style="display:flex;align-items:center;gap:14px"><span class="mono" style="width:120px;color:#78716c">p-4 · 16px</span><span style="height:14px;width:16px;background:#0f766e;border-radius:2px"></span><span style="color:#a8a29e">kártya-padding (mobil)</span></div>
+<div style="display:flex;align-items:center;gap:14px"><span class="mono" style="width:120px;color:#78716c">p-5 · 20px</span><span style="height:14px;width:20px;background:#0f766e;border-radius:2px"></span><span style="color:#a8a29e">kártya-padding (desktop), SlideOver</span></div>
+<div style="display:flex;align-items:center;gap:14px"><span class="mono" style="width:120px;color:#78716c">px-7 · 28px</span><span style="height:14px;width:28px;background:#0f766e;border-radius:2px"></span><span style="color:#a8a29e">oldal-margó (topbar, tartalom)</span></div>
+</div>
+</div>
+</section>
+
+<section id="radius">
+<h2>Border-radius</h2>
+<p class="h2sub">Négy szint — ennél több ne legyen egy képernyőn.</p>
+<div class="demo demo-row">
+<div style="text-align:center"><div style="width:76px;height:56px;background:#fff;border:1.5px solid #d6d3d1;border-radius:6px"></div><div class="mono" style="font-size:10.5px;color:#78716c;margin-top:6px">rounded-md · 6px<br>input, kis gomb</div></div>
+<div style="text-align:center"><div style="width:76px;height:56px;background:#fff;border:1.5px solid #d6d3d1;border-radius:8px"></div><div class="mono" style="font-size:10.5px;color:#78716c;margin-top:6px">rounded-lg · 8px<br>gomb, keresőmező</div></div>
+<div style="text-align:center"><div style="width:76px;height:56px;background:#fff;border:1.5px solid #d6d3d1;border-radius:12px"></div><div class="mono" style="font-size:10.5px;color:#78716c;margin-top:6px">rounded-xl · 12px<br>kártya</div></div>
+<div style="text-align:center"><div style="width:76px;height:56px;background:#fff;border:1.5px solid #d6d3d1;border-radius:99px"></div><div class="mono" style="font-size:10.5px;color:#78716c;margin-top:6px">rounded-full<br>pill, badge, avatar</div></div>
+<div style="text-align:center"><div style="width:76px;height:56px;background:#fff;border:1.5px solid #d6d3d1;border-radius:18px 18px 0 0"></div><div class="mono" style="font-size:10.5px;color:#78716c;margin-top:6px">18px felül<br>mobil bottom-sheet</div></div>
+</div>
+</section>
+
+<section id="shadow">
+<h2>Árnyék és elválasztás</h2>
+<p class="h2sub">A felület elsősorban <b>border-rel</b> tagol (stone-200/80), nem árnyékkal. Árnyék csak lebegő rétegen.</p>
+<table class="ds">
+<thead><tr><th>Szint</th><th>Használat</th><th>Osztály</th></tr></thead>
+<tbody>
+<tr><td>0 — border</td><td>kártya, táblázat, input</td><td class="mono">border border-stone-200/80</td></tr>
+<tr><td>1 — shadow-sm</td><td>primer gomb (teal-árnyalatú)</td><td class="mono">shadow-sm shadow-teal-900/10</td></tr>
+<tr><td>2 — shadow-2xl</td><td>SlideOver / bottom-sheet panel</td><td class="mono">shadow-2xl</td></tr>
+<tr><td>overlay</td><td>háttér-sötétítés lebegő réteg alatt</td><td class="mono">bg-stone-900/30 backdrop-blur-[2px]</td></tr>
+</tbody>
+</table>
+</section>
+
+<section id="breakpoints">
+<h2>Töréspontok</h2>
+<div class="demo">
+<table class="ds" style="border:0">
+<thead><tr><th>Küszöb</th><th>Viselkedés</th></tr></thead>
+<tbody>
+<tr><td class="mono">&lt; 640px</td><td>bottom-sheet a SlideOver helyett; egy-oszlopos rácsok</td></tr>
+<tr><td class="mono">&lt; 768px (md)</td><td>mobil alsó nav; sidebar rejtve</td></tr>
+<tr><td class="mono">768–1024px</td><td>ikonos sidebar-sín (64px)</td></tr>
+<tr><td class="mono">≥ 1024px (lg)</td><td>teljes sidebar (232px), feliratokkal</td></tr>
+</tbody>
+</table>
+<div class="note" style="margin-bottom:0"><b>Érintőfelület:</b> mobilon min. 44×44px — a 36px-es (h-9) desktop-gombok mobil-nézetben kapjanak py-t vagy nagyobb hit-area-t.</div>
+</div>
+</section>
+</main>
+</body>
+</html>

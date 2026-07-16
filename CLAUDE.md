@@ -100,6 +100,25 @@ Release: portal **v1.0.0** + platform **v0.2.0** (2026-07-16, EPIC-UI-PORTAL-202
 
 ---
 
+## VPS-HOZZÁFÉRÉS (deploy)
+
+SSH-alias: `joinerytech-vps` (a `~/.ssh/config`-ban), kulcs: `~/.ssh/joinerytech_deploy_key`
+(dedikált deploy-kulcs, külön visszavonható). VPS: 109.122.222.198 (Debian 13), user `gabor`,
+passwordless sudo. Tailnet: 100.82.133.87. Távoli parancs: `ssh joinerytech-vps '<parancs>'`.
+
+**Nexus MCP tunnel** (a 3458 innen jön): `ssh -N -f -L 3458:localhost:3458 joinerytech-vps`
+
+**Deploy-célok:** platform `/opt/joinerytech`, portal `/opt/joinerytech/src/joinerytech-portal`
+(a VPS-nek van GitHub SSH-hozzáférése → `git pull` közvetlenül megy).
+
+Deploy után **mindig** ellenőrizd, hogy az új kód fut: `ssh joinerytech-vps 'sudo ss -tlnp | grep <port>'`
+— a PID egyezzen a service MainPID-jével (bennragadt régi processz csendben tovább szolgálhat ki).
+
+> ⚠️ **A systemd unit-ok elavult útvonalra mutatnak — 10 service crash-loopban.**
+> Részletek + javítási terv: [docs/knowledge/architecture/VPS_SERVICE_STATE_2026-07-16.md](docs/knowledge/architecture/VPS_SERVICE_STATE_2026-07-16.md)
+
+---
+
 ## ADÓSSÁGOK (számon tartott, nem blokkoló)
 
 Teljes térkép: **[docs/knowledge/architecture/PORTAL_WORLDS_INVENTORY_2026-07-16.md](docs/knowledge/architecture/PORTAL_WORLDS_INVENTORY_2026-07-16.md)**

@@ -44,7 +44,39 @@ Ezért viselkedett a Nexus szeszélyesen: a szolgáltatás maga végig élt a VP
 **Következmény:** ha ez az árva processz meghal, a Nexus végleg elmegy — a systemd
 nem tudja felhozni, mert elavult útvonalon keresi. Ez a legsürgősebb egyedi kockázat.
 
-## Javasolt lépések (root → Gábor döntése)
+## ✅ ELVÉGZETT JAVÍTÁS (2026-07-16 este, Gábor jóváhagyásával)
+
+**Mind a 10 crash-loop leállítva**, unit-backup: `/etc/systemd/system/.backup-2026-07-16/`.
+Az összes unit útvonala javítva (`/opt/spaceos/backend/` → `/opt/joinerytech/src/`).
+Jogosultság: a `spaceos` service-user felvéve a `gabor` csoportba (enélkül az új útvonalat
+nem olvashatta — `drwxr-x--- gabor gabor`).
+
+**5 service ÉL, PID-egyezéssel igazolva, 0 újraindítással:**
+
+| Service | Port | Megjegyzés |
+|---|---|---|
+| **spaceos-knowledge** (Nexus MCP) | 3458 | **systemd alá visszavezetve** — az árva processz leállítva, `ExecStart=/usr/bin/node dist/server.js`, `enable`-ölve. A Nexus többé nem törékeny. |
+| spaceos-abstractions | 5003 | |
+| spaceos-inventory | 5004 | |
+| spaceos-procurement | 5006 | |
+| spaceos-modules-identity | **5008** | ✅ megerősíti a mai orchestrator port-fixet (IDENTITY 5003→5008) |
+
+## Ami maradt: 5 service, forrás-oldali okokból (NEM unit-hiba)
+
+| Service | Ok |
+|---|---|
+| **spaceos-kernel** | a VPS-checkout (`develop@c1f6dd6`) **nem fordul**: CS1929 hibák a `TradeWorldEndpoints.cs`-ben, és **9 uncommitted fájl** — a VPS-csapat félbehagyott munkája. **Nem nyúltunk hozzá.** |
+| **spaceos-orchestrator** | **23 uncommitted fájl** a `develop@2fd47ed`-en (a mai port-fix `fffa9be` még nincs lehúzva) — szintén aktív, félbehagyott munka. **Nem nyúltunk hozzá.** |
+| **joinery, cutting, sales** | a repóban **verziókövetett** `NuGet.Config` abszolút, elavult útvonalra mutat: `LocalCutting = /opt/spaceos/backend/spaceos-modules-cutting/nupkg/`. A csomagok valójában `/opt/joinerytech/src/spaceos-modules-cutting/nupkg/` alatt vannak (Cutting.Contracts 1.0.0, Nesting.Algorithms 1.1.0). **5 modul NuGet.Configja érintett** (cutting, inventory, joinery, procurement, sales). |
+
+### A NuGet.Config javítási javaslata (repo-szintű, Gábor döntése)
+
+Az abszolút VPS-útvonal a repóban **lokálisan is törött** (Windows-on értelmezhetetlen).
+Helyes: **relatív útvonal** — `../spaceos-modules-cutting/nupkg/` — ami VPS-en és fejlesztői
+gépen egyaránt működik. Érintett: 5 külön submodule-repo + platform pin-bumpok.
+VPS-lokális `sed` nem megoldás: a fájl verziókövetett, egy `git pull` visszaállítaná.
+
+## Eredeti javasolt lépések (referencia)
 
 1. **Azonnali, kockázatmentes:** a crash-loopok leállítása (`systemctl stop`) — nem fut belőlük semmi,
    csak CPU-t és journalt égetnek. Bármikor visszafordítható.

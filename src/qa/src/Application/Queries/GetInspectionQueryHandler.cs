@@ -43,6 +43,13 @@ public class GetInspectionQueryHandler : IRequestHandler<GetInspectionQuery, Res
                 Id: inspection.Id.Value,
                 CheckpointId: inspection.CheckpointId.Value,
                 CheckpointName: checkpoint?.Name ?? "UNKNOWN",
+                // Denormalized checklist criteria from the checkpoint (portal MSW contract:
+                // the detail screen renders inspection.criteria without a second fetch).
+                Criteria: checkpoint?.Criteria.Select(c => new InspectionCriteriaDto(
+                    Id: c.Id,
+                    Type: c.Type,
+                    Description: c.Description
+                )).ToArray() ?? Array.Empty<InspectionCriteriaDto>(),
                 OrderId: inspection.OrderId,
                 ProductId: inspection.ProductId,
                 Status: inspection.Status,

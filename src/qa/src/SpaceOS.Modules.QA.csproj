@@ -12,7 +12,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../../backend/spaceos-kernel/SpaceOS.Kernel.Domain/SpaceOS.Kernel.Domain.csproj" />
+    <!-- Kernel Domain Primitives (AggregateRoot, IDomainEvent) — src/spaceos-kernel submodule
+         (path fixed from the stale backend/ prefix, mirroring the src/ehs Domain.csproj fix) -->
+    <ProjectReference Include="../../spaceos-kernel/SpaceOS.Kernel.Domain/SpaceOS.Kernel.Domain.csproj" />
   </ItemGroup>
 
   <ItemGroup>

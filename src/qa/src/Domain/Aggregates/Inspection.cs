@@ -2,6 +2,7 @@ using SpaceOS.Kernel.Domain.Exceptions;
 using SpaceOS.Kernel.Domain.Primitives;
 using SpaceOS.Modules.QA.Domain.Enums;
 using SpaceOS.Modules.QA.Domain.Events;
+using SpaceOS.Modules.QA.Domain.Exceptions;
 using SpaceOS.Modules.QA.Domain.FSM;
 using SpaceOS.Modules.QA.Domain.StrongIds;
 using SpaceOS.Modules.QA.Domain.ValueObjects;
@@ -96,7 +97,7 @@ public class Inspection : AggregateRoot
     public void Start()
     {
         if (!InspectionStatusTransitions.IsValidTransition(Status, InspectionStatus.InProgress))
-            throw new DomainException($"Cannot transition from {Status} to InProgress");
+            throw new InvalidStatusTransitionException($"Cannot transition from {Status} to InProgress");
 
         Status = InspectionStatus.InProgress;
         StartedAt = DateTime.UtcNow;
@@ -114,7 +115,7 @@ public class Inspection : AggregateRoot
     public void CompleteWithPass(string? notes = null)
     {
         if (!InspectionStatusTransitions.IsValidTransition(Status, InspectionStatus.Completed))
-            throw new DomainException($"Cannot transition from {Status} to Completed");
+            throw new InvalidStatusTransitionException($"Cannot transition from {Status} to Completed");
 
         Status = InspectionStatus.Completed;
         Result = InspectionResult.Pass;
@@ -136,7 +137,7 @@ public class Inspection : AggregateRoot
     public void CompleteWithFail(List<FailureNote> failureNotes, string? notes = null)
     {
         if (!InspectionStatusTransitions.IsValidTransition(Status, InspectionStatus.Completed))
-            throw new DomainException($"Cannot transition from {Status} to Completed");
+            throw new InvalidStatusTransitionException($"Cannot transition from {Status} to Completed");
 
         if (failureNotes == null || !failureNotes.Any())
             throw new DomainException("Failure notes are required when inspection fails");

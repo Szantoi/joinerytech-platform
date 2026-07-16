@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="hu">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>JoineryTech DS — Dark mode</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="ds.css">
+<script src="ds-icons.js"></script><script src="ds-shell.js"></script>
+<style>
+.dk{background:#0d1117;border:1px solid #232a35;border-radius:12px;padding:20px;color:#e6e9ee}
+.dk .sub{color:#8b93a1}
+.dk table.ds{background:#111826;border-color:#232a35}
+.dk table.ds th{background:#151d2b;color:#8b93a1;border-color:#232a35}
+.dk table.ds td{border-color:#1b2330;color:#e6e9ee}
+</style>
+</head>
+<body>
+<main>
+<div class="crumb">JoineryTech Design System</div>
+<h1>Dark mode</h1>
+<p class="lead">A portál ma kizárólag világos módban fut (a sötét sidebar az egyetlen dark felület). Ez a javasolt sötét téma — <b>ugyanaz a stone/teal/world-akcentus nyelv</b>, csak a felület- és szöveg-tónusok cserélődnek. Bevezetés: <span class="mono">prefers-color-scheme</span> + kézi kapcsoló, CSS-változókon keresztül — komponens-kód nem változik.</p>
+
+<section id="elv">
+<h2>Elv</h2>
+<div class="demo">
+<ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.6">
+<li>A <b>world-akcentus hue-k változatlanok</b> — csak a lightness nő, hogy sötét háttéren is kontrasztos legyen.</li>
+<li>Nincs tiszta fekete: a legsötétebb felület <span class="mono">#0d1117</span> (kékes szén, nem semleges fekete) — kevésbé fárasztja a szemet, illik a sidebar-navyhoz.</li>
+<li>A border viszi a tagolást világos módban is — sötétben ez erősödik (a shadow szinte eltűnik sötét háttéren).</li>
+<li>Pill/badge tint-hátterek sötétben <b>saturáltabb, alacsonyabb lightness</b> tintet kapnak (nem a light-tint áttetszőn) — így nem mosódnak a felületbe.</li>
+</ul>
+</div>
+</section>
+
+<section id="tokenek">
+<h2>Felület-tokenek</h2>
+<table class="ds">
+<thead><tr><th></th><th>Token</th><th>Light</th><th>Dark</th><th>Használat</th></tr></thead>
+<tbody>
+<tr><td><span class="sw" style="background:#f7f7f5;border-color:#0d1117"></span><span class="sw" style="background:#0d1117"></span></td><td class="mono">--surface-app</td><td class="mono">#f7f7f5</td><td class="mono">#0d1117</td><td>body-háttér</td></tr>
+<tr><td><span class="sw" style="background:#ffffff"></span><span class="sw" style="background:#151d2b"></span></td><td class="mono">--surface-card</td><td class="mono">#ffffff</td><td class="mono">#151d2b</td><td>kártya, táblázat, SlideOver</td></tr>
+<tr><td><span class="sw" style="background:#fafaf9"></span><span class="sw" style="background:#111826"></span></td><td class="mono">--surface-sunken</td><td class="mono">#fafaf9</td><td class="mono">#111826</td><td>fejléc-sáv, footer, tinted demo</td></tr>
+<tr><td><span class="sw" style="background:#e7e5e4;border-color:#0d1117"></span><span class="sw" style="background:#232a35"></span></td><td class="mono">--border</td><td class="mono">#e7e5e4</td><td class="mono">#232a35</td><td>kártya-, táblázat-, input-keret</td></tr>
+<tr><td><span class="sw" style="background:#1c1917"></span><span class="sw" style="background:#e6e9ee"></span></td><td class="mono">--text-primary</td><td class="mono">#1c1917</td><td class="mono">#e6e9ee</td><td>elsődleges szöveg</td></tr>
+<tr><td><span class="sw" style="background:#78716c"></span><span class="sw" style="background:#8b93a1"></span></td><td class="mono">--text-secondary</td><td class="mono">#78716c</td><td class="mono">#8b93a1</td><td>felirat, meta, placeholder</td></tr>
+<tr><td><span class="sw" style="background:#0b1220"></span><span class="sw" style="background:#05070c"></span></td><td class="mono">--sidebar</td><td class="mono">#0b1220</td><td class="mono">#05070c</td><td>fő-sidebar (már ma is sötét)</td></tr>
+</tbody>
+</table>
+<script type="text/plain" class="snippet" data-title="Token-réteg — CSS változók + kapcsoló">
+:root{
+  --surface-app:#f7f7f5; --surface-card:#fff; --surface-sunken:#fafaf9;
+  --border:#e7e5e4; --text-primary:#1c1917; --text-secondary:#78716c;
+}
+:root[data-theme="dark"]{
+  --surface-app:#0d1117; --surface-card:#151d2b; --surface-sunken:#111826;
+  --border:#232a35; --text-primary:#e6e9ee; --text-secondary:#8b93a1;
+}
+/* rendszer-preferencia alapértelmezésként, kézi felülírással */
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ /* dark értékek */ } }
+</script>
+</section>
+
+<section id="akcentus">
+<h2>World-akcentus sötétben</h2>
+<p class="h2sub">Az oklch-recept (lásd Színek oldal) ide is jó hír: a <span class="mono">--hue</span> változatlan, csak a lightness/chroma nő egy fokozatot sötét felületen.</p>
+<table class="ds">
+<thead><tr><th>Szerep</th><th>Light</th><th>Dark</th></tr></thead>
+<tbody>
+<tr><td class="mono">--acc-strong</td><td class="mono">oklch(0.52 0.11 H)</td><td class="mono">oklch(0.78 0.13 H)</td></tr>
+<tr><td class="mono">--acc-mid</td><td class="mono">oklch(0.65 0.13 H)</td><td class="mono">oklch(0.72 0.14 H)</td></tr>
+<tr><td class="mono">--acc-tint</td><td class="mono">oklch(0.96 0.025 H)</td><td class="mono">oklch(0.27 0.05 H)</td></tr>
+</tbody>
+</table>
+</section>
+
+<section id="elo">
+<h2>Élő összevetés</h2>
+<div class="two">
+<div class="demo">
+<div class="text-[10.5px] font-semibold uppercase tracking-wide text-stone-500 mb-3">Light</div>
+<div class="bg-white border border-stone-200/80 rounded-xl p-4 mb-3"><div class="text-[11px] font-semibold uppercase tracking-wide text-stone-500">Kintlévőség</div><div class="text-[20px] font-semibold text-stone-900 mt-1">4,2 M Ft</div></div>
+<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium bg-teal-50 text-teal-700"><span class="w-1.5 h-1.5 rounded-full bg-teal-500"></span>Folyamatban</span>
+<button class="ml-2 inline-flex items-center gap-1.5 px-3 h-8 rounded-lg bg-teal-700 text-white text-[12px] font-medium">Mentés</button>
+</div>
+<div class="dk">
+<div class="text-[10.5px] font-semibold uppercase tracking-wide sub mb-3">Dark</div>
+<div style="background:#151d2b;border:1px solid #232a35;border-radius:12px;padding:16px;margin-bottom:12px"><div class="text-[11px] font-semibold uppercase tracking-wide sub">Kintlévőség</div><div class="text-[20px] font-semibold mt-1">4,2 M Ft</div></div>
+<span style="display:inline-flex;align-items:center;gap:6px;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:500;background:oklch(0.27 0.05 183);color:oklch(0.82 0.1 183)"><span style="width:6px;height:6px;border-radius:99px;background:oklch(0.72 0.14 183);display:inline-block"></span>Folyamatban</span>
+<button style="margin-left:8px;display:inline-flex;align-items:center;gap:6px;padding:0 12px;height:32px;border-radius:8px;background:oklch(0.78 0.13 183);color:#062421;font-size:12px;font-weight:500;border:0">Mentés</button>
+</div>
+</div>
+<div class="note"><b>Kontraszt-ellenőrzés:</b> minden szöveg/háttér páros ≥4.5:1 (WCAG AA) — a primer gomb szövege sötétben sötét (nem fehér), mert a világosított teal-akcentuson a fehér szöveg kontrasztja gyenge lenne.</div>
+</section>
+
+<section id="bevezetes">
+<h2>Bevezetés a portálba</h2>
+<div class="demo">
+<ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.6">
+<li>Beállítások → Megjelenés: <span class="mono">rendszer / világos / sötét</span> választó, <span class="mono">localStorage</span>-ben perzisztálva (mint más UI-preferencia).</li>
+<li>Első lépés: a token-réteg bevezetése (fenti CSS-változók) a fő HTML <span class="mono">:root</span>-jába — ez önmagában nem tör semmit, amíg <span class="mono">data-theme</span> nincs beállítva.</li>
+<li>Utána világonként egy célzott csere-kör: Tailwind-osztályok helyett a token-változókra állás (pl. <span class="mono">bg-white</span> → <span class="mono">bg-[var(--surface-card)]</span>), ahogy az oklch-akcentusnál is javasoltuk.</li>
+</ul>
+</div>
+</section>
+</main>
+</body>
+</html>

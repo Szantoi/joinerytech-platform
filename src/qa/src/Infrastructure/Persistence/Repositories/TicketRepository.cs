@@ -32,6 +32,13 @@ public class TicketRepository : ITicketRepository
             .ToListAsync(ct);
     }
 
+    public async Task<IEnumerable<Ticket>> GetByInspectionIdAsync(Guid inspectionId, Guid tenantId, CancellationToken ct = default)
+    {
+        return await _context.Tickets
+            .Where(t => t.TenantId == tenantId && t.InspectionId == inspectionId)
+            .ToListAsync(ct);
+    }
+
     public async Task<IEnumerable<Ticket>> GetByTypeAsync(TicketType ticketType, Guid tenantId, CancellationToken ct = default)
     {
         return await _context.Tickets

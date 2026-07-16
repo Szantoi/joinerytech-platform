@@ -459,6 +459,86 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /api/qa/inspections/{id}/complete/conditional:
+    post:
+      operationId: completeInspectionConditional
+      tags: [Inspections]
+      summary: Complete inspection with Conditional result (InProgress → Completed) — spawns the rework Ticket (ADR-063) and returns the fresh InspectionDto
+      description: |
+        "Passed with minor defects — repair and re-check" (ADR-063).
+        The documented defects (min. 1 failure note) automatically spawn a rework
+        Ticket (type Repair, linked via `inspectionId`, priority from the
+        `QA:Rework:TicketPriority` config, default Medium). The inspection stays
+        immutable afterwards; the repair loop runs in the Ticket FSM and the
+        re-check is a new Inspection (`POST /{id}/rework`). The response DTO's
+        `openTicketId` is the derivation source for the portal's `javitasra`
+        view-state (Completed + Conditional + open ticket).
+      parameters:
+        - $ref: '#/components/parameters/InspectionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConditionalInspectionCommand'
+      responses:
+        '200':
+          description: Inspection completed conditionally (rework ticket spawned)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InspectionDto'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Invalid state transition
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/qa/inspections/{id}/rework:
+    post:
+      operationId: createReworkInspection
+      tags: [Inspections]
+      summary: Create the re-check inspection of a conditionally passed inspection (ADR-063)
+      description: |
+        Creates a NEW inspection referencing the conditionally passed original
+        (`reworkOfInspectionId`) — the original stays immutable (audit trail).
+        The new inspection inherits the original's checkpoint/order/product scope.
+        409 when the original is not Completed with Conditional result.
+      parameters:
+        - $ref: '#/components/parameters/InspectionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateReworkInspectionCommand'
+      responses:
+        '201':
+          description: Rework inspection created (fresh DTO of the NEW inspection; Location header points to it)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InspectionDto'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Original inspection is not Completed with Conditional result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /api/qa/inspections/blocking:
     get:
       operationId: getBlockingInspections
@@ -1174,6 +1254,21 @@ components:
             - string
             - 'null'
           format: date-time
+        reworkOfInspectionId:
+          description: Set when this inspection is the re-check of a conditionally passed inspection (ADR-063 rework loop).
+          type:
+            - string
+            - 'null'
+          format: uuid
+        openTicketId:
+          description: |
+            Newest OPEN ticket linked to this inspection (ADR-063). Derivation
+            source for the portal's `javitasra` view-state:
+            Completed + Conditional + openTicketId present.
+          type:
+            - string
+            - 'null'
+          format: uuid
       required: [id, checkpointId, checkpointName, criteria, status, result, inspectorId, failureNotes, plannedAt]
     FailureNoteDto:
       type: object
@@ -1379,6 +1474,38 @@ components:
             - 'null'
           maxLength: 2000
       required: [failureNotes]
+
+    ConditionalInspectionCommand:
+      description: |
+        ADR-063 — Conditional completion payload. Same shape as FailInspectionCommand:
+        the minor defects MUST be documented (they feed the auto-spawned rework Ticket).
+      type: object
+      properties:
+        failureNotes:
+          type: array
+          items:
+            $ref: '#/components/schemas/CreateFailureNoteCommand'
+          minItems: 1
+        notes:
+          type:
+            - string
+            - 'null'
+          maxLength: 2000
+      required: [failureNotes]
+
+    CreateReworkInspectionCommand:
+      description: |
+        ADR-063 — re-check request. Checkpoint/order/product scope is inherited
+        from the conditionally passed original inspection ({id} in the path).
+      type: object
+      properties:
+        inspectorId:
+          type: string
+          format: uuid
+        plannedAt:
+          type: string
+          format: date-time
+      required: [inspectorId, plannedAt]
 
     CreateFailureNoteCommand:
       type: object

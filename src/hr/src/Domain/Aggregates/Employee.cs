@@ -10,7 +10,9 @@ namespace SpaceOS.Modules.HR.Domain.Aggregates;
 
 /// <summary>
 /// Employee aggregate root.
-/// Represents a company employee with skills, personal data, and pay grade.
+/// Represents a company employee with skills, personal data, and pay grade band.
+/// The pay grade is a band KEY only (ADR-060) — the hourly rate belonging to a band is
+/// tenant configuration (HrPayGradeConfiguration, "Hr:PayGrades"), never persisted here.
 /// </summary>
 public class Employee : AggregateRoot
 {
@@ -22,7 +24,7 @@ public class Employee : AggregateRoot
     public string Role { get; private set; } = string.Empty;
     public Department Department { get; private set; }
     public Guid FacilityId { get; private set; }
-    public PayGrade PayGrade { get; private set; } = null!;
+    public PayGradeBand PayGrade { get; private set; }
     public decimal WeeklyHours { get; private set; }
     public string Email { get; private set; } = string.Empty;
     public int VacationBase { get; private set; } = 20; // Hungarian default
@@ -41,7 +43,7 @@ public class Employee : AggregateRoot
         string role,
         Department department,
         Guid facilityId,
-        PayGrade payGrade,
+        PayGradeBand payGrade,
         decimal weeklyHours,
         string email)
     {
@@ -86,7 +88,7 @@ public class Employee : AggregateRoot
         string role,
         Department department,
         Guid facilityId,
-        PayGrade payGrade,
+        PayGradeBand payGrade,
         decimal weeklyHours,
         string email)
     {
@@ -173,20 +175,19 @@ public class Employee : AggregateRoot
     }
 
     /// <summary>
-    /// Promotes employee to a new pay grade.
+    /// Promotes (or regrades) the employee to a new pay grade band.
     /// </summary>
-    public void PromoteToPayGrade(PayGrade newGrade)
+    public void PromoteToPayGrade(PayGradeBand newBand)
     {
-        if (newGrade == null)
-            throw new DomainException("New pay grade is required");
+        if (newBand == PayGrade)
+            throw new DomainException($"Employee is already in pay grade band {newBand}");
 
-        PayGrade = newGrade;
+        PayGrade = newBand;
 
         AddDomainEvent(new EmployeePromotedEvent(
             Id,
             TenantId,
-            newGrade.Name,
-            newGrade.HourlyRate));
+            newBand));
     }
 
     /// <summary>

@@ -17,7 +17,7 @@ public class EmployeeTests
     public void Create_ValidEmployee_ShouldSucceed()
     {
         // Arrange & Act
-        var payGrade = PayGrade.Create("Grade 5", 2500);
+        var payGrade = PayGradeBand.SkilledWorker;
         var employee = Employee.Create(
             _tenantId,
             "János Kovács",
@@ -47,7 +47,7 @@ public class EmployeeTests
     [InlineData(null)]
     public void Create_WithInvalidName_ShouldThrow(string? invalidName)
     {
-        var payGrade = PayGrade.Create("Grade 5", 2500);
+        var payGrade = PayGradeBand.SkilledWorker;
 
         var act = () => Employee.Create(
             _tenantId,
@@ -68,7 +68,7 @@ public class EmployeeTests
     [InlineData(169)]
     public void Create_WithInvalidWeeklyHours_ShouldThrow(decimal invalidHours)
     {
-        var payGrade = PayGrade.Create("Grade 5", 2500);
+        var payGrade = PayGradeBand.SkilledWorker;
 
         var act = () => Employee.Create(
             _tenantId,
@@ -92,12 +92,12 @@ public class EmployeeTests
         employee.ClearDomainEvents();
 
         // Act
-        employee.AddSkill(SkillKey.Welding, SkillLevel.Intermediate);
+        employee.AddSkill(SkillKey.EdgeBanding, SkillLevel.Proficient);
 
         // Assert
         employee.Skills.Should().HaveCount(1);
-        employee.Skills.First().Key.Should().Be(SkillKey.Welding);
-        employee.Skills.First().Level.Should().Be(SkillLevel.Intermediate);
+        employee.Skills.First().Key.Should().Be(SkillKey.EdgeBanding);
+        employee.Skills.First().Level.Should().Be(SkillLevel.Proficient);
 
         var events = employee.GetDomainEvents();
         events.Should().HaveCount(1);
@@ -109,10 +109,10 @@ public class EmployeeTests
     {
         // Arrange
         var employee = CreateTestEmployee();
-        employee.AddSkill(SkillKey.Welding, SkillLevel.Beginner);
+        employee.AddSkill(SkillKey.EdgeBanding, SkillLevel.Basic);
 
         // Act
-        var act = () => employee.AddSkill(SkillKey.Welding, SkillLevel.Advanced);
+        var act = () => employee.AddSkill(SkillKey.EdgeBanding, SkillLevel.Master);
 
         // Assert
         act.Should().Throw<DomainException>()
@@ -124,15 +124,15 @@ public class EmployeeTests
     {
         // Arrange
         var employee = CreateTestEmployee();
-        employee.AddSkill(SkillKey.Welding, SkillLevel.Beginner);
+        employee.AddSkill(SkillKey.EdgeBanding, SkillLevel.Basic);
         employee.ClearDomainEvents();
 
         // Act
-        employee.UpdateSkill(SkillKey.Welding, SkillLevel.Advanced);
+        employee.UpdateSkill(SkillKey.EdgeBanding, SkillLevel.Master);
 
         // Assert
         employee.Skills.Should().HaveCount(1);
-        employee.Skills.First().Level.Should().Be(SkillLevel.Advanced);
+        employee.Skills.First().Level.Should().Be(SkillLevel.Master);
 
         var events = employee.GetDomainEvents();
         events.Should().HaveCount(1);
@@ -146,7 +146,7 @@ public class EmployeeTests
         var employee = CreateTestEmployee();
 
         // Act
-        var act = () => employee.UpdateSkill(SkillKey.Welding, SkillLevel.Advanced);
+        var act = () => employee.UpdateSkill(SkillKey.EdgeBanding, SkillLevel.Master);
 
         // Assert
         act.Should().Throw<DomainException>()
@@ -158,11 +158,11 @@ public class EmployeeTests
     {
         // Arrange
         var employee = CreateTestEmployee();
-        employee.AddSkill(SkillKey.Welding, SkillLevel.Beginner);
+        employee.AddSkill(SkillKey.EdgeBanding, SkillLevel.Basic);
         employee.ClearDomainEvents();
 
         // Act
-        employee.RemoveSkill(SkillKey.Welding);
+        employee.RemoveSkill(SkillKey.EdgeBanding);
 
         // Assert
         employee.Skills.Should().BeEmpty();
@@ -179,7 +179,7 @@ public class EmployeeTests
         var employee = CreateTestEmployee();
 
         // Act
-        var act = () => employee.RemoveSkill(SkillKey.Welding);
+        var act = () => employee.RemoveSkill(SkillKey.EdgeBanding);
 
         // Assert
         act.Should().Throw<DomainException>()
@@ -214,23 +214,36 @@ public class EmployeeTests
     }
 
     [Fact]
-    public void PromoteToPayGrade_ValidGrade_ShouldPromoteSuccessfully()
+    public void PromoteToPayGrade_ValidBand_ShouldPromoteSuccessfully()
     {
         // Arrange
         var employee = CreateTestEmployee();
         employee.ClearDomainEvents();
-        var newGrade = PayGrade.Create("Grade 10", 5000);
 
         // Act
-        employee.PromoteToPayGrade(newGrade);
+        employee.PromoteToPayGrade(PayGradeBand.Master);
 
         // Assert
-        employee.PayGrade.Name.Should().Be("Grade 10");
-        employee.PayGrade.HourlyRate.Should().Be(5000);
+        employee.PayGrade.Should().Be(PayGradeBand.Master);
 
         var events = employee.GetDomainEvents();
         events.Should().HaveCount(1);
-        events.First().Should().BeOfType<EmployeePromotedEvent>();
+        events.First().Should().BeOfType<EmployeePromotedEvent>()
+            .Which.NewPayGrade.Should().Be(PayGradeBand.Master);
+    }
+
+    [Fact]
+    public void PromoteToPayGrade_SameBand_ShouldThrow()
+    {
+        // Arrange — CreateTestEmployee is a SkilledWorker
+        var employee = CreateTestEmployee();
+
+        // Act
+        var act = () => employee.PromoteToPayGrade(PayGradeBand.SkilledWorker);
+
+        // Assert
+        act.Should().Throw<DomainException>()
+            .WithMessage("Employee is already in pay grade band *");
     }
 
     [Fact]
@@ -306,7 +319,7 @@ public class EmployeeTests
     public void Create_GeneratesCorrectInitials(string name, string expectedInitials)
     {
         // Arrange & Act
-        var payGrade = PayGrade.Create("Grade 5", 2500);
+        var payGrade = PayGradeBand.SkilledWorker;
         var employee = Employee.Create(
             _tenantId,
             name,
@@ -323,7 +336,7 @@ public class EmployeeTests
 
     private Employee CreateTestEmployee()
     {
-        var payGrade = PayGrade.Create("Grade 5", 2500);
+        var payGrade = PayGradeBand.SkilledWorker;
         return Employee.Create(
             _tenantId,
             "Test Employee",

@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+using SpaceOS.Modules.HR.Application.Serialization;
 using SpaceOS.Modules.HR.Domain.Enums;
 
 namespace SpaceOS.Modules.HR.Application.DTOs;
@@ -7,7 +9,11 @@ namespace SpaceOS.Modules.HR.Application.DTOs;
 /// both the list and the detail endpoint (portal contract: the list returns full
 /// employee objects).
 ///
-/// Enums travel as strings on the wire (JsonStringEnumConverter — EHS/QA precedent).
+/// Enums travel as strings on the wire (JsonStringEnumConverter — EHS/QA precedent);
+/// SkillLevel is the one exception and travels as a NUMBER (ADR-060 §5).
+/// PayGrade is the band key and HourlyRate is the tenant-config rate for that band,
+/// resolved at projection time from HrPayGradeConfiguration ("Hr:PayGrades") — the two
+/// are separate fields, mirroring the portal employeeSchema (payGrade + hourlyRate).
 /// NOTE: the portal's employee shape additionally carries phone / startedAt /
 /// employment / color, none of which exist on the aggregate; they are NOT invented
 /// here — see the gap list in docs/tasks/EPIC-UI-PORTAL-2026Q3/HR-BE-HOST.md.
@@ -21,7 +27,8 @@ public record EmployeeDto(
     string Role,
     Department Department,
     Guid FacilityId,
-    PayGradeDto PayGrade,
+    PayGradeBand PayGrade,
+    decimal HourlyRate,
     decimal WeeklyHours,
     string Email,
     int VacationBase,
@@ -29,8 +36,7 @@ public record EmployeeDto(
     IReadOnlyList<EmployeeSkillDto> Skills
 );
 
-/// <summary>Pay grade projection (category name + hourly rate).</summary>
-public record PayGradeDto(string Name, decimal HourlyRate);
-
-/// <summary>Employee skill projection (skill key + level, both string enums on the wire).</summary>
-public record EmployeeSkillDto(SkillKey Key, SkillLevel Level);
+/// <summary>Employee skill projection (string skill key + NUMERIC level on the wire).</summary>
+public record EmployeeSkillDto(
+    SkillKey Key,
+    [property: JsonConverter(typeof(SkillLevelWireConverter))] SkillLevel Level);

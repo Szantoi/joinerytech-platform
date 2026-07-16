@@ -29,7 +29,7 @@ public class WeekCapacityGridTests
         "CNC gépkezelő",
         Department.Production,
         _facilityId,
-        PayGrade.Create("Szakmunkás", 4200m),
+        PayGradeBand.SkilledWorker,
         weeklyHours,
         $"{name.Replace(" ", ".").ToLowerInvariant()}@example.hu");
 

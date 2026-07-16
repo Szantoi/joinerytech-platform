@@ -4,7 +4,6 @@ using SpaceOS.Kernel.Domain.ValueObjects;
 using SpaceOS.Modules.HR.Domain.Aggregates;
 using SpaceOS.Modules.HR.Domain.Repositories;
 using SpaceOS.Modules.HR.Domain.StrongIds;
-using SpaceOS.Modules.HR.Domain.ValueObjects;
 
 namespace SpaceOS.Modules.HR.Application.Commands;
 
@@ -34,17 +33,14 @@ public class CreateEmployeeCommandHandler : IRequestHandler<CreateEmployeeComman
                 return Result<EmployeeId>.Error($"Employee with email '{request.Email}' already exists");
             }
 
-            // Create PayGrade value object
-            var payGrade = PayGrade.Create(request.PayGradeName, request.HourlyRate);
-
-            // Create employee aggregate using factory method
+            // Create employee aggregate using factory method (pay grade = band key, ADR-060)
             var employee = Employee.Create(
                 request.TenantId,
                 request.Name,
                 request.Role,
                 request.Department,
                 request.FacilityId,
-                payGrade,
+                request.PayGrade,
                 request.WeeklyHours,
                 request.Email);
 

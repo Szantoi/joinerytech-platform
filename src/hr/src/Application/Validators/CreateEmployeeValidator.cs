@@ -8,8 +8,7 @@ namespace SpaceOS.Modules.HR.Application.Validators;
 /// Business rules:
 /// - Name: 2-200 characters
 /// - Email: valid format
-/// - PayGradeName: 1-50 characters
-/// - HourlyRate: non-negative
+/// - PayGrade: one of the 5 pay grade bands (the rate is tenant config, ADR-060)
 /// - WeeklyHours: 0-168 (max hours in a week)
 /// - Skills: max 20 skills
 /// </summary>
@@ -36,12 +35,8 @@ public class CreateEmployeeValidator : AbstractValidator<CreateEmployeeCommand>
         RuleFor(x => x.FacilityId)
             .NotEmpty().WithMessage("Facility ID is required");
 
-        RuleFor(x => x.PayGradeName)
-            .NotEmpty().WithMessage("Pay grade name is required")
-            .Length(1, 50).WithMessage("Pay grade name must be between 1 and 50 characters");
-
-        RuleFor(x => x.HourlyRate)
-            .GreaterThanOrEqualTo(0).WithMessage("Hourly rate must be non-negative");
+        RuleFor(x => x.PayGrade)
+            .IsInEnum().WithMessage("Invalid pay grade band");
 
         RuleFor(x => x.WeeklyHours)
             .InclusiveBetween(0, 168).WithMessage("Weekly hours must be between 0 and 168");

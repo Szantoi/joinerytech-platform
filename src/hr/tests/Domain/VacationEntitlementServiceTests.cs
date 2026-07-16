@@ -264,7 +264,7 @@ public class VacationEntitlementServiceTests
 
     private Employee CreateEmployeeWithChildren(int children)
     {
-        var payGrade = PayGrade.Create("Grade 5", 2500);
+        var payGrade = PayGradeBand.SkilledWorker;
         var employee = Employee.Create(
             _tenantId,
             $"Employee {children}ch",
@@ -291,7 +291,7 @@ public class VacationEntitlementServiceTests
 
     private Employee CreateEmployeeWithoutPersonalData()
     {
-        var payGrade = PayGrade.Create("Grade 5", 2500);
+        var payGrade = PayGradeBand.SkilledWorker;
         return Employee.Create(
             _tenantId,
             "No Personal Data",

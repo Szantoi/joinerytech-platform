@@ -1,0 +1,51 @@
+using Microsoft.EntityFrameworkCore;
+using SpaceOS.Modules.DMS.Api;
+using SpaceOS.Modules.DMS.Api.Endpoints;
+using SpaceOS.Modules.DMS.Infrastructure.Persistence;
+
+var builder = WebApplication.CreateBuilder(args);
+
+// Add services to the container (EHS Program.cs precedent)
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
+// Enums travel as CAMELCASE strings on the wire (portal MSW contract:
+// type "rajz", linkType "project", expiry "lejart"; status "draft"/"underReview"/…)
+builder.Services.AddDmsApiJsonOptions();
+
+// DMS module services (tenant context, DbContext + RLS, repositories,
+// blob store stub, expiry options, MediatR handlers)
+builder.Services.AddDmsModule(builder.Configuration);
+
+var app = builder.Build();
+
+// Optional startup migration — CONFIG-DRIVEN (default off; ops decision)
+if (app.Configuration.GetValue("Dms:Database:MigrateOnStartup", false))
+{
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<DMSDbContext>();
+    app.Logger.LogInformation("DMS host: applying pending migrations (Dms:Database:MigrateOnStartup=true)");
+    db.Database.Migrate();
+}
+
+// Configure the HTTP request pipeline
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
+
+app.UseHttpsRedirection();
+
+// Map DMS endpoints (Document core — DMS-BE-HOST; the DocumentCategory/Tag
+// slice is handler-ready, its endpoint layer is a separate task)
+app.MapDocumentEndpoints();
+
+// Liveness probe (grounded "it runs" evidence — QUALITY.md 8.)
+app.MapGet("/health", () => Results.Ok(new { status = "ok", module = "dms" }))
+    .WithName("Health")
+    .WithTags("Health");
+
+app.Logger.LogInformation("DMS API host started — module endpoints mapped under /api/dms");
+
+app.Run();

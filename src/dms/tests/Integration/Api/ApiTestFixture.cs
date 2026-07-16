@@ -1,12 +1,8 @@
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
 using FluentValidation;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.IdentityModel.Tokens;
 using SpaceOS.Modules.DMS.Application.Contracts;
 using SpaceOS.Modules.DMS.Infrastructure;
 using SpaceOS.Modules.DMS.Infrastructure.Persistence;
@@ -16,15 +12,23 @@ using Xunit;
 namespace SpaceOS.Modules.DMS.Tests.Integration.Api;
 
 /// <summary>
-/// Test fixture for DMS API integration tests.
-/// Provides PostgreSQL container and configured DbContext for testing.
+/// Integration test fixture: real PostgreSQL (Testcontainers) + the module DI
+/// (AddDMSInfrastructure/AddDMSApplication) with migrations applied.
+///
+/// DMS-BE-HOST repair: the original fixture handed out a plain HttpClient
+/// pointed at http://localhost with a JWT — there was no server behind it, so
+/// the HTTP tests could never pass; and the hand-written migrations lacked
+/// [Migration] attributes, so MigrateAsync applied NOTHING. The fixture now
+/// exposes scoped service access for persistence-level integration tests
+/// (the REST layer is covered by the TestServer contract tests in tests/Api).
 /// </summary>
 public class ApiTestFixture : IAsyncLifetime
 {
     private readonly PostgreSqlContainer _dbContainer;
-    private IServiceProvider? _serviceProvider;
-    public HttpClient? Client { get; private set; }
-    public DMSDbContext? DbContext { get; private set; }
+    private ServiceProvider? _serviceProvider;
+
+    public const string TenantHeader = "X-Tenant-Id";
+    public static readonly Guid TenantId = Guid.Parse("11111111-1111-1111-1111-111111111111");
 
     public ApiTestFixture()
     {
@@ -36,15 +40,17 @@ public class ApiTestFixture : IAsyncLifetime
             .Build();
     }
 
+    /// <summary>Creates a fresh DI scope (fresh DbContext — reload-proof assertions).</summary>
+    public IServiceScope CreateScope() => _serviceProvider!.CreateScope();
+
     public async Task InitializeAsync()
     {
         // Start PostgreSQL container
         await _dbContainer.StartAsync().ConfigureAwait(false);
 
-        // Setup DI container
+        // Setup DI container (module registration mirror)
         var services = new ServiceCollection();
 
-        // Configuration
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
@@ -52,93 +58,29 @@ public class ApiTestFixture : IAsyncLifetime
             })
             .Build();
 
-        // Register DMS infrastructure and application
+        services.AddLogging();
         services.AddDMSInfrastructure(configuration);
         services.AddDMSApplication();
 
-        // Add MediatR with validation behavior
-        services.AddMediatR(cfg =>
-        {
-            cfg.RegisterServicesFromAssembly(typeof(DMSDbContext).Assembly);
-            cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
-        });
-
-        // Note: Validators are auto-registered by MediatR from the DMS.Application assembly
-
-        // Add HTTP context accessor
-        services.AddHttpContextAccessor();
-
-        // Register mock tenant context
-        services.AddScoped<ITenantContext>(provider =>
-            new TestTenantContext(Guid.Parse("11111111-1111-1111-1111-111111111111")));
+        // Fixed tenant context (RLS scoping input; the container role is the
+        // table owner, so RLS does not filter here — policy behavior is an ops
+        // concern, the isolation smoke lives with the platform test suite)
+        services.AddScoped<ITenantContext>(_ => new TestTenantContext(TenantId));
 
         _serviceProvider = services.BuildServiceProvider();
 
-        // Get DbContext
-        DbContext = _serviceProvider.GetRequiredService<DMSDbContext>();
-
-        // Apply migrations
-        await DbContext.Database.MigrateAsync().ConfigureAwait(false);
-
-        // Create HTTP client for API testing
-        Client = new HttpClient { BaseAddress = new Uri("http://localhost") };
-
-        // Add default JWT token to all requests
-        Client.DefaultRequestHeaders.Add("Authorization", $"Bearer {GenerateTestJwt()}");
+        // Apply migrations (all three are discoverable since the attribute fix)
+        using var scope = _serviceProvider.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<DMSDbContext>();
+        await dbContext.Database.MigrateAsync().ConfigureAwait(false);
     }
 
     public async Task DisposeAsync()
     {
-        if (DbContext != null)
-            await DbContext.DisposeAsync().ConfigureAwait(false);
+        if (_serviceProvider != null)
+            await _serviceProvider.DisposeAsync().ConfigureAwait(false);
 
-        if (_serviceProvider is IAsyncDisposable asyncDisposable)
-            await asyncDisposable.DisposeAsync().ConfigureAwait(false);
-        else
-            (_serviceProvider as IDisposable)?.Dispose();
-
-        Client?.Dispose();
-
-        if (_dbContainer != null)
-            await _dbContainer.DisposeAsync().ConfigureAwait(false);
-    }
-
-    /// <summary>
-    /// Generate a test JWT token with tenant claim.
-    /// </summary>
-    private static string GenerateTestJwt()
-    {
-        var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("test-secret-key-that-is-at-least-32-characters-long-for-testing"));
-        var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
-
-        var claims = new[]
-        {
-            new Claim("tenant_id", "11111111-1111-1111-1111-111111111111"),
-            new Claim("sub", "test-user"),
-            new Claim("email", "test@example.com")
-        };
-
-        var token = new JwtSecurityToken(
-            issuer: "test-issuer",
-            audience: "test-audience",
-            claims: claims,
-            expires: DateTime.UtcNow.AddHours(1),
-            signingCredentials: credentials
-        );
-
-        return new JwtSecurityTokenHandler().WriteToken(token);
-    }
-
-    /// <summary>
-    /// Create a new test tenant context with the specified tenant ID.
-    /// </summary>
-    public void SetTenantContext(Guid tenantId)
-    {
-        var tenantContext = _serviceProvider!.GetRequiredService<ITenantContext>();
-        if (tenantContext is TestTenantContext testContext)
-        {
-            testContext.SetTenantId(tenantId);
-        }
+        await _dbContainer.DisposeAsync().ConfigureAwait(false);
     }
 }
 

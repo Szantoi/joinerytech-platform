@@ -1,4 +1,5 @@
 using System;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -6,6 +7,13 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace SpaceOS.Modules.DMS.Infrastructure.Persistence.Migrations
 {
     /// <inheritdoc />
+    /// <remarks>
+    /// DMS-BE-HOST fix (Maintenance-module precedent): [DbContext]/[Migration]
+    /// attributes added — hand-written migrations without them are invisible
+    /// to Database.Migrate().
+    /// </remarks>
+    [DbContext(typeof(DMSDbContext))]
+    [Migration("20260707080000_InitialCreate")]
     public partial class InitialCreate : Migration
     {
         /// <inheritdoc />

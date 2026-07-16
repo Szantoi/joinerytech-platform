@@ -8,6 +8,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- Minimal API endpoint layer (Api/Endpoints) — QA/Maintenance module pattern:
+         framework reference instead of the stale Microsoft.AspNetCore.Http.Abstractions 2.2.0 package -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.7" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.7" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.0" />
@@ -15,11 +21,12 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="8.0.0" />
     <PackageReference Include="MediatR" Version="12.4.1" />
     <PackageReference Include="FluentValidation" Version="12.1.1" />
-    <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.2.0" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../../backend/spaceos-kernel/SpaceOS.Kernel.Domain/SpaceOS.Kernel.Domain.csproj" />
+    <!-- Kernel Domain Primitives (AggregateRoot, IDomainEvent) — src/spaceos-kernel submodule
+         (path fixed from the stale backend/ prefix, mirroring the src/ehs and src/qa csproj fix) -->
+    <ProjectReference Include="../../spaceos-kernel/SpaceOS.Kernel.Domain/SpaceOS.Kernel.Domain.csproj" />
   </ItemGroup>
 
 </Project>

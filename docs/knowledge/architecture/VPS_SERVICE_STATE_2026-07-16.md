@@ -44,7 +44,57 @@ Ezért viselkedett a Nexus szeszélyesen: a szolgáltatás maga végig élt a VP
 **Következmény:** ha ez az árva processz meghal, a Nexus végleg elmegy — a systemd
 nem tudja felhozni, mert elavult útvonalon keresi. Ez a legsürgősebb egyedi kockázat.
 
-## ✅ ELVÉGZETT JAVÍTÁS (2026-07-16 este, Gábor jóváhagyásával)
+## 🎉 VÉGEREDMÉNY: MIND A 11 SERVICE FUT (2026-07-16 22:00)
+
+| Service | Port | Health |
+|---|---|---|
+| spaceos-knowledge (**Nexus MCP**) | 3458 | 200 ✅ |
+| spaceos-kernel | 5000 | (404 — nincs /health route, de válaszol) |
+| spaceos-orchestrator | 3000 | (404 — nincs /health route, de válaszol) |
+| spaceos-joinery | 5002 | 200 ✅ |
+| spaceos-abstractions | 5003 | |
+| spaceos-inventory | 5004 | |
+| spaceos-cutting-svc | **5005** | ✅ megerősíti a mai port-fixet (CUTTING 5004→5005) |
+| spaceos-procurement | 5006 | |
+| spaceos-modules-identity | **5008** | ✅ megerősíti a mai port-fixet (IDENTITY 5003→5008) |
+| spaceos-modules-sales | 5009 | |
+| spaceos-minio | 9001 | |
+
+Minden PID-egyezéssel igazolva (`ss -tlnp` ↔ MainPID). Restart-számlálók 0-n
+(az orchestrator 19-e a port-ütközési ciklusból maradt, azóta stabil).
+
+### A TELJES TÖRTÉNET — mi történt valójában
+
+**2026-07-11-én a `/opt/spaceos/backend/` archiválva lett**
+(`/opt/spaceos/archive/_deleted_code_2026-07-11/`), a kód átkerült `/opt/joinerytech/src/` alá.
+Ezt **semmi nem követte**: sem a systemd unit-ok, sem a repókban **verziókövetett**
+`NuGet.Config`-ok. Innen minden más következett:
+
+1. A .NET service-ek nem létező DLL-t indítottak → 5 napos crash-loop (orchestrator 141k, knowledge 36k).
+2. A `spaceos` service-user amúgy sem olvashatta volna az új utat (`drwxr-x--- gabor gabor`).
+3. **Két processz mégis bennragadt a törölt kódból futva** (a Linux megtartja a nyitott fájlokat):
+   - a Nexus MCP (`node dist/server.js`, kézzel indítva, 2d21h uptime) — ezért működött a 3458 „szeszélyesen";
+   - az orchestrator **PM2 alatt** (PID 1365, **8 nap uptime**), a `_deleted_code_2026-07-11` cwd-ből —
+     ez foglalta a 3000-est, ezért nem tudott a systemd-orchestrator indulni (EADDRINUSE).
+   **Pontosan az a jelenség, ami ellen a CLAUDE.md figyelmeztet.**
+
+### Az elvégzett javítás
+
+- Mind a 10 unit útvonala javítva; backup: `/etc/systemd/system/.backup-2026-07-16/`
+- `spaceos` service-user → `gabor` csoport (olvasási jog az új útvonalra)
+- **Nexus systemd alá vezetve** (árva processz leállítva, `ExecStart=node dist/server.js`, enable-ölve)
+- **PM2 leszerelve** az orchestrator alól (`pm2 delete` + `save`; dump-backup elmentve) —
+  egy szolgáltatás = egy gazda (systemd); a PM2-root service maga érintetlen
+- **5 modul `NuGet.Config`-ja relatív útvonalra javítva** (`../spaceos-modules-*/...`) — commitolva
+  és pusholva (cutting `bf9bd4e`, inventory `c962735`, joinery `b9f4258`, procurement `6181321`;
+  a **sales** repo GitHubon nem létezik → ott a javítás VPS-lokális marad)
+- kernel + orchestrator: a félbehagyott munka **elmentve** (`/opt/joinerytech/.abandoned-work-2026-07-16/`:
+  patch + untracked tar.gz + PM2-dump), majd eldobva Gábor jóváhagyásával → **mindkettő lefordult**
+  (a kernel fordítási hibáit épp az untracked `TradeWorldEndpoints.cs` okozta)
+
+---
+
+## ELŐZMÉNY: a felderítés (2026-07-16 este)
 
 **Mind a 10 crash-loop leállítva**, unit-backup: `/etc/systemd/system/.backup-2026-07-16/`.
 Az összes unit útvonala javítva (`/opt/spaceos/backend/` → `/opt/joinerytech/src/`).

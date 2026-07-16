@@ -220,9 +220,10 @@ RLS is a hamisított tenantot érvényesíti. **A kettő együtt ad izolációt.
 
 ## Döntés
 
-_(Gábor tölti ki)_
+**ELFOGADVA — Gábor, 2026-07-16:** az ajánlás szerint.
 
-- [ ] (a) Közös baseline (ADR-061 csomagban), kernel-minta — *ajánlott*
+
+- [x] (a) Közös baseline (ADR-061 csomagban), kernel-minta — *ajánlott — ELFOGADVA*
 - [ ] (b) Csak a törött modulok foltozása
 - [ ] (c) RLS elhagyása, app-szintű izoláció
 - [ ] Session-kulcs: **(K1) `app.current_tenant_id`** — *ajánlott* ☐ / (K2) `app.tenant_id` ☐

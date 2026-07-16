@@ -166,11 +166,12 @@ zod-séma 4 státusza nem illeszkedik a backend 3+eredmény modelljére. **A hal
 
 ## Döntés
 
-_(Gábor tölti ki)_
+**ELFOGADVA — Gábor, 2026-07-16:** az ajánlás szerint.
+
 
 - [ ] (a) Rework-átmenet az Inspectionben (immutabilitás feladása)
 - [ ] (b) Spec-szűkítés — `javitasra` + `Conditional` törlése
-- [ ] (c) Hurok a Ticketben, új Inspection az újraellenőrzésre — *ajánlott*
+- [x] (c) Hurok a Ticketben, új Inspection az újraellenőrzésre — *ajánlott — ELFOGADVA*
 - [ ] Auto-ticket a `Conditional`-ra? igen ☐ / kézi ☐
 - [ ] Designer jóváhagyta a `javitasra` → származtatott állapot váltást? ☐
 

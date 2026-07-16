@@ -226,10 +226,11 @@ tenant-izoláció feltétele — külön-külön egyik sem elég.**
 
 ## Döntés
 
-_(Gábor tölti ki)_
+**ELFOGADVA — Gábor, 2026-07-16:** az ajánlás szerint.
+
 
 - [ ] (a) Kernel-extension
-- [ ] (b) Sziget-szintű platform-csomag, kernel = referencia — *ajánlott*
+- [x] (b) Sziget-szintű platform-csomag, kernel = referencia — *ajánlott — ELFOGADVA*
 - [ ] (c) Modulonként / (d) BFF-terminálás
 - [ ] Tenant-forrás: **(T1) JWT-claim** — *ajánlott* ☐ / (T2) marad a header ☐
 - [ ] A csomag hatóköre: csak auth+tenancy ☐ / + interceptor/EndpointResults/JsonOptions ☐

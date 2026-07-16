@@ -63,7 +63,7 @@ a nevet a szerver oldja fel a tokenből, nem a hívó állítja magáról.
 **Blokkolja:** ADR-061 (auth) — a token nélkül nincs honnan feloldani. **Munka:** ≈3-4 nap
 (4 modul, a címtár-varrat után).
 
-**Döntés:** _(Gábor tölti ki)_ — (1a) ☐ *ajánlott* · (1b) ☐ · (1c) ☐ · (1d) ☐ ·
+**Döntés (ELFOGADVA — Gábor, 2026-07-16, az ajánlás szerint):** — (1a) ☑ *ajánlott — ELFOGADVA* · (1b) ☐ · (1c) ☐ · (1d) ☐ ·
 Címtár: HR Employee ☐ / Keycloak ☐ / mindkettő ☐
 
 ---
@@ -103,7 +103,7 @@ rossz csere. **Additív marad:** ha később mégis kell, bármikor bevezethető
 
 **Blokkol:** semmit. **Munka:** 0 vagy ≈0,5 nap.
 
-**Döntés:** _(Gábor tölti ki)_ — (2a) marad törölve ☐ *ajánlott* · (2b) FSM-él vissza ☐ ·
+**Döntés (ELFOGADVA — Gábor, 2026-07-16, az ajánlás szerint):** — (2a) marad törölve ☑ *ajánlott — ELFOGADVA* · (2b) FSM-él vissza ☐ ·
 (2c) UI-rövidítés ☐
 **Üzleti kérdés Gábornak:** *indít-e az üzem munkalapot ütemezés nélkül?*
 
@@ -137,7 +137,7 @@ spec piszkozat/ellenorzes/kiadott/archivalt készletének feloldása"*. **A DMS-
    domainben (`DocType.cs:11-24`: `Rajz`, `Szerzodes`…) — ez az ADR-059 által **elkerülendőnek
    jelölt minta** (fordítás a domainbe égetve), a takarítás ott van beütemezve.
 
-**Döntés:** _(Gábor tölti ki)_ — Tudomásul véve, lezárva ☐
+**Döntés (ELFOGADVA — Gábor, 2026-07-16, az ajánlás szerint):** — Tudomásul véve, lezárva ☐
 
 ---
 
@@ -175,7 +175,7 @@ köztük „portfólió-korrekció **egyszer** számít").
 
 **Munka:** ≈1 nap. **Blokkol:** semmit, de **rossz számokat ad**, ha valaha bekötik a natív ágat.
 
-**Döntés:** _(Gábor tölti ki)_ — (4a) kontraktus nyer ☐ *ajánlott* · (4b) domain nyer ☐ ·
+**Döntés (ELFOGADVA — Gábor, 2026-07-16, az ajánlás szerint):** — (4a) kontraktus nyer ☑ *ajánlott — ELFOGADVA* · (4b) domain nyer ☐ ·
 A natív szolgáltatás: javítás ☐ / törlés ☐
 
 ---
@@ -208,7 +208,7 @@ mint nem implementálni. **A fontos most az, hogy a HUF-feltevés tudatos legyen
 
 **Blokkol:** semmit. **Munka:** ≈0,5 nap.
 
-**Döntés:** _(Gábor tölti ki)_ — (5a) HUF-only, dokumentálva ☐ *ajánlott* · (5b) multi-currency most ☐
+**Döntés (ELFOGADVA — Gábor, 2026-07-16, az ajánlás szerint):** — (5a) HUF-only, dokumentálva ☑ *ajánlott — ELFOGADVA* · (5b) multi-currency most ☐
 
 ---
 

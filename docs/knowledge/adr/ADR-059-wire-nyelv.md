@@ -213,9 +213,10 @@ halasztható döntés a csomagban.
 
 ## Döntés
 
-_(Gábor tölti ki)_
+**ELFOGADVA — Gábor, 2026-07-16:** az ajánlás szerint.
 
-- [ ] (a) Magyar wire + `EnumWireMap` varrat, domain angol — *ajánlott*
+
+- [x] (a) Magyar wire + `EnumWireMap` varrat, domain angol — *ajánlott — ELFOGADVA*
 - [ ] (b) Angol wire, portal igazodik
 - [ ] (c) / (d) mapping-réteg fetcher / BFF
 - [ ] EHS: igazodjon HU-ra ☐ / maradjon EN kivételként ☐

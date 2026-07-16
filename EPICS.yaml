@@ -97,7 +97,7 @@ epics:
           7×APPROVED review-doksi megvan. Riport: docs/knowledge/qa/F3_QUALITY_GATE_2026-07-16.md
         tasks:
           - { id: F3-GATE, role: monitor, title: "Záró minőségkapu: tsc+build+teszt+lint + bundle-riport + 7×APPROVED leltár", status: done, verdict: "✅ PASS", report: docs/knowledge/qa/F3_QUALITY_GATE_2026-07-16.md }
-          - { id: F3-RELEASE, role: root, title: "Release-döntés + submodule bump + epic CLOSED (Gábor)", status: pending, depends_on: [F3-GATE] }
+          - { id: F3-RELEASE, role: root, title: "Release-döntés + submodule bump + epic CLOSED (Gábor)", status: done, depends_on: [F3-GATE], note: "2026-07-16: Gábor release-döntése után portal v1.0.0 (1c9e729, github release publikálva) + platform v0.2.0; a DS-DARKMODE is a release része (9f6eb0b). Epic CLOSED — a maradék backlog (legacy csere-kör, FIX-PREEXISTING-TESTS, ADR-jelöltek, MODULE-FOLDERS/PACKAGES) a backlog_f2 listában él tovább." }
     coordination:
       mailbox: "Nexus MCP (localhost:3458) — create_task/submit_done, epic_id-vel"
       tasks_issued:

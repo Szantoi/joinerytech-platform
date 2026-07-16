@@ -80,8 +80,21 @@ epics:
           - { id: HR-M1-THRESHOLD, title: "HrDashboard.tsx:212 hardcode-olt 85-ös küszöb → loadBand/UTILIZATION_WARN_THRESHOLD (HR review M1) + N1-N4 nitek (QueryGate-promótálás, formFields, mobil számpár, avatar-kontraszt)", status: done, role: frontend, note: "2026-07-16 (F2-CROSSCUT-FIX): a terhelés-sáv tónusa a config-vezérelt loadBand-ből dől el (a Dolgozók-pillekkel közös küszöb-forrás); N2-N4 nitek továbbra is opcionális backlog" }
           - { id: QUERYGATE-PROMOTE, title: "QueryGate promótálás pages/ehs → components/ui (27 importáló fájl, 6 modul)", status: done, role: frontend, note: "2026-07-16 (F2-CROSSCUT-FIX): QueryGate a components/ui barrelbe, mind a 35 importáló fájl (7 modul, DMS-sel) a közös útvonalról importál, a pages/ehs útvonal megszűnt; ugyanitt a Maintenance M1 is zárva — közös services/dateUtils.ts kiemelés (helyi idejű parseDay & tsai., a 4 modul-calc re-exportál) + a nap-szintű new Date(iso) UTC-parse-ok cseréje (maintenance/hr/crm/controlling labels, crm sla); teljes suite 1414 passed / 19 pre-existing failed, tsc+build zöld; task-doksi: F2-CROSSCUT-FIX.md" }
       - id: F3-minosegkapu
-        status: pending
+        status: done
+        completed: 2026-07-16
         done_when: "7×APPROVED, build+test zöld, bundle-riport, root release-döntés"
+        note: >
+          ✅ PASS (monitor, 2026-07-16, main@449bf0c): tsc -b tiszta; build zöld (60 lazy chunk,
+          shell 371.70 kB / gzip 108.06 kB — az F1-es -80%-os induló-bundle-javulás megmaradt,
+          sőt -2.72 kB gzip az F1-C-hez képest a 7 modul megépülése UTÁN); teljes suite
+          1414 passed / 19 failed (1433) — a 19 PONTOSAN a dokumentált pre-existing készlet
+          (BOMPreviewCard×2 fájl, configurator×3, catalogFilterPersistence, ProcurementPage,
+          WorkOrderSummary), ÚJ bukás nincs; eslint: 205 error / 16 warning 94 LEGACY fájlban,
+          a 7 modul-világ fájljai lint-tiszták (nem blokkoló, backlog-jelölt); 7 világ route él,
+          7×APPROVED review-doksi megvan. Riport: docs/knowledge/qa/F3_QUALITY_GATE_2026-07-16.md
+        tasks:
+          - { id: F3-GATE, role: monitor, title: "Záró minőségkapu: tsc+build+teszt+lint + bundle-riport + 7×APPROVED leltár", status: done, verdict: "✅ PASS", report: docs/knowledge/qa/F3_QUALITY_GATE_2026-07-16.md }
+          - { id: F3-RELEASE, role: root, title: "Release-döntés + submodule bump + epic CLOSED (Gábor)", status: pending, depends_on: [F3-GATE] }
     coordination:
       mailbox: "Nexus MCP (localhost:3458) — create_task/submit_done, epic_id-vel"
       tasks_issued:

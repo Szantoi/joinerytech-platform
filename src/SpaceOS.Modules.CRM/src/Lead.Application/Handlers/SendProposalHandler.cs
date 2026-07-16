@@ -1,7 +1,10 @@
 using Ardalis.Result;
 using MediatR;
 using SpaceOS.Modules.CRM.Application.Commands;
+using SpaceOS.Modules.CRM.Application.DTOs;
+using SpaceOS.Modules.CRM.Application.Queries;
 using SpaceOS.Modules.CRM.Domain.Aggregates;
+using SpaceOS.Modules.CRM.Domain.Repositories;
 
 namespace SpaceOS.Modules.CRM.Application.Handlers;
 
@@ -10,7 +13,7 @@ namespace SpaceOS.Modules.CRM.Application.Handlers;
 /// Transitions opportunity from SolutionAssembly → Proposal, sets probability to 75%.
 /// Links quote reference if provided.
 /// </summary>
-public sealed class SendProposalHandler : IRequestHandler<SendProposalCommand, Result<OpportunityResponse>>
+public sealed class SendProposalHandler : IRequestHandler<SendProposalCommand, Result<OpportunityDto>>
 {
     private readonly IOpportunityRepository _opportunityRepository;
     private readonly IPublisher _publisher;
@@ -21,7 +24,7 @@ public sealed class SendProposalHandler : IRequestHandler<SendProposalCommand, R
         _publisher = publisher;
     }
 
-    public async Task<Result<OpportunityResponse>> Handle(SendProposalCommand request, CancellationToken cancellationToken)
+    public async Task<Result<OpportunityDto>> Handle(SendProposalCommand request, CancellationToken cancellationToken)
     {
         var opportunity = await _opportunityRepository.GetByIdAsync(request.TenantId, request.OpportunityId, cancellationToken)
             .ConfigureAwait(false);
@@ -29,10 +32,10 @@ public sealed class SendProposalHandler : IRequestHandler<SendProposalCommand, R
         if (opportunity is null)
             return Result.NotFound($"Opportunity with ID {request.OpportunityId} not found");
 
-        var transitionResult = opportunity.SendProposal(request.QuoteId, request.ActedBy);
+        var transitionResult = opportunity.SendProposal(request.QuoteId, request.SentBy);
 
         if (!transitionResult.IsSuccess)
-            return transitionResult.Map(x => MapToResponse(opportunity));
+            return transitionResult.Map(x => CrmDtoMapper.ToDto(opportunity));
 
         await _opportunityRepository.UpdateAsync(opportunity, cancellationToken).ConfigureAwait(false);
 
@@ -42,31 +45,7 @@ public sealed class SendProposalHandler : IRequestHandler<SendProposalCommand, R
         }
 
         opportunity.ClearDomainEvents();
-        return Result.Success(MapToResponse(opportunity));
+        return Result.Success(CrmDtoMapper.ToDto(opportunity));
     }
 
-    private static OpportunityResponse MapToResponse(Opportunity opportunity)
-    {
-        return new OpportunityResponse
-        {
-            Id = opportunity.Id,
-            TenantId = opportunity.TenantId,
-            Status = opportunity.Status.ToString(),
-            LeadId = opportunity.LeadId,
-            CustomerId = opportunity.CustomerId,
-            ContactInfo = opportunity.ContactInfo.Name,
-            Title = opportunity.Title,
-            EstimatedValue = opportunity.EstimatedValue.Amount,
-            Currency = opportunity.EstimatedValue.Currency,
-            Probability = opportunity.Probability,
-            ExpectedCloseDate = opportunity.ExpectedCloseDate,
-            OrderRef = opportunity.OrderId,
-            QuoteRef = opportunity.QuoteId,
-            FinalValue = opportunity.FinalValue?.Amount,
-            LossReason = opportunity.LossReason,
-            CompetitorName = opportunity.CompetitorName,
-            CreatedAt = opportunity.CreatedAt,
-            UpdatedAt = opportunity.UpdatedAt
-        };
-    }
 }

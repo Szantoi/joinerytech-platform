@@ -1,5 +1,6 @@
 using Ardalis.Result;
 using MediatR;
+using SpaceOS.Modules.CRM.Application.DTOs;
 using SpaceOS.Modules.CRM.Application.Queries;
 using SpaceOS.Modules.CRM.Domain.Repositories;
 
@@ -30,7 +31,7 @@ public sealed class GetLeadActivitiesQueryHandler : IRequestHandler<GetLeadActiv
 
             var activities = lead.Activities
                 .OrderByDescending(a => a.CreatedAt)
-                .Select(MapToDto)
+                .Select(CrmDtoMapper.ToDto)
                 .ToList();
 
             return Result.Success(activities);
@@ -41,15 +42,4 @@ public sealed class GetLeadActivitiesQueryHandler : IRequestHandler<GetLeadActiv
         }
     }
 
-    private static ActivityDto MapToDto(Domain.Entities.Activity activity)
-    {
-        return new ActivityDto
-        {
-            Type = activity.Type.ToString(),
-            Description = activity.Description,
-            CreatedBy = activity.CreatedBy,
-            CreatedByName = activity.CreatedByName ?? string.Empty,
-            CreatedAt = activity.CreatedAt
-        };
-    }
 }

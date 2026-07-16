@@ -2,6 +2,7 @@ using Ardalis.Result;
 using SpaceOS.Modules.CRM.Domain.Common;
 using SpaceOS.Modules.CRM.Domain.Enums;
 using SpaceOS.Modules.CRM.Domain.Events;
+using SpaceOS.Modules.CRM.Domain.FSM;
 using SpaceOS.Modules.CRM.Domain.ValueObjects;
 
 namespace SpaceOS.Modules.CRM.Domain.Aggregates;
@@ -13,7 +14,7 @@ namespace SpaceOS.Modules.CRM.Domain.Aggregates;
 public sealed class Lead : TenantScopedEntity
 {
     private readonly List<Activity> _activities = [];
-    private readonly List<Task> _tasks = [];
+    private readonly List<CrmTask> _tasks = [];
 
     public LeadStatus Status { get; private set; }
     public ContactInfo ContactInfo { get; private set; } = default!;
@@ -28,7 +29,7 @@ public sealed class Lead : TenantScopedEntity
     public Guid? OpportunityRef { get; private set; }
 
     public IReadOnlyList<Activity> Activities => _activities.AsReadOnly();
-    public IReadOnlyList<Task> Tasks => _tasks.AsReadOnly();
+    public IReadOnlyList<CrmTask> Tasks => _tasks.AsReadOnly();
 
     /// <summary>Private ctor for EF Core.</summary>
     private Lead() { }
@@ -79,10 +80,7 @@ public sealed class Lead : TenantScopedEntity
     public Result Contact(string? notes, Guid actedBy)
     {
         if (!CanTransitionTo(LeadStatus.Contacted))
-            return Result.Invalid(new ValidationError
-            {
-                ErrorMessage = $"Cannot contact lead in {Status} status"
-            });
+            return TransitionConflict(LeadStatus.Contacted);
 
         Status = LeadStatus.Contacted;
         UpdatedAt = DateTimeOffset.UtcNow;
@@ -106,10 +104,7 @@ public sealed class Lead : TenantScopedEntity
     public Result Qualify(string? qualificationNotes, Guid actedBy)
     {
         if (!CanTransitionTo(LeadStatus.Qualified))
-            return Result.Invalid(new ValidationError
-            {
-                ErrorMessage = $"Cannot qualify lead in {Status} status"
-            });
+            return TransitionConflict(LeadStatus.Qualified);
 
         Status = LeadStatus.Qualified;
         UpdatedAt = DateTimeOffset.UtcNow;
@@ -127,17 +122,40 @@ public sealed class Lead : TenantScopedEntity
     }
 
     /// <summary>
-    /// Transition lead to Disqualified status.
-    /// Valid from New, Contacted, or Qualified.
+    /// Transition lead to Nurturing status (wire: "nurture" — minosites → nurturing).
+    /// Optional parking state for a qualified lead that is not yet ready to buy;
+    /// conversion stays available from here (LeadStatusTransitions).
+    /// </summary>
+    public Result Nurture(string? notes, Guid actedBy)
+    {
+        if (!CanTransitionTo(LeadStatus.Nurturing))
+            return TransitionConflict(LeadStatus.Nurturing);
+
+        Status = LeadStatus.Nurturing;
+        UpdatedAt = DateTimeOffset.UtcNow;
+        UpdatedBy = actedBy;
+
+        RaiseDomainEvent(new LeadNurturingStartedEvent
+        {
+            LeadId = Id,
+            StartedAt = DateTimeOffset.UtcNow,
+            Notes = notes,
+            ActedBy = actedBy
+        });
+
+        return Result.Success();
+    }
+
+    /// <summary>
+    /// Transition lead to Disqualified status (wire: "discard").
+    /// Valid from any open state (New, Contacted, Qualified, Nurturing).
     /// </summary>
     public Result Disqualify(string reason, Guid actedBy)
     {
         if (!CanTransitionTo(LeadStatus.Disqualified))
-            return Result.Invalid(new ValidationError
-            {
-                ErrorMessage = $"Cannot disqualify lead in {Status} status"
-            });
+            return TransitionConflict(LeadStatus.Disqualified);
 
+        // Payload guard (not an FSM violation) → Invalid → HTTP 400.
         if (string.IsNullOrWhiteSpace(reason))
             return Result.Invalid(new ValidationError
             {
@@ -159,16 +177,15 @@ public sealed class Lead : TenantScopedEntity
     }
 
     /// <summary>
-    /// Convert lead to opportunity (only valid from Qualified status).
+    /// Convert lead to opportunity (wire: "convert").
+    /// Valid from Qualified (directly) or Nurturing (LeadStatusTransitions).
     /// </summary>
     public Result ConvertToOpportunity(Guid opportunityId, Guid customerId, Guid convertedBy)
     {
-        if (Status != LeadStatus.Qualified)
-            return Result.Invalid(new ValidationError
-            {
-                ErrorMessage = $"Can only convert qualified leads (current status: {Status})"
-            });
+        if (!CanTransitionTo(LeadStatus.Opportunity))
+            return TransitionConflict(LeadStatus.Opportunity);
 
+        // Payload guard (not an FSM violation) → Invalid → HTTP 400.
         if (opportunityId == Guid.Empty)
             return Result.Invalid(new ValidationError
             {
@@ -261,7 +278,7 @@ public sealed class Lead : TenantScopedEntity
                 ErrorMessage = "Due date must be in the future"
             });
 
-        var task = new Task(Guid.NewGuid(), title, dueDate, priority, createdBy);
+        var task = new CrmTask(Guid.NewGuid(), title, dueDate, priority, createdBy);
         _tasks.Add(task);
 
         RaiseDomainEvent(new LeadTaskCreatedEvent
@@ -319,20 +336,41 @@ public sealed class Lead : TenantScopedEntity
     }
 
     /// <summary>
-    /// Check if transition to target status is allowed by FSM rules.
+    /// Soft-delete guard: a lead may only be removed while it is still New, or once
+    /// it has been Disqualified — a lead that was contacted, qualified, nurtured or
+    /// converted carries history that must be retained (rule documented on
+    /// <c>DeleteLeadCommand</c>; the aggregate method it called never existed, so
+    /// the module did not compile — added by CRM-BE-HOST).
+    /// </summary>
+    public Result Delete(Guid deletedBy)
+    {
+        if (Status is not (LeadStatus.New or LeadStatus.Disqualified))
+            return Result.Conflict(
+                $"Cannot delete a lead in {Status} status (only New or Disqualified may be deleted)");
+
+        RaiseDomainEvent(new LeadDeletedEvent
+        {
+            LeadId = Id,
+            DeletedAt = DateTimeOffset.UtcNow,
+            DeletedBy = deletedBy
+        });
+
+        return Result.Success();
+    }
+
+    /// <summary>
+    /// Check if transition to target status is allowed by FSM rules
+    /// (single source of truth: <see cref="LeadStatusTransitions"/>).
     /// </summary>
     private bool CanTransitionTo(LeadStatus targetStatus)
-    {
-        return (Status, targetStatus) switch
-        {
-            (LeadStatus.New, LeadStatus.Contacted) => true,
-            (LeadStatus.New, LeadStatus.Disqualified) => true,
-            (LeadStatus.Contacted, LeadStatus.Qualified) => true,
-            (LeadStatus.Contacted, LeadStatus.Disqualified) => true,
-            (LeadStatus.Qualified, LeadStatus.Opportunity) => true,
-            _ => false
-        };
-    }
+        => LeadStatusTransitions.CanTransition(Status, targetStatus);
+
+    /// <summary>
+    /// Illegal FSM transition → <see cref="Result.Conflict(string[])"/> → HTTP 409
+    /// (module error contract; payload guards stay Invalid → HTTP 400).
+    /// </summary>
+    private Result TransitionConflict(LeadStatus targetStatus)
+        => Result.Conflict($"Cannot transition lead from {Status} to {targetStatus}");
 }
 
 /// <summary>
@@ -355,9 +393,14 @@ public sealed class Activity
 }
 
 /// <summary>
-/// Task entity (child of Lead).
+/// Task entity (child of Lead/Opportunity).
+///
+/// Named CrmTask (not Task) to avoid the pervasive ambiguity with
+/// System.Threading.Tasks.Task — which is what kept the repository interfaces
+/// trapped inside the handler files. Also matches the portal vocabulary
+/// (modules/crm/services/tasks.ts — CrmTask).
 /// </summary>
-public sealed class Task
+public sealed class CrmTask
 {
     public Guid Id { get; }
     public string Title { get; }
@@ -367,7 +410,7 @@ public sealed class Task
     public Guid CreatedBy { get; }
     public DateTimeOffset CreatedAt { get; }
 
-    public Task(Guid id, string title, DateTimeOffset dueDate, string priority, Guid createdBy)
+    public CrmTask(Guid id, string title, DateTimeOffset dueDate, string priority, Guid createdBy)
     {
         Id = id;
         Title = title ?? throw new ArgumentNullException(nameof(title));

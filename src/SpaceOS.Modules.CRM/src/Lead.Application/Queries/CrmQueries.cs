@@ -12,8 +12,18 @@ public sealed record GetLeadsQuery : IRequest<Result<PaginatedResponse<LeadDto>>
     public Guid TenantId { get; init; }
     public int Page { get; init; } = 1;
     public int PageSize { get; init; } = 50;
-    public string? StatusFilter { get; init; } // "New", "Contacted", "Qualified", "Disqualified", "Opportunity"
+
+    /// <summary>"New", "Contacted", "Qualified", "Nurturing", "Disqualified", "Opportunity".</summary>
+    public string? StatusFilter { get; init; }
+
     public Guid? AssignedToUserIdFilter { get; init; }
+
+    /// <summary>
+    /// Free-text search over contact name / company / e-mail (portal filter: q).
+    /// Case-insensitive; null or blank = no filtering.
+    /// </summary>
+    public string? SearchText { get; init; }
+
     public Guid RequestingUserId { get; init; }
 }
 
@@ -138,15 +148,12 @@ public sealed class LeadDto
     public string? Company { get; set; }
     public string Source { get; set; } = string.Empty;
     public Guid AssignedToUserId { get; set; }
-    public string AssignedToUserName { get; set; } = string.Empty;
     public Guid? OpportunityRef { get; set; }
     public int ActivityCount { get; set; }
     public int TaskCount { get; set; }
     public int OpenTaskCount { get; set; }
-    public DateTime CreatedAt { get; set; }
-    public string CreatedByName { get; set; } = string.Empty;
-    public DateTime? UpdatedAt { get; set; }
-    public string? UpdatedByName { get; set; }
+    public DateTimeOffset CreatedAt { get; set; }
+    public DateTimeOffset? UpdatedAt { get; set; }
 }
 
 /// <summary>
@@ -159,7 +166,6 @@ public sealed class OpportunityDto
     public string Status { get; set; } = string.Empty;
     public Guid? LeadId { get; set; }
     public Guid CustomerId { get; set; }
-    public string CustomerName { get; set; } = string.Empty;
     public string ContactName { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public string? Phone { get; set; }
@@ -169,9 +175,8 @@ public sealed class OpportunityDto
     public string Currency { get; set; } = "HUF";
     public decimal? FinalValue { get; set; }
     public decimal Probability { get; set; } // 0-100
-    public DateTime? ExpectedCloseDate { get; set; }
+    public DateTimeOffset? ExpectedCloseDate { get; set; }
     public Guid AssignedToUserId { get; set; }
-    public string AssignedToUserName { get; set; } = string.Empty;
     public Guid? OrderRef { get; set; }
     public Guid? QuoteRef { get; set; }
     public string? LossReason { get; set; }
@@ -179,10 +184,8 @@ public sealed class OpportunityDto
     public int ActivityCount { get; set; }
     public int TaskCount { get; set; }
     public int OpenTaskCount { get; set; }
-    public DateTime CreatedAt { get; set; }
-    public string CreatedByName { get; set; } = string.Empty;
-    public DateTime? UpdatedAt { get; set; }
-    public string? UpdatedByName { get; set; }
+    public DateTimeOffset CreatedAt { get; set; }
+    public DateTimeOffset? UpdatedAt { get; set; }
 }
 
 /// <summary>
@@ -193,8 +196,7 @@ public sealed class ActivityDto
     public string Type { get; set; } = string.Empty; // "Call", "Email", "Meeting", "Note"
     public string Description { get; set; } = string.Empty;
     public Guid CreatedBy { get; set; }
-    public string CreatedByName { get; set; } = string.Empty;
-    public DateTime CreatedAt { get; set; }
+    public DateTimeOffset CreatedAt { get; set; }
 }
 
 /// <summary>
@@ -204,12 +206,11 @@ public sealed class TaskDto
 {
     public Guid Id { get; set; }
     public string Title { get; set; } = string.Empty;
-    public DateTime DueDate { get; set; }
+    public DateTimeOffset DueDate { get; set; }
     public string Priority { get; set; } = "medium";
     public bool IsCompleted { get; set; }
     public Guid CreatedBy { get; set; }
-    public string CreatedByName { get; set; } = string.Empty;
-    public DateTime CreatedAt { get; set; }
+    public DateTimeOffset CreatedAt { get; set; }
 }
 
 /// <summary>
@@ -218,7 +219,7 @@ public sealed class TaskDto
 public sealed class PipelineForecastDto
 {
     public Guid TenantId { get; set; }
-    public DateTime AsOf { get; set; }
+    public DateTimeOffset AsOf { get; set; }
     public List<PipelineStageDto> Stages { get; set; } = [];
 
     /// Total pipeline value (sum of all opportunities × probability)

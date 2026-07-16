@@ -1,79 +1,93 @@
 using Ardalis.Result;
 using MediatR;
+using Microsoft.Extensions.Options;
 using SpaceOS.Modules.CRM.Application.Queries;
+using SpaceOS.Modules.CRM.Domain.Enums;
+using SpaceOS.Modules.CRM.Domain.FSM;
 using SpaceOS.Modules.CRM.Domain.Repositories;
 
 namespace SpaceOS.Modules.CRM.Application.Handlers;
 
 /// <summary>
-/// Handler: Get pipeline forecast (opportunities by status with totals and probabilities).
-/// Used for sales forecasting dashboards.
+/// Handler: pipeline forecast — opportunities grouped by stage with totals and
+/// weighted values (portal Forecast screen).
+///
+/// The weighting probability is CONFIG-DRIVEN (<c>Crm:Forecast:StageProbability</c>,
+/// defaulting to the domain policy table that mirrors the portal
+/// OPP_STAGE_PROBABILITY), rather than averaging the per-deal probability — so the
+/// forecast stays a stage-level figure the UI can reproduce (QUALITY.md 3.).
 /// </summary>
-public sealed class GetPipelineForecastQueryHandler : IRequestHandler<GetPipelineForecastQuery, Result<PipelineForecastDto>>
+public sealed class GetPipelineForecastQueryHandler
+    : IRequestHandler<GetPipelineForecastQuery, Result<PipelineForecastDto>>
 {
-    private readonly IOpportunityRepository _repository;
+    private const string DefaultCurrency = "HUF";
 
-    public GetPipelineForecastQueryHandler(IOpportunityRepository repository)
+    private readonly IOpportunityRepository _repository;
+    private readonly CrmOptions _options;
+    private readonly TimeProvider _timeProvider;
+
+    public GetPipelineForecastQueryHandler(
+        IOpportunityRepository repository,
+        IOptions<CrmOptions> options,
+        TimeProvider timeProvider)
     {
         _repository = repository;
+        _options = options.Value;
+        _timeProvider = timeProvider;
     }
 
     public async Task<Result<PipelineForecastDto>> Handle(GetPipelineForecastQuery request, CancellationToken ct)
     {
-        try
-        {
-            var opportunities = await _repository.GetByTenantAsync(request.TenantId, ct).ConfigureAwait(false);
+        var opportunities = await _repository.GetByTenantAsync(request.TenantId, ct).ConfigureAwait(false);
 
-            // Group by status and calculate metrics
-            var stages = opportunities
-                .GroupBy(o => o.Status.ToString())
-                .Select(g => new PipelineStageDto
-                {
-                    Status = g.Key,
-                    Count = g.Count(),
-                    TotalValue = g.Sum(o => o.EstimatedValue.Amount),
-                    AverageProbability = g.Average(o => o.Probability),
-                    WeightedValue = g.Sum(o => o.EstimatedValue.Amount * (o.Probability / 100m))
-                })
-                .OrderBy(s => GetStageOrder(s.Status))
-                .ToList();
-
-            // Calculate weighted total value
-            decimal weightedTotal = opportunities.Sum(o => o.EstimatedValue.Amount * (o.Probability / 100m));
-
-            // Determine currency (assume all opportunities use same currency)
-            string currency = opportunities.FirstOrDefault()?.EstimatedValue.Currency ?? "HUF";
-
-            var forecast = new PipelineForecastDto
+        var stages = opportunities
+            .GroupBy(o => o.Status)
+            .Select(group =>
             {
-                TenantId = request.TenantId,
-                AsOf = request.AsOf ?? DateTime.UtcNow.Date,
-                Stages = stages,
-                WeightedTotalValue = weightedTotal,
-                Currency = currency
-            };
+                var probability = _options.Forecast.ProbabilityFor(group.Key);
+                var totalValue = group.Sum(o => o.EstimatedValue.Amount);
 
-            return Result.Success(forecast);
-        }
-        catch (Exception ex)
+                return new PipelineStageDto
+                {
+                    Status = group.Key.ToString(),
+                    Count = group.Count(),
+                    TotalValue = totalValue,
+                    AverageProbability = probability,
+                    WeightedValue = decimal.Round(totalValue * (probability / 100m), 2)
+                };
+            })
+            .OrderBy(s => GetStageOrder(s.Status))
+            .ToList();
+
+        var forecast = new PipelineForecastDto
         {
-            return Result.Error($"Failed to calculate pipeline forecast: {ex.Message}");
-        }
+            TenantId = request.TenantId,
+            AsOf = request.AsOf ?? _timeProvider.GetUtcNow(),
+            Stages = stages,
+            WeightedTotalValue = stages.Sum(s => s.WeightedValue),
+            // A tenant's pipeline is expected in a single currency; the first
+            // opportunity is representative (multi-currency = follow-up).
+            Currency = opportunities.FirstOrDefault()?.EstimatedValue.Currency ?? DefaultCurrency
+        };
+
+        return Result.Success(forecast);
     }
 
     /// <summary>
-    /// Determine stage order for pipeline visualization.
+    /// Stage order for the pipeline visualisation: the open main chain in order,
+    /// then the terminal states (single source: OpportunityStatusTransitions).
     /// </summary>
-    private static int GetStageOrder(string status) => status switch
+    private static int GetStageOrder(string status)
     {
-        "Open" => 1,
-        "NeedsAssessment" => 2,
-        "SolutionAssembly" => 3,
-        "Proposal" => 4,
-        "Negotiation" => 5,
-        "Won" => 6,
-        "Lost" => 7,
-        "Abandoned" => 8,
-        _ => 9
-    };
+        if (!Enum.TryParse<OpportunityStatus>(status, out var parsed))
+        {
+            return int.MaxValue;
+        }
+
+        var mainChainIndex = OpportunityStatusTransitions.OpenStages.ToList().IndexOf(parsed);
+
+        return mainChainIndex >= 0
+            ? mainChainIndex
+            : OpportunityStatusTransitions.OpenStages.Count + (int)parsed;
+    }
 }

@@ -1,5 +1,6 @@
 using Ardalis.Result;
 using MediatR;
+using SpaceOS.Modules.CRM.Application.DTOs;
 using SpaceOS.Modules.CRM.Application.Queries;
 using SpaceOS.Modules.CRM.Domain.Repositories;
 
@@ -34,7 +35,13 @@ public sealed class GetLeadsQueryHandler : IRequestHandler<GetLeadsQuery, Result
             // Apply assigned user filter if provided
             if (request.AssignedToUserIdFilter.HasValue)
             {
-                leads = leads.Where(l => l.AssignedToUserId == request.AssignedToUserIdFilter).ToList();
+                leads = leads.Where(l => l.AssignedTo == request.AssignedToUserIdFilter).ToList();
+            }
+
+            // Free-text search over contact name / company / e-mail (portal: q)
+            if (!string.IsNullOrWhiteSpace(request.SearchText))
+            {
+                leads = leads.Where(l => Matches(l, request.SearchText)).ToList();
             }
 
             // Count total before pagination
@@ -45,7 +52,7 @@ public sealed class GetLeadsQueryHandler : IRequestHandler<GetLeadsQuery, Result
                 .OrderByDescending(l => l.CreatedAt)
                 .Skip((request.Page - 1) * request.PageSize)
                 .Take(request.PageSize)
-                .Select(MapToDto)
+                .Select(CrmDtoMapper.ToDto)
                 .ToList();
 
             var response = new PaginatedResponse<LeadDto>
@@ -64,28 +71,15 @@ public sealed class GetLeadsQueryHandler : IRequestHandler<GetLeadsQuery, Result
         }
     }
 
-    private static LeadDto MapToDto(Domain.Aggregates.Lead lead)
+    /// <summary>
+    /// Case-insensitive free-text match over the fields the portal's lead search
+    /// covers (contact name, company, e-mail). Pure — unit-testable in isolation.
+    /// </summary>
+    internal static bool Matches(Domain.Aggregates.Lead lead, string searchText)
     {
-        return new LeadDto
-        {
-            Id = lead.Id,
-            TenantId = lead.TenantId,
-            Status = lead.Status.ToString(),
-            ContactName = lead.ContactName,
-            Email = lead.ContactInfo.Email,
-            Phone = lead.ContactInfo.Phone,
-            Company = lead.ContactInfo.Company,
-            Source = lead.Source.ToString(),
-            AssignedToUserId = lead.AssignedToUserId,
-            AssignedToUserName = lead.AssignedToUserName ?? string.Empty,
-            OpportunityRef = lead.OpportunityRef,
-            ActivityCount = lead.Activities.Count,
-            TaskCount = lead.Tasks.Count,
-            OpenTaskCount = lead.Tasks.Count(t => !t.IsCompleted),
-            CreatedAt = lead.CreatedAt,
-            CreatedByName = lead.CreatedByName ?? string.Empty,
-            UpdatedAt = lead.UpdatedAt,
-            UpdatedByName = lead.UpdatedByName
-        };
+        var haystack = $"{lead.ContactInfo.Name} {lead.ContactInfo.Company} {lead.ContactInfo.Email}";
+
+        return haystack.Contains(searchText, StringComparison.OrdinalIgnoreCase);
     }
+
 }

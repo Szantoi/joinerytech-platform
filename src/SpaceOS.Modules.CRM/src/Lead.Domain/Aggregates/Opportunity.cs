@@ -2,6 +2,7 @@ using Ardalis.Result;
 using SpaceOS.Modules.CRM.Domain.Common;
 using SpaceOS.Modules.CRM.Domain.Enums;
 using SpaceOS.Modules.CRM.Domain.Events;
+using SpaceOS.Modules.CRM.Domain.FSM;
 using SpaceOS.Modules.CRM.Domain.ValueObjects;
 
 namespace SpaceOS.Modules.CRM.Domain.Aggregates;
@@ -14,7 +15,7 @@ namespace SpaceOS.Modules.CRM.Domain.Aggregates;
 public sealed class Opportunity : TenantScopedEntity
 {
     private readonly List<Activity> _activities = [];
-    private readonly List<Task> _tasks = [];
+    private readonly List<CrmTask> _tasks = [];
 
     public OpportunityStatus Status { get; private set; }
     public Guid? LeadId { get; private set; }
@@ -46,7 +47,7 @@ public sealed class Opportunity : TenantScopedEntity
     public Money? FinalValue { get; private set; }
 
     public IReadOnlyList<Activity> Activities => _activities.AsReadOnly();
-    public IReadOnlyList<Task> Tasks => _tasks.AsReadOnly();
+    public IReadOnlyList<CrmTask> Tasks => _tasks.AsReadOnly();
 
     private Opportunity() { }
 
@@ -75,7 +76,7 @@ public sealed class Opportunity : TenantScopedEntity
             ContactInfo = contactInfo,
             Title = title,
             EstimatedValue = estimatedValue,
-            Probability = 10m, // Initial probability for newly created from lead
+            Probability = OpportunityStageProbability.For(OpportunityStatus.Open),
             ExpectedCloseDate = expectedCloseDate,
             AssignedTo = assignedTo,
             CreatedBy = createdBy,
@@ -122,7 +123,7 @@ public sealed class Opportunity : TenantScopedEntity
             ContactInfo = contactInfo,
             Title = title,
             EstimatedValue = estimatedValue,
-            Probability = 10m,
+            Probability = OpportunityStageProbability.For(OpportunityStatus.Open),
             ExpectedCloseDate = expectedCloseDate,
             AssignedTo = assignedTo,
             CreatedBy = createdBy,
@@ -149,13 +150,10 @@ public sealed class Opportunity : TenantScopedEntity
     public Result StartNeedsAssessment(Guid actedBy)
     {
         if (!CanTransitionTo(OpportunityStatus.NeedsAssessment))
-            return Result.Invalid(new ValidationError
-            {
-                ErrorMessage = $"Cannot start needs assessment from {Status} status"
-            });
+            return TransitionConflict(OpportunityStatus.NeedsAssessment);
 
         Status = OpportunityStatus.NeedsAssessment;
-        Probability = 25m;
+        Probability = OpportunityStageProbability.For(OpportunityStatus.NeedsAssessment);
         UpdatedAt = DateTimeOffset.UtcNow;
         UpdatedBy = actedBy;
 
@@ -173,13 +171,10 @@ public sealed class Opportunity : TenantScopedEntity
     public Result StartSolutionAssembly(Guid actedBy)
     {
         if (!CanTransitionTo(OpportunityStatus.SolutionAssembly))
-            return Result.Invalid(new ValidationError
-            {
-                ErrorMessage = $"Cannot start solution assembly from {Status} status"
-            });
+            return TransitionConflict(OpportunityStatus.SolutionAssembly);
 
         Status = OpportunityStatus.SolutionAssembly;
-        Probability = 50m;
+        Probability = OpportunityStageProbability.For(OpportunityStatus.SolutionAssembly);
         UpdatedAt = DateTimeOffset.UtcNow;
         UpdatedBy = actedBy;
 
@@ -197,14 +192,11 @@ public sealed class Opportunity : TenantScopedEntity
     public Result SendProposal(Guid quoteId, Guid sentBy)
     {
         if (!CanTransitionTo(OpportunityStatus.Proposal))
-            return Result.Invalid(new ValidationError
-            {
-                ErrorMessage = $"Cannot send proposal from {Status} status"
-            });
+            return TransitionConflict(OpportunityStatus.Proposal);
 
         Status = OpportunityStatus.Proposal;
         QuoteId = quoteId;
-        Probability = 75m;
+        Probability = OpportunityStageProbability.For(OpportunityStatus.Proposal);
         UpdatedAt = DateTimeOffset.UtcNow;
         UpdatedBy = sentBy;
 
@@ -213,7 +205,7 @@ public sealed class Opportunity : TenantScopedEntity
             OpportunityId = Id,
             QuoteId = quoteId,
             SentAt = DateTimeOffset.UtcNow,
-            UpdatedProbability = 75m,
+            UpdatedProbability = Probability,
             SentBy = sentBy
         });
 
@@ -224,13 +216,10 @@ public sealed class Opportunity : TenantScopedEntity
     public Result StartNegotiation(Guid actedBy)
     {
         if (!CanTransitionTo(OpportunityStatus.Negotiation))
-            return Result.Invalid(new ValidationError
-            {
-                ErrorMessage = $"Cannot start negotiation from {Status} status"
-            });
+            return TransitionConflict(OpportunityStatus.Negotiation);
 
         Status = OpportunityStatus.Negotiation;
-        Probability = 90m;
+        Probability = OpportunityStageProbability.For(OpportunityStatus.Negotiation);
         UpdatedAt = DateTimeOffset.UtcNow;
         UpdatedBy = actedBy;
 
@@ -238,7 +227,7 @@ public sealed class Opportunity : TenantScopedEntity
         {
             OpportunityId = Id,
             StartedAt = DateTimeOffset.UtcNow,
-            UpdatedProbability = 90m,
+            UpdatedProbability = Probability,
             StartedBy = actedBy
         });
 
@@ -248,22 +237,13 @@ public sealed class Opportunity : TenantScopedEntity
     /// <summary>Win opportunity and create order.</summary>
     public Result Win(Guid orderId, Money? finalValue, Guid wonBy)
     {
-        if (Status == OpportunityStatus.Won)
-            return Result.Invalid(new ValidationError
-            {
-                ErrorMessage = "Opportunity is already won"
-            });
-
         if (!CanTransitionTo(OpportunityStatus.Won))
-            return Result.Invalid(new ValidationError
-            {
-                ErrorMessage = $"Cannot win opportunity from {Status} status"
-            });
+            return TransitionConflict(OpportunityStatus.Won);
 
         Status = OpportunityStatus.Won;
         OrderId = orderId;
         FinalValue = finalValue ?? EstimatedValue;
-        Probability = 100m;
+        Probability = OpportunityStageProbability.For(OpportunityStatus.Won);
         UpdatedAt = DateTimeOffset.UtcNow;
         UpdatedBy = wonBy;
 
@@ -283,15 +263,12 @@ public sealed class Opportunity : TenantScopedEntity
     public Result Lose(string? reason, string? competitorName, Guid lostBy)
     {
         if (!CanTransitionTo(OpportunityStatus.Lost))
-            return Result.Invalid(new ValidationError
-            {
-                ErrorMessage = $"Cannot lose opportunity from {Status} status"
-            });
+            return TransitionConflict(OpportunityStatus.Lost);
 
         Status = OpportunityStatus.Lost;
         LossReason = reason;
         CompetitorName = competitorName;
-        Probability = 0m;
+        Probability = OpportunityStageProbability.For(OpportunityStatus.Lost);
         UpdatedAt = DateTimeOffset.UtcNow;
         UpdatedBy = lostBy;
 
@@ -311,10 +288,7 @@ public sealed class Opportunity : TenantScopedEntity
     public Result Abandon(string reason, Guid abandonedBy)
     {
         if (!CanTransitionTo(OpportunityStatus.Abandoned))
-            return Result.Invalid(new ValidationError
-            {
-                ErrorMessage = $"Cannot abandon opportunity from {Status} status"
-            });
+            return TransitionConflict(OpportunityStatus.Abandoned);
 
         if (string.IsNullOrWhiteSpace(reason))
             return Result.Invalid(new ValidationError
@@ -323,7 +297,7 @@ public sealed class Opportunity : TenantScopedEntity
             });
 
         Status = OpportunityStatus.Abandoned;
-        Probability = 0m;
+        Probability = OpportunityStageProbability.For(OpportunityStatus.Abandoned);
         UpdatedAt = DateTimeOffset.UtcNow;
         UpdatedBy = abandonedBy;
 
@@ -375,6 +349,78 @@ public sealed class Opportunity : TenantScopedEntity
         return Result.Success();
     }
 
+    /// <summary>
+    /// Log an activity (call, email, meeting, note) on the opportunity.
+    /// Mirrors <see cref="Lead.LogActivity"/> — the handlers called these three
+    /// methods but the aggregate never declared them (CRM-BE-HOST).
+    /// </summary>
+    public Result LogActivity(string activityType, string description, Guid loggedBy)
+    {
+        if (string.IsNullOrWhiteSpace(activityType) || string.IsNullOrWhiteSpace(description))
+            return Result.Invalid(new ValidationError
+            {
+                ErrorMessage = "Activity type and description are required"
+            });
+
+        _activities.Add(new Activity(activityType, description, loggedBy, DateTimeOffset.UtcNow));
+
+        RaiseDomainEvent(new OpportunityActivityLoggedEvent
+        {
+            OpportunityId = Id,
+            ActivityType = activityType,
+            Description = description,
+            LoggedBy = loggedBy,
+            LoggedAt = DateTimeOffset.UtcNow
+        });
+
+        return Result.Success();
+    }
+
+    /// <summary>Create a task for the opportunity.</summary>
+    public Result CreateTask(string title, DateTimeOffset dueDate, string priority, Guid createdBy)
+    {
+        if (string.IsNullOrWhiteSpace(title))
+            return Result.Invalid(new ValidationError { ErrorMessage = "Task title is required" });
+
+        if (dueDate < DateTimeOffset.UtcNow)
+            return Result.Invalid(new ValidationError { ErrorMessage = "Due date must be in the future" });
+
+        var task = new CrmTask(Guid.NewGuid(), title, dueDate, priority, createdBy);
+        _tasks.Add(task);
+
+        RaiseDomainEvent(new OpportunityTaskCreatedEvent
+        {
+            OpportunityId = Id,
+            TaskId = task.Id,
+            TaskTitle = title,
+            DueDate = dueDate,
+            Priority = priority,
+            CreatedBy = createdBy
+        });
+
+        return Result.Success();
+    }
+
+    /// <summary>Mark one of the opportunity's tasks as completed.</summary>
+    public Result CompleteTask(Guid taskId, Guid completedBy)
+    {
+        var task = _tasks.FirstOrDefault(t => t.Id == taskId);
+        if (task == null)
+            return Result.NotFound("Task not found");
+
+        task.Complete();
+
+        RaiseDomainEvent(new OpportunityTaskCompletedEvent
+        {
+            OpportunityId = Id,
+            TaskId = taskId,
+            CompletedBy = completedBy,
+            CompletedAt = DateTimeOffset.UtcNow
+        });
+
+        return Result.Success();
+    }
+
     /// <summary>Reassign opportunity to another user.</summary>
     public Result Reassign(Guid toUserId, Guid reassignedBy)
     {
@@ -401,37 +447,18 @@ public sealed class Opportunity : TenantScopedEntity
     }
 
     /// <summary>
-    /// Check if transition to target status is allowed by FSM rules.
+    /// Check if transition to target status is allowed by FSM rules
+    /// (single source of truth: <see cref="OpportunityStatusTransitions"/>).
     /// </summary>
     private bool CanTransitionTo(OpportunityStatus targetStatus)
-    {
-        return (Status, targetStatus) switch
-        {
-            // From Open
-            (OpportunityStatus.Open, OpportunityStatus.NeedsAssessment) => true,
-            (OpportunityStatus.Open, OpportunityStatus.Abandoned) => true,
+        => OpportunityStatusTransitions.CanTransition(Status, targetStatus);
 
-            // From NeedsAssessment
-            (OpportunityStatus.NeedsAssessment, OpportunityStatus.SolutionAssembly) => true,
-            (OpportunityStatus.NeedsAssessment, OpportunityStatus.Abandoned) => true,
-
-            // From SolutionAssembly
-            (OpportunityStatus.SolutionAssembly, OpportunityStatus.Proposal) => true,
-            (OpportunityStatus.SolutionAssembly, OpportunityStatus.Abandoned) => true,
-
-            // From Proposal
-            (OpportunityStatus.Proposal, OpportunityStatus.Negotiation) => true,
-            (OpportunityStatus.Proposal, OpportunityStatus.Lost) => true,
-            (OpportunityStatus.Proposal, OpportunityStatus.Abandoned) => true,
-
-            // From Negotiation
-            (OpportunityStatus.Negotiation, OpportunityStatus.Won) => true,
-            (OpportunityStatus.Negotiation, OpportunityStatus.Lost) => true,
-            (OpportunityStatus.Negotiation, OpportunityStatus.Abandoned) => true,
-
-            _ => false
-        };
-    }
+    /// <summary>
+    /// Illegal FSM transition → <see cref="Result.Conflict(string[])"/> → HTTP 409
+    /// (module error contract; payload guards stay Invalid → HTTP 400).
+    /// </summary>
+    private Result TransitionConflict(OpportunityStatus targetStatus)
+        => Result.Conflict($"Cannot transition opportunity from {Status} to {targetStatus}");
 
     private static Result ValidateCreation(
         Guid tenantId,

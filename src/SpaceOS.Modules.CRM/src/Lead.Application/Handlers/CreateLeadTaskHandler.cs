@@ -1,7 +1,10 @@
 using Ardalis.Result;
 using MediatR;
 using SpaceOS.Modules.CRM.Application.Commands;
+using SpaceOS.Modules.CRM.Application.DTOs;
+using SpaceOS.Modules.CRM.Application.Queries;
 using SpaceOS.Modules.CRM.Domain.Aggregates;
+using SpaceOS.Modules.CRM.Domain.Repositories;
 
 namespace SpaceOS.Modules.CRM.Application.Handlers;
 
@@ -9,7 +12,7 @@ namespace SpaceOS.Modules.CRM.Application.Handlers;
 /// Handler for CreateLeadTaskCommand.
 /// Creates a task on a lead with a future due date and priority.
 /// </summary>
-public sealed class CreateLeadTaskHandler : IRequestHandler<CreateLeadTaskCommand, Result<LeadResponse>>
+public sealed class CreateLeadTaskHandler : IRequestHandler<CreateLeadTaskCommand, Result<LeadDto>>
 {
     private readonly ILeadRepository _leadRepository;
     private readonly IPublisher _publisher;
@@ -20,7 +23,7 @@ public sealed class CreateLeadTaskHandler : IRequestHandler<CreateLeadTaskComman
         _publisher = publisher;
     }
 
-    public async Task<Result<LeadResponse>> Handle(CreateLeadTaskCommand request, CancellationToken cancellationToken)
+    public async Task<Result<LeadDto>> Handle(CreateLeadTaskCommand request, CancellationToken cancellationToken)
     {
         var lead = await _leadRepository.GetByIdAsync(request.TenantId, request.LeadId, cancellationToken)
             .ConfigureAwait(false);
@@ -35,7 +38,7 @@ public sealed class CreateLeadTaskHandler : IRequestHandler<CreateLeadTaskComman
             request.CreatedBy);
 
         if (!taskResult.IsSuccess)
-            return taskResult.Map(x => MapToResponse(lead));
+            return taskResult.Map(x => CrmDtoMapper.ToDto(lead));
 
         await _leadRepository.UpdateAsync(lead, cancellationToken).ConfigureAwait(false);
 
@@ -45,28 +48,7 @@ public sealed class CreateLeadTaskHandler : IRequestHandler<CreateLeadTaskComman
         }
 
         lead.ClearDomainEvents();
-        return Result.Success(MapToResponse(lead));
+        return Result.Success(CrmDtoMapper.ToDto(lead));
     }
 
-    private static LeadResponse MapToResponse(Lead lead)
-    {
-        return new LeadResponse
-        {
-            Id = lead.Id,
-            TenantId = lead.TenantId,
-            Status = lead.Status.ToString(),
-            ContactName = lead.ContactInfo.Name,
-            Email = lead.ContactInfo.Email,
-            Phone = lead.ContactInfo.Phone,
-            Company = lead.ContactInfo.Company,
-            Source = lead.Source.ToString(),
-            AssignedToUserId = lead.AssignedTo,
-            OpportunityRef = lead.OpportunityRef,
-            ActivityCount = lead.Activities.Count,
-            TaskCount = lead.Tasks.Count,
-            OpenTaskCount = lead.Tasks.Count(t => !t.IsCompleted),
-            CreatedAt = lead.CreatedAt,
-            UpdatedAt = lead.UpdatedAt
-        };
-    }
 }

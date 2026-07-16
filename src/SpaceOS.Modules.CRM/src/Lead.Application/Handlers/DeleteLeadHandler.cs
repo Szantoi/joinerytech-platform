@@ -2,6 +2,7 @@ using Ardalis.Result;
 using MediatR;
 using SpaceOS.Modules.CRM.Application.Commands;
 using SpaceOS.Modules.CRM.Domain.Aggregates;
+using SpaceOS.Modules.CRM.Domain.Repositories;
 
 namespace SpaceOS.Modules.CRM.Application.Handlers;
 

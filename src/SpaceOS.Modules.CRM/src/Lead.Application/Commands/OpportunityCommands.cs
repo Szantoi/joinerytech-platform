@@ -1,5 +1,6 @@
 using Ardalis.Result;
 using MediatR;
+using SpaceOS.Modules.CRM.Application.Queries;
 
 namespace SpaceOS.Modules.CRM.Application.Commands;
 
@@ -7,7 +8,7 @@ namespace SpaceOS.Modules.CRM.Application.Commands;
 /// Create new opportunity (direct creation, not from lead).
 /// Initiates in "Open" status.
 /// </summary>
-public sealed record CreateOpportunityCommand : IRequest<Result<OpportunityResponse>>
+public sealed record CreateOpportunityCommand : IRequest<Result<OpportunityDto>>
 {
     public Guid TenantId { get; init; }
     public Guid CustomerId { get; init; }
@@ -27,7 +28,7 @@ public sealed record CreateOpportunityCommand : IRequest<Result<OpportunityRespo
 /// Start needs assessment phase (Open → NeedsAssessment).
 /// Probability updated to 25%.
 /// </summary>
-public sealed record StartNeedsAssessmentCommand : IRequest<Result<OpportunityResponse>>
+public sealed record StartNeedsAssessmentCommand : IRequest<Result<OpportunityDto>>
 {
     public Guid TenantId { get; init; }
     public Guid OpportunityId { get; init; }
@@ -38,7 +39,7 @@ public sealed record StartNeedsAssessmentCommand : IRequest<Result<OpportunityRe
 /// Start solution assembly phase (NeedsAssessment → SolutionAssembly).
 /// Probability updated to 50%.
 /// </summary>
-public sealed record StartSolutionAssemblyCommand : IRequest<Result<OpportunityResponse>>
+public sealed record StartSolutionAssemblyCommand : IRequest<Result<OpportunityDto>>
 {
     public Guid TenantId { get; init; }
     public Guid OpportunityId { get; init; }
@@ -50,7 +51,7 @@ public sealed record StartSolutionAssemblyCommand : IRequest<Result<OpportunityR
 /// Links opportunity to Quote ID.
 /// Probability updated to 75%.
 /// </summary>
-public sealed record SendProposalCommand : IRequest<Result<OpportunityResponse>>
+public sealed record SendProposalCommand : IRequest<Result<OpportunityDto>>
 {
     public Guid TenantId { get; init; }
     public Guid OpportunityId { get; init; }
@@ -62,7 +63,7 @@ public sealed record SendProposalCommand : IRequest<Result<OpportunityResponse>>
 /// Start negotiation phase (Proposal → Negotiation).
 /// Probability updated to 90%.
 /// </summary>
-public sealed record StartNegotiationCommand : IRequest<Result<OpportunityResponse>>
+public sealed record StartNegotiationCommand : IRequest<Result<OpportunityDto>>
 {
     public Guid TenantId { get; init; }
     public Guid OpportunityId { get; init; }
@@ -74,7 +75,7 @@ public sealed record StartNegotiationCommand : IRequest<Result<OpportunityRespon
 /// Links to Order ID, sets final value.
 /// Probability set to 100%.
 /// </summary>
-public sealed record WinOpportunityCommand : IRequest<Result<OpportunityResponse>>
+public sealed record WinOpportunityCommand : IRequest<Result<OpportunityDto>>
 {
     public Guid TenantId { get; init; }
     public Guid OpportunityId { get; init; }
@@ -87,7 +88,7 @@ public sealed record WinOpportunityCommand : IRequest<Result<OpportunityResponse
 /// Lose opportunity (Proposal/Negotiation → Lost).
 /// Probability set to 0%.
 /// </summary>
-public sealed record LoseOpportunityCommand : IRequest<Result<OpportunityResponse>>
+public sealed record LoseOpportunityCommand : IRequest<Result<OpportunityDto>>
 {
     public Guid TenantId { get; init; }
     public Guid OpportunityId { get; init; }
@@ -101,7 +102,7 @@ public sealed record LoseOpportunityCommand : IRequest<Result<OpportunityRespons
 /// Requires abandonment reason.
 /// Probability set to 0%.
 /// </summary>
-public sealed record AbandonOpportunityCommand : IRequest<Result<OpportunityResponse>>
+public sealed record AbandonOpportunityCommand : IRequest<Result<OpportunityDto>>
 {
     public Guid TenantId { get; init; }
     public Guid OpportunityId { get; init; }
@@ -112,7 +113,7 @@ public sealed record AbandonOpportunityCommand : IRequest<Result<OpportunityResp
 /// <summary>
 /// Update estimated value or win probability.
 /// </summary>
-public sealed record UpdateOpportunityEstimateCommand : IRequest<Result<OpportunityResponse>>
+public sealed record UpdateOpportunityEstimateCommand : IRequest<Result<OpportunityDto>>
 {
     public Guid TenantId { get; init; }
     public Guid OpportunityId { get; init; }
@@ -125,7 +126,7 @@ public sealed record UpdateOpportunityEstimateCommand : IRequest<Result<Opportun
 /// <summary>
 /// Reassign opportunity to another sales rep.
 /// </summary>
-public sealed record ReassignOpportunityCommand : IRequest<Result<OpportunityResponse>>
+public sealed record ReassignOpportunityCommand : IRequest<Result<OpportunityDto>>
 {
     public Guid TenantId { get; init; }
     public Guid OpportunityId { get; init; }
@@ -136,7 +137,7 @@ public sealed record ReassignOpportunityCommand : IRequest<Result<OpportunityRes
 /// <summary>
 /// Log activity on opportunity (call, email, meeting, note).
 /// </summary>
-public sealed record LogOpportunityActivityCommand : IRequest<Result<OpportunityResponse>>
+public sealed record LogOpportunityActivityCommand : IRequest<Result<OpportunityDto>>
 {
     public Guid TenantId { get; init; }
     public Guid OpportunityId { get; init; }
@@ -148,7 +149,7 @@ public sealed record LogOpportunityActivityCommand : IRequest<Result<Opportunity
 /// <summary>
 /// Create task for opportunity.
 /// </summary>
-public sealed record CreateOpportunityTaskCommand : IRequest<Result<OpportunityResponse>>
+public sealed record CreateOpportunityTaskCommand : IRequest<Result<OpportunityDto>>
 {
     public Guid TenantId { get; init; }
     public Guid OpportunityId { get; init; }
@@ -156,35 +157,4 @@ public sealed record CreateOpportunityTaskCommand : IRequest<Result<OpportunityR
     public DateTime DueDate { get; init; }
     public string Priority { get; init; } = "medium"; // "high", "medium", "low"
     public Guid CreatedBy { get; init; }
-}
-
-/// <summary>
-/// DTO response for Opportunity operations.
-/// </summary>
-public sealed class OpportunityResponse
-{
-    public Guid Id { get; set; }
-    public Guid TenantId { get; set; }
-    public string Status { get; set; } = string.Empty;
-    public Guid? LeadId { get; set; }
-    public Guid CustomerId { get; set; }
-    public string ContactName { get; set; } = string.Empty;
-    public string Email { get; set; } = string.Empty;
-    public string? Phone { get; set; }
-    public string? Company { get; set; }
-    public string Title { get; set; } = string.Empty;
-    public decimal EstimatedValue { get; set; }
-    public string Currency { get; set; } = "HUF";
-    public decimal? FinalValue { get; set; }
-    public decimal Probability { get; set; }
-    public DateTime? ExpectedCloseDate { get; set; }
-    public Guid AssignedToUserId { get; set; }
-    public Guid? OrderRef { get; set; }
-    public Guid? QuoteRef { get; set; }
-    public string? LossReason { get; set; }
-    public string? CompetitorName { get; set; }
-    public int ActivityCount { get; set; }
-    public int TaskCount { get; set; }
-    public DateTime CreatedAt { get; set; }
-    public DateTime? UpdatedAt { get; set; }
 }

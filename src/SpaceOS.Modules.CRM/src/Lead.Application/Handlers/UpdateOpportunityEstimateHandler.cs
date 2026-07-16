@@ -1,7 +1,11 @@
 using Ardalis.Result;
 using MediatR;
 using SpaceOS.Modules.CRM.Application.Commands;
+using SpaceOS.Modules.CRM.Application.DTOs;
+using SpaceOS.Modules.CRM.Application.Queries;
 using SpaceOS.Modules.CRM.Domain.Aggregates;
+using SpaceOS.Modules.CRM.Domain.Repositories;
+using SpaceOS.Modules.CRM.Domain.ValueObjects;
 
 namespace SpaceOS.Modules.CRM.Application.Handlers;
 
@@ -9,7 +13,7 @@ namespace SpaceOS.Modules.CRM.Application.Handlers;
 /// Handler for UpdateOpportunityEstimateCommand.
 /// Updates either estimated value or probability (or both) on an opportunity.
 /// </summary>
-public sealed class UpdateOpportunityEstimateHandler : IRequestHandler<UpdateOpportunityEstimateCommand, Result<OpportunityResponse>>
+public sealed class UpdateOpportunityEstimateHandler : IRequestHandler<UpdateOpportunityEstimateCommand, Result<OpportunityDto>>
 {
     private readonly IOpportunityRepository _opportunityRepository;
     private readonly IPublisher _publisher;
@@ -20,7 +24,7 @@ public sealed class UpdateOpportunityEstimateHandler : IRequestHandler<UpdateOpp
         _publisher = publisher;
     }
 
-    public async Task<Result<OpportunityResponse>> Handle(UpdateOpportunityEstimateCommand request, CancellationToken cancellationToken)
+    public async Task<Result<OpportunityDto>> Handle(UpdateOpportunityEstimateCommand request, CancellationToken cancellationToken)
     {
         var opportunity = await _opportunityRepository.GetByIdAsync(request.TenantId, request.OpportunityId, cancellationToken)
             .ConfigureAwait(false);
@@ -31,13 +35,13 @@ public sealed class UpdateOpportunityEstimateHandler : IRequestHandler<UpdateOpp
         Money? newValue = null;
         if (request.NewValue.HasValue)
         {
-            newValue = new Money(request.NewValue.Value, request.Currency ?? opportunity.EstimatedValue.Currency);
+            newValue = Money.Create(request.NewValue.Value, request.Currency ?? opportunity.EstimatedValue.Currency);
         }
 
         var updateResult = opportunity.UpdateEstimate(newValue, request.NewProbability, request.UpdatedBy);
 
         if (!updateResult.IsSuccess)
-            return updateResult.Map(x => MapToResponse(opportunity));
+            return updateResult.Map(x => CrmDtoMapper.ToDto(opportunity));
 
         await _opportunityRepository.UpdateAsync(opportunity, cancellationToken).ConfigureAwait(false);
 
@@ -47,31 +51,7 @@ public sealed class UpdateOpportunityEstimateHandler : IRequestHandler<UpdateOpp
         }
 
         opportunity.ClearDomainEvents();
-        return Result.Success(MapToResponse(opportunity));
+        return Result.Success(CrmDtoMapper.ToDto(opportunity));
     }
 
-    private static OpportunityResponse MapToResponse(Opportunity opportunity)
-    {
-        return new OpportunityResponse
-        {
-            Id = opportunity.Id,
-            TenantId = opportunity.TenantId,
-            Status = opportunity.Status.ToString(),
-            LeadId = opportunity.LeadId,
-            CustomerId = opportunity.CustomerId,
-            ContactInfo = opportunity.ContactInfo.Name,
-            Title = opportunity.Title,
-            EstimatedValue = opportunity.EstimatedValue.Amount,
-            Currency = opportunity.EstimatedValue.Currency,
-            Probability = opportunity.Probability,
-            ExpectedCloseDate = opportunity.ExpectedCloseDate,
-            OrderRef = opportunity.OrderId,
-            QuoteRef = opportunity.QuoteId,
-            FinalValue = opportunity.FinalValue?.Amount,
-            LossReason = opportunity.LossReason,
-            CompetitorName = opportunity.CompetitorName,
-            CreatedAt = opportunity.CreatedAt,
-            UpdatedAt = opportunity.UpdatedAt
-        };
-    }
 }

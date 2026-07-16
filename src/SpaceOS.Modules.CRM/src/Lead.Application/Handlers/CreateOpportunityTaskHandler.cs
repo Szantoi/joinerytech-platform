@@ -1,7 +1,10 @@
 using Ardalis.Result;
 using MediatR;
 using SpaceOS.Modules.CRM.Application.Commands;
+using SpaceOS.Modules.CRM.Application.DTOs;
+using SpaceOS.Modules.CRM.Application.Queries;
 using SpaceOS.Modules.CRM.Domain.Aggregates;
+using SpaceOS.Modules.CRM.Domain.Repositories;
 
 namespace SpaceOS.Modules.CRM.Application.Handlers;
 
@@ -9,7 +12,7 @@ namespace SpaceOS.Modules.CRM.Application.Handlers;
 /// Handler for CreateOpportunityTaskCommand.
 /// Creates a task on an opportunity with a future due date and priority.
 /// </summary>
-public sealed class CreateOpportunityTaskHandler : IRequestHandler<CreateOpportunityTaskCommand, Result<OpportunityResponse>>
+public sealed class CreateOpportunityTaskHandler : IRequestHandler<CreateOpportunityTaskCommand, Result<OpportunityDto>>
 {
     private readonly IOpportunityRepository _opportunityRepository;
     private readonly IPublisher _publisher;
@@ -20,7 +23,7 @@ public sealed class CreateOpportunityTaskHandler : IRequestHandler<CreateOpportu
         _publisher = publisher;
     }
 
-    public async Task<Result<OpportunityResponse>> Handle(CreateOpportunityTaskCommand request, CancellationToken cancellationToken)
+    public async Task<Result<OpportunityDto>> Handle(CreateOpportunityTaskCommand request, CancellationToken cancellationToken)
     {
         var opportunity = await _opportunityRepository.GetByIdAsync(request.TenantId, request.OpportunityId, cancellationToken)
             .ConfigureAwait(false);
@@ -35,7 +38,7 @@ public sealed class CreateOpportunityTaskHandler : IRequestHandler<CreateOpportu
             request.CreatedBy);
 
         if (!taskResult.IsSuccess)
-            return taskResult.Map(x => MapToResponse(opportunity));
+            return taskResult.Map(x => CrmDtoMapper.ToDto(opportunity));
 
         await _opportunityRepository.UpdateAsync(opportunity, cancellationToken).ConfigureAwait(false);
 
@@ -45,31 +48,7 @@ public sealed class CreateOpportunityTaskHandler : IRequestHandler<CreateOpportu
         }
 
         opportunity.ClearDomainEvents();
-        return Result.Success(MapToResponse(opportunity));
+        return Result.Success(CrmDtoMapper.ToDto(opportunity));
     }
 
-    private static OpportunityResponse MapToResponse(Opportunity opportunity)
-    {
-        return new OpportunityResponse
-        {
-            Id = opportunity.Id,
-            TenantId = opportunity.TenantId,
-            Status = opportunity.Status.ToString(),
-            LeadId = opportunity.LeadId,
-            CustomerId = opportunity.CustomerId,
-            ContactInfo = opportunity.ContactInfo.Name,
-            Title = opportunity.Title,
-            EstimatedValue = opportunity.EstimatedValue.Amount,
-            Currency = opportunity.EstimatedValue.Currency,
-            Probability = opportunity.Probability,
-            ExpectedCloseDate = opportunity.ExpectedCloseDate,
-            OrderRef = opportunity.OrderId,
-            QuoteRef = opportunity.QuoteId,
-            FinalValue = opportunity.FinalValue?.Amount,
-            LossReason = opportunity.LossReason,
-            CompetitorName = opportunity.CompetitorName,
-            CreatedAt = opportunity.CreatedAt,
-            UpdatedAt = opportunity.UpdatedAt
-        };
-    }
 }

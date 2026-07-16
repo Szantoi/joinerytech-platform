@@ -30,4 +30,14 @@ public static class TicketStatusTransitions
     {
         return status == TicketStatus.Resolved;
     }
+
+    /// <summary>
+    /// Open (in-flight) statuses: Reported, Assigned, InProgress.
+    /// Rejected and Resolved are closed. Single source for the open-ticket
+    /// filter and KPIs (mirrored by the portal TICKET_OPEN_STATUSES guard).
+    /// </summary>
+    public static bool IsOpen(TicketStatus status)
+    {
+        return status is TicketStatus.Reported or TicketStatus.Assigned or TicketStatus.InProgress;
+    }
 }

@@ -369,18 +369,12 @@ paths:
     post:
       operationId: startInspection
       tags: [Inspections]
-      summary: Start inspection (Planned → InProgress)
+      summary: Start inspection (Planned → InProgress) — returns the fresh InspectionDto
       parameters:
         - $ref: '#/components/parameters/InspectionId'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/StartInspectionCommand'
       responses:
         '200':
-          description: Inspection started
+          description: Inspection started (fresh DTO for optimistic-update reconciliation)
           content:
             application/json:
               schema:
@@ -398,11 +392,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /api/qa/inspections/{id}/complete:
+  /api/qa/inspections/{id}/complete/pass:
     post:
-      operationId: completeInspection
+      operationId: completeInspectionPass
       tags: [Inspections]
-      summary: Complete inspection with Pass result
+      summary: Complete inspection with Pass result (InProgress → Completed) — returns the fresh InspectionDto
       parameters:
         - $ref: '#/components/parameters/InspectionId'
       requestBody:
@@ -429,11 +423,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /api/qa/inspections/{id}/fail:
+  /api/qa/inspections/{id}/complete/fail:
     post:
-      operationId: failInspection
+      operationId: completeInspectionFail
       tags: [Inspections]
-      summary: Fail inspection (CRITICAL - may block production)
+      summary: Complete inspection with Fail result (CRITICAL - may block production) — returns the fresh InspectionDto
       description: |
         Transitions inspection to Completed with Fail result.
         **CRITICAL:** If checkpoint is Critical level, this blocks production!
@@ -454,37 +448,6 @@ paths:
                 $ref: '#/components/schemas/InspectionDto'
         '400':
           $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          description: Invalid state transition
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-  /api/qa/inspections/{id}/conditional:
-    post:
-      operationId: conditionalInspection
-      tags: [Inspections]
-      summary: Complete with Conditional result
-      parameters:
-        - $ref: '#/components/parameters/InspectionId'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ConditionalInspectionCommand'
-      responses:
-        '200':
-          description: Inspection completed conditionally
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/InspectionDto'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
@@ -574,54 +537,47 @@ paths:
     get:
       operationId: listTickets
       tags: [Tickets]
-      summary: List tickets
+      summary: List tickets (newest report first; portal MSW contract filters)
       parameters:
         - name: status
           in: query
           required: false
           schema:
             $ref: '#/components/schemas/TicketStatus'
-        - name: type
-          in: query
-          required: false
-          schema:
-            $ref: '#/components/schemas/TicketType'
         - name: priority
           in: query
           required: false
           schema:
             $ref: '#/components/schemas/TicketPriority'
-        - name: assigneeEmployeeId
+        - name: inspectionId
           in: query
           required: false
           schema:
             type: string
             format: uuid
-        - name: orderId
+        - name: open
           in: query
           required: false
+          description: true → only open tickets (Reported/Assigned/InProgress)
+          schema:
+            type: boolean
+        - name: q
+          in: query
+          required: false
+          description: Case-insensitive free-text search on title and description
           schema:
             type: string
-            format: uuid
-        - name: page
-          in: query
-          required: false
-          schema:
-            type: integer
-            default: 1
-        - name: pageSize
-          in: query
-          required: false
-          schema:
-            type: integer
-            default: 20
       responses:
         '200':
-          description: Paginated list of tickets
+          description: List of tickets
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PagedTicketResponse'
+                type: array
+                items:
+                  $ref: '#/components/schemas/TicketDto'
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
     post:
@@ -666,7 +622,7 @@ paths:
           $ref: '#/components/responses/NotFound'
 
   /api/qa/tickets/{id}/assign:
-    post:
+    put:
       operationId: assignTicket
       tags: [Tickets]
       summary: Assign ticket (Reported → Assigned)
@@ -699,7 +655,7 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 
   /api/qa/tickets/{id}/start:
-    post:
+    put:
       operationId: startTicket
       tags: [Tickets]
       summary: Start work on ticket (Assigned → InProgress)
@@ -724,7 +680,7 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 
   /api/qa/tickets/{id}/resolve:
-    post:
+    put:
       operationId: resolveTicket
       tags: [Tickets]
       summary: Resolve ticket (InProgress → Resolved)
@@ -757,7 +713,7 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 
   /api/qa/tickets/{id}/reject:
-    post:
+    put:
       operationId: rejectTicket
       tags: [Tickets]
       summary: Reject ticket (InProgress → Rejected)
@@ -790,7 +746,7 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 
   /api/qa/tickets/{id}/reopen:
-    post:
+    put:
       operationId: reopenTicket
       tags: [Tickets]
       summary: Reopen ticket (Rejected → Reported)
@@ -815,7 +771,7 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 
   /api/qa/tickets/{id}/escalate:
-    post:
+    put:
       operationId: escalateTicket
       tags: [Tickets]
       summary: Escalate ticket priority
@@ -840,6 +796,12 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          description: Escalation guard violation (resolved ticket or not strictly higher priority)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /api/qa/tickets/{id}/resolution-actions:
     post:
@@ -882,6 +844,41 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/TicketDto'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/qa/metrics:
+    get:
+      operationId: getQAMetrics
+      tags: [Metrics]
+      summary: QA metrics for a date range (GetQAMetricsQuery exposure)
+      description: |
+        Pass/fail rates and average ticket resolution time. When `from`/`to`
+        are omitted the window defaults to the configured
+        `QA:Metrics:DefaultWindowDays` (fallback 42 days = 6 weeks, mirroring
+        the portal TREND_WINDOW_WEEKS).
+      parameters:
+        - name: from
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: QA metrics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QAMetricsDto'
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
 
@@ -1050,7 +1047,7 @@ components:
 
     InspectionResult:
       type: string
-      enum: [Pass, Fail, Conditional]
+      enum: [Pending, Pass, Fail, Conditional]
 
     FailureType:
       type: string
@@ -1123,48 +1120,50 @@ components:
 
     InspectionDto:
       type: object
+      description: |
+        Full inspection details. `criteria` is denormalized from the checkpoint
+        (portal MSW contract: the detail-screen checklist needs no extra fetch).
       properties:
         id:
-          type: string
-          format: uuid
-        tenantId:
           type: string
           format: uuid
         checkpointId:
           type: string
           format: uuid
-        checkpoint:
-          $ref: '#/components/schemas/QACheckpointDto'
+        checkpointName:
+          type: string
+        criteria:
+          type: array
+          items:
+            $ref: '#/components/schemas/InspectionCriteriaDto'
         orderId:
           type:
             - string
             - 'null'
           format: uuid
-        projectId:
+        productId:
           type:
             - string
             - 'null'
           format: uuid
-        inspectorEmployeeId:
-          type:
-            - string
-            - 'null'
-          format: uuid
-        inspectorName:
-          type:
-            - string
-            - 'null'
         status:
           $ref: '#/components/schemas/InspectionStatus'
         result:
-          oneOf:
-            - $ref: '#/components/schemas/InspectionResult'
-            - type: 'null'
-        scheduledDate:
+          $ref: '#/components/schemas/InspectionResult'
+        inspectorId:
+          type: string
+          format: uuid
+        notes:
           type:
             - string
             - 'null'
-          format: date
+        failureNotes:
+          type: array
+          items:
+            $ref: '#/components/schemas/FailureNoteDto'
+        plannedAt:
+          type: string
+          format: date-time
         startedAt:
           type:
             - string
@@ -1175,28 +1174,10 @@ components:
             - string
             - 'null'
           format: date-time
-        failureNotes:
-          type: array
-          items:
-            $ref: '#/components/schemas/FailureNoteDto'
-        notes:
-          type:
-            - string
-            - 'null'
-        createdAt:
-          type: string
-          format: date-time
-        updatedAt:
-          type: string
-          format: date-time
-      required: [id, tenantId, checkpointId, status]
-
+      required: [id, checkpointId, checkpointName, criteria, status, result, inspectorId, failureNotes, plannedAt]
     FailureNoteDto:
       type: object
       properties:
-        id:
-          type: string
-          format: uuid
         failureType:
           $ref: '#/components/schemas/FailureType'
         description:
@@ -1206,20 +1187,14 @@ components:
             - string
             - 'null'
           format: uri
-      required: [id, failureType, description]
-
+      required: [failureType, description]
     TicketDto:
       type: object
       properties:
         id:
           type: string
           format: uuid
-        tenantId:
-          type: string
-          format: uuid
-        ticketNumber:
-          type: string
-        type:
+        ticketType:
           $ref: '#/components/schemas/TicketType'
         status:
           $ref: '#/components/schemas/TicketStatus'
@@ -1230,23 +1205,30 @@ components:
             - string
             - 'null'
           format: uuid
-        projectId:
+        productId:
           type:
             - string
             - 'null'
           format: uuid
-        customerDescription:
+        inspectionId:
+          type:
+            - string
+            - 'null'
+          format: uuid
+        title:
           type: string
-        assigneeEmployeeId:
+        description:
+          type: string
+        reportedBy:
+          type: string
+          format: uuid
+        assignedTo:
           type:
             - string
             - 'null'
           format: uuid
-        assigneeName:
-          type:
-            - string
-            - 'null'
-        rootCause:
+        resolutionNotes:
+          description: Resolution notes OR rejection reason (Reject writes its reason here)
           type:
             - string
             - 'null'
@@ -1254,10 +1236,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ResolutionActionDto'
-        rejectionReason:
-          type:
-            - string
-            - 'null'
         reportedAt:
           type: string
           format: date-time
@@ -1276,28 +1254,19 @@ components:
             - string
             - 'null'
           format: date-time
-        createdAt:
-          type: string
-          format: date-time
-        updatedAt:
-          type: string
-          format: date-time
-      required: [id, tenantId, ticketNumber, type, status, priority, customerDescription, reportedAt]
-
+      required: [id, ticketType, status, priority, title, description, reportedBy, resolutionActions, reportedAt]
     ResolutionActionDto:
       type: object
       properties:
-        id:
-          type: string
-          format: uuid
         actionType:
           $ref: '#/components/schemas/ActionType'
         description:
           type: string
-        cost:
-          $ref: '#/components/schemas/MoneyDto'
-      required: [id, actionType, description, cost]
-
+        costAmount:
+          type: number
+          format: double
+          description: Cost in HUF
+      required: [actionType, description, costAmount]
     MoneyDto:
       type: object
       properties:
@@ -1387,14 +1356,6 @@ components:
           maxLength: 2000
       required: [checkpointId]
 
-    StartInspectionCommand:
-      type: object
-      properties:
-        inspectorEmployeeId:
-          type: string
-          format: uuid
-      required: [inspectorEmployeeId]
-
     CompleteInspectionCommand:
       type: object
       properties:
@@ -1419,15 +1380,6 @@ components:
           maxLength: 2000
       required: [failureNotes]
 
-    ConditionalInspectionCommand:
-      type: object
-      properties:
-        notes:
-          type: string
-          minLength: 1
-          maxLength: 2000
-      required: [notes]
-
     CreateFailureNoteCommand:
       type: object
       properties:
@@ -1447,65 +1399,87 @@ components:
     CreateTicketCommand:
       type: object
       properties:
-        type:
+        ticketType:
           $ref: '#/components/schemas/TicketType'
         priority:
           $ref: '#/components/schemas/TicketPriority'
+        title:
+          type: string
+          minLength: 5
+          maxLength: 200
+        description:
+          type: string
+          minLength: 10
+        reportedBy:
+          type: string
+          format: uuid
         orderId:
           type:
             - string
             - 'null'
           format: uuid
-        projectId:
+        productId:
           type:
             - string
             - 'null'
           format: uuid
-        customerDescription:
-          type: string
-          minLength: 1
-          maxLength: 4000
-      required: [type, priority, customerDescription]
-
+        inspectionId:
+          type:
+            - string
+            - 'null'
+          format: uuid
+      required: [ticketType, priority, title, description, reportedBy]
     AssignTicketCommand:
       type: object
       properties:
-        assigneeEmployeeId:
+        assigneeId:
           type: string
           format: uuid
-      required: [assigneeEmployeeId]
-
+      required: [assigneeId]
     ResolveTicketCommand:
       type: object
       properties:
-        rootCause:
-          type:
-            - string
-            - 'null'
-          maxLength: 2000
         resolutionActions:
           type: array
           items:
-            $ref: '#/components/schemas/AddResolutionActionCommand'
+            $ref: '#/components/schemas/ResolutionActionInput'
           minItems: 1
+        resolutionNotes:
+          type:
+            - string
+            - 'null'
       required: [resolutionActions]
 
+    ResolutionActionInput:
+      type: object
+      properties:
+        actionType:
+          $ref: '#/components/schemas/ActionType'
+        description:
+          type: string
+          minLength: 1
+        costAmount:
+          type:
+            - number
+            - 'null'
+          format: double
+          description: Cost in HUF (defaults to 0)
+      required: [actionType, description]
     RejectTicketCommand:
       type: object
       properties:
-        rejectionReason:
+        reason:
           type: string
-          minLength: 10
-          maxLength: 2000
-      required: [rejectionReason]
-
+          minLength: 1
+      required: [reason]
     EscalateTicketCommand:
       type: object
       properties:
-        newPriority:
-          $ref: '#/components/schemas/TicketPriority'
-      required: [newPriority]
-
+        priority:
+          description: Must be strictly higher than the current priority
+          allOf:
+            - $ref: '#/components/schemas/TicketPriority'
+      required: [priority]
     AddResolutionActionCommand:
       type: object
       properties:
@@ -1546,6 +1520,32 @@ components:
           type: string
           format: date-time
       required: [inspectionId, checkpointName, failureNotes, inspectionDate]
+
+    QAMetricsDto:
+      type: object
+      properties:
+        totalInspections:
+          type: integer
+        passedInspections:
+          type: integer
+        failedInspections:
+          type: integer
+        passRate:
+          type: number
+          format: double
+          description: PassedInspections / TotalInspections (0 if none), 0..1
+        totalTickets:
+          type: integer
+        openTickets:
+          type: integer
+          description: Tickets not Resolved and not Rejected in the range
+        averageResolutionTime:
+          type:
+            - number
+            - 'null'
+          format: double
+          description: Average (resolvedAt - reportedAt) in hours; null if no resolved tickets
+      required: [totalInspections, passedInspections, failedInspections, passRate, totalTickets, openTickets]
 
     ParetoAnalysisResponse:
       type: object

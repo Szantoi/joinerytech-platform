@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.Logging;
 using SpaceOS.Modules.QA.Application.Commands;
 using SpaceOS.Modules.QA.Application.DTOs;
 using SpaceOS.Modules.QA.Application.Queries;
@@ -15,9 +16,14 @@ namespace SpaceOS.Modules.QA.Api.Endpoints;
 /// Inspection API endpoints using Minimal API pattern.
 /// Supports FSM state transitions (Planned → InProgress → Completed)
 /// and production integration queries (blocking inspections).
+/// Transition endpoints return the fresh InspectionDto (portal contract:
+/// the UI reconciles optimistic updates from the response — Maintenance precedent).
+/// Error contract: 404 = not found, 409 = illegal FSM transition, 400 = payload validation.
 /// </summary>
 public static class InspectionEndpoints
 {
+    private const string LoggerCategory = "SpaceOS.Modules.QA.Api.InspectionEndpoints";
+
     /// <summary>
     /// Maps Inspection endpoints to the application.
     /// </summary>
@@ -58,23 +64,27 @@ public static class InspectionEndpoints
 
         group.MapPost("/{id:guid}/start", StartInspection)
             .WithName("StartInspection")
-            .WithSummary("Start inspection (FSM transition: Planned → InProgress)")
-            .Produces(204)
+            .WithSummary("Start inspection (FSM transition: Planned → InProgress) — returns the fresh InspectionDto")
+            .Produces<InspectionDto>(200)
             .Produces(404)
+            .Produces(409)
             .ProducesValidationProblem();
 
         group.MapPost("/{id:guid}/complete/pass", CompleteInspectionPass)
             .WithName("CompleteInspectionPass")
-            .WithSummary("Complete inspection with Pass result (FSM transition: InProgress → Completed)")
-            .Produces(204)
+            .WithSummary("Complete inspection with Pass result (FSM transition: InProgress → Completed) — returns the fresh InspectionDto")
+            .Produces<InspectionDto>(200)
             .Produces(404)
+            .Produces(409)
             .ProducesValidationProblem();
 
         group.MapPost("/{id:guid}/complete/fail", CompleteInspectionFail)
             .WithName("CompleteInspectionFail")
-            .WithSummary("Complete inspection with Fail result (FSM transition: InProgress → Completed)")
-            .Produces(204)
+            .WithSummary("Complete inspection with Fail result (FSM transition: InProgress → Completed; min. 1 failure note) — returns the fresh InspectionDto")
+            .Produces<InspectionDto>(200)
+            .Produces(400)
             .Produces(404)
+            .Produces(409)
             .ProducesValidationProblem();
 
         group.MapGet("/order/{orderId:guid}/blocking", GetBlockingInspections)
@@ -191,6 +201,7 @@ public static class InspectionEndpoints
     private static async Task<IResult> StartInspection(
         [FromRoute] Guid id,
         [FromServices] IMediator mediator,
+        [FromServices] ILoggerFactory loggerFactory,
         [FromHeader(Name = "X-Tenant-Id")] Guid tenantId,
         CancellationToken ct)
     {
@@ -199,17 +210,15 @@ public static class InspectionEndpoints
             TenantId: tenantId
         );
 
-        var result = await mediator.Send(command, ct).ConfigureAwait(false);
-
-        return result.IsSuccess
-            ? Results.NoContent()
-            : Results.BadRequest(result.Errors);
+        return await ExecuteTransition(mediator, loggerFactory, command, id, tenantId, "start", ct)
+            .ConfigureAwait(false);
     }
 
     private static async Task<IResult> CompleteInspectionPass(
         [FromRoute] Guid id,
         [FromBody] CompleteInspectionPassRequestDto request,
         [FromServices] IMediator mediator,
+        [FromServices] ILoggerFactory loggerFactory,
         [FromHeader(Name = "X-Tenant-Id")] Guid tenantId,
         CancellationToken ct)
     {
@@ -219,17 +228,15 @@ public static class InspectionEndpoints
             TenantId: tenantId
         );
 
-        var result = await mediator.Send(command, ct).ConfigureAwait(false);
-
-        return result.IsSuccess
-            ? Results.NoContent()
-            : Results.BadRequest(result.Errors);
+        return await ExecuteTransition(mediator, loggerFactory, command, id, tenantId, "complete/pass", ct)
+            .ConfigureAwait(false);
     }
 
     private static async Task<IResult> CompleteInspectionFail(
         [FromRoute] Guid id,
         [FromBody] CompleteInspectionFailRequestDto request,
         [FromServices] IMediator mediator,
+        [FromServices] ILoggerFactory loggerFactory,
         [FromHeader(Name = "X-Tenant-Id")] Guid tenantId,
         CancellationToken ct)
     {
@@ -260,11 +267,46 @@ public static class InspectionEndpoints
             TenantId: tenantId
         );
 
-        var result = await mediator.Send(command, ct).ConfigureAwait(false);
+        return await ExecuteTransition(mediator, loggerFactory, command, id, tenantId, "complete/fail", ct)
+            .ConfigureAwait(false);
+    }
 
-        return result.IsSuccess
-            ? Results.NoContent()
-            : Results.BadRequest(result.Errors);
+    /// <summary>
+    /// Shared transition execution: run the command, map failures via the module
+    /// error contract (404/409/400), and on success return the fresh InspectionDto
+    /// (portal contract: the UI reconciles optimistic updates from the response).
+    /// </summary>
+    private static async Task<IResult> ExecuteTransition(
+        IMediator mediator,
+        ILoggerFactory loggerFactory,
+        IRequest<Ardalis.Result.Result> command,
+        Guid id,
+        Guid tenantId,
+        string action,
+        CancellationToken ct)
+    {
+        var logger = loggerFactory.CreateLogger(LoggerCategory);
+
+        var result = await mediator.Send(command, ct).ConfigureAwait(false);
+        if (!result.IsSuccess)
+        {
+            logger.LogWarning(
+                "QA inspection {InspectionId} {Action} rejected ({Status}) for tenant {TenantId}",
+                id, action, result.Status, tenantId);
+            return QaEndpointResults.Failure(result);
+        }
+
+        logger.LogInformation(
+            "QA inspection {InspectionId} {Action} succeeded for tenant {TenantId}",
+            id, action, tenantId);
+
+        var fresh = await mediator
+            .Send(new GetInspectionQuery(new InspectionId(id), tenantId), ct)
+            .ConfigureAwait(false);
+
+        return fresh.IsSuccess
+            ? Results.Ok(fresh.Value)
+            : QaEndpointResults.Failure(fresh);
     }
 
     private static async Task<IResult> GetBlockingInspections(

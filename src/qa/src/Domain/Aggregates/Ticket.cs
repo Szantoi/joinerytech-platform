@@ -2,6 +2,7 @@ using SpaceOS.Kernel.Domain.Exceptions;
 using SpaceOS.Kernel.Domain.Primitives;
 using SpaceOS.Modules.QA.Domain.Enums;
 using SpaceOS.Modules.QA.Domain.Events;
+using SpaceOS.Modules.QA.Domain.Exceptions;
 using SpaceOS.Modules.QA.Domain.FSM;
 using SpaceOS.Modules.QA.Domain.StrongIds;
 using SpaceOS.Modules.QA.Domain.ValueObjects;
@@ -117,7 +118,7 @@ public class Ticket : AggregateRoot
     public void Assign(Guid assigneeId)
     {
         if (!TicketStatusTransitions.IsValidTransition(Status, TicketStatus.Assigned))
-            throw new DomainException($"Cannot transition from {Status} to Assigned");
+            throw new InvalidStatusTransitionException($"Cannot transition from {Status} to Assigned");
 
         if (assigneeId == Guid.Empty)
             throw new DomainException("AssigneeId is required");
@@ -138,7 +139,7 @@ public class Ticket : AggregateRoot
     public void Start()
     {
         if (!TicketStatusTransitions.IsValidTransition(Status, TicketStatus.InProgress))
-            throw new DomainException($"Cannot transition from {Status} to InProgress");
+            throw new InvalidStatusTransitionException($"Cannot transition from {Status} to InProgress");
 
         Status = TicketStatus.InProgress;
         StartedAt = DateTime.UtcNow;
@@ -155,7 +156,7 @@ public class Ticket : AggregateRoot
     public void Resolve(List<ResolutionAction> resolutionActions, string? resolutionNotes = null)
     {
         if (!TicketStatusTransitions.IsValidTransition(Status, TicketStatus.Resolved))
-            throw new DomainException($"Cannot transition from {Status} to Resolved");
+            throw new InvalidStatusTransitionException($"Cannot transition from {Status} to Resolved");
 
         if (resolutionActions == null || !resolutionActions.Any())
             throw new DomainException("At least one resolution action is required");
@@ -178,7 +179,7 @@ public class Ticket : AggregateRoot
     public void Reject(string reason)
     {
         if (!TicketStatusTransitions.IsValidTransition(Status, TicketStatus.Rejected))
-            throw new DomainException($"Cannot transition from {Status} to Rejected");
+            throw new InvalidStatusTransitionException($"Cannot transition from {Status} to Rejected");
 
         if (string.IsNullOrWhiteSpace(reason))
             throw new DomainException("Rejection reason is required");
@@ -198,7 +199,7 @@ public class Ticket : AggregateRoot
     public void Reopen()
     {
         if (!TicketStatusTransitions.IsValidTransition(Status, TicketStatus.Reported))
-            throw new DomainException($"Cannot transition from {Status} to Reported");
+            throw new InvalidStatusTransitionException($"Cannot transition from {Status} to Reported");
 
         Status = TicketStatus.Reported;
         AssignedTo = null;
@@ -217,10 +218,10 @@ public class Ticket : AggregateRoot
     public void EscalatePriority(CrmTaskPriority newPriority)
     {
         if (newPriority <= Priority)
-            throw new DomainException("New priority must be higher than current priority");
+            throw new InvalidStatusTransitionException("New priority must be higher than current priority");
 
         if (TicketStatusTransitions.IsTerminalState(Status))
-            throw new DomainException("Cannot escalate resolved tickets");
+            throw new InvalidStatusTransitionException("Cannot escalate resolved tickets");
 
         var oldPriority = Priority;
         Priority = newPriority;

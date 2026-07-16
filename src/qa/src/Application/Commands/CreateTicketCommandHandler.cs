@@ -1,4 +1,5 @@
 using Ardalis.Result;
+using SpaceOS.Kernel.Domain.Exceptions;
 using MediatR;
 using SpaceOS.Modules.QA.Domain.Aggregates;
 using SpaceOS.Modules.QA.Domain.Repositories;
@@ -38,6 +39,11 @@ public class CreateTicketCommandHandler : IRequestHandler<CreateTicketCommand, R
             await _ticketRepository.AddAsync(ticket, ct).ConfigureAwait(false);
 
             return Result<TicketId>.Success(ticket.Id);
+        }
+        catch (DomainException ex)
+        {
+            // Aggregate payload validation (title/description rules) -> HTTP 400
+            return Result<TicketId>.Invalid(new ValidationError(ex.Message));
         }
         catch (Exception ex)
         {

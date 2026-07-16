@@ -4,11 +4,14 @@ namespace SpaceOS.Modules.QA.Application.DTOs;
 
 /// <summary>
 /// Full inspection details DTO.
+/// Carries the checkpoint's inspection criteria denormalized (Criteria) so the
+/// detail screen checklist needs no extra checkpoint fetch (portal MSW contract).
 /// </summary>
 public record InspectionDto(
     Guid Id,
     Guid CheckpointId,
     string CheckpointName,
+    InspectionCriteriaDto[] Criteria,
     Guid? OrderId,
     Guid? ProductId,
     InspectionStatus Status,

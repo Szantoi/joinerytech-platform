@@ -1,5 +1,7 @@
 using Ardalis.Result;
+using SpaceOS.Kernel.Domain.Exceptions;
 using MediatR;
+using SpaceOS.Modules.QA.Domain.Exceptions;
 using SpaceOS.Modules.QA.Domain.Repositories;
 
 namespace SpaceOS.Modules.QA.Application.Commands;
@@ -35,6 +37,16 @@ public class EscalateTicketPriorityCommandHandler : IRequestHandler<EscalateTick
             await _ticketRepository.UpdateAsync(ticket, ct).ConfigureAwait(false);
 
             return Result.Success();
+        }
+        catch (InvalidStatusTransitionException ex)
+        {
+            // Illegal FSM transition / status-guarded action -> HTTP 409 at the endpoint
+            return Result.Conflict(ex.Message);
+        }
+        catch (DomainException ex)
+        {
+            // Aggregate payload validation -> HTTP 400 at the endpoint
+            return Result.Invalid(new ValidationError(ex.Message));
         }
         catch (Exception ex)
         {

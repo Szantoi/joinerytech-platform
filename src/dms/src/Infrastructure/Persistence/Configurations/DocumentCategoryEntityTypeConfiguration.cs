@@ -18,14 +18,20 @@ public class DocumentCategoryEntityTypeConfiguration : IEntityTypeConfiguration<
 
         // StronglyTypedId conversion
         builder.Property(dc => dc.Id)
+            .HasColumnName("id")
             .HasConversion(
                 id => id.Value,
                 value => new DocumentCategoryId(value)
             )
             .IsRequired();
 
-        // TenantId for RLS (multi-tenancy)
+        // TenantId for RLS (multi-tenancy) — kernel strong id needs an explicit
+        // converter (DMS-BE-HOST fix: without it the whole model failed validation)
         builder.Property(dc => dc.TenantId)
+            .HasColumnName("tenant_id")
+            .HasConversion(
+                tenantId => tenantId.Value,
+                value => SpaceOS.Kernel.Domain.ValueObjects.TenantId.From(value))
             .IsRequired();
 
         builder.HasIndex(dc => dc.TenantId)
@@ -33,22 +39,27 @@ public class DocumentCategoryEntityTypeConfiguration : IEntityTypeConfiguration<
 
         // Name
         builder.Property(dc => dc.Name)
+            .HasColumnName("name")
             .HasMaxLength(200)
             .IsRequired();
 
         // Description
         builder.Property(dc => dc.Description)
+            .HasColumnName("description")
             .HasMaxLength(1000);
 
         // IsActive
         builder.Property(dc => dc.IsActive)
+            .HasColumnName("is_active")
             .IsRequired();
 
         // Timestamps
         builder.Property(dc => dc.CreatedAt)
+            .HasColumnName("created_at")
             .IsRequired();
 
         builder.Property(dc => dc.UpdatedAt)
+            .HasColumnName("updated_at")
             .IsRequired();
     }
 }

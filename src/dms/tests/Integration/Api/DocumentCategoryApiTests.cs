@@ -1,11 +1,18 @@
 using FluentAssertions;
+using Microsoft.Extensions.DependencyInjection;
+using SpaceOS.Kernel.Domain.ValueObjects;
+using SpaceOS.Modules.DMS.Domain.Aggregates.DocumentCategory;
+using SpaceOS.Modules.DMS.Domain.Repositories;
+using SpaceOS.Modules.DMS.Infrastructure.Persistence;
 using Xunit;
 
 namespace SpaceOS.Modules.DMS.Tests.Integration.Api;
 
 /// <summary>
-/// API integration tests for DocumentCategory endpoints.
-/// Tests CRUD operations and multi-tenancy enforcement.
+/// Persistence integration tests for the DocumentCategory slice (real
+/// PostgreSQL). DMS-BE-HOST repair: the earlier HTTP variants targeted
+/// endpoints that never existed — the category/tag ENDPOINT layer is a
+/// separate task; these tests pin the working repository layer.
 /// </summary>
 [Collection("DMS API Tests")]
 public class DocumentCategoryApiTests
@@ -18,51 +25,41 @@ public class DocumentCategoryApiTests
     }
 
     [Fact]
-    public async Task ListDocumentCategories_ReturnsEmptyList_OnFirstCall()
-    {
-        // Arrange
-        var client = _fixture.Client!;
-
-        // Act
-        var response = await client.GetAsync("/api/dms/categories");
-
-        // Assert
-        response.StatusCode.Should().Be(System.Net.HttpStatusCode.OK);
-    }
-
-    [Fact]
     public async Task DocumentCategoryRepository_CanCreateAndRetrieveCategory()
     {
-        // Arrange
-        var dbContext = _fixture.DbContext!;
-        var tenantId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+        using var scope = _fixture.CreateScope();
+        var repository = scope.ServiceProvider.GetRequiredService<IDocumentCategoryRepository>();
 
-        // Act
-        // Note: Full API test would require WebApplicationFactory setup
-        // This test verifies the repository pattern is working
-        var categoriesCount = dbContext.DocumentCategories.Count();
+        var category = DocumentCategory.Create(
+            new DocumentCategoryId(Guid.NewGuid()),
+            TenantId.From(ApiTestFixture.TenantId),
+            "Kiviteli rajzok",
+            "Gyártásra kiadott tervdokumentáció");
+        await repository.AddAsync(category);
 
-        // Assert
-        categoriesCount.Should().BeGreaterThanOrEqualTo(0);
+        using var freshScope = _fixture.CreateScope();
+        var freshRepository = freshScope.ServiceProvider.GetRequiredService<IDocumentCategoryRepository>();
+        var reloaded = await freshRepository.GetByIdAsync(category.Id);
+
+        reloaded.Should().NotBeNull();
+        reloaded!.Name.Should().Be("Kiviteli rajzok");
+        reloaded.IsActive.Should().BeTrue();
     }
 
     [Fact]
     public async Task DbContext_AllowsDatabaseOperations()
     {
-        // Arrange
-        var dbContext = _fixture.DbContext!;
+        using var scope = _fixture.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<DMSDbContext>();
 
-        // Act
-        var tagsCount = dbContext.Tags.Count();
+        var categoriesCount = dbContext.DocumentCategories.Count();
 
-        // Assert
-        tagsCount.Should().BeGreaterThanOrEqualTo(0);
+        categoriesCount.Should().BeGreaterThanOrEqualTo(0);
     }
 }
 
 /// <summary>
-/// API integration tests for Tag endpoints.
-/// Tests CRUD operations and multi-tenancy enforcement.
+/// Persistence integration tests for the Tag slice (real PostgreSQL).
 /// </summary>
 [Collection("DMS API Tests")]
 public class TagApiTests
@@ -75,28 +72,13 @@ public class TagApiTests
     }
 
     [Fact]
-    public async Task ListTags_ReturnsEmptyList_OnFirstCall()
-    {
-        // Arrange
-        var client = _fixture.Client!;
-
-        // Act
-        var response = await client.GetAsync("/api/dms/tags").ConfigureAwait(false);
-
-        // Assert
-        response.StatusCode.Should().Be(System.Net.HttpStatusCode.OK);
-    }
-
-    [Fact]
     public async Task TagRepository_CanAccessDatabase()
     {
-        // Arrange
-        var dbContext = _fixture.DbContext!;
+        using var scope = _fixture.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<DMSDbContext>();
 
-        // Act
         var count = dbContext.Tags.Count();
 
-        // Assert
         count.Should().BeGreaterThanOrEqualTo(0);
     }
 }

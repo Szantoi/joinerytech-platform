@@ -7,9 +7,14 @@ namespace SpaceOS.Modules.DMS.Infrastructure.Persistence;
 /// <summary>
 /// DbConnection interceptor for setting tenant context in PostgreSQL RLS policies.
 ///
-/// This interceptor is called every time a database connection is opened.
-/// It sets the 'app.tenant_id' PostgreSQL configuration variable, which is then
-/// used by RLS policies to filter rows by tenant.
+/// It sets the 'app.tenant_id' session variable which the RLS policies use to
+/// filter rows by tenant.
+///
+/// DMS-BE-HOST fix (Maintenance-module precedent): runs on ConnectionOpened
+/// (the connection must already be open to execute the command — on
+/// ConnectionOpening it threw), and uses set_config with a parameter directly,
+/// so it works even before the dms.set_tenant_context helper function exists
+/// (fresh database, before migrations).
 /// </summary>
 public class TenantDbConnectionInterceptor : DbConnectionInterceptor
 {
@@ -20,60 +25,54 @@ public class TenantDbConnectionInterceptor : DbConnectionInterceptor
         _tenantContext = tenantContext;
     }
 
-    public override InterceptionResult ConnectionOpening(
+    /// <summary>
+    /// Synchronous handler — sets the 'app.tenant_id' session variable for RLS policies.
+    /// </summary>
+    public override void ConnectionOpened(
         DbConnection connection,
-        ConnectionEventData eventData,
-        InterceptionResult result)
+        ConnectionEndEventData eventData)
     {
         var tenantId = _tenantContext.TenantId;
         if (tenantId != Guid.Empty)
         {
-            SetTenantContext(connection, tenantId);
+            using var command = CreateSetTenantCommand(connection, tenantId);
+            command.ExecuteNonQuery();
         }
 
-        return base.ConnectionOpening(connection, eventData, result);
+        base.ConnectionOpened(connection, eventData);
     }
 
-    public override async ValueTask<InterceptionResult> ConnectionOpeningAsync(
+    /// <summary>
+    /// Asynchronous handler — sets the 'app.tenant_id' session variable for RLS policies.
+    /// </summary>
+    public override async Task ConnectionOpenedAsync(
         DbConnection connection,
-        ConnectionEventData eventData,
-        InterceptionResult result,
+        ConnectionEndEventData eventData,
         CancellationToken ct = default)
     {
         var tenantId = _tenantContext.TenantId;
         if (tenantId != Guid.Empty)
         {
-            await SetTenantContextAsync(connection, tenantId, ct).ConfigureAwait(false);
+            var command = CreateSetTenantCommand(connection, tenantId);
+            await using (command.ConfigureAwait(false))
+            {
+                await command.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
+            }
         }
 
-        return await base.ConnectionOpeningAsync(connection, eventData, result, ct).ConfigureAwait(false);
+        await base.ConnectionOpenedAsync(connection, eventData, ct).ConfigureAwait(false);
     }
 
-    private static void SetTenantContext(DbConnection connection, Guid tenantId)
+    private static DbCommand CreateSetTenantCommand(DbConnection connection, Guid tenantId)
     {
-        try
-        {
-            using var command = connection.CreateCommand();
-            command.CommandText = $"SELECT dms.set_tenant_context('{tenantId}'::uuid);";
-            command.ExecuteNonQuery();
-        }
-        catch (Exception ex)
-        {
-            throw new InvalidOperationException($"Failed to set tenant context for tenant {tenantId}", ex);
-        }
-    }
+        var command = connection.CreateCommand();
+        command.CommandText = "SELECT set_config('app.tenant_id', @tenant_id, false)";
 
-    private static async Task SetTenantContextAsync(DbConnection connection, Guid tenantId, CancellationToken ct)
-    {
-        try
-        {
-            await using var command = connection.CreateCommand();
-            command.CommandText = $"SELECT dms.set_tenant_context('{tenantId}'::uuid);";
-            await command.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
-        }
-        catch (Exception ex)
-        {
-            throw new InvalidOperationException($"Failed to set tenant context for tenant {tenantId}", ex);
-        }
+        var parameter = command.CreateParameter();
+        parameter.ParameterName = "tenant_id";
+        parameter.Value = tenantId.ToString();
+        command.Parameters.Add(parameter);
+
+        return command;
     }
 }

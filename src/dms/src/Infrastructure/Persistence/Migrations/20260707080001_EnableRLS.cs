@@ -1,4 +1,5 @@
 using System;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -6,6 +7,17 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace SpaceOS.Modules.DMS.Infrastructure.Persistence.Migrations
 {
     /// <inheritdoc />
+    /// <remarks>
+    /// DMS-BE-HOST fixes (Maintenance-module precedent):
+    ///  - [DbContext]/[Migration] attributes added — hand-written migrations
+    ///    without them are invisible to Database.Migrate().
+    ///  - The dms.documents RLS statements moved to the
+    ///    DocumentApprovalWorkflow migration: the documents table did not exist
+    ///    at this point (InitialCreate only created categories/tags), so this
+    ///    migration could never have applied successfully.
+    /// </remarks>
+    [DbContext(typeof(DMSDbContext))]
+    [Migration("20260707080001_EnableRLS")]
     public partial class EnableRLS : Migration
     {
         /// <inheritdoc />
@@ -19,15 +31,6 @@ namespace SpaceOS.Modules.DMS.Infrastructure.Persistence.Migrations
                     PERFORM set_config('app.tenant_id', p_tenant_id::text, false);
                 END;
                 $$ LANGUAGE plpgsql;
-            ");
-
-            // Enable RLS on documents table
-            migrationBuilder.Sql("ALTER TABLE dms.documents ENABLE ROW LEVEL SECURITY;");
-
-            migrationBuilder.Sql(@"
-                CREATE POLICY documents_tenant_isolation ON dms.documents
-                USING (tenant_id = current_setting('app.tenant_id')::uuid)
-                WITH CHECK (tenant_id = current_setting('app.tenant_id')::uuid);
             ");
 
             // Enable RLS on document_categories table
@@ -53,9 +56,6 @@ namespace SpaceOS.Modules.DMS.Infrastructure.Persistence.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             // Drop policies and disable RLS
-            migrationBuilder.Sql("DROP POLICY documents_tenant_isolation ON dms.documents;");
-            migrationBuilder.Sql("ALTER TABLE dms.documents DISABLE ROW LEVEL SECURITY;");
-
             migrationBuilder.Sql("DROP POLICY document_categories_tenant_isolation ON dms.document_categories;");
             migrationBuilder.Sql("ALTER TABLE dms.document_categories DISABLE ROW LEVEL SECURITY;");
 

@@ -1,1866 +1,533 @@
 openapi: 3.1.0
 info:
-  title: SpaceOS JoineryTech DMS API
-  version: 1.0.0
+  title: SpaceOS DMS Module API
+  version: 2.0.0
   description: |
-    Document Management System API for the JoineryTech ERP system.
+    Document Management System (DMS) module — Document core with the approval
+    workflow (DMS-BE-HOST). The contract mirrors the portal MSW pre-image
+    (`src/joinerytech-portal/src/modules/dms/services` + `mocks`) — the portal
+    zod `documentSchema` parses these responses 1:1.
 
-    ## Features
-    - **Immutable Versioning** — Documents stored with full version history, SHA-256 integrity
-    - **Entity Linking** — Attach documents to Orders, Projects, Assets, Employees, etc.
-    - **Permission Management** — Explicit View/Edit/Delete/Share permissions
-    - **Full-Text Search** — PostgreSQL tsvector-based search across metadata
-    - **Blob Storage** — File content stored externally (Azure Blob, S3, MinIO)
+    ## Approval workflow (portal DOCUMENT_FSM mirror)
 
-    ## Authentication
-    All endpoints require JWT Bearer token authentication. Tenant isolation is enforced via PostgreSQL RLS.
+    ```
+    action    from               to
+    ───────   ────────────────   ───────────
+    submit    draft              underReview
+    approve   underReview        released
+    reject    underReview        draft        (reason MANDATORY)
+    recall    released           underReview
+    archive   draft | released   archived     (not allowed during review)
+    reopen    archived           draft
+    ```
 
-    ## Multi-tenant Architecture
-    - TenantId extracted from JWT token
-    - All queries automatically filtered by tenant
-    - Cross-tenant access is not possible
+    - Every transition + version upload returns the FRESH document (the UI
+      reconciles optimistic updates from the body).
+    - `releasedVersion` and `expiry` are COMPUTED at serve time (never stored):
+      the shop floor uses the latest RELEASED version; the expiry window is
+      config-driven (`Dms:Expiry:WarnDays`, default 30 — portal
+      EXPIRY_WARN_DAYS mirror).
+    - Version chain: `POST /{id}/versions` increments the number, PRESERVES
+      earlier entries and starts the new version as a `draft` working copy —
+      the previously released version stays valid until re-approval.
+    - `deleted` is an admin-level soft-delete outside the FSM: such documents
+      are invisible on every read path.
 
-    ## File Upload Pattern
-    - Upload via multipart/form-data
-    - Max file size: 50 MB (configurable)
-    - Supported formats: PDF, Images, Office documents, Archives
-  contact:
-    name: SpaceOS Development Team
-    email: dev@spaceos.hu
-  license:
-    name: Proprietary
-    url: https://spaceos.hu/license
+    ## Error contract (portal MSW mirror)
 
-servers:
-  - url: https://dms.joinerytech.hu
-    description: Production (multi-tenant)
-  - url: https://dms-dev.joinerytech.hu
-    description: Development environment
+    `{ "error": string, "message": string }` bodies:
+    - **404** unknown document id
+    - **409** illegal FSM transition / version upload on archived document
+    - **400** payload guard (missing reject reason, missing version fields,
+      invalid enum value, missing tenant header on create)
 
+    ## Multi-tenancy
+
+    Row-Level Security scoped by the `X-Tenant-Id` header (JWT claim source is
+    the auth integration follow-up). Mutations that create data REQUIRE the
+    header.
+
+    ## Planned (Phase 2 — not implemented, endpoint layer pending)
+
+    Blob content flow (multipart upload / download / presigned URL — the
+    `IDocumentBlobStore` port with a filesystem stub is in place),
+    entity links, permission matrix, folders, full-text search, document
+    category + tag endpoints (handlers exist), admin soft-delete/restore
+    endpoints.
 tags:
   - name: Documents
-    description: Document CRUD and lifecycle operations
-  - name: Versions
-    description: Document version management (immutable)
-  - name: EntityLinks
-    description: Link documents to entities (Orders, Projects, Assets, etc.)
-  - name: Permissions
-    description: Document permission management
-  - name: Search
-    description: Full-text search and filtering
-  - name: Folders
-    description: Folder organization (Phase 2)
-
-security:
-  - BearerAuth: []
+    description: Versioned document register with the approval workflow
+  - name: Health
+    description: Liveness probe
 
 paths:
-  # ==================== DOCUMENT ENDPOINTS ====================
   /api/dms/documents:
     get:
-      operationId: listDocuments
       tags: [Documents]
+      operationId: ListDocuments
       summary: List documents
-      description: Returns paginated list of documents with optional filtering.
+      description: |
+        Optional filters (portal list contract). Default order: most recently
+        updated first. With `expiring=true`: expired + expiring within the
+        config window, archived excluded, earliest validity first.
+        Soft-deleted documents never appear.
       parameters:
         - name: status
           in: query
-          required: false
           schema:
             $ref: '#/components/schemas/DocumentStatus'
-        - name: mimeTypeCategory
+        - name: type
           in: query
-          required: false
           schema:
-            $ref: '#/components/schemas/MimeTypeCategory'
-        - name: uploadedBy
+            $ref: '#/components/schemas/DocType'
+        - name: linkType
           in: query
-          required: false
           schema:
-            type: string
-            format: uuid
-        - name: tags
+            $ref: '#/components/schemas/DocLinkType'
+        - name: q
           in: query
-          required: false
-          schema:
-            type: array
-            items:
-              type: string
-          style: form
-          explode: true
-        - name: startDate
-          in: query
-          required: false
+          description: Free-text search (name / linkLabel / fileLabel, case-insensitive)
           schema:
             type: string
-            format: date
-        - name: endDate
+        - name: expiring
           in: query
-          required: false
-          schema:
-            type: string
-            format: date
-        - name: includeArchived
-          in: query
-          required: false
+          description: true → only expired/expiring documents (config window)
           schema:
             type: boolean
-            default: false
-        - name: page
-          in: query
-          required: false
-          schema:
-            type: integer
-            default: 1
-            minimum: 1
-        - name: pageSize
-          in: query
-          required: false
-          schema:
-            type: integer
-            default: 20
-            minimum: 1
-            maximum: 100
       responses:
         '200':
-          description: Paginated list of documents
+          description: Documents
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PagedDocumentResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-
+                type: array
+                items:
+                  $ref: '#/components/schemas/Document'
+        '400':
+          $ref: '#/components/responses/BadRequest'
     post:
-      operationId: uploadDocument
       tags: [Documents]
-      summary: Upload a new document
+      operationId: CreateDocument
+      summary: Create document (backend extra — the portal mock is seeded)
       description: |
-        Upload a new document with optional metadata. Creates the first version automatically.
-
-        **File Constraints:**
-        - Max size: 50 MB
-        - Supported types: PDF, images (JPEG, PNG, GIF, WebP), Office docs, archives
+        Creates a document with its v1 `draft` working-copy version.
+        Metadata-only until the blob flow lands (`fileLabel` represents the
+        file). Requires the `X-Tenant-Id` header.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
       requestBody:
         required: true
         content:
-          multipart/form-data:
+          application/json:
             schema:
-              $ref: '#/components/schemas/UploadDocumentCommand'
+              $ref: '#/components/schemas/CreateDocumentRequest'
       responses:
         '201':
-          description: Document uploaded successfully
+          description: Created document (fresh DTO; Location header set)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DocumentDto'
+                $ref: '#/components/schemas/Document'
         '400':
           $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '413':
-          description: File too large
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
 
   /api/dms/documents/{id}:
-    parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-        description: Document ID
-
     get:
-      operationId: getDocument
       tags: [Documents]
-      summary: Get document by ID
-      description: Returns document with metadata, current version info, entity links, and tags.
+      operationId: GetDocument
+      summary: Document detail (full version chain + computed fields)
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
       responses:
         '200':
-          description: Document details
+          description: Document
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DocumentDetailDto'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+                $ref: '#/components/schemas/Document'
         '404':
           $ref: '#/components/responses/NotFound'
 
-    patch:
-      operationId: updateDocumentMetadata
+  /api/dms/documents/{id}/submit:
+    post:
       tags: [Documents]
-      summary: Update document metadata
-      description: Update document metadata (filename, description, tags, expiry date). Does not change file content.
+      operationId: SubmitDocument
+      summary: 'FSM: draft → underReview (send for review)'
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+      responses:
+        '200':
+          $ref: '#/components/responses/FreshDocument'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /api/dms/documents/{id}/approve:
+    post:
+      tags: [Documents]
+      operationId: ApproveDocument
+      summary: 'FSM: underReview → released (optional note → reviewNote)'
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                note:
+                  type: string
+                  description: Optional approval note (stored as reviewNote)
+      responses:
+        '200':
+          $ref: '#/components/responses/FreshDocument'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /api/dms/documents/{id}/reject:
+    post:
+      tags: [Documents]
+      operationId: RejectDocument
+      summary: 'FSM: underReview → draft (MANDATORY reason → reviewNote)'
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateDocumentMetadataCommand'
+              type: object
+              required: [reason]
+              properties:
+                reason:
+                  type: string
+                  description: Rejection reason — missing/blank → 400 (MSW guard mirror)
       responses:
         '200':
-          description: Document updated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DocumentDto'
+          $ref: '#/components/responses/FreshDocument'
         '400':
           $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
 
-    delete:
-      operationId: deleteDocument
+  /api/dms/documents/{id}/recall:
+    post:
       tags: [Documents]
-      summary: Soft delete document
-      description: Moves document to trash (Deleted status). Can be restored later.
+      operationId: RecallDocument
+      summary: 'FSM: released → underReview (re-review; shop floor falls back to the previous released version)'
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                  description: Optional recall reason (stored as reviewNote)
       responses:
-        '204':
-          description: Document deleted (moved to trash)
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+        '200':
+          $ref: '#/components/responses/FreshDocument'
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
 
   /api/dms/documents/{id}/archive:
-    parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-
     post:
-      operationId: archiveDocument
       tags: [Documents]
-      summary: Archive document
-      description: Move document to archived status (read-only).
+      operationId: ArchiveDocument
+      summary: 'FSM: draft | released → archived (not allowed during review; the version chain is untouched)'
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
       responses:
         '200':
-          description: Document archived
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DocumentDto'
-        '400':
-          description: Cannot archive document in current status
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+          $ref: '#/components/responses/FreshDocument'
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
 
-  /api/dms/documents/{id}/unarchive:
-    parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-
+  /api/dms/documents/{id}/reopen:
     post:
-      operationId: unarchiveDocument
       tags: [Documents]
-      summary: Unarchive document
-      description: Restore document from archived to active status.
+      operationId: ReopenDocument
+      summary: 'FSM: archived → draft (reopen as working copy; the version chain is untouched)'
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
       responses:
         '200':
-          description: Document unarchived
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DocumentDto'
-        '400':
-          description: Document is not archived
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+          $ref: '#/components/responses/FreshDocument'
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
 
-  /api/dms/documents/{id}/restore:
-    parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-
-    post:
-      operationId: restoreDocument
-      tags: [Documents]
-      summary: Restore deleted document
-      description: Restore document from trash to active status.
-      responses:
-        '200':
-          description: Document restored
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DocumentDto'
-        '400':
-          description: Document is not deleted
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-
-  /api/dms/documents/{id}/tags:
-    parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-
-    post:
-      operationId: addDocumentTag
-      tags: [Documents]
-      summary: Add tag to document
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AddTagCommand'
-      responses:
-        '200':
-          description: Tag added
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DocumentDto'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-
-  /api/dms/documents/{id}/tags/{tag}:
-    parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-      - name: tag
-        in: path
-        required: true
-        schema:
-          type: string
-
-    delete:
-      operationId: removeDocumentTag
-      tags: [Documents]
-      summary: Remove tag from document
-      responses:
-        '204':
-          description: Tag removed
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-
-  # ==================== VERSION ENDPOINTS ====================
   /api/dms/documents/{id}/versions:
-    parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-
-    get:
-      operationId: listDocumentVersions
-      tags: [Versions]
-      summary: List all versions of a document
-      description: Returns all versions ordered by version number (descending).
-      responses:
-        '200':
-          description: List of document versions
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/DocumentVersionDto'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-
     post:
-      operationId: addDocumentVersion
-      tags: [Versions]
-      summary: Add new version to document
+      tags: [Documents]
+      operationId: UploadDocumentVersion
+      summary: Upload a new version (number +1, chain preserved, draft working copy)
       description: |
-        Upload a new version of the document. Versions are immutable - once created, they cannot be modified.
-
-        The new version becomes the current version automatically.
-      requestBody:
-        required: true
-        content:
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/AddVersionCommand'
-      responses:
-        '201':
-          description: Version added successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DocumentVersionDto'
-        '400':
-          description: Cannot add version to non-active document
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '413':
-          description: File too large
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-
-  /api/dms/documents/{id}/versions/{versionNumber}:
-    parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-      - name: versionNumber
-        in: path
-        required: true
-        schema:
-          type: integer
-          minimum: 1
-
-    get:
-      operationId: getDocumentVersion
-      tags: [Versions]
-      summary: Get specific version details
-      responses:
-        '200':
-          description: Version details
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DocumentVersionDto'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-
-  /api/dms/documents/{id}/versions/{versionNumber}/download:
-    parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-      - name: versionNumber
-        in: path
-        required: true
-        schema:
-          type: integer
-          minimum: 1
-
-    get:
-      operationId: downloadDocumentVersion
-      tags: [Versions]
-      summary: Download specific version
-      description: |
-        Returns a presigned URL for direct download or streams the file content.
-
-        **Response Headers:**
-        - `Content-Disposition: attachment; filename="originalname.pdf"`
-        - `X-Document-Hash: <sha256>` for integrity verification
-      responses:
-        '200':
-          description: File download
-          headers:
-            Content-Disposition:
-              schema:
-                type: string
-              description: Attachment with original filename
-            X-Document-Hash:
-              schema:
-                type: string
-              description: SHA-256 hash for integrity verification
-          content:
-            application/octet-stream:
-              schema:
-                type: string
-                format: binary
-        '302':
-          description: Redirect to presigned blob URL
-          headers:
-            Location:
-              schema:
-                type: string
-                format: uri
-              description: Presigned download URL (expires in 15 minutes)
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-
-  /api/dms/documents/{id}/versions/latest/download:
-    parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-
-    get:
-      operationId: downloadLatestVersion
-      tags: [Versions]
-      summary: Download latest version
-      description: Shortcut to download the current (latest) version.
-      responses:
-        '200':
-          description: File download
-          headers:
-            Content-Disposition:
-              schema:
-                type: string
-            X-Document-Hash:
-              schema:
-                type: string
-          content:
-            application/octet-stream:
-              schema:
-                type: string
-                format: binary
-        '302':
-          description: Redirect to presigned blob URL
-          headers:
-            Location:
-              schema:
-                type: string
-                format: uri
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-
-  /api/dms/documents/{id}/versions/{versionNumber}/rollback:
-    parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-      - name: versionNumber
-        in: path
-        required: true
-        schema:
-          type: integer
-          minimum: 1
-
-    post:
-      operationId: rollbackToVersion
-      tags: [Versions]
-      summary: Rollback to previous version
-      description: |
-        Creates a new version with the content from the specified older version.
-
-        This does NOT delete newer versions - it simply creates a new version
-        with the old content, preserving the full audit trail.
-      responses:
-        '201':
-          description: New version created from rollback
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DocumentVersionDto'
-        '400':
-          description: Invalid rollback (e.g., version doesn't exist)
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-
-  /api/dms/documents/{id}/versions/{versionNumber}/verify:
-    parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-      - name: versionNumber
-        in: path
-        required: true
-        schema:
-          type: integer
-          minimum: 1
-
-    get:
-      operationId: verifyVersionIntegrity
-      tags: [Versions]
-      summary: Verify file integrity
-      description: |
-        Verify that the stored file matches the recorded SHA-256 hash.
-
-        Use this to detect tampering or storage corruption.
-      responses:
-        '200':
-          description: Integrity verification result
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/IntegrityVerificationResult'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-
-  # ==================== ENTITY LINK ENDPOINTS ====================
-  /api/dms/documents/{id}/links:
-    parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-
-    get:
-      operationId: listDocumentLinks
-      tags: [EntityLinks]
-      summary: List entity links for document
-      description: Returns all entities this document is linked to.
-      responses:
-        '200':
-          description: List of entity links
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/EntityLinkDto'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-
-    post:
-      operationId: linkDocumentToEntity
-      tags: [EntityLinks]
-      summary: Link document to entity
-      description: |
-        Create a link between the document and an entity (Order, Project, Asset, etc.).
-
-        **Supported Entity Types:**
-        - Order, Project, Asset, Employee, WorkOrder, Ticket
-        - Lead, Opportunity, Supplier, PurchaseOrder, Inspection
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/LinkToEntityCommand'
-      responses:
-        '201':
-          description: Link created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/EntityLinkDto'
-        '400':
-          description: Document already linked to this entity or invalid entity type
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-
-  /api/dms/documents/{id}/links/{linkId}:
-    parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-      - name: linkId
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-
-    delete:
-      operationId: unlinkDocumentFromEntity
-      tags: [EntityLinks]
-      summary: Remove entity link
-      description: Remove the link between document and entity.
-      responses:
-        '204':
-          description: Link removed
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-
-  /api/dms/entity-documents/{entityType}/{entityId}:
-    parameters:
-      - name: entityType
-        in: path
-        required: true
-        schema:
-          $ref: '#/components/schemas/EntityType'
-      - name: entityId
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-
-    get:
-      operationId: getDocumentsForEntity
-      tags: [EntityLinks]
-      summary: Get documents linked to entity
-      description: |
-        Returns all documents linked to a specific entity.
-
-        **Use Cases:**
-        - Show all documents for an Order
-        - List documents attached to an Asset
-        - Get employee documents
+        The document falls back to `draft` and must pass the approval gate
+        again; the previously released version stays the valid one. Archived
+        document → 409; missing fileLabel/note → 400 (MSW guard mirrors).
+        Real file content is the blob-flow follow-up (`fileLabel` only).
       parameters:
-        - name: includeArchived
-          in: query
-          required: false
-          schema:
-            type: boolean
-            default: false
-      responses:
-        '200':
-          description: Documents linked to entity
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/DocumentDto'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-
-  # ==================== PERMISSION ENDPOINTS ====================
-  /api/dms/documents/{id}/permissions:
-    parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-
-    get:
-      operationId: listDocumentPermissions
-      tags: [Permissions]
-      summary: List document permissions
-      description: Returns all explicit permission grants for this document.
-      responses:
-        '200':
-          description: List of permissions
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/DocumentPermissionDto'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-
-    post:
-      operationId: grantDocumentPermission
-      tags: [Permissions]
-      summary: Grant permission
-      description: |
-        Grant a permission (View, Edit, Delete, Share) to a user.
-
-        **Permission Types:**
-        - `View` — Can view document and download
-        - `Edit` — Can add versions, update metadata
-        - `Delete` — Can soft-delete document
-        - `Share` — Can grant permissions to others
+        - $ref: '#/components/parameters/DocumentId'
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/GrantPermissionCommand'
+              type: object
+              required: [fileLabel, note]
+              properties:
+                fileLabel:
+                  type: string
+                  description: File label of the new version
+                note:
+                  type: string
+                  description: Change note (audit trail — mandatory)
+                uploadedBy:
+                  type: string
+                  description: Optional uploader display name (auth follow-up; defaults to the owner)
       responses:
-        '201':
-          description: Permission granted
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DocumentPermissionDto'
+        '200':
+          $ref: '#/components/responses/FreshDocument'
         '400':
           $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          description: No Share permission to grant permissions
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
 
-  /api/dms/documents/{id}/permissions/{permissionId}:
-    parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-      - name: permissionId
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-
-    delete:
-      operationId: revokeDocumentPermission
-      tags: [Permissions]
-      summary: Revoke permission
-      description: Revoke a previously granted permission.
-      responses:
-        '204':
-          description: Permission revoked
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-
-  /api/dms/documents/{id}/my-permissions:
-    parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-
+  /health:
     get:
-      operationId: getMyDocumentPermissions
-      tags: [Permissions]
-      summary: Get my permissions on document
-      description: Returns the permissions the current user has on this document.
+      tags: [Health]
+      operationId: Health
+      summary: Liveness probe
       responses:
         '200':
-          description: User's permissions
+          description: Host is up
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UserPermissionsDto'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-
-  # ==================== SEARCH ENDPOINTS ====================
-  /api/dms/documents/search:
-    get:
-      operationId: searchDocuments
-      tags: [Search]
-      summary: Full-text search documents
-      description: |
-        Search documents using PostgreSQL full-text search (tsvector).
-
-        **Searchable Fields:**
-        - File name
-        - Description
-        - Tags
-
-        **Ranking:** Results ranked by relevance using ts_rank.
-      parameters:
-        - name: query
-          in: query
-          required: true
-          schema:
-            type: string
-            minLength: 2
-            maxLength: 200
-          description: Search query (uses PostgreSQL to_tsquery)
-        - name: tags
-          in: query
-          required: false
-          schema:
-            type: array
-            items:
-              type: string
-          style: form
-          explode: true
-        - name: entityType
-          in: query
-          required: false
-          schema:
-            $ref: '#/components/schemas/EntityType'
-        - name: mimeTypeCategory
-          in: query
-          required: false
-          schema:
-            $ref: '#/components/schemas/MimeTypeCategory'
-        - name: uploadedBy
-          in: query
-          required: false
-          schema:
-            type: string
-            format: uuid
-        - name: startDate
-          in: query
-          required: false
-          schema:
-            type: string
-            format: date
-        - name: endDate
-          in: query
-          required: false
-          schema:
-            type: string
-            format: date
-        - name: includeArchived
-          in: query
-          required: false
-          schema:
-            type: boolean
-            default: false
-        - name: page
-          in: query
-          required: false
-          schema:
-            type: integer
-            default: 1
-        - name: pageSize
-          in: query
-          required: false
-          schema:
-            type: integer
-            default: 20
-            maximum: 100
-      responses:
-        '200':
-          description: Search results with relevance ranking
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SearchResultResponse'
-        '400':
-          description: Invalid search query
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-
-  /api/dms/documents/by-tags:
-    get:
-      operationId: getDocumentsByTags
-      tags: [Search]
-      summary: Get documents by tags
-      description: Find documents matching all specified tags (AND logic).
-      parameters:
-        - name: tags
-          in: query
-          required: true
-          schema:
-            type: array
-            items:
-              type: string
-            minItems: 1
-          style: form
-          explode: true
-        - name: page
-          in: query
-          required: false
-          schema:
-            type: integer
-            default: 1
-        - name: pageSize
-          in: query
-          required: false
-          schema:
-            type: integer
-            default: 20
-      responses:
-        '200':
-          description: Documents matching tags
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PagedDocumentResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-
-  /api/dms/documents/recent:
-    get:
-      operationId: getRecentDocuments
-      tags: [Search]
-      summary: Get recently uploaded documents
-      description: Returns most recently uploaded documents.
-      parameters:
-        - name: count
-          in: query
-          required: false
-          schema:
-            type: integer
-            default: 20
-            minimum: 1
-            maximum: 100
-      responses:
-        '200':
-          description: Recent documents
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/DocumentDto'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-
-  /api/dms/documents/expiring:
-    get:
-      operationId: getExpiringDocuments
-      tags: [Search]
-      summary: Get documents expiring soon
-      description: |
-        Returns documents with expiry dates within the specified period.
-
-        **Use Cases:**
-        - Certificates expiring within 30 days
-        - Compliance documents needing renewal
-      parameters:
-        - name: daysUntilExpiry
-          in: query
-          required: false
-          schema:
-            type: integer
-            default: 30
-            minimum: 1
-            maximum: 365
-      responses:
-        '200':
-          description: Expiring documents
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/DocumentDto'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-
-  /api/dms/documents/expired:
-    get:
-      operationId: getExpiredDocuments
-      tags: [Search]
-      summary: Get expired documents
-      description: Returns documents that have already expired.
-      responses:
-        '200':
-          description: Expired documents
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/DocumentDto'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-
-  # ==================== FOLDER ENDPOINTS (Phase 2) ====================
-  /api/dms/folders:
-    get:
-      operationId: listFolders
-      tags: [Folders]
-      summary: List folders
-      description: Returns all folders for the current tenant.
-      parameters:
-        - name: parentId
-          in: query
-          required: false
-          schema:
-            type: ['string', 'null']
-            format: uuid
-          description: Parent folder ID (null for root folders)
-      responses:
-        '200':
-          description: List of folders
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/FolderDto'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-
-    post:
-      operationId: createFolder
-      tags: [Folders]
-      summary: Create folder
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateFolderCommand'
-      responses:
-        '201':
-          description: Folder created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/FolderDto'
-        '400':
-          description: Folder name already exists in this location
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-
-  /api/dms/folders/{id}:
-    parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-
-    get:
-      operationId: getFolder
-      tags: [Folders]
-      summary: Get folder by ID
-      responses:
-        '200':
-          description: Folder details
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/FolderDto'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-
-    patch:
-      operationId: renameFolder
-      tags: [Folders]
-      summary: Rename folder
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/RenameFolderCommand'
-      responses:
-        '200':
-          description: Folder renamed
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/FolderDto'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-
-    delete:
-      operationId: deleteFolder
-      tags: [Folders]
-      summary: Delete folder
-      description: |
-        Delete an empty folder. Fails if folder contains documents or subfolders.
-      responses:
-        '204':
-          description: Folder deleted
-        '400':
-          description: Folder is not empty
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-
-  /api/dms/folders/{id}/move:
-    parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-
-    post:
-      operationId: moveFolder
-      tags: [Folders]
-      summary: Move folder
-      description: Move folder to a different parent.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/MoveFolderCommand'
-      responses:
-        '200':
-          description: Folder moved
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/FolderDto'
-        '400':
-          description: Cannot move folder into itself or circular reference
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                type: object
+                properties:
+                  status:
+                    type: string
+                    const: ok
+                  module:
+                    type: string
+                    const: dms
 
 components:
-  securitySchemes:
-    BearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
-      description: JWT token with tenant_id claim for RLS
+  parameters:
+    DocumentId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    TenantHeader:
+      name: X-Tenant-Id
+      in: header
+      required: true
+      description: Tenant id for RLS scoping (auth/JWT claim source is a follow-up)
+      schema:
+        type: string
+        format: uuid
 
   responses:
-    Unauthorized:
-      description: Authentication required
+    FreshDocument:
+      description: The fresh document after the mutation (optimistic-update reconciliation source)
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ProblemDetails'
-
-    Forbidden:
-      description: Permission denied
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ProblemDetails'
-
-    NotFound:
-      description: Resource not found
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ProblemDetails'
-
+            $ref: '#/components/schemas/Document'
     BadRequest:
-      description: Invalid request
+      description: Payload guard violation (MSW 400 mirror)
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ProblemDetails'
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Document not found (or soft-deleted)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Conflict:
+      description: Illegal FSM transition / status guard (MSW 409 mirror)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
 
   schemas:
-    # ==================== ENUMS ====================
     DocumentStatus:
       type: string
-      enum:
-        - Active
-        - Archived
-        - Deleted
+      enum: [draft, underReview, released, archived]
       description: |
-        Document lifecycle status:
-        - `Active` — Normal state, can view/edit/link
-        - `Archived` — Read-only, moved to archive
-        - `Deleted` — Soft deleted, in trash (can be restored)
+        Approval-workflow status (camelCase wire form of the FSM naming).
+        Portal canonical key mapping (wire-language ADR candidate):
+        draft=piszkozat, underReview=ellenorzes, released=kiadott,
+        archived=archivalt. The admin-level `deleted` state never appears on
+        the wire (soft-deleted documents are invisible).
 
-    EntityType:
+    DocType:
       type: string
-      enum:
-        - Order
-        - Project
-        - Asset
-        - Employee
-        - WorkOrder
-        - Ticket
-        - Lead
-        - Opportunity
-        - Supplier
-        - PurchaseOrder
-        - Inspection
-        - Other
+      enum: [rajz, szerzodes, tanusitvany, utasitas, egyeb]
+      description: Document type — the prototype DOC_TYPE_META canonical keys (portal parity 1:1)
+
+    DocLinkType:
+      type: string
+      enum: [project, order, catalog, template, customer, none]
+      description: Display link type — what the document belongs to (portal parity 1:1)
+
+    ExpiryState:
+      type: string
+      enum: [lejart, lejaro]
       description: |
-        Entity types that can be linked to documents:
-        - `Order` — Sales order (contract, drawings)
-        - `Project` — Production project (photos, CAD exports)
-        - `Asset` — Machine, vehicle (manuals, invoices)
-        - `Employee` — HR employee (contracts, certificates)
-        - `WorkOrder` — Maintenance work order (reports)
-        - `Ticket` — QA ticket (complaint photos)
-        - `Lead` / `Opportunity` — CRM (proposals)
-        - `Supplier` / `PurchaseOrder` — Procurement
-        - `Inspection` — QA inspection
+        Computed expiry state (portal parity 1:1): lejart = validUntil passed;
+        lejaro = within the config window (Dms:Expiry:WarnDays). Outside the
+        window (or without validUntil) the field is null.
 
-    PermissionType:
-      type: string
-      enum:
-        - View
-        - Edit
-        - Delete
-        - Share
-      description: |
-        Permission types:
-        - `View` — Can view and download
-        - `Edit` — Can add versions, update metadata
-        - `Delete` — Can soft-delete
-        - `Share` — Can grant permissions to others
-
-    MimeTypeCategory:
-      type: string
-      enum:
-        - PDF
-        - Image
-        - Word
-        - Excel
-        - Archive
-        - Unknown
-      description: High-level MIME type categorization
-
-    # ==================== DOCUMENT DTOs ====================
-    DocumentDto:
+    VersionEntry:
       type: object
+      description: |
+        Version-chain entry (portal versionEntrySchema mirror). `status` is the
+        lifecycle snapshot of THAT version — review actions track the current
+        version's entry; the released-version calculation derives from these.
+      required: [v, fileLabel, note, status, uploadedBy, uploadedAt]
       properties:
-        id:
-          type: string
-          format: uuid
-        tenantId:
-          type: string
-          format: uuid
-        fileName:
-          type: string
-          maxLength: 500
-        mimeType:
-          type: string
-        mimeTypeCategory:
-          $ref: '#/components/schemas/MimeTypeCategory'
-        sizeBytes:
+        v:
           type: integer
-          format: int64
+          description: Version number
+        fileLabel:
+          type: string
+        note:
+          type: string
+          description: Change note (audit trail)
         status:
           $ref: '#/components/schemas/DocumentStatus'
-        description:
-          type: ['string', 'null']
-          maxLength: 2000
-        currentVersionNumber:
-          type: integer
-        uploadedByUserId:
+        uploadedBy:
           type: string
-          format: uuid
+          description: Uploader display name (auth follow-up)
         uploadedAt:
           type: string
           format: date-time
-        expiryDate:
-          type: ['string', 'null']
-          format: date
-        tags:
-          type: array
-          items:
-            type: string
-        createdAt:
-          type: string
-          format: date-time
-        updatedAt:
-          type: ['string', 'null']
-          format: date-time
-      required:
-        - id
-        - tenantId
-        - fileName
-        - mimeType
-        - mimeTypeCategory
-        - sizeBytes
-        - status
-        - currentVersionNumber
-        - uploadedByUserId
-        - uploadedAt
-        - tags
-        - createdAt
 
-    DocumentDetailDto:
-      allOf:
-        - $ref: '#/components/schemas/DocumentDto'
-        - type: object
-          properties:
-            currentVersion:
-              $ref: '#/components/schemas/DocumentVersionDto'
-            entityLinks:
-              type: array
-              items:
-                $ref: '#/components/schemas/EntityLinkDto'
-            permissions:
-              type: array
-              items:
-                $ref: '#/components/schemas/DocumentPermissionDto'
-            versionCount:
-              type: integer
-
-    DocumentVersionDto:
+    Document:
       type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        versionNumber:
-          type: integer
-        fileUrl:
-          type: string
-          description: Blob storage URL (internal, not for direct access)
-        hash:
-          type: string
-          description: SHA-256 hash for integrity verification
-        sizeBytes:
-          type: integer
-          format: int64
-        uploadedByUserId:
-          type: string
-          format: uuid
-        uploadedAt:
-          type: string
-          format: date-time
-        changeNotes:
-          type: ['string', 'null']
-          maxLength: 1000
-      required:
-        - id
-        - versionNumber
-        - fileUrl
-        - hash
-        - sizeBytes
-        - uploadedByUserId
-        - uploadedAt
-
-    EntityLinkDto:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        entityType:
-          $ref: '#/components/schemas/EntityType'
-        entityId:
-          type: string
-          format: uuid
-        linkedByUserId:
-          type: string
-          format: uuid
-        linkedAt:
-          type: string
-          format: date-time
-      required:
-        - id
-        - entityType
-        - entityId
-        - linkedByUserId
-        - linkedAt
-
-    DocumentPermissionDto:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        permissionType:
-          $ref: '#/components/schemas/PermissionType'
-        grantedToUserId:
-          type: string
-          format: uuid
-        grantedByUserId:
-          type: string
-          format: uuid
-        grantedAt:
-          type: string
-          format: date-time
-      required:
-        - id
-        - permissionType
-        - grantedToUserId
-        - grantedByUserId
-        - grantedAt
-
-    UserPermissionsDto:
-      type: object
-      properties:
-        canView:
-          type: boolean
-        canEdit:
-          type: boolean
-        canDelete:
-          type: boolean
-        canShare:
-          type: boolean
-        isOwner:
-          type: boolean
-      required:
-        - canView
-        - canEdit
-        - canDelete
-        - canShare
-        - isOwner
-
-    FolderDto:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        name:
-          type: string
-          maxLength: 255
-        parentFolderId:
-          type: ['string', 'null']
-          format: uuid
-        createdByUserId:
-          type: string
-          format: uuid
-        createdAt:
-          type: string
-          format: date-time
-        documentCount:
-          type: integer
-        subfolderCount:
-          type: integer
+      description: Portal documentSchema (MSW contract) mirror
       required:
         - id
         - name
-        - createdByUserId
-        - createdAt
-        - documentCount
-        - subfolderCount
-
-    # ==================== COMMAND DTOs ====================
-    UploadDocumentCommand:
-      type: object
-      properties:
-        file:
-          type: string
-          format: binary
-          description: The file to upload (max 50 MB)
-        fileName:
-          type: ['string', 'null']
-          maxLength: 500
-          description: Optional custom filename (defaults to uploaded filename)
-        description:
-          type: ['string', 'null']
-          maxLength: 2000
-        tags:
-          type: array
-          items:
-            type: string
-          maxItems: 10
-        expiryDate:
-          type: ['string', 'null']
-          format: date
-          description: For certificates/compliance docs
-        folderId:
-          type: ['string', 'null']
-          format: uuid
-          description: Optional folder to place document in
-      required:
-        - file
-
-    AddVersionCommand:
-      type: object
-      properties:
-        file:
-          type: string
-          format: binary
-          description: The new version file
-        changeNotes:
-          type: ['string', 'null']
-          maxLength: 1000
-          description: What changed in this version
-      required:
-        - file
-
-    UpdateDocumentMetadataCommand:
-      type: object
-      properties:
-        fileName:
-          type: ['string', 'null']
-          maxLength: 500
-        description:
-          type: ['string', 'null']
-          maxLength: 2000
-        expiryDate:
-          type: ['string', 'null']
-          format: date
-
-    AddTagCommand:
-      type: object
-      properties:
-        tag:
-          type: string
-          minLength: 1
-          maxLength: 50
-      required:
-        - tag
-
-    LinkToEntityCommand:
-      type: object
-      properties:
-        entityType:
-          $ref: '#/components/schemas/EntityType'
-        entityId:
-          type: string
-          format: uuid
-      required:
-        - entityType
-        - entityId
-
-    GrantPermissionCommand:
-      type: object
-      properties:
-        permissionType:
-          $ref: '#/components/schemas/PermissionType'
-        grantedToUserId:
-          type: string
-          format: uuid
-      required:
-        - permissionType
-        - grantedToUserId
-
-    CreateFolderCommand:
-      type: object
-      properties:
-        name:
-          type: string
-          minLength: 1
-          maxLength: 255
-        parentFolderId:
-          type: ['string', 'null']
-          format: uuid
-          description: Parent folder ID (null for root)
-      required:
-        - name
-
-    RenameFolderCommand:
-      type: object
-      properties:
-        name:
-          type: string
-          minLength: 1
-          maxLength: 255
-      required:
-        - name
-
-    MoveFolderCommand:
-      type: object
-      properties:
-        newParentFolderId:
-          type: ['string', 'null']
-          format: uuid
-          description: New parent folder ID (null for root)
-
-    # ==================== RESPONSE DTOs ====================
-    PagedDocumentResponse:
-      type: object
-      properties:
-        items:
-          type: array
-          items:
-            $ref: '#/components/schemas/DocumentDto'
-        totalCount:
-          type: integer
-        page:
-          type: integer
-        pageSize:
-          type: integer
-        totalPages:
-          type: integer
-      required:
-        - items
-        - totalCount
-        - page
-        - pageSize
-        - totalPages
-
-    SearchResultResponse:
-      type: object
-      properties:
-        items:
-          type: array
-          items:
-            $ref: '#/components/schemas/SearchResultItemDto'
-        totalCount:
-          type: integer
-        page:
-          type: integer
-        pageSize:
-          type: integer
-        query:
-          type: string
-      required:
-        - items
-        - totalCount
-        - page
-        - pageSize
-        - query
-
-    SearchResultItemDto:
-      allOf:
-        - $ref: '#/components/schemas/DocumentDto'
-        - type: object
-          properties:
-            relevance:
-              type: number
-              format: double
-              description: Search relevance score (0-1)
-            matchedFields:
-              type: array
-              items:
-                type: string
-              description: Fields that matched the query
-
-    IntegrityVerificationResult:
-      type: object
-      properties:
-        documentId:
-          type: string
-          format: uuid
-        versionNumber:
-          type: integer
-        expectedHash:
-          type: string
-        computedHash:
-          type: string
-        isValid:
-          type: boolean
-        verifiedAt:
-          type: string
-          format: date-time
-      required:
-        - documentId
-        - versionNumber
-        - expectedHash
-        - computedHash
-        - isValid
-        - verifiedAt
-
-    # ==================== ERROR RESPONSE ====================
-    ProblemDetails:
-      type: object
-      description: RFC 7807 Problem Details for HTTP APIs
-      properties:
-        type:
-          type: string
-          format: uri
-          description: A URI reference that identifies the problem type
-        title:
-          type: string
-          description: A short, human-readable summary of the problem type
-        status:
-          type: integer
-          description: The HTTP status code
-        detail:
-          type: string
-          description: A human-readable explanation specific to this occurrence
-        instance:
-          type: string
-          format: uri
-          description: A URI reference that identifies the specific occurrence
-        errors:
-          type: object
-          additionalProperties:
-            type: array
-            items:
-              type: string
-          description: Validation errors by field name
-      required:
         - type
-        - title
         - status
+        - version
+        - linkType
+        - linkLabel
+        - owner
+        - fileLabel
+        - updatedAt
+        - versions
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          maxLength: 255
+        type:
+          $ref: '#/components/schemas/DocType'
+        status:
+          $ref: '#/components/schemas/DocumentStatus'
+        version:
+          type: integer
+          description: Current (highest) version number — the chain length
+        linkType:
+          $ref: '#/components/schemas/DocLinkType'
+        linkId:
+          type: [string, 'null']
+        linkLabel:
+          type: string
+        owner:
+          type: string
+          description: Owner display name (auth follow-up)
+        note:
+          type: [string, 'null']
+        reviewNote:
+          type: [string, 'null']
+          description: Note of the LAST transition (approval note / rejection reason)
+        fileLabel:
+          type: string
+        validUntil:
+          type: [string, 'null']
+          format: date
+          description: Validity end (null = never expires)
+        updatedAt:
+          type: string
+          format: date-time
+        versions:
+          type: array
+          description: Full version chain (earlier versions preserved)
+          items:
+            $ref: '#/components/schemas/VersionEntry'
+        releasedVersion:
+          type: [integer, 'null']
+          description: 'COMPUTED: the latest released version number — the shop floor uses this; null = never released (production blocked)'
+        expiry:
+          description: 'COMPUTED: expiry state within the config window (null outside the window)'
+          oneOf:
+            - $ref: '#/components/schemas/ExpiryState'
+            - type: 'null'
+
+    CreateDocumentRequest:
+      type: object
+      required: [name, type, owner, fileLabel]
+      properties:
+        name:
+          type: string
+          maxLength: 255
+        type:
+          $ref: '#/components/schemas/DocType'
+        linkType:
+          $ref: '#/components/schemas/DocLinkType'
+        linkId:
+          type: [string, 'null']
+        linkLabel:
+          type: string
+          description: Required when linkType is not none
+        owner:
+          type: string
+        note:
+          type: [string, 'null']
+        fileLabel:
+          type: string
+        validUntil:
+          type: [string, 'null']
+          format: date
+
+    Error:
+      type: object
+      description: 'MSW jsonError mirror: {error, message}'
+      required: [error, message]
+      properties:
+        error:
+          type: string
+          enum: [BadRequest, NotFound, Conflict]
+        message:
+          type: string
+          description: Human-readable (Hungarian) guard message — identical wording to the portal MSW guards

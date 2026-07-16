@@ -3,8 +3,12 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using SpaceOS.Modules.DMS.Application.Configuration;
 using SpaceOS.Modules.DMS.Application.Contracts;
 using SpaceOS.Modules.DMS.Domain.Repositories;
+using SpaceOS.Modules.DMS.Domain.Services;
+using SpaceOS.Modules.DMS.Infrastructure.Blob;
 using SpaceOS.Modules.DMS.Infrastructure.Persistence;
 using SpaceOS.Modules.DMS.Infrastructure.Persistence.Repositories;
 
@@ -32,12 +36,26 @@ public static class DependencyInjection
             options.AddInterceptors(sp.GetRequiredService<TenantDbConnectionInterceptor>());
         });
 
-        // Repositories (Document repository is managed separately)
+        // Repositories
+        services.AddScoped<IDocumentRepository, DocumentRepository>();
         services.AddScoped<IDocumentCategoryRepository, DocumentCategoryRepository>();
         services.AddScoped<ITagRepository, TagRepository>();
 
         // RLS Interceptor
         services.AddScoped<TenantDbConnectionInterceptor>();
+
+        // Blob store — filesystem stub behind the IDocumentBlobStore port
+        // (the real store is an infra decision, follow-up). Root is CONFIG-DRIVEN.
+        services.AddSingleton<IDocumentBlobStore>(sp => new FileSystemDocumentBlobStore(
+            configuration[FileSystemDocumentBlobStore.RootPathConfigKey]
+                ?? FileSystemDocumentBlobStore.DefaultRootPath,
+            sp.GetRequiredService<ILogger<FileSystemDocumentBlobStore>>()));
+
+        // Expiry-watch window — CONFIG-DRIVEN (Dms:Expiry:WarnDays; portal
+        // EXPIRY_WARN_DAYS mirror as fallback — EHS RiskBandConfiguration precedent)
+        services.AddSingleton(new DmsExpiryOptions(
+            configuration.GetSection(DmsExpiryOptions.SectionName)
+                .GetValue("WarnDays", DmsExpiryOptions.Default.WarnDays)));
 
         return services;
     }

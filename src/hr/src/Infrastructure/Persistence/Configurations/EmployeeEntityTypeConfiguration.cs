@@ -53,17 +53,13 @@ public class EmployeeEntityTypeConfiguration : IEntityTypeConfiguration<Employee
         builder.Property(e => e.FacilityId)
             .IsRequired();
 
-        // PayGrade (owned value object)
-        builder.OwnsOne(e => e.PayGrade, payGrade =>
-        {
-            payGrade.Property(p => p.Name)
-                .HasMaxLength(50)
-                .IsRequired();
-
-            payGrade.Property(p => p.HourlyRate)
-                .HasPrecision(10, 2)
-                .IsRequired();
-        });
+        // PayGrade band (enum as string) — the band KEY only; the hourly rate is tenant
+        // configuration ("Hr:PayGrades"), deliberately NOT persisted (ADR-060).
+        // Replaces the former owned VO columns PayGrade_Name / PayGrade_HourlyRate.
+        builder.Property(e => e.PayGrade)
+            .HasConversion<string>()
+            .HasMaxLength(50)
+            .IsRequired();
 
         // WeeklyHours
         builder.Property(e => e.WeeklyHours)

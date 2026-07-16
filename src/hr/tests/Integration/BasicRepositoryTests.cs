@@ -30,7 +30,7 @@ public class BasicRepositoryTests
         // Arrange
         var tenantId = Guid.NewGuid();
         var facilityId = Guid.NewGuid();
-        var payGrade = PayGrade.Create("Developer", 1500m);
+        var payGrade = PayGradeBand.SkilledWorker;
 
         var employee = Employee.Create(
             tenantId: tenantId,
@@ -66,13 +66,13 @@ public class BasicRepositoryTests
         // Arrange
         var tenantId = Guid.NewGuid();
         var facilityId = Guid.NewGuid();
-        var payGrade = PayGrade.Create("Engineer", 2000m);
+        var payGrade = PayGradeBand.Engineer;
 
         var employee = Employee.Create(
             tenantId: tenantId,
             name: "Original Name",
             role: "Engineer",
-            department: Department.IT,
+            department: Department.Office,
             facilityId: facilityId,
             payGrade: payGrade,
             weeklyHours: 40m,
@@ -84,7 +84,7 @@ public class BasicRepositoryTests
         await repository.AddAsync(employee, CancellationToken.None);
 
         // Act - Add a skill and update
-        employee.AddSkill(SkillKey.CNCProgramming, SkillLevel.Expert);
+        employee.AddSkill(SkillKey.Cnc, SkillLevel.Master);
         await repository.UpdateAsync(employee, CancellationToken.None);
 
         // Assert
@@ -94,8 +94,8 @@ public class BasicRepositoryTests
 
         updated.Should().NotBeNull();
         updated!.Skills.Should().HaveCount(1);
-        updated.Skills.First().Key.Should().Be(SkillKey.CNCProgramming);
-        updated.Skills.First().Level.Should().Be(SkillLevel.Expert);
+        updated.Skills.First().Key.Should().Be(SkillKey.Cnc);
+        updated.Skills.First().Level.Should().Be(SkillLevel.Master);
     }
 
     [Fact]
@@ -104,13 +104,13 @@ public class BasicRepositoryTests
         // Arrange - Create employee first
         var tenantId = Guid.NewGuid();
         var facilityId = Guid.NewGuid();
-        var payGrade = PayGrade.Create("Manager", 2500m);
+        var payGrade = PayGradeBand.Lead;
 
         var employee = Employee.Create(
             tenantId: tenantId,
             name: "Manager",
             role: "Team Lead",
-            department: Department.Administration,
+            department: Department.Office,
             facilityId: facilityId,
             payGrade: payGrade,
             weeklyHours: 40m,
@@ -155,7 +155,7 @@ public class BasicRepositoryTests
         // Arrange - Create employee
         var tenantId = Guid.NewGuid();
         var facilityId = Guid.NewGuid();
-        var payGrade = PayGrade.Create("Staff", 1800m);
+        var payGrade = PayGradeBand.Helper;
         var approverUserId = Guid.NewGuid();
 
         var employee = Employee.Create(
@@ -209,13 +209,13 @@ public class BasicRepositoryTests
         var tenant1Id = Guid.NewGuid();
         var tenant2Id = Guid.NewGuid();
         var facilityId = Guid.NewGuid();
-        var payGrade = PayGrade.Create("Technician", 1600m);
+        var payGrade = PayGradeBand.SkilledWorker;
 
         var emp1_tenant1 = Employee.Create(
             tenantId: tenant1Id,
             name: "Tenant1 Tech",
             role: "Technician",
-            department: Department.Maintenance,
+            department: Department.Production,
             facilityId: facilityId,
             payGrade: payGrade,
             weeklyHours: 40m,
@@ -226,7 +226,7 @@ public class BasicRepositoryTests
             tenantId: tenant2Id,
             name: "Tenant2 Tech",
             role: "Technician",
-            department: Department.Maintenance,
+            department: Department.Production,
             facilityId: facilityId,
             payGrade: payGrade,
             weeklyHours: 40m,

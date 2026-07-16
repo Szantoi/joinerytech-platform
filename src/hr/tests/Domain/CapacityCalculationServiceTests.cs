@@ -208,7 +208,7 @@ public class CapacityCalculationServiceTests
 
     private Employee CreateEmployee(string name, decimal weeklyHours)
     {
-        var payGrade = PayGrade.Create("Grade 5", 2500);
+        var payGrade = PayGradeBand.SkilledWorker;
         return Employee.Create(
             _tenantId,
             name,

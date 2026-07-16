@@ -31,12 +31,13 @@ public class EmployeeEndpointsTests
         Role: "CNC gépkezelő",
         Department: Department.Production,
         FacilityId: Guid.Parse("55555555-5555-5555-5555-555555555555"),
-        PayGrade: new PayGradeDto("Szakmunkás", 4200m),
+        PayGrade: PayGradeBand.SkilledWorker,
+        HourlyRate: 3800m,
         WeeklyHours: 40m,
         Email: "kovacs.janos@example.hu",
         VacationBase: 20,
         Active: true,
-        Skills: new[] { new EmployeeSkillDto(SkillKey.CNCProgramming, SkillLevel.Advanced) });
+        Skills: new[] { new EmployeeSkillDto(SkillKey.Cnc, SkillLevel.Master) });
 
     private static Task<HrEndpointTestHost> StartHostAsync(IMediator mediator)
         => HrEndpointTestHost.StartAsync(mediator, endpoints => endpoints.MapEmployeeEndpoints());
@@ -58,9 +59,15 @@ public class EmployeeEndpointsTests
 
         var employee = body.RootElement[0];
         employee.GetProperty("department").GetString().Should().Be("Production");
-        employee.GetProperty("payGrade").GetProperty("hourlyRate").GetDecimal().Should().Be(4200m);
-        employee.GetProperty("skills")[0].GetProperty("key").GetString().Should().Be("CNCProgramming");
-        employee.GetProperty("skills")[0].GetProperty("level").GetString().Should().Be("Advanced");
+        // ADR-060: the pay grade is a band key, the hourly rate is a separate flat field
+        // (tenant config) — mirroring the portal employeeSchema (payGrade + hourlyRate).
+        employee.GetProperty("payGrade").GetString().Should().Be("SkilledWorker");
+        employee.GetProperty("hourlyRate").GetDecimal().Should().Be(3800m);
+        employee.GetProperty("skills")[0].GetProperty("key").GetString().Should().Be("Cnc");
+        // ADR-060 §5: SkillLevel is the ONE enum that travels as a NUMBER (1|2|3).
+        employee.GetProperty("skills")[0].GetProperty("level").ValueKind
+            .Should().Be(JsonValueKind.Number);
+        employee.GetProperty("skills")[0].GetProperty("level").GetInt32().Should().Be(3);
     }
 
     [Fact]
@@ -76,17 +83,19 @@ public class EmployeeEndpointsTests
 
         await using var host = await StartHostAsync(mediator.Object);
         var response = await host.Client.GetAsync(
-            "/api/hr/employees?dept=Production&q=kovács&skill=Welding");
+            "/api/hr/employees?dept=Production&q=kovács&skill=EdgeBanding");
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         captured.Should().NotBeNull();
         captured!.TenantId.Value.Should().Be(HrEndpointTestHost.TenantId);
         captured.Department.Should().Be(Department.Production);
-        captured.Skill.Should().Be(SkillKey.Welding);
+        captured.Skill.Should().Be(SkillKey.EdgeBanding);
         captured.SearchText.Should().Be("kovács");
         captured.ActiveOnly.Should().BeTrue();
     }
 
+    // NOTE: the Hungarian portal keys (gyartas, szabas, …) become the accepted wire
+    // vocabulary when the ADR-059 EnumWireMap seam lands — these two tests flip then.
     [Fact]
     public async Task ListEmployees_InvalidDeptFilter_Returns400()
     {
@@ -105,6 +114,23 @@ public class EmployeeEndpointsTests
         await using var host = await StartHostAsync(mediator.Object);
 
         var response = await host.Client.GetAsync("/api/hr/employees?skill=szabas");
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Theory] // ADR-060 regression guard: the retired industrial scaffold keys are rejected.
+    [InlineData("dept=IT")]
+    [InlineData("dept=Administration")]
+    [InlineData("dept=Maintenance")]
+    [InlineData("skill=Welding")]
+    [InlineData("skill=ManualLathe")]
+    [InlineData("skill=ForkliftDriver")]
+    public async Task ListEmployees_RetiredTaxonomyKeys_Return400(string filter)
+    {
+        var mediator = new Mock<IMediator>();
+        await using var host = await StartHostAsync(mediator.Object);
+
+        var response = await host.Client.GetAsync($"/api/hr/employees?{filter}");
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
@@ -155,19 +181,20 @@ public class EmployeeEndpointsTests
             .ReturnsAsync(Result<EmployeeDto>.Success(SampleDto()));
 
         await using var host = await StartHostAsync(mediator.Object);
+        // ADR-060 §5: the level is a NUMBER on the wire (1 = basic .. 3 = master).
         var response = await host.Client.PutAsJsonAsync(
             $"/api/hr/employees/{EmployeeGuid}/skills",
             new
             {
-                skills = new[] { new { key = "Welding", level = "Expert" } },
-                removeSkills = new[] { "Painting" }
+                skills = new[] { new { key = "EdgeBanding", level = 3 } },
+                removeSkills = new[] { "SurfaceFinishing" }
             });
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         captured.Should().NotBeNull();
-        captured!.SkillsToUpdate.Should().ContainKey(SkillKey.Welding)
-            .WhoseValue.Should().Be(SkillLevel.Expert);
-        captured.SkillsToRemove.Should().ContainSingle().Which.Should().Be(SkillKey.Painting);
+        captured!.SkillsToUpdate.Should().ContainKey(SkillKey.EdgeBanding)
+            .WhoseValue.Should().Be(SkillLevel.Master);
+        captured.SkillsToRemove.Should().ContainSingle().Which.Should().Be(SkillKey.SurfaceFinishing);
     }
 
     [Fact]
@@ -178,7 +205,35 @@ public class EmployeeEndpointsTests
 
         var response = await host.Client.PutAsJsonAsync(
             $"/api/hr/employees/{EmployeeGuid}/skills",
-            new { skills = new[] { new { key = "faragas", level = "Expert" } } });
+            new { skills = new[] { new { key = "faragas", level = 3 } } });
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Theory] // Levels outside the portal's 1..3 scale are rejected.
+    [InlineData(0)]
+    [InlineData(4)]
+    public async Task UpdateSkills_OutOfRangeLevel_Returns400(int level)
+    {
+        var mediator = new Mock<IMediator>();
+        await using var host = await StartHostAsync(mediator.Object);
+
+        var response = await host.Client.PutAsJsonAsync(
+            $"/api/hr/employees/{EmployeeGuid}/skills",
+            new { skills = new[] { new { key = "Cutting", level } } });
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact] // The retired string form ("Expert") is no longer a valid level payload.
+    public async Task UpdateSkills_StringLevel_Returns400()
+    {
+        var mediator = new Mock<IMediator>();
+        await using var host = await StartHostAsync(mediator.Object);
+
+        var response = await host.Client.PutAsJsonAsync(
+            $"/api/hr/employees/{EmployeeGuid}/skills",
+            new { skills = new[] { new { key = "Cutting", level = "Expert" } } });
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }

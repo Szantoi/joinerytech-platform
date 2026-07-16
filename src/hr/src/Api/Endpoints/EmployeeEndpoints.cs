@@ -127,11 +127,12 @@ public static class EmployeeEndpoints
             {
                 return Results.BadRequest(new { error = $"Invalid skill key: {skill.Key}" });
             }
-            if (!Enum.TryParse<SkillLevel>(skill.Level, ignoreCase: true, out var level))
+            // Portal contract (ADR-060 §5): the level is a NUMBER, 1 = basic .. 3 = master.
+            if (!Enum.IsDefined(typeof(SkillLevel), skill.Level))
             {
                 return Results.BadRequest(new { error = $"Invalid skill level: {skill.Level}" });
             }
-            toUpdate[key] = level;
+            toUpdate[key] = (SkillLevel)skill.Level;
         }
 
         var toRemove = new List<SkillKey>();
@@ -177,11 +178,12 @@ public static class EmployeeEndpoints
 }
 
 /// <summary>
-/// Request DTO for the skill-matrix update (module pattern: enums as strings).
+/// Request DTO for the skill-matrix update (module pattern: enums as strings —
+/// except the level, which is a NUMBER 1..3 per the portal contract, ADR-060 §5).
 /// </summary>
 public record UpdateEmployeeSkillsRequestDto(
     List<EmployeeSkillRequestDto>? Skills,
     List<string>? RemoveSkills
 );
 
-public record EmployeeSkillRequestDto(string Key, string Level);
+public record EmployeeSkillRequestDto(string Key, int Level);

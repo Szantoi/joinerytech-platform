@@ -9,7 +9,11 @@ namespace SpaceOS.Modules.HR.Application.DTOs;
 /// </summary>
 public static class HrDtoMapper
 {
-    public static EmployeeDto ToDto(Employee employee) => new(
+    /// <param name="payGrades">
+    /// Tenant hourly rates per pay grade band ("Hr:PayGrades" config, ADR-060) — the
+    /// aggregate carries the band key only, the rate is resolved at projection time.
+    /// </param>
+    public static EmployeeDto ToDto(Employee employee, HrPayGradeConfiguration payGrades) => new(
         Id: employee.Id.Value,
         TenantId: employee.TenantId,
         Name: employee.Name,
@@ -17,7 +21,8 @@ public static class HrDtoMapper
         Role: employee.Role,
         Department: employee.Department,
         FacilityId: employee.FacilityId,
-        PayGrade: new PayGradeDto(employee.PayGrade.Name, employee.PayGrade.HourlyRate),
+        PayGrade: employee.PayGrade,
+        HourlyRate: payGrades.RateFor(employee.PayGrade),
         WeeklyHours: employee.WeeklyHours,
         Email: employee.Email,
         VacationBase: employee.VacationBase,

@@ -1,8 +1,13 @@
 # ADR-index — JoineryTech platform
 
 > Az „első kör" (EPIC-UI-PORTAL-2026Q3) során felgyűlt architektúra-döntések.
-> **6 ADR (059–064), mind PROPOSED — Gábor döntésére vár.**
+> **6 ADR (059–064), mind ELFOGADVA az ajánlás szerint — Gábor, 2026-07-16.**
 > Számozás a `docs/knowledge/architecture/ADR_CATALOGUE.md` folytatása (utolsó: ADR-058).
+>
+> Végrehajtási sorrend (a függőségek szerint): **① 061+062** (hosting-csomag: auth + tenant
+> JWT-ből + RLS — deploy-blokkolók) és vele párhuzamosan **② 060 + 063** (HR-taxonómia,
+> QA-rework — domain-rétegek), majd **③ 059** (EnumWireMap — a 060/063 utáni enum-készletre)
+> és **④ 064** részletei.
 
 ---
 

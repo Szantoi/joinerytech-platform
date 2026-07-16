@@ -166,9 +166,10 @@ nem lehet „MSW-lekapcsolás", ahogy a HR-BE-HOST is írja.
 
 ## Döntés
 
-_(Gábor tölti ki)_
+**ELFOGADVA — Gábor, 2026-07-16:** az ajánlás szerint.
 
-- [ ] (a) Backend átveszi a faipari taxonómiát, (c) későbbre jegyezve — *ajánlott*
+
+- [x] (a) Backend átveszi a faipari taxonómiát, (c) későbbre jegyezve — *ajánlott — ELFOGADVA*
 - [ ] (b) Portal átveszi a backend készletét
 - [ ] (c) Törzsadat/referencia-tábla már most
 - [ ] `PayGrade`: sáv-enum + config-ráta ☐ / marad szabad szöveg ☐

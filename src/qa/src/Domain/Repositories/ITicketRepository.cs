@@ -27,6 +27,15 @@ public interface ITicketRepository
         CancellationToken ct = default);
 
     /// <summary>
+    /// Gets tickets linked to a specific inspection (ADR-063 rework loop:
+    /// the portal derives its "javitasra" view-state from the open ticket).
+    /// </summary>
+    Task<IEnumerable<Ticket>> GetByInspectionIdAsync(
+        Guid inspectionId,
+        Guid tenantId,
+        CancellationToken ct = default);
+
+    /// <summary>
     /// Gets tickets by type for routing analysis.
     /// </summary>
     Task<IEnumerable<Ticket>> GetByTypeAsync(

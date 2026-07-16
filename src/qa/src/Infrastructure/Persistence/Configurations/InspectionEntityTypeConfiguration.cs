@@ -62,6 +62,17 @@ public class InspectionEntityTypeConfiguration : IEntityTypeConfiguration<Inspec
             .IsRequired()
             .HasColumnName("result");
 
+        // ADR-063 rework loop: reference to the conditionally passed original
+        // inspection (nullable strongly-typed id — same conversion as CheckpointId)
+        builder.Property(i => i.ReworkOfInspectionId)
+            .HasConversion(
+                id => id!.Value,
+                value => new InspectionId(value))
+            .HasColumnName("rework_of_inspection_id");
+
+        builder.HasIndex(i => i.ReworkOfInspectionId)
+            .HasDatabaseName("ix_inspections_rework_of_inspection_id");
+
         // Inspector and notes
         builder.Property(i => i.InspectorId)
             .IsRequired()

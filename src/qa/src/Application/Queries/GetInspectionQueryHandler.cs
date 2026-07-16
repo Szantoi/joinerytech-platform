@@ -1,24 +1,31 @@
 using Ardalis.Result;
 using MediatR;
 using SpaceOS.Modules.QA.Application.DTOs;
+using SpaceOS.Modules.QA.Domain.FSM;
 using SpaceOS.Modules.QA.Domain.Repositories;
 
 namespace SpaceOS.Modules.QA.Application.Queries;
 
 /// <summary>
 /// Handler for GetInspectionQuery.
+/// ADR-063: also surfaces OpenTicketId (newest open ticket linked to the
+/// inspection) so the portal can derive its "javitasra" view-state from a
+/// single fetch (Completed + Conditional + open ticket).
 /// </summary>
 public class GetInspectionQueryHandler : IRequestHandler<GetInspectionQuery, Result<InspectionDto>>
 {
     private readonly IInspectionRepository _inspectionRepository;
     private readonly IQACheckpointRepository _checkpointRepository;
+    private readonly ITicketRepository _ticketRepository;
 
     public GetInspectionQueryHandler(
         IInspectionRepository inspectionRepository,
-        IQACheckpointRepository checkpointRepository)
+        IQACheckpointRepository checkpointRepository,
+        ITicketRepository ticketRepository)
     {
         _inspectionRepository = inspectionRepository;
         _checkpointRepository = checkpointRepository;
+        _ticketRepository = ticketRepository;
     }
 
     public async Task<Result<InspectionDto>> Handle(GetInspectionQuery request, CancellationToken ct)
@@ -37,6 +44,17 @@ public class GetInspectionQueryHandler : IRequestHandler<GetInspectionQuery, Res
             var checkpoint = await _checkpointRepository
                 .GetByIdAsync(inspection.CheckpointId, request.TenantId, ct)
                 .ConfigureAwait(false);
+
+            // ADR-063: newest open ticket linked to this inspection (rework trail);
+            // open-guard is the domain FSM's IsOpen (portal TICKET_OPEN_STATUSES mirror)
+            var linkedTickets = await _ticketRepository
+                .GetByInspectionIdAsync(inspection.Id.Value, request.TenantId, ct)
+                .ConfigureAwait(false);
+            var openTicketId = linkedTickets
+                .Where(t => TicketStatusTransitions.IsOpen(t.Status))
+                .OrderByDescending(t => t.ReportedAt)
+                .Select(t => (Guid?)t.Id.Value)
+                .FirstOrDefault();
 
             // Map to DTO
             var dto = new InspectionDto(
@@ -63,7 +81,9 @@ public class GetInspectionQueryHandler : IRequestHandler<GetInspectionQuery, Res
                 )).ToArray() ?? Array.Empty<FailureNoteDto>(),
                 PlannedAt: inspection.PlannedAt,
                 StartedAt: inspection.StartedAt,
-                CompletedAt: inspection.CompletedAt
+                CompletedAt: inspection.CompletedAt,
+                ReworkOfInspectionId: inspection.ReworkOfInspectionId?.Value,
+                OpenTicketId: openTicketId
             );
 
             return Result<InspectionDto>.Success(dto);

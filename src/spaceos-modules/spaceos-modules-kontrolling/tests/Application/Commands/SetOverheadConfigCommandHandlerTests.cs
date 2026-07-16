@@ -5,6 +5,7 @@ using Microsoft.Extensions.Caching.Memory;
 using Moq;
 using SpaceOS.Modules.Kontrolling.Application.Commands.SetOverheadConfig;
 using SpaceOS.Modules.Kontrolling.Application.Services;
+using SpaceOS.Modules.Kontrolling.Domain.Aggregates;
 using SpaceOS.Modules.Kontrolling.Domain.Enums;
 using Xunit;
 
@@ -40,10 +41,10 @@ public sealed class SetOverheadConfigCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         _repositoryMock.Verify(
-            x => x.UpsertAsync(It.Is<OverheadConfig>(c =>
+            x => x.SaveAsync(It.Is<OverheadConfig>(c =>
                 c.TenantId == tenantId &&
-                c.Method == OverheadAllocationMethod.DirectCostPercentage &&
-                c.Rate == 0.15m &&
+                c.AllocationMethod == OverheadAllocationMethod.DirectCostPercentage &&
+                c.OverheadRate == 0.15m &&
                 c.UpdatedBy == updatedBy
             ), It.IsAny<CancellationToken>()),
             Times.Once);
@@ -69,7 +70,7 @@ public sealed class SetOverheadConfigCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         _repositoryMock.Verify(
-            x => x.UpsertAsync(It.Is<OverheadConfig>(c => c.Method == method && c.Rate == rate),
+            x => x.SaveAsync(It.Is<OverheadConfig>(c => c.AllocationMethod == method && c.OverheadRate == rate),
                 It.IsAny<CancellationToken>()),
             Times.Once);
     }
@@ -138,7 +139,7 @@ public sealed class SetOverheadConfigCommandHandlerTests
 
         // Assert
         _repositoryMock.Verify(
-            x => x.UpsertAsync(It.Is<OverheadConfig>(c =>
+            x => x.SaveAsync(It.Is<OverheadConfig>(c =>
                 c.UpdatedAt >= beforeExecution &&
                 c.UpdatedAt <= afterExecution
             ), It.IsAny<CancellationToken>()),

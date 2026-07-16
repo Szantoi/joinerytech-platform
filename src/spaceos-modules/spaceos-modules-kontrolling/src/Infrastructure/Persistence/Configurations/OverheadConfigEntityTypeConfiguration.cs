@@ -3,6 +3,7 @@ namespace SpaceOS.Modules.Kontrolling.Infrastructure.Persistence.Configurations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using SpaceOS.Modules.Kontrolling.Domain.Aggregates;
+using SpaceOS.Modules.Kontrolling.Domain.Entities;
 
 /// <summary>
 /// Entity type configuration for OverheadConfig aggregate.
@@ -83,8 +84,12 @@ public sealed class OverheadConfigEntityTypeConfiguration : IEntityTypeConfigura
                 .HasColumnName("custom_rate")
                 .HasColumnType("decimal(10,4)");
 
-            // Index on cost category for faster lookups
-            rules.HasIndex("overhead_config_id", "cost_category")
+            // Index on cost category for faster lookups.
+            // HasIndex takes PROPERTY names, not column names — passing
+            // "cost_category" here made EF try to add a shadow property of
+            // that name and threw at model build (so the DbContext could not
+            // be used at all).
+            rules.HasIndex("overhead_config_id", nameof(OverheadRule.CostCategory))
                 .HasDatabaseName("ix_overhead_rules_config_category");
         });
     }

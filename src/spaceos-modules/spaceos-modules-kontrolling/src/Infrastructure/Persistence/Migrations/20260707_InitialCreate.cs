@@ -1,6 +1,9 @@
 namespace SpaceOS.Modules.Kontrolling.Infrastructure.Persistence.Migrations;
 
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
+using SpaceOS.Modules.Kontrolling.Infrastructure.Persistence;
 
 /// <summary>
 /// Initial migration for Kontrolling module.
@@ -11,6 +14,14 @@ using Microsoft.EntityFrameworkCore.Migrations;
 ///
 /// NOTE: NO table for ProjectCostCalculation — it's calculated on-demand (ADR-055)!
 /// </summary>
+/// <remarks>
+/// The [DbContext] and [Migration] attributes are what make EF discover this.
+/// Without them `dotnet ef migrations list` reported "No migrations were
+/// found" and the schema could never be applied — the file existed but was
+/// inert.
+/// </remarks>
+[DbContext(typeof(KontrollingDbContext))]
+[Migration("20260707000000_InitialCreate")]
 public partial class InitialCreate : Migration
 {
     protected override void Up(MigrationBuilder migrationBuilder)

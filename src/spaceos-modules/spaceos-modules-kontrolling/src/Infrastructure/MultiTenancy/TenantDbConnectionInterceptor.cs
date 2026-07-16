@@ -8,6 +8,12 @@ using Npgsql;
 /// DbConnectionInterceptor that sets PostgreSQL session variables for RLS.
 /// Sets kontrolling.set_tenant_context(tenantId) on every connection.
 /// </summary>
+/// <remarks>
+/// The tenant context is set on <c>ConnectionOpened</c>, not
+/// <c>ConnectionOpening</c>: the statement needs an OPEN connection to run on.
+/// Doing it in the "opening" callbacks threw "Connection is not open" on the
+/// very first query.
+/// </remarks>
 public sealed class TenantDbConnectionInterceptor : DbConnectionInterceptor
 {
     private readonly ITenantContext _tenantContext;
@@ -17,23 +23,21 @@ public sealed class TenantDbConnectionInterceptor : DbConnectionInterceptor
         _tenantContext = tenantContext;
     }
 
-    public override InterceptionResult ConnectionOpening(
+    public override void ConnectionOpened(
         DbConnection connection,
-        ConnectionEventData eventData,
-        InterceptionResult result)
+        ConnectionEndEventData eventData)
     {
         SetTenantContext(connection);
-        return base.ConnectionOpening(connection, eventData, result);
+        base.ConnectionOpened(connection, eventData);
     }
 
-    public override async ValueTask<InterceptionResult> ConnectionOpeningAsync(
+    public override async Task ConnectionOpenedAsync(
         DbConnection connection,
-        ConnectionEventData eventData,
-        InterceptionResult result,
+        ConnectionEndEventData eventData,
         CancellationToken ct = default)
     {
         await SetTenantContextAsync(connection, ct).ConfigureAwait(false);
-        return await base.ConnectionOpeningAsync(connection, eventData, result, ct).ConfigureAwait(false);
+        await base.ConnectionOpenedAsync(connection, eventData, ct).ConfigureAwait(false);
     }
 
     private void SetTenantContext(DbConnection connection)

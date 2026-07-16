@@ -5,6 +5,7 @@ using Microsoft.Extensions.Caching.Memory;
 using Moq;
 using SpaceOS.Modules.Kontrolling.Application.Queries;
 using SpaceOS.Modules.Kontrolling.Application.Services;
+using SpaceOS.Modules.Kontrolling.Domain.Aggregates;
 using SpaceOS.Modules.Kontrolling.Domain.Enums;
 using Xunit;
 
@@ -27,11 +28,10 @@ public sealed class GetOverheadConfigQueryHandlerTests
         // Arrange
         var tenantId = Guid.NewGuid();
         var updatedBy = Guid.NewGuid();
-        var config = new OverheadConfig(
+        var config = OverheadConfig.Create(
             tenantId,
             OverheadAllocationMethod.DirectCostPercentage,
             0.15m,
-            DateTime.UtcNow,
             updatedBy
         );
 
@@ -47,8 +47,8 @@ public sealed class GetOverheadConfigQueryHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         result.Value.TenantId.Should().Be(tenantId);
-        result.Value.Method.Should().Be(OverheadAllocationMethod.DirectCostPercentage);
-        result.Value.Rate.Should().Be(0.15m);
+        result.Value.AllocationMethod.Should().Be(OverheadAllocationMethod.DirectCostPercentage);
+        result.Value.OverheadRate.Should().Be(0.15m);
     }
 
     [Fact]
@@ -76,11 +76,10 @@ public sealed class GetOverheadConfigQueryHandlerTests
     {
         // Arrange
         var tenantId = Guid.NewGuid();
-        var config = new OverheadConfig(
+        var config = OverheadConfig.Create(
             tenantId,
             OverheadAllocationMethod.LaborHours,
             5000m,
-            DateTime.UtcNow,
             Guid.NewGuid()
         );
 
@@ -108,11 +107,10 @@ public sealed class GetOverheadConfigQueryHandlerTests
     {
         // Arrange
         var tenantId = Guid.NewGuid();
-        var config = new OverheadConfig(
+        var config = OverheadConfig.Create(
             tenantId,
             method,
             0.2m,
-            DateTime.UtcNow,
             Guid.NewGuid()
         );
 
@@ -126,6 +124,6 @@ public sealed class GetOverheadConfigQueryHandlerTests
         var result = await _handler.Handle(query, CancellationToken.None);
 
         // Assert
-        result.Value.Method.Should().Be(method);
+        result.Value.AllocationMethod.Should().Be(method);
     }
 }

@@ -5,6 +5,7 @@ using Microsoft.Extensions.Caching.Memory;
 using Moq;
 using SpaceOS.Modules.Kontrolling.Application.Commands.UpdateOverheadConfig;
 using SpaceOS.Modules.Kontrolling.Application.Services;
+using SpaceOS.Modules.Kontrolling.Domain.Aggregates;
 using SpaceOS.Modules.Kontrolling.Domain.Enums;
 using Xunit;
 
@@ -26,11 +27,10 @@ public sealed class UpdateOverheadConfigCommandHandlerTests
     {
         // Arrange
         var tenantId = Guid.NewGuid();
-        var existingConfig = new OverheadConfig(
+        var existingConfig = OverheadConfig.Create(
             tenantId,
             OverheadAllocationMethod.LaborHours,
             5000m,
-            DateTime.UtcNow.AddDays(-1),
             Guid.NewGuid()
         );
 
@@ -51,10 +51,10 @@ public sealed class UpdateOverheadConfigCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         _repositoryMock.Verify(
-            x => x.UpsertAsync(It.Is<OverheadConfig>(c =>
+            x => x.SaveAsync(It.Is<OverheadConfig>(c =>
                 c.TenantId == tenantId &&
-                c.Method == OverheadAllocationMethod.DirectCostPercentage &&
-                c.Rate == 0.2m
+                c.AllocationMethod == OverheadAllocationMethod.DirectCostPercentage &&
+                c.OverheadRate == 0.2m
             ), It.IsAny<CancellationToken>()),
             Times.Once);
     }
@@ -83,7 +83,7 @@ public sealed class UpdateOverheadConfigCommandHandlerTests
         result.IsSuccess.Should().BeFalse();
         result.Status.Should().Be(Ardalis.Result.ResultStatus.NotFound);
         _repositoryMock.Verify(
-            x => x.UpsertAsync(It.IsAny<OverheadConfig>(), It.IsAny<CancellationToken>()),
+            x => x.SaveAsync(It.IsAny<OverheadConfig>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
 
@@ -92,11 +92,10 @@ public sealed class UpdateOverheadConfigCommandHandlerTests
     {
         // Arrange
         var tenantId = Guid.NewGuid();
-        var existingConfig = new OverheadConfig(
+        var existingConfig = OverheadConfig.Create(
             tenantId,
             OverheadAllocationMethod.LaborHours,
             5000m,
-            DateTime.UtcNow.AddDays(-1),
             Guid.NewGuid()
         );
 
@@ -128,11 +127,10 @@ public sealed class UpdateOverheadConfigCommandHandlerTests
         // Arrange
         var tenantId = Guid.NewGuid();
         var oldTimestamp = DateTime.UtcNow.AddDays(-10);
-        var existingConfig = new OverheadConfig(
+        var existingConfig = OverheadConfig.Create(
             tenantId,
             OverheadAllocationMethod.LaborHours,
             5000m,
-            oldTimestamp,
             Guid.NewGuid()
         );
 
@@ -156,7 +154,7 @@ public sealed class UpdateOverheadConfigCommandHandlerTests
 
         // Assert
         _repositoryMock.Verify(
-            x => x.UpsertAsync(It.Is<OverheadConfig>(c =>
+            x => x.SaveAsync(It.Is<OverheadConfig>(c =>
                 c.UpdatedAt >= beforeExecution &&
                 c.UpdatedAt <= afterExecution
             ), It.IsAny<CancellationToken>()),

@@ -86,6 +86,43 @@ public sealed class CostAdjustmentRepository : ICostAdjustmentRepository
     }
 
     /// <summary>
+    /// Get every live adjustment of the tenant, both scopes, newest first.
+    /// </summary>
+    public async Task<IReadOnlyList<CostAdjustment>> GetAllAsync(
+        Guid tenantId,
+        CancellationToken ct = default)
+    {
+        return await _context.CostAdjustments
+            .IgnoreQueryFilters() // Bypass RLS
+            .AsNoTracking()
+            .Where(c => c.TenantId == tenantId &&
+                        !c.IsDeleted) // Manual soft delete filter
+            .OrderByDescending(c => c.CreatedAt)
+            .ThenByDescending(c => c.AdjustmentId)
+            .ToListAsync(ct)
+            .ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Get an adjustment for mutation: tracked, and including soft-deleted rows.
+    /// </summary>
+    public async Task<CostAdjustment?> GetForUpdateAsync(
+        Guid adjustmentId,
+        Guid tenantId,
+        CancellationToken ct = default)
+    {
+        // No AsNoTracking: SaveChangesAsync must see the soft delete.
+        // No IsDeleted filter: an already-deleted row still has to be found,
+        // so the caller can answer 409 rather than 404.
+        return await _context.CostAdjustments
+            .IgnoreQueryFilters() // Bypass RLS + the soft-delete query filter
+            .FirstOrDefaultAsync(
+                c => c.TenantId == tenantId && c.AdjustmentId == adjustmentId,
+                ct)
+            .ConfigureAwait(false);
+    }
+
+    /// <summary>
     /// Save changes (for soft delete).
     /// </summary>
     public async Task SaveChangesAsync(CancellationToken ct = default)

@@ -40,6 +40,8 @@
 | F2-MAINTENANCE-REVIEW | designer | ✅ **APPROVED** (fix-kör nélkül) | [review-jelentés](../../knowledge/qa/F2_MAINTENANCE_DESIGN_REVIEW_2026-07-15.md) |
 | F2-QA-FE | frontend | ✅ done | [F2-QA-FE.md](F2-QA-FE.md) |
 | F2-QA-REVIEW | designer | ✅ **APPROVED** (fix-kör nélkül) | [review-jelentés](../../knowledge/qa/F2_QA_DESIGN_REVIEW_2026-07-15.md) |
+| F2-DMS-FE | frontend | ✅ done | [F2-DMS-FE.md](F2-DMS-FE.md) |
+| F2-DMS-REVIEW | designer | ✅ **APPROVED** (fix-kör nélkül) | [review-jelentés](../../knowledge/qa/F2_DMS_DESIGN_REVIEW_2026-07-16.md) |
 
 ## Modul-státusz összefoglaló
 | Modul | Backend | Frontend | Review |
@@ -50,7 +52,9 @@
 | HR | ⏸ kész domain (Absence FSM), nincs host — MSW-first | ✅ 6 képernyő, 57 teszt (calc.ts kapacitás-tükör) | ✅ APPROVED (M1 follow-up) |
 | Maintenance | ⏸ kész domain, 5 hiányzó WO-endpoint — MSW-first | ✅ 4 képernyő + 2 SlideOver, 56 teszt (calc.ts kettős tükör) | ✅ APPROVED (M1 follow-up) |
 | QA | ⏸ kész domain, Ticket REST-endpointok HIÁNYOZNAK — MSW-first | ✅ 4 képernyő + 2 SlideOver, 65 teszt (KÉT FSM + payload-guardok, calc.ts metrika-tükör) | ✅ APPROVED (M1: QueryGate-promótálás) |
-| DMS | — | ⏭ folyamatban | — |
+| DMS | ⏸ kész domain (Document-mag), NINCS futtatható endpoint + jóváhagyás-folyam — MSW-first | ✅ 3 képernyő + detail-SlideOver, 59 teszt (calc.ts runtimeVersion/expiry-tükör, verzió-lánc) | ✅ APPROVED (fix-kör nélkül) |
+
+**Fázis 2 modul-sora TELJES: 7/7 APPROVED → jöhet az F3 minőségkapu.**
 
 ## Backlog
-FIX-PREEXISTING-TESTS (19 örökölt tesztbukás) · DS-RECONCILE (Gábor styleguide-ja ↔ spec) · RISKS-5X5-BE (EHS mátrix backend) · EHS-WIZARD-HU · fsm.ts→fsmGuards.ts migráció (EHS) · CRM N1-N5 nitek · Kontrolling N1+N3-N6 nitek · HR-M1-THRESHOLD (HrDashboard hardcode-olt küszöb — Maintenance- ÉS QA-review-ban újra ellenőrizve: még nyitva) + HR N1-N4 nitek · Maintenance M1 (labels.ts UTC-parse → parseDay / közös dateUtils — QA-review-ban újra ellenőrizve: még nyitva) + N2-N4 nitek · **QUERYGATE-PROMOTE (QA-review M1 — M-szintre emelve: 6 modul / 27 importőr; a DMS-review előtt zárandó)** · QA N1-N4 nitek (pass-rate nevező kanonizálás, trend rose dark-pár, formFields, eszkaláció elutasítotton — backend-tisztázás) · qaHibajegy tónuskészlet a spec 1.5-be (designer) · Forecast+MarginTrend dark-chart-hexek (közös token-epic)
+FIX-PREEXISTING-TESTS (19 örökölt tesztbukás) · DS-RECONCILE (Gábor styleguide-ja ↔ spec) · RISKS-5X5-FE (EHS mátrix portal-bekötés — a backend RISKS-5X5-BE kész) · EHS-WIZARD-HU · fsm.ts→fsmGuards.ts migráció (EHS) · CRM N1-N5 nitek · Kontrolling N1+N3-N6 nitek · ~~HR-M1-THRESHOLD~~ + ~~Maintenance M1 (UTC-parse)~~ + ~~QUERYGATE-PROMOTE~~ — **mindhárom ZÁRVA az F2-CROSSCUT-FIX-szel (449bf0c), a DMS-review-ban kódban igazolva** · HR N1-N4 / Maintenance N2-N4 nitek · QA N1-N4 nitek (pass-rate nevező kanonizálás, trend rose dark-pár, formFields, eszkaláció elutasítotton — backend-tisztázás; + QA labels dateUtils-átállás) · DMS N1-N5 nitek (formFields 4. ismétlődés + Chip-promótálás `components/ui`-ba — F3 crosscut-jelöltek; expiring-guard kiemelés, MAIN_PATH-származtatás) · qaHibajegy tónuskészlet a spec 1.5-be (designer) · Forecast+MarginTrend dark-chart-hexek (közös token-epic)

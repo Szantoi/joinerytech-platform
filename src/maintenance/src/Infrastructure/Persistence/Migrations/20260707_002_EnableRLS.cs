@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 namespace SpaceOS.Modules.Maintenance.Infrastructure.Persistence.Migrations;
@@ -6,8 +7,11 @@ namespace SpaceOS.Modules.Maintenance.Infrastructure.Persistence.Migrations;
 /// Enables Row-Level Security (RLS) for multi-tenancy in Maintenance module.
 /// Creates PostgreSQL function for tenant context management and RLS policies.
 /// Reuses DMS Week 3 pattern for consistency.
+/// NOTE (MAINT-BE-TRANSITIONS): [DbContext]/[Migration] attributes added for EF discovery.
 /// </summary>
 #nullable disable
+[DbContext(typeof(MaintenanceDbContext))]
+[Migration("20260707000002_EnableRLS")]
 public partial class EnableRLS : Migration
 {
     protected override void Up(MigrationBuilder migrationBuilder)

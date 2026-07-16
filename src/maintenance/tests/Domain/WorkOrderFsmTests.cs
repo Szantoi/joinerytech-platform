@@ -20,15 +20,18 @@ public class WorkOrderFsmTests
     }
 
     [Fact]
-    public void IsValidTransition_Reported_To_InProgress_ShouldBeValid()
+    public void IsValidTransition_Reported_To_InProgress_ShouldBeInvalid()
     {
+        // MAINT-BE-TRANSITIONS: the table mirrors the aggregate (single source of
+        // truth) — StartWork() only runs from Scheduled, so the former
+        // Reported → InProgress ("if assigned") edge was removed.
         // Act
         var isValid = WorkOrderStatusTransitions.IsValidTransition(
             WorkOrderStatus.Reported,
             WorkOrderStatus.InProgress);
 
         // Assert
-        isValid.Should().BeTrue();
+        isValid.Should().BeFalse();
     }
 
     [Fact]
@@ -169,10 +172,9 @@ public class WorkOrderFsmTests
         // Act
         var allowed = WorkOrderStatusTransitions.GetAllowedTransitions(WorkOrderStatus.Reported);
 
-        // Assert
-        allowed.Should().HaveCount(3);
+        // Assert (aggregate mirror: schedule → Scheduled, reject → Rejected)
+        allowed.Should().HaveCount(2);
         allowed.Should().Contain(WorkOrderStatus.Scheduled);
-        allowed.Should().Contain(WorkOrderStatus.InProgress);
         allowed.Should().Contain(WorkOrderStatus.Rejected);
     }
 
@@ -239,5 +241,28 @@ public class WorkOrderFsmTests
 
         // Assert
         isTerminal.Should().BeFalse();
+    }
+
+    /// <summary>
+    /// MAINT-BE-TRANSITIONS: the full table must be the 1:1 mirror of the portal
+    /// WORK_ORDER_FSM (joinerytech-portal services/maintenance/fsm.ts) and of the
+    /// aggregate action guards — this locks the whole contract in one assertion set.
+    /// </summary>
+    [Theory]
+    [InlineData(WorkOrderStatus.Reported, new[] { WorkOrderStatus.Scheduled, WorkOrderStatus.Rejected })]
+    [InlineData(WorkOrderStatus.Scheduled, new[] { WorkOrderStatus.InProgress, WorkOrderStatus.Postponed, WorkOrderStatus.Rejected })]
+    [InlineData(WorkOrderStatus.InProgress, new[] { WorkOrderStatus.Completed, WorkOrderStatus.Postponed })]
+    [InlineData(WorkOrderStatus.Postponed, new[] { WorkOrderStatus.Reported })]
+    [InlineData(WorkOrderStatus.Rejected, new[] { WorkOrderStatus.Reported })]
+    [InlineData(WorkOrderStatus.Completed, new WorkOrderStatus[0])]
+    public void GetAllowedTransitions_ShouldMirrorPortalFsmTable(
+        WorkOrderStatus from,
+        WorkOrderStatus[] expected)
+    {
+        // Act
+        var allowed = WorkOrderStatusTransitions.GetAllowedTransitions(from);
+
+        // Assert
+        allowed.Should().BeEquivalentTo(expected);
     }
 }

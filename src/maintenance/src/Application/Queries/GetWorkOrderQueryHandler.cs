@@ -40,32 +40,8 @@ public class GetWorkOrderQueryHandler : IRequestHandler<GetWorkOrderQuery, Resul
                 .GetByIdAsync(workOrder.AssetId, ct)
                 .ConfigureAwait(false);
 
-            // Map to DTO
-            var dto = new WorkOrderDto(
-                Id: workOrder.Id.Value,
-                AssetId: workOrder.AssetId.Value,
-                AssetCode: asset?.Code ?? "UNKNOWN",
-                Type: workOrder.Type,
-                Priority: workOrder.Priority,
-                Status: workOrder.Status,
-                Title: workOrder.Title,
-                Description: workOrder.Description,
-                ScheduledStart: workOrder.ScheduledAt,
-                EstimatedHours: workOrder.EstimatedHours,
-                ActualHours: workOrder.ActualHours,
-                AssignedTo: workOrder.AssignedEmployeeId ?? workOrder.AssignedPartnerId,
-                AssignmentType: workOrder.AssignmentType,
-                RequiresDowntime: workOrder.RequiresDowntime,
-                Parts: workOrder.Parts.Select(p => new WorkOrderPartDto(
-                    CatalogCode: p.CatalogCode,
-                    Quantity: p.Quantity,
-                    UnitPrice: p.UnitPrice.Amount,
-                    TotalPrice: p.TotalPrice.Amount
-                )).ToArray(),
-                TotalPartsCost: workOrder.Parts.Sum(p => p.TotalPrice.Amount),
-                CompletionNote: workOrder.ActualHours.HasValue ? "Completed" : null, // Placeholder
-                CreatedAt: workOrder.ReportedAt
-            );
+            // Map to DTO (shared mapper — also used by the transition handlers)
+            var dto = WorkOrderDtoMapper.ToDto(workOrder, asset?.Code, asset?.Name);
 
             return Result<WorkOrderDto>.Success(dto);
         }

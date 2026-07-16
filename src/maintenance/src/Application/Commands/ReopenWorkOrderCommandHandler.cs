@@ -1,52 +1,24 @@
-using Ardalis.Result;
-using MediatR;
-using SpaceOS.Kernel.Domain.ValueObjects;
+using Microsoft.Extensions.Logging;
+using SpaceOS.Modules.Maintenance.Domain.Aggregates;
 using SpaceOS.Modules.Maintenance.Domain.Repositories;
 
 namespace SpaceOS.Modules.Maintenance.Application.Commands;
 
 /// <summary>
-/// Handler for ReopenWorkOrderCommand.
+/// Handler for ReopenWorkOrderCommand (FSM: Postponed/Rejected → Reported).
 /// </summary>
-public class ReopenWorkOrderCommandHandler : IRequestHandler<ReopenWorkOrderCommand, Result>
+public class ReopenWorkOrderCommandHandler : WorkOrderTransitionHandlerBase<ReopenWorkOrderCommand>
 {
-    private readonly IWorkOrderRepository _workOrderRepository;
-
-    public ReopenWorkOrderCommandHandler(IWorkOrderRepository workOrderRepository)
+    public ReopenWorkOrderCommandHandler(
+        IWorkOrderRepository workOrderRepository,
+        IAssetRepository assetRepository,
+        ILogger<ReopenWorkOrderCommandHandler> logger)
+        : base(workOrderRepository, assetRepository, logger)
     {
-        _workOrderRepository = workOrderRepository;
     }
 
-    public async Task<Result> Handle(ReopenWorkOrderCommand request, CancellationToken ct)
-    {
-        try
-        {
-            var workOrder = await _workOrderRepository
-                .GetByIdAsync(request.WorkOrderId, ct)
-                .ConfigureAwait(false);
+    protected override string ActionName => "reopen";
 
-            if (workOrder == null)
-            {
-                return Result.NotFound($"Work order with ID '{request.WorkOrderId}' not found");
-            }
-
-            // Reopen the work order
-            // NOTE: Reason is validated but not stored in domain (FSM transition only)
-            workOrder.Reopen();
-
-            await _workOrderRepository.UpdateAsync(workOrder, ct).ConfigureAwait(false);
-
-            return Result.Success();
-        }
-        catch (ArgumentException ex)
-        {
-            // Domain validation errors
-            return Result.Error(ex.Message);
-        }
-        catch (Exception ex)
-        {
-            // Infrastructure errors
-            return Result.Error($"Failed to reopen work order: {ex.Message}");
-        }
-    }
+    protected override void Apply(WorkOrder workOrder, ReopenWorkOrderCommand request)
+        => workOrder.Reopen();
 }

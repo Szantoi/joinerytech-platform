@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 namespace SpaceOS.Modules.Maintenance.Infrastructure.Persistence.Migrations;
@@ -5,8 +6,13 @@ namespace SpaceOS.Modules.Maintenance.Infrastructure.Persistence.Migrations;
 /// <summary>
 /// Initial database migration for Maintenance module.
 /// Creates "maintenance" schema with assets, work_orders, and owned collection tables.
+/// NOTE (MAINT-BE-TRANSITIONS): the [DbContext]/[Migration] attributes are required for
+/// EF discovery — without them this migration never applied (a stale scaffolded duplicate
+/// under src/Migrations ran instead; that set has been removed).
 /// </summary>
 #nullable disable
+[DbContext(typeof(MaintenanceDbContext))]
+[Migration("20260707000001_InitialCreate")]
 public partial class InitialCreate : Migration
 {
     protected override void Up(MigrationBuilder migrationBuilder)

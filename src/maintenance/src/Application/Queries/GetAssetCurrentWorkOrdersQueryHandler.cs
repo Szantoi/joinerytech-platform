@@ -41,32 +41,10 @@ public class GetAssetCurrentWorkOrdersQueryHandler : IRequestHandler<GetAssetCur
                 .GetActiveByAssetAsync(request.AssetId, ct)
                 .ConfigureAwait(false);
 
-            // Map to DTOs
-            var dtos = workOrders.Select(wo => new WorkOrderDto(
-                Id: wo.Id.Value,
-                AssetId: wo.AssetId.Value,
-                AssetCode: asset.Code,
-                Type: wo.Type,
-                Priority: wo.Priority,
-                Status: wo.Status,
-                Title: wo.Title,
-                Description: wo.Description,
-                ScheduledStart: wo.ScheduledAt,
-                EstimatedHours: wo.EstimatedHours,
-                ActualHours: wo.ActualHours,
-                AssignedTo: wo.AssignedEmployeeId ?? wo.AssignedPartnerId,
-                AssignmentType: wo.AssignmentType,
-                RequiresDowntime: wo.RequiresDowntime,
-                Parts: wo.Parts.Select(p => new WorkOrderPartDto(
-                    CatalogCode: p.CatalogCode,
-                    Quantity: p.Quantity,
-                    UnitPrice: p.UnitPrice.Amount,
-                    TotalPrice: p.TotalPrice.Amount
-                )).ToArray(),
-                TotalPartsCost: wo.Parts.Sum(p => p.TotalPrice.Amount),
-                CompletionNote: null,
-                CreatedAt: wo.ReportedAt
-            )).ToArray();
+            // Map to DTOs (shared mapper — single mapping source)
+            var dtos = workOrders
+                .Select(wo => WorkOrderDtoMapper.ToDto(wo, asset.Code, asset.Name))
+                .ToArray();
 
             return Result<WorkOrderDto[]>.Success(dtos);
         }

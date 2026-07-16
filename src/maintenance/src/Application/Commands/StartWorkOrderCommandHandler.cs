@@ -1,52 +1,26 @@
-using Ardalis.Result;
-using MediatR;
-using SpaceOS.Kernel.Domain.ValueObjects;
+using Microsoft.Extensions.Logging;
+using SpaceOS.Modules.Maintenance.Domain.Aggregates;
 using SpaceOS.Modules.Maintenance.Domain.Repositories;
 
 namespace SpaceOS.Modules.Maintenance.Application.Commands;
 
 /// <summary>
-/// Handler for StartWorkOrderCommand.
+/// Handler for StartWorkOrderCommand (FSM: Scheduled → InProgress).
+/// The aggregate's stored RequiresDowntime flag raises WorkOrderStartedEvent
+/// for the Production integration.
 /// </summary>
-public class StartWorkOrderCommandHandler : IRequestHandler<StartWorkOrderCommand, Result>
+public class StartWorkOrderCommandHandler : WorkOrderTransitionHandlerBase<StartWorkOrderCommand>
 {
-    private readonly IWorkOrderRepository _workOrderRepository;
-
-    public StartWorkOrderCommandHandler(IWorkOrderRepository workOrderRepository)
+    public StartWorkOrderCommandHandler(
+        IWorkOrderRepository workOrderRepository,
+        IAssetRepository assetRepository,
+        ILogger<StartWorkOrderCommandHandler> logger)
+        : base(workOrderRepository, assetRepository, logger)
     {
-        _workOrderRepository = workOrderRepository;
     }
 
-    public async Task<Result> Handle(StartWorkOrderCommand request, CancellationToken ct)
-    {
-        try
-        {
-            var workOrder = await _workOrderRepository
-                .GetByIdAsync(request.WorkOrderId, ct)
-                .ConfigureAwait(false);
+    protected override string ActionName => "start";
 
-            if (workOrder == null)
-            {
-                return Result.NotFound($"Work order with ID '{request.WorkOrderId}' not found");
-            }
-
-            // Start work on the work order
-            // RequiresDowntime flag (from WorkOrder property) raises WorkOrderStartedEvent for Production integration
-            workOrder.StartWork();
-
-            await _workOrderRepository.UpdateAsync(workOrder, ct).ConfigureAwait(false);
-
-            return Result.Success();
-        }
-        catch (ArgumentException ex)
-        {
-            // Domain validation errors
-            return Result.Error(ex.Message);
-        }
-        catch (Exception ex)
-        {
-            // Infrastructure errors
-            return Result.Error($"Failed to start work order: {ex.Message}");
-        }
-    }
+    protected override void Apply(WorkOrder workOrder, StartWorkOrderCommand request)
+        => workOrder.StartWork();
 }

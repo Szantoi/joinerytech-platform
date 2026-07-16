@@ -1,13 +1,8 @@
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
 using FluentValidation;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.IdentityModel.Tokens;
-using SpaceOS.Modules.Maintenance.Application.Contracts;
 using SpaceOS.Modules.Maintenance.Infrastructure;
 using SpaceOS.Modules.Maintenance.Infrastructure.Persistence;
 using Testcontainers.PostgreSql;
@@ -81,8 +76,9 @@ public class ApiTestFixture : IAsyncLifetime
         // Create HTTP client for API testing
         Client = new HttpClient { BaseAddress = new Uri("http://localhost") };
 
-        // Add default JWT token to all requests
-        Client.DefaultRequestHeaders.Add("Authorization", $"Bearer {GenerateTestJwt()}");
+        // Add default bearer token to all requests (opaque test token — no real
+        // JWT validation happens against this client, so no signing is needed)
+        Client.DefaultRequestHeaders.Add("Authorization", "Bearer test-token");
         Client.DefaultRequestHeaders.Add("X-Tenant-Id", "11111111-1111-1111-1111-111111111111");
     }
 
@@ -100,32 +96,6 @@ public class ApiTestFixture : IAsyncLifetime
 
         if (_dbContainer != null)
             await _dbContainer.DisposeAsync().ConfigureAwait(false);
-    }
-
-    /// <summary>
-    /// Generate a test JWT token with tenant claim.
-    /// </summary>
-    private static string GenerateTestJwt()
-    {
-        var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("test-secret-key-that-is-at-least-32-characters-long-for-testing"));
-        var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
-
-        var claims = new[]
-        {
-            new Claim("tenant_id", "11111111-1111-1111-1111-111111111111"),
-            new Claim("sub", "test-user"),
-            new Claim("email", "test@example.com")
-        };
-
-        var token = new JwtSecurityToken(
-            issuer: "test-issuer",
-            audience: "test-audience",
-            claims: claims,
-            expires: DateTime.UtcNow.AddHours(1),
-            signingCredentials: credentials
-        );
-
-        return new JwtSecurityTokenHandler().WriteToken(token);
     }
 
     /// <summary>

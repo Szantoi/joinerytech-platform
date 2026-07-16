@@ -18,7 +18,15 @@ public enum LeadStatus
     Disqualified = 3,
 
     /// <summary>Converted to Opportunity (terminal state).</summary>
-    Opportunity = 4
+    Opportunity = 4,
+
+    /// <summary>
+    /// Qualified but not yet ready to buy — optional parking state before conversion
+    /// (wire: "nurturing"). Appended (value 5) rather than inserted so persisted
+    /// ordinals stay stable. Added by CRM-BE-HOST to close the documented FSM gap
+    /// against the portal LEAD_FSM (F2-CRM-FE).
+    /// </summary>
+    Nurturing = 5
 }
 
 /// <summary>

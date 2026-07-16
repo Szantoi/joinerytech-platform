@@ -1,3 +1,18 @@
+> ## ⚠️ KORREKCIÓ (2026-07-16) — a lenti „production-ready" állítás NEM volt igaz
+>
+> A CRM-BE-HOST felmérése szerint (lásd `docs/tasks/EPIC-UI-PORTAL-2026Q3/CRM-BE-HOST.md`)
+> ez a jelentés **fordítatlan kódról** állította, hogy production-ready: a modulban
+> **nulla `.csproj`** volt, a ~120 `.cs` fájl **soha nem ment át fordítón** (a lenti
+> „NuGet timeout" nem infra-blokkoló volt, hanem elfedte, hogy a kód nem fordul).
+> Valós hibák: 8 handler nem létező névteret importált, query-handlerek nem létező
+> domain-tagokra hivatkoztak, hiányzó aggregátum-metódusok, osztály nélküli endpoint-fájl.
+>
+> **Az üzleti domain viszont valós és jó minőségű volt** — az megmaradt.
+> A modul 2026-07-16 óta fordul, hostja van, 101 teszt zöld.
+> **A mérvadó állapotleírás: `CRM-BE-HOST.md`.** Ez a fájl történeti dokumentum.
+>
+> _Tanulság (QUALITY.md): „kész" csak az, ami lefordul és teszt bizonyítja._
+
 # Week 2 Application Layer — Handler Implementation Complete
 
 ## Summary

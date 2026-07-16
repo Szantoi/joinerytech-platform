@@ -1,5 +1,6 @@
 using Ardalis.Result;
 using MediatR;
+using SpaceOS.Modules.CRM.Application.DTOs;
 using SpaceOS.Modules.CRM.Application.Queries;
 using SpaceOS.Modules.CRM.Domain.Repositories;
 
@@ -30,7 +31,7 @@ public sealed class GetOpportunityTasksQueryHandler : IRequestHandler<GetOpportu
 
             var tasks = opportunity.Tasks
                 .OrderByDescending(t => t.DueDate)
-                .Select(MapToDto)
+                .Select(CrmDtoMapper.ToDto)
                 .ToList();
 
             return Result.Success(tasks);
@@ -41,18 +42,4 @@ public sealed class GetOpportunityTasksQueryHandler : IRequestHandler<GetOpportu
         }
     }
 
-    private static TaskDto MapToDto(Domain.Entities.Task task)
-    {
-        return new TaskDto
-        {
-            Id = task.Id,
-            Title = task.Title,
-            DueDate = task.DueDate,
-            Priority = task.Priority.ToString(),
-            IsCompleted = task.IsCompleted,
-            CreatedBy = task.CreatedBy,
-            CreatedByName = task.CreatedByName ?? string.Empty,
-            CreatedAt = task.CreatedAt
-        };
-    }
 }

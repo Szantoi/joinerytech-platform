@@ -1,13 +1,15 @@
 using FluentValidation;
 using MediatR;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using SpaceOS.Modules.CRM.Application.Validators;
 
 namespace SpaceOS.Modules.CRM.Application;
 
 /// <summary>
 /// Extension methods to register CRM Application layer services.
-/// Called from Kernel/Orchestrator Program.cs in ConfigureServices.
+/// Called from the module host's Program.cs (or the Kernel/Orchestrator).
 /// </summary>
 public static class ApplicationExtensions
 {
@@ -16,9 +18,19 @@ public static class ApplicationExtensions
     /// - MediatR handlers (auto-registered via assembly scan)
     /// - FluentValidation validators
     /// - Validation behavior pipeline
+    /// - CrmOptions bound from the "Crm" configuration section
+    /// - TimeProvider (SLA / forecast "now" — fakeable in tests)
     /// </summary>
-    public static IServiceCollection AddCrmApplication(this IServiceCollection services)
+    public static IServiceCollection AddCrmApplication(
+        this IServiceCollection services,
+        IConfiguration configuration)
     {
+        // Config-driven thresholds (SLA window, stage probabilities, feed size)
+        services.Configure<CrmOptions>(configuration.GetSection(CrmOptions.SectionName));
+
+        // The SLA and the forecast need a clock; tests inject a fake one.
+        services.TryAddSingletonTimeProvider();
+
         // Register MediatR handlers from this assembly
         services.AddMediatR(config =>
         {
@@ -31,6 +43,16 @@ public static class ApplicationExtensions
         // Add validation behavior (intercepts all commands before handler execution)
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
 
+        return services;
+    }
+
+    /// <summary>
+    /// Registers the system clock unless the host already supplied one
+    /// (tests register a fake TimeProvider before calling AddCrmApplication).
+    /// </summary>
+    private static IServiceCollection TryAddSingletonTimeProvider(this IServiceCollection services)
+    {
+        services.TryAddSingleton(TimeProvider.System);
         return services;
     }
 }

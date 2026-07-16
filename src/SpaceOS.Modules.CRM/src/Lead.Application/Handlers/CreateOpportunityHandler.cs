@@ -1,7 +1,10 @@
 using Ardalis.Result;
 using MediatR;
 using SpaceOS.Modules.CRM.Application.Commands;
+using SpaceOS.Modules.CRM.Application.DTOs;
+using SpaceOS.Modules.CRM.Application.Queries;
 using SpaceOS.Modules.CRM.Domain.Aggregates;
+using SpaceOS.Modules.CRM.Domain.Repositories;
 using SpaceOS.Modules.CRM.Domain.ValueObjects;
 
 namespace SpaceOS.Modules.CRM.Application.Handlers;
@@ -11,7 +14,7 @@ namespace SpaceOS.Modules.CRM.Application.Handlers;
 /// Creates opportunity directly (not from lead conversion).
 /// Initiates in "Open" status.
 /// </summary>
-public sealed class CreateOpportunityHandler : IRequestHandler<CreateOpportunityCommand, Result<OpportunityResponse>>
+public sealed class CreateOpportunityHandler : IRequestHandler<CreateOpportunityCommand, Result<OpportunityDto>>
 {
     private readonly IOpportunityRepository _opportunityRepository;
     private readonly IPublisher _publisher;
@@ -22,7 +25,7 @@ public sealed class CreateOpportunityHandler : IRequestHandler<CreateOpportunity
         _publisher = publisher;
     }
 
-    public async Task<Result<OpportunityResponse>> Handle(CreateOpportunityCommand request, CancellationToken cancellationToken)
+    public async Task<Result<OpportunityDto>> Handle(CreateOpportunityCommand request, CancellationToken cancellationToken)
     {
         // Create contact info value object
         var contactInfo = ContactInfo.Create(
@@ -32,7 +35,7 @@ public sealed class CreateOpportunityHandler : IRequestHandler<CreateOpportunity
             request.Company);
 
         // Create money value object
-        var estimatedValue = new Money(request.EstimatedValue, request.Currency);
+        var estimatedValue = Money.Create(request.EstimatedValue, request.Currency);
 
         // Create opportunity aggregate using factory method
         // Note: CreateDirect() is used (not from lead)
@@ -47,7 +50,7 @@ public sealed class CreateOpportunityHandler : IRequestHandler<CreateOpportunity
             request.CreatedBy);
 
         if (!opportunityResult.IsSuccess)
-            return opportunityResult.Map(x => MapToResponse(x));
+            return opportunityResult.Map(x => CrmDtoMapper.ToDto(x));
 
         var opportunity = opportunityResult.Value;
 
@@ -62,38 +65,7 @@ public sealed class CreateOpportunityHandler : IRequestHandler<CreateOpportunity
 
         opportunity.ClearDomainEvents();
 
-        return Result.Success(MapToResponse(opportunity));
+        return Result.Success(CrmDtoMapper.ToDto(opportunity));
     }
 
-    private static OpportunityResponse MapToResponse(Opportunity opportunity)
-    {
-        return new OpportunityResponse
-        {
-            Id = opportunity.Id,
-            TenantId = opportunity.TenantId,
-            Status = opportunity.Status.ToString(),
-            LeadId = opportunity.LeadId,
-            CustomerId = opportunity.CustomerId,
-            ContactName = opportunity.ContactInfo.Name,
-            Email = opportunity.ContactInfo.Email,
-            Phone = opportunity.ContactInfo.Phone,
-            Company = opportunity.ContactInfo.Company,
-            Title = opportunity.Title,
-            EstimatedValue = opportunity.EstimatedValue.Amount,
-            Currency = opportunity.EstimatedValue.Currency,
-            FinalValue = opportunity.FinalValue?.Amount,
-            Probability = opportunity.Probability,
-            ExpectedCloseDate = opportunity.ExpectedCloseDate?.DateTime,
-            AssignedToUserId = opportunity.AssignedTo,
-            OrderRef = opportunity.OrderId,
-            QuoteRef = opportunity.QuoteId,
-            LossReason = opportunity.LossReason,
-            CompetitorName = opportunity.CompetitorName,
-            ActivityCount = opportunity.Activities.Count,
-            TaskCount = opportunity.Tasks.Count,
-            OpenTaskCount = opportunity.Tasks.Count(t => !t.IsCompleted),
-            CreatedAt = opportunity.CreatedAt,
-            UpdatedAt = opportunity.UpdatedAt
-        };
-    }
 }

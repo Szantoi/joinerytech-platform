@@ -1,7 +1,10 @@
 using Ardalis.Result;
 using MediatR;
 using SpaceOS.Modules.CRM.Application.Commands;
+using SpaceOS.Modules.CRM.Application.DTOs;
+using SpaceOS.Modules.CRM.Application.Queries;
 using SpaceOS.Modules.CRM.Domain.Aggregates;
+using SpaceOS.Modules.CRM.Domain.Repositories;
 
 namespace SpaceOS.Modules.CRM.Application.Handlers;
 
@@ -9,7 +12,7 @@ namespace SpaceOS.Modules.CRM.Application.Handlers;
 /// Handler for LoseOpportunityCommand.
 /// Transitions opportunity to Lost status (terminal), probability 0%, records loss reason and competitor.
 /// </summary>
-public sealed class LoseOpportunityHandler : IRequestHandler<LoseOpportunityCommand, Result<OpportunityResponse>>
+public sealed class LoseOpportunityHandler : IRequestHandler<LoseOpportunityCommand, Result<OpportunityDto>>
 {
     private readonly IOpportunityRepository _opportunityRepository;
     private readonly IPublisher _publisher;
@@ -20,7 +23,7 @@ public sealed class LoseOpportunityHandler : IRequestHandler<LoseOpportunityComm
         _publisher = publisher;
     }
 
-    public async Task<Result<OpportunityResponse>> Handle(LoseOpportunityCommand request, CancellationToken cancellationToken)
+    public async Task<Result<OpportunityDto>> Handle(LoseOpportunityCommand request, CancellationToken cancellationToken)
     {
         var opportunity = await _opportunityRepository.GetByIdAsync(request.TenantId, request.OpportunityId, cancellationToken)
             .ConfigureAwait(false);
@@ -28,10 +31,10 @@ public sealed class LoseOpportunityHandler : IRequestHandler<LoseOpportunityComm
         if (opportunity is null)
             return Result.NotFound($"Opportunity with ID {request.OpportunityId} not found");
 
-        var loseResult = opportunity.Lose(request.Reason, request.CompetitorName, request.ActedBy);
+        var loseResult = opportunity.Lose(request.Reason, request.CompetitorName, request.LostBy);
 
         if (!loseResult.IsSuccess)
-            return loseResult.Map(x => MapToResponse(opportunity));
+            return loseResult.Map(x => CrmDtoMapper.ToDto(opportunity));
 
         await _opportunityRepository.UpdateAsync(opportunity, cancellationToken).ConfigureAwait(false);
 
@@ -41,31 +44,7 @@ public sealed class LoseOpportunityHandler : IRequestHandler<LoseOpportunityComm
         }
 
         opportunity.ClearDomainEvents();
-        return Result.Success(MapToResponse(opportunity));
+        return Result.Success(CrmDtoMapper.ToDto(opportunity));
     }
 
-    private static OpportunityResponse MapToResponse(Opportunity opportunity)
-    {
-        return new OpportunityResponse
-        {
-            Id = opportunity.Id,
-            TenantId = opportunity.TenantId,
-            Status = opportunity.Status.ToString(),
-            LeadId = opportunity.LeadId,
-            CustomerId = opportunity.CustomerId,
-            ContactInfo = opportunity.ContactInfo.Name,
-            Title = opportunity.Title,
-            EstimatedValue = opportunity.EstimatedValue.Amount,
-            Currency = opportunity.EstimatedValue.Currency,
-            Probability = opportunity.Probability,
-            ExpectedCloseDate = opportunity.ExpectedCloseDate,
-            OrderRef = opportunity.OrderId,
-            QuoteRef = opportunity.QuoteId,
-            FinalValue = opportunity.FinalValue?.Amount,
-            LossReason = opportunity.LossReason,
-            CompetitorName = opportunity.CompetitorName,
-            CreatedAt = opportunity.CreatedAt,
-            UpdatedAt = opportunity.UpdatedAt
-        };
-    }
 }

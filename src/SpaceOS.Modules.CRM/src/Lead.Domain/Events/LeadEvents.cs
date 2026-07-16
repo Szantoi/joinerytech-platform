@@ -36,6 +36,26 @@ public sealed class LeadQualifiedEvent : DomainEvent
     public Guid ActedBy { get; init; }
 }
 
+/// <summary>
+/// Raised when a qualified lead is parked on the nurturing list
+/// (Qualified → Nurturing; wire: "nurture").
+/// </summary>
+public sealed class LeadNurturingStartedEvent : DomainEvent
+{
+    public Guid LeadId { get; init; }
+    public DateTimeOffset StartedAt { get; init; }
+    public string? Notes { get; init; }
+    public Guid ActedBy { get; init; }
+}
+
+/// <summary>Raised when a lead is soft-deleted (only from New or Disqualified).</summary>
+public sealed class LeadDeletedEvent : DomainEvent
+{
+    public Guid LeadId { get; init; }
+    public DateTimeOffset DeletedAt { get; init; }
+    public Guid DeletedBy { get; init; }
+}
+
 /// <summary>Raised when a lead is disqualified.</summary>
 public sealed class LeadDisqualifiedEvent : DomainEvent
 {

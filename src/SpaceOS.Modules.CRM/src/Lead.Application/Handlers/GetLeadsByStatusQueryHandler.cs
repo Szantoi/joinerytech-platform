@@ -1,6 +1,8 @@
 using Ardalis.Result;
 using MediatR;
+using SpaceOS.Modules.CRM.Application.DTOs;
 using SpaceOS.Modules.CRM.Application.Queries;
+using SpaceOS.Modules.CRM.Domain.Enums;
 using SpaceOS.Modules.CRM.Domain.Repositories;
 
 namespace SpaceOS.Modules.CRM.Application.Handlers;
@@ -21,10 +23,18 @@ public sealed class GetLeadsByStatusQueryHandler : IRequestHandler<GetLeadsBySta
     {
         try
         {
-            var leads = await _repository.GetByStatusAsync(request.TenantId, request.Status, ct).ConfigureAwait(false);
+            if (!Enum.TryParse<LeadStatus>(request.Status, ignoreCase: true, out var status))
+            {
+                return Result.Invalid(new ValidationError
+                {
+                    ErrorMessage = $"Unknown lead status '{request.Status}'"
+                });
+            }
+
+            var leads = await _repository.GetByStatusAsync(request.TenantId, status, ct).ConfigureAwait(false);
 
             var result = leads
-                .Select(MapToDto)
+                .Select(CrmDtoMapper.ToDto)
                 .ToList();
 
             return Result.Success(result);
@@ -35,28 +45,4 @@ public sealed class GetLeadsByStatusQueryHandler : IRequestHandler<GetLeadsBySta
         }
     }
 
-    private static LeadDto MapToDto(Domain.Aggregates.Lead lead)
-    {
-        return new LeadDto
-        {
-            Id = lead.Id,
-            TenantId = lead.TenantId,
-            Status = lead.Status.ToString(),
-            ContactName = lead.ContactName,
-            Email = lead.ContactInfo.Email,
-            Phone = lead.ContactInfo.Phone,
-            Company = lead.ContactInfo.Company,
-            Source = lead.Source.ToString(),
-            AssignedToUserId = lead.AssignedToUserId,
-            AssignedToUserName = lead.AssignedToUserName ?? string.Empty,
-            OpportunityRef = lead.OpportunityRef,
-            ActivityCount = lead.Activities.Count,
-            TaskCount = lead.Tasks.Count,
-            OpenTaskCount = lead.Tasks.Count(t => !t.IsCompleted),
-            CreatedAt = lead.CreatedAt,
-            CreatedByName = lead.CreatedByName ?? string.Empty,
-            UpdatedAt = lead.UpdatedAt,
-            UpdatedByName = lead.UpdatedByName
-        };
-    }
 }

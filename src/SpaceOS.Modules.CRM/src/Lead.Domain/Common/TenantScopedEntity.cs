@@ -1,3 +1,5 @@
+using MediatR;
+
 namespace SpaceOS.Modules.CRM.Domain.Common;
 
 /// <summary>
@@ -32,8 +34,12 @@ public abstract class TenantScopedEntity
 
 /// <summary>
 /// Base class for all domain events.
+///
+/// Implements <see cref="INotification"/> (MediatR.Contracts) because the command
+/// handlers publish these through <c>IPublisher.Publish(object)</c>, which throws
+/// at runtime for non-INotification payloads.
 /// </summary>
-public abstract class DomainEvent
+public abstract class DomainEvent : INotification
 {
     public Guid? AggregateId { get; set; }
     public Guid? TenantId { get; set; }

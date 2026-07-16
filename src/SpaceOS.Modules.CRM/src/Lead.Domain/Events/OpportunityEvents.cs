@@ -102,3 +102,33 @@ public sealed class OpportunityReassignedEvent : DomainEvent
     public Guid ToUserId { get; init; }
     public Guid ReassignedBy { get; init; }
 }
+
+/// <summary>Raised when an activity is logged on an opportunity (call, email, meeting, note).</summary>
+public sealed class OpportunityActivityLoggedEvent : DomainEvent
+{
+    public Guid OpportunityId { get; init; }
+    public string ActivityType { get; init; } = default!;
+    public string Description { get; init; } = default!;
+    public Guid LoggedBy { get; init; }
+    public DateTimeOffset LoggedAt { get; init; }
+}
+
+/// <summary>Raised when a task is created on an opportunity.</summary>
+public sealed class OpportunityTaskCreatedEvent : DomainEvent
+{
+    public Guid OpportunityId { get; init; }
+    public Guid TaskId { get; init; }
+    public string TaskTitle { get; init; } = default!;
+    public DateTimeOffset DueDate { get; init; }
+    public string Priority { get; init; } = default!;
+    public Guid CreatedBy { get; init; }
+}
+
+/// <summary>Raised when an opportunity task is completed.</summary>
+public sealed class OpportunityTaskCompletedEvent : DomainEvent
+{
+    public Guid OpportunityId { get; init; }
+    public Guid TaskId { get; init; }
+    public Guid CompletedBy { get; init; }
+    public DateTimeOffset CompletedAt { get; init; }
+}

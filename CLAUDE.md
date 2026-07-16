@@ -119,19 +119,32 @@ Deploy után **mindig** ellenőrizd, hogy az új kód fut: `ssh joinerytech-vps 
 
 ---
 
-## ADÓSSÁGOK (számon tartott, nem blokkoló)
+## ÁLLAPOT (2026-07-16 este) + ADÓSSÁGOK
+
+**Az „első kör" lezárva:** 7/7 modul APPROVED, portal v1.0.0 + platform v0.2.0 release,
+dark mode a design-system spec szerint, **mind a 7 modul mögött futtatható backend-host**,
+0 tesztbukás (1432 zöld). **ADR-059..064 ELFOGADVA** (docs/knowledge/adr/ — wire-nyelv:
+magyar kulcsok a dróton; host-auth+RLS: közös hosting-csomag, tenant a JWT-claimből).
+Végrehajtás: ADR-060 (HR-taxonómia) és ADR-063 (QA-rework) KÉSZ; ADR-061/062
+(hosting-csomag) folyamatban; utána ADR-059 EnumWireMap → portál MSW→API élesítés.
+**VPS: mind a 11 spaceos-service fut** (VPS_SERVICE_STATE_2026-07-16.md).
 
 Teljes térkép: **[docs/knowledge/architecture/PORTAL_WORLDS_INVENTORY_2026-07-16.md](docs/knowledge/architecture/PORTAL_WORLDS_INVENTORY_2026-07-16.md)**
-(élő státusz: `EPICS.yaml` backlog_f2). A lényeg:
+(élő státusz: `EPICS.yaml` backlog_f2). Nyitott adósságok:
 
 - **~16 legacy világ** a portál rácsában (a tervanyag ~28 csempéjéből 7 modernizált):
   production/warehouse/sales/shopfloor-hoz VAN spaceos-backend, a többihez scope-döntés kell
-- **Frontend:** 19 pre-existing tesztbukás; 205 lint-hiba legacy kódban (7 modul-világban 0);
-  ~100 legacy fájl dark-mode csere nélkül; mocks/worlds.ts regiszter-egyeztetés
-- **Backend:** DMS-nek nincs futtatható hostja; HR/CRM/Kontrolling host hiányzik;
-  nyitott ADR-ök (QA rework-ág, assign-identitás, wire-nyelv, DMS archive/reopen)
-- **Infra:** Keycloak localhost redirect URI (dev-bypass: `VITE_AUTH_MODE=mock`);
-  3 törött gitlink; agents.yaml token a git-történetben (rotáció-jelölt)
+  → javasolt következő epic: EPIC-UI-WORLDS
+- **Frontend:** 205 lint-hiba legacy kódban (7 modul-világban 0); ~100 legacy fájl dark-mode
+  csere nélkül; mocks/worlds.ts regiszter-egyeztetés; MODULE-PACKAGES (npm workspace) pending
+- **Backend:** deploy-blokkolók a hosting-körben zárulnak (X-Tenant-Id hitelesítetlen header,
+  EHS/QA néma RLS-catch, CRM-host auth) — élesítés CSAK utána; qa.tickets migráció pótlása fut
+- **Infra:** Keycloak localhost redirect URI (dev-bypass: `VITE_AUTH_MODE=mock` a .env.local-ban);
+  3 törött gitlink (sales repo GitHubon nem létezik → NuGet-fixe csak VPS-lokális);
+  agents.yaml token a git-történetben (rotáció-jelölt); kernel/orchestrator /health route hiánya
+- **Tudás:** a SpaceOS-alapminták kötelező forrás backend-infra munkához —
+  docs/knowledge/patterns/DATABASE_PATTERNS.md + architecture/ADR_CATALOGUE.md + Nexus RAG
+  (`search_knowledge`); VPS terminál-memóriák pillanatképe: docs/knowledge/vps-terminal-tudastar/
 
 ---
 

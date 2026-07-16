@@ -96,6 +96,24 @@ Doorstar (ügyfél) ◄─── specifikus testreszabás
 | EHS | ✅ | ✅ | ✅ APPROVED |
 | DMS | ✅ | ✅ | ✅ APPROVED |
 
+Release: portal **v1.0.0** + platform **v0.2.0** (2026-07-16, EPIC-UI-PORTAL-2026Q3 CLOSED).
+
+---
+
+## ADÓSSÁGOK (számon tartott, nem blokkoló)
+
+Teljes térkép: **[docs/knowledge/architecture/PORTAL_WORLDS_INVENTORY_2026-07-16.md](docs/knowledge/architecture/PORTAL_WORLDS_INVENTORY_2026-07-16.md)**
+(élő státusz: `EPICS.yaml` backlog_f2). A lényeg:
+
+- **~16 legacy világ** a portál rácsában (a tervanyag ~28 csempéjéből 7 modernizált):
+  production/warehouse/sales/shopfloor-hoz VAN spaceos-backend, a többihez scope-döntés kell
+- **Frontend:** 19 pre-existing tesztbukás; 205 lint-hiba legacy kódban (7 modul-világban 0);
+  ~100 legacy fájl dark-mode csere nélkül; mocks/worlds.ts regiszter-egyeztetés
+- **Backend:** DMS-nek nincs futtatható hostja; HR/CRM/Kontrolling host hiányzik;
+  nyitott ADR-ök (QA rework-ág, assign-identitás, wire-nyelv, DMS archive/reopen)
+- **Infra:** Keycloak localhost redirect URI (dev-bypass: `VITE_AUTH_MODE=mock`);
+  3 törött gitlink; agents.yaml token a git-történetben (rotáció-jelölt)
+
 ---
 
 _JoineryTech Sziget — Faipar SaaS Platform_

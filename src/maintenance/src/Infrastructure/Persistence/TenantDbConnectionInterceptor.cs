@@ -5,8 +5,10 @@ namespace SpaceOS.Modules.Maintenance.Infrastructure.Persistence;
 
 /// <summary>
 /// EF Core connection interceptor that sets PostgreSQL session context for RLS.
-/// Reuses DMS Week 3 pattern exactly, adapted for Maintenance schema.
-/// Intercepts both sync and async connection opening to set tenant context.
+/// Reuses DMS Week 3 pattern, adapted for Maintenance schema.
+/// Runs on ConnectionOpened (the connection must already be open to execute the
+/// SET command) and uses set_config with a parameter directly, so it works even
+/// before the maintenance.set_tenant_context helper function exists (first migration).
 /// </summary>
 public class TenantDbConnectionInterceptor : DbConnectionInterceptor
 {
@@ -18,43 +20,53 @@ public class TenantDbConnectionInterceptor : DbConnectionInterceptor
     }
 
     /// <summary>
-    /// Synchronous connection opening handler.
-    /// Sets the PostgreSQL session variable 'app.tenant_id' for RLS policies.
+    /// Synchronous handler — sets the 'app.tenant_id' session variable for RLS policies.
     /// </summary>
-    public override InterceptionResult ConnectionOpening(
+    public override void ConnectionOpened(
         DbConnection connection,
-        ConnectionEventData eventData,
-        InterceptionResult result)
+        ConnectionEndEventData eventData)
     {
         var tenantId = _tenantContext.TenantId;
         if (tenantId != Guid.Empty)
         {
-            using var command = connection.CreateCommand();
-            command.CommandText = $"SELECT maintenance.set_tenant_context('{tenantId}')";
+            using var command = CreateSetTenantCommand(connection, tenantId);
             command.ExecuteNonQuery();
         }
 
-        return base.ConnectionOpening(connection, eventData, result);
+        base.ConnectionOpened(connection, eventData);
     }
 
     /// <summary>
-    /// Asynchronous connection opening handler.
-    /// Sets the PostgreSQL session variable 'app.tenant_id' for RLS policies.
+    /// Asynchronous handler — sets the 'app.tenant_id' session variable for RLS policies.
     /// </summary>
-    public override async ValueTask<InterceptionResult> ConnectionOpeningAsync(
+    public override async Task ConnectionOpenedAsync(
         DbConnection connection,
-        ConnectionEventData eventData,
-        InterceptionResult result,
+        ConnectionEndEventData eventData,
         CancellationToken ct = default)
     {
         var tenantId = _tenantContext.TenantId;
         if (tenantId != Guid.Empty)
         {
-            await using var command = connection.CreateCommand();
-            command.CommandText = $"SELECT maintenance.set_tenant_context('{tenantId}')";
-            await command.ExecuteNonQueryAsync(ct);
+            var command = CreateSetTenantCommand(connection, tenantId);
+            await using (command.ConfigureAwait(false))
+            {
+                await command.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
+            }
         }
 
-        return await base.ConnectionOpeningAsync(connection, eventData, result, ct);
+        await base.ConnectionOpenedAsync(connection, eventData, ct).ConfigureAwait(false);
+    }
+
+    private static DbCommand CreateSetTenantCommand(DbConnection connection, Guid tenantId)
+    {
+        var command = connection.CreateCommand();
+        command.CommandText = "SELECT set_config('app.tenant_id', @tenant_id, false)";
+
+        var parameter = command.CreateParameter();
+        parameter.ParameterName = "tenant_id";
+        parameter.Value = tenantId.ToString();
+        command.Parameters.Add(parameter);
+
+        return command;
     }
 }

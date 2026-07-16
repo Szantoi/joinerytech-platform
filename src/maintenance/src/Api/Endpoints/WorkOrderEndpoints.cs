@@ -1,3 +1,4 @@
+using Ardalis.Result;
 using MediatR;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -8,11 +9,23 @@ using SpaceOS.Modules.Maintenance.Application.DTOs;
 using SpaceOS.Modules.Maintenance.Application.Queries;
 using SpaceOS.Modules.Maintenance.Domain.Enums;
 using SpaceOS.Modules.Maintenance.Domain.StrongIds;
+using IResult = Microsoft.AspNetCore.Http.IResult;
 
 namespace SpaceOS.Modules.Maintenance.Api.Endpoints;
 
 /// <summary>
 /// WorkOrder API endpoints using Minimal API pattern.
+/// FSM transitions (portal WORK_ORDER_FSM mirror — the aggregate is the source of truth):
+///   PUT {id}/schedule  Reported → Scheduled
+///   PUT {id}/start     Scheduled → InProgress (assignment required)
+///   PUT {id}/complete  InProgress → Completed (terminal)
+///   PUT {id}/postpone  Scheduled/InProgress → Postponed (reason required)
+///   PUT {id}/reject    Reported/Scheduled → Rejected (reason required)
+///   PUT {id}/reopen    Postponed/Rejected → Reported (clears assignment/schedule/reasons)
+///   PUT {id}/assign    status-guarded action (Reported/Scheduled), NOT an FSM transition
+/// Every transition returns the FRESH WorkOrderDto (portal optimistic-update contract).
+/// Error contract (EHS precedent): 404 = not found, 409 = illegal FSM transition /
+/// state conflict, 400 = invalid input.
 /// </summary>
 public static class WorkOrderEndpoints
 {
@@ -27,7 +40,7 @@ public static class WorkOrderEndpoints
 
         group.MapPost("", CreateWorkOrder)
             .WithName("CreateWorkOrder")
-            .WithSummary("Create a new work order")
+            .WithSummary("Create a new work order (FSM entry: Reported)")
             .Produces<Guid>(201)
             .ProducesValidationProblem();
 
@@ -54,21 +67,50 @@ public static class WorkOrderEndpoints
             .Produces(404)
             .ProducesValidationProblem();
 
-        group.MapPost("/{id:guid}/start", StartWorkOrder)
-            .WithName("StartWorkOrder")
-            .WithSummary("Start work order (FSM transition: Planned → InProgress)")
-            .Produces(204)
-            .Produces(404)
-            .ProducesValidationProblem();
+        // ── FSM transition endpoints (portal contract: PUT + fresh WorkOrderDto) ──
 
-        group.MapPost("/{id:guid}/complete", CompleteWorkOrder)
-            .WithName("CompleteWorkOrder")
-            .WithSummary("Complete work order (FSM transition: InProgress → Completed)")
-            .Produces(204)
-            .Produces(404)
-            .ProducesValidationProblem();
+        MapTransition(group, "schedule", ScheduleWorkOrder,
+            "ScheduleWorkOrder", "FSM: Reported → Scheduled (date + estimated hours required)");
+
+        MapTransition(group, "assign", AssignWorkOrder,
+            "AssignWorkOrder", "Assign internal technician or external contractor (Reported/Scheduled only — not an FSM transition)");
+
+        MapTransition(group, "start", StartWorkOrder,
+            "StartWorkOrder", "FSM: Scheduled → InProgress (assignment required; empty body)");
+
+        MapTransition(group, "complete", CompleteWorkOrder,
+            "CompleteWorkOrder", "FSM: InProgress → Completed (actual hours required; terminal)");
+
+        MapTransition(group, "postpone", PostponeWorkOrder,
+            "PostponeWorkOrder", "FSM: Scheduled/InProgress → Postponed (reason required)");
+
+        MapTransition(group, "reject", RejectWorkOrder,
+            "RejectWorkOrder", "FSM: Reported/Scheduled → Rejected (reason required)");
+
+        MapTransition(group, "reopen", ReopenWorkOrder,
+            "ReopenWorkOrder", "FSM: Postponed/Rejected → Reported (clears assignment/schedule/reasons; empty body)");
 
         return app;
+    }
+
+    /// <summary>
+    /// Shared route metadata for the transition endpoints
+    /// (PUT, fresh WorkOrderDto, 404/409/400 error contract).
+    /// </summary>
+    private static void MapTransition(
+        RouteGroupBuilder group,
+        string action,
+        Delegate handler,
+        string name,
+        string summary)
+    {
+        group.MapPut($"/{{id:guid}}/{action}", handler)
+            .WithName(name)
+            .WithSummary(summary)
+            .Produces<WorkOrderDto>(200)
+            .Produces(400)
+            .Produces(404)
+            .Produces(409);
     }
 
     // ============ HANDLERS ============
@@ -185,24 +227,63 @@ public static class WorkOrderEndpoints
             : Results.BadRequest(result.Errors);
     }
 
-    private static async Task<IResult> StartWorkOrder(
+    // ── FSM transition handlers ──
+
+    private static async Task<IResult> ScheduleWorkOrder(
         [FromRoute] Guid id,
-        [FromBody] StartWorkOrderRequestDto request,
+        [FromBody] ScheduleWorkOrderRequestDto request,
         [FromServices] IMediator mediator,
         [FromHeader(Name = "X-Tenant-Id")] Guid tenantId,
         CancellationToken ct)
     {
-        var command = new StartWorkOrderCommand(
+        var command = new ScheduleWorkOrderCommand(
             WorkOrderId: new WorkOrderId(id),
-            RequiresDowntime: request.RequiresDowntime,
+            ScheduledStart: request.ScheduledAt,
+            EstimatedHours: request.EstimatedHours,
             TenantId: tenantId
         );
 
         var result = await mediator.Send(command, ct).ConfigureAwait(false);
+        return ToTransitionResult(result);
+    }
 
-        return result.IsSuccess
-            ? Results.NoContent()
-            : Results.BadRequest(result.Errors);
+    private static async Task<IResult> AssignWorkOrder(
+        [FromRoute] Guid id,
+        [FromBody] AssignWorkOrderRequestDto request,
+        [FromServices] IMediator mediator,
+        [FromHeader(Name = "X-Tenant-Id")] Guid tenantId,
+        CancellationToken ct)
+    {
+        if (!Enum.TryParse<AssignmentType>(request.AssignmentType, ignoreCase: true, out var assignmentType))
+        {
+            return Results.BadRequest(new { error = "Invalid assignment type" });
+        }
+
+        var command = new AssignWorkOrderCommand(
+            WorkOrderId: new WorkOrderId(id),
+            AssignedTo: request.AssignedTo,
+            AssignmentType: assignmentType,
+            TenantId: tenantId
+        );
+
+        var result = await mediator.Send(command, ct).ConfigureAwait(false);
+        return ToTransitionResult(result);
+    }
+
+    private static async Task<IResult> StartWorkOrder(
+        [FromRoute] Guid id,
+        [FromServices] IMediator mediator,
+        [FromHeader(Name = "X-Tenant-Id")] Guid tenantId,
+        CancellationToken ct)
+    {
+        // No body: RequiresDowntime is fixed at creation time on the aggregate (portal contract)
+        var command = new StartWorkOrderCommand(
+            WorkOrderId: new WorkOrderId(id),
+            TenantId: tenantId
+        );
+
+        var result = await mediator.Send(command, ct).ConfigureAwait(false);
+        return ToTransitionResult(result);
     }
 
     private static async Task<IResult> CompleteWorkOrder(
@@ -220,10 +301,73 @@ public static class WorkOrderEndpoints
         );
 
         var result = await mediator.Send(command, ct).ConfigureAwait(false);
+        return ToTransitionResult(result);
+    }
 
-        return result.IsSuccess
-            ? Results.NoContent()
-            : Results.BadRequest(result.Errors);
+    private static async Task<IResult> PostponeWorkOrder(
+        [FromRoute] Guid id,
+        [FromBody] PostponeWorkOrderRequestDto request,
+        [FromServices] IMediator mediator,
+        [FromHeader(Name = "X-Tenant-Id")] Guid tenantId,
+        CancellationToken ct)
+    {
+        var command = new PostponeWorkOrderCommand(
+            WorkOrderId: new WorkOrderId(id),
+            Reason: request.Reason,
+            TenantId: tenantId
+        );
+
+        var result = await mediator.Send(command, ct).ConfigureAwait(false);
+        return ToTransitionResult(result);
+    }
+
+    private static async Task<IResult> RejectWorkOrder(
+        [FromRoute] Guid id,
+        [FromBody] RejectWorkOrderRequestDto request,
+        [FromServices] IMediator mediator,
+        [FromHeader(Name = "X-Tenant-Id")] Guid tenantId,
+        CancellationToken ct)
+    {
+        var command = new RejectWorkOrderCommand(
+            WorkOrderId: new WorkOrderId(id),
+            Reason: request.Reason,
+            TenantId: tenantId
+        );
+
+        var result = await mediator.Send(command, ct).ConfigureAwait(false);
+        return ToTransitionResult(result);
+    }
+
+    private static async Task<IResult> ReopenWorkOrder(
+        [FromRoute] Guid id,
+        [FromServices] IMediator mediator,
+        [FromHeader(Name = "X-Tenant-Id")] Guid tenantId,
+        CancellationToken ct)
+    {
+        // No body: reopen carries no reason (portal contract)
+        var command = new ReopenWorkOrderCommand(
+            WorkOrderId: new WorkOrderId(id),
+            TenantId: tenantId
+        );
+
+        var result = await mediator.Send(command, ct).ConfigureAwait(false);
+        return ToTransitionResult(result);
+    }
+
+    /// <summary>
+    /// Shared Result → HTTP mapping for the transition endpoints
+    /// (200 fresh DTO / 404 not found / 409 state conflict / 400 invalid input).
+    /// </summary>
+    private static IResult ToTransitionResult(Result<WorkOrderDto> result)
+    {
+        return result.Status switch
+        {
+            ResultStatus.Ok => Results.Ok(result.Value),
+            ResultStatus.NotFound => Results.NotFound(),
+            ResultStatus.Conflict => Results.Conflict(new { Error = result.Errors.FirstOrDefault() ?? "State conflict" }),
+            ResultStatus.Invalid => Results.BadRequest(new { Error = result.ValidationErrors.FirstOrDefault()?.ErrorMessage ?? "Invalid request" }),
+            _ => Results.BadRequest(new { Error = result.Errors.FirstOrDefault() ?? "Request failed" })
+        };
     }
 }
 
@@ -244,11 +388,25 @@ public record AddWorkOrderPartRequestDto(
     decimal UnitPrice
 );
 
-public record StartWorkOrderRequestDto(
-    bool RequiresDowntime
+public record ScheduleWorkOrderRequestDto(
+    DateTime ScheduledAt,
+    decimal EstimatedHours
+);
+
+public record AssignWorkOrderRequestDto(
+    string AssignmentType,
+    Guid AssignedTo
 );
 
 public record CompleteWorkOrderRequestDto(
     decimal ActualHours,
     string? CompletionNote
+);
+
+public record PostponeWorkOrderRequestDto(
+    string Reason
+);
+
+public record RejectWorkOrderRequestDto(
+    string Reason
 );

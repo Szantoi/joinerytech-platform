@@ -3,6 +3,8 @@ using SpaceOS.Kernel.Domain.Primitives;
 using SpaceOS.Kernel.Domain.ValueObjects;
 using SpaceOS.Modules.Maintenance.Domain.Enums;
 using SpaceOS.Modules.Maintenance.Domain.Events;
+using SpaceOS.Modules.Maintenance.Domain.Exceptions;
+using SpaceOS.Modules.Maintenance.Domain.FSM;
 using SpaceOS.Modules.Maintenance.Domain.StrongIds;
 using SpaceOS.Modules.Maintenance.Domain.ValueObjects;
 
@@ -12,6 +14,10 @@ namespace SpaceOS.Modules.Maintenance.Domain.Aggregates;
 /// WorkOrder aggregate root.
 /// Represents a maintenance work order (corrective, preventive, or cleaning)
 /// with FSM-enforced status transitions, assignment tracking, and parts management.
+/// The aggregate is the single source of truth for state changes: every transition
+/// method guards via the declarative <see cref="WorkOrderStatusTransitions"/> table
+/// (state conflicts throw <see cref="WorkOrderStateConflictException"/> → API 409;
+/// input validation throws <see cref="DomainException"/> → API 400).
 /// </summary>
 public class WorkOrder : AggregateRoot
 {
@@ -115,8 +121,7 @@ public class WorkOrder : AggregateRoot
     /// </summary>
     public void Schedule(DateTime scheduledAt, decimal estimatedHours)
     {
-        if (Status != WorkOrderStatus.Reported)
-            throw new DomainException($"Cannot schedule work order in {Status} status");
+        EnsureTransition(WorkOrderStatus.Scheduled, $"Cannot schedule work order in {Status} status");
 
         if (scheduledAt <= DateTime.UtcNow)
             throw new DomainException("Scheduled date must be in the future");
@@ -140,8 +145,8 @@ public class WorkOrder : AggregateRoot
     /// </summary>
     public void AssignInternalTechnician(Guid employeeId)
     {
-        if (Status != WorkOrderStatus.Reported && Status != WorkOrderStatus.Scheduled)
-            throw new DomainException($"Cannot assign technician in {Status} status");
+        if (!IsAssignable())
+            throw new WorkOrderStateConflictException($"Cannot assign technician in {Status} status");
 
         if (employeeId == Guid.Empty)
             throw new DomainException("EmployeeId is required");
@@ -163,8 +168,8 @@ public class WorkOrder : AggregateRoot
     /// </summary>
     public void AssignExternalContractor(Guid partnerId)
     {
-        if (Status != WorkOrderStatus.Reported && Status != WorkOrderStatus.Scheduled)
-            throw new DomainException($"Cannot assign contractor in {Status} status");
+        if (!IsAssignable())
+            throw new WorkOrderStateConflictException($"Cannot assign contractor in {Status} status");
 
         if (partnerId == Guid.Empty)
             throw new DomainException("PartnerId is required");
@@ -186,11 +191,10 @@ public class WorkOrder : AggregateRoot
     /// </summary>
     public void StartWork()
     {
-        if (Status != WorkOrderStatus.Scheduled)
-            throw new DomainException($"Cannot start work in {Status} status, must be Scheduled first");
+        EnsureTransition(WorkOrderStatus.InProgress, $"Cannot start work in {Status} status, must be Scheduled first");
 
         if (!AssignmentType.HasValue)
-            throw new DomainException("Work order must be assigned before starting");
+            throw new WorkOrderStateConflictException("Work order must be assigned before starting");
 
         Status = WorkOrderStatus.InProgress;
         StartedAt = DateTime.UtcNow;
@@ -208,8 +212,7 @@ public class WorkOrder : AggregateRoot
     /// </summary>
     public void Complete(decimal actualHours)
     {
-        if (Status != WorkOrderStatus.InProgress)
-            throw new DomainException($"Cannot complete work order in {Status} status");
+        EnsureTransition(WorkOrderStatus.Completed, $"Cannot complete work order in {Status} status");
 
         if (actualHours <= 0)
             throw new DomainException("Actual hours must be positive");
@@ -229,8 +232,7 @@ public class WorkOrder : AggregateRoot
     /// </summary>
     public void Postpone(string reason)
     {
-        if (Status != WorkOrderStatus.InProgress && Status != WorkOrderStatus.Scheduled)
-            throw new DomainException($"Cannot postpone work order in {Status} status");
+        EnsureTransition(WorkOrderStatus.Postponed, $"Cannot postpone work order in {Status} status");
 
         if (string.IsNullOrWhiteSpace(reason))
             throw new DomainException("Postponement reason is required");
@@ -249,8 +251,7 @@ public class WorkOrder : AggregateRoot
     /// </summary>
     public void Reject(string reason)
     {
-        if (Status != WorkOrderStatus.Reported && Status != WorkOrderStatus.Scheduled)
-            throw new DomainException($"Cannot reject work order in {Status} status");
+        EnsureTransition(WorkOrderStatus.Rejected, $"Cannot reject work order in {Status} status");
 
         if (string.IsNullOrWhiteSpace(reason))
             throw new DomainException("Rejection reason is required");
@@ -269,8 +270,7 @@ public class WorkOrder : AggregateRoot
     /// </summary>
     public void Reopen()
     {
-        if (Status != WorkOrderStatus.Postponed && Status != WorkOrderStatus.Rejected)
-            throw new DomainException($"Cannot reopen work order in {Status} status");
+        EnsureTransition(WorkOrderStatus.Reported, $"Cannot reopen work order in {Status} status");
 
         Status = WorkOrderStatus.Reported;
         PostponementReason = null;
@@ -335,5 +335,22 @@ public class WorkOrder : AggregateRoot
             Id,
             TenantId,
             partId));
+    }
+
+    /// <summary>
+    /// Assignment is allowed in Reported/Scheduled (not an FSM transition,
+    /// but status-guarded — mirrored by the portal WORK_ORDER_ASSIGNABLE_STATUSES guard).
+    /// </summary>
+    private bool IsAssignable()
+        => Status == WorkOrderStatus.Reported || Status == WorkOrderStatus.Scheduled;
+
+    /// <summary>
+    /// Guards a status transition via the declarative FSM table — the aggregate
+    /// enforces, the table declares, so the two cannot diverge.
+    /// </summary>
+    private void EnsureTransition(WorkOrderStatus target, string conflictMessage)
+    {
+        if (!WorkOrderStatusTransitions.IsValidTransition(Status, target))
+            throw new WorkOrderStateConflictException(conflictMessage);
     }
 }

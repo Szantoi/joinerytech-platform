@@ -3,6 +3,7 @@ using SpaceOS.Kernel.Domain.Exceptions;
 using SpaceOS.Modules.Maintenance.Domain.Aggregates;
 using SpaceOS.Modules.Maintenance.Domain.Enums;
 using SpaceOS.Modules.Maintenance.Domain.Events;
+using SpaceOS.Modules.Maintenance.Domain.Exceptions;
 using SpaceOS.Modules.Maintenance.Domain.StrongIds;
 using SpaceOS.Modules.Maintenance.Domain.ValueObjects;
 using Xunit;
@@ -646,5 +647,111 @@ public class WorkOrderTests
         // Assert
         act.Should().Throw<DomainException>()
             .WithMessage("Part with ID 'invalid-part-id' not found");
+    }
+
+    // ── MAINT-BE-TRANSITIONS: exception-type contract (409 vs 400) ─────────────
+    // State conflicts throw WorkOrderStateConflictException (API 409, portal MSW
+    // guardTransition mirror); input validation stays plain DomainException (API 400).
+
+    [Fact]
+    public void IllegalTransition_ShouldThrowStateConflictException()
+    {
+        // Arrange: Reported work order — starting is illegal (must be Scheduled)
+        var wo = CreateWorkOrder();
+
+        // Act
+        var act = () => wo.StartWork();
+
+        // Assert
+        act.Should().Throw<WorkOrderStateConflictException>()
+            .WithMessage($"Cannot start work in {WorkOrderStatus.Reported} status, must be Scheduled first");
+    }
+
+    [Fact]
+    public void StartWork_WithoutAssignment_ShouldThrowStateConflictException()
+    {
+        // Arrange: Scheduled but unassigned (portal start-guard mirror: 409)
+        var wo = CreateWorkOrder();
+        wo.Schedule(DateTime.UtcNow.AddDays(1), 2.0m);
+
+        // Act
+        var act = () => wo.StartWork();
+
+        // Assert
+        act.Should().Throw<WorkOrderStateConflictException>()
+            .WithMessage("Work order must be assigned before starting");
+    }
+
+    [Fact]
+    public void Assign_InInvalidStatus_ShouldThrowStateConflictException()
+    {
+        // Arrange: InProgress — assignment only allowed in Reported/Scheduled
+        var wo = CreateWorkOrder();
+        wo.Schedule(DateTime.UtcNow.AddDays(1), 2.0m);
+        wo.AssignInternalTechnician(_employeeId);
+        wo.StartWork();
+
+        // Act
+        var act = () => wo.AssignExternalContractor(_partnerId);
+
+        // Assert
+        act.Should().Throw<WorkOrderStateConflictException>()
+            .WithMessage($"Cannot assign contractor in {WorkOrderStatus.InProgress} status");
+    }
+
+    [Fact]
+    public void Postpone_FromReported_ShouldThrowStateConflictException()
+    {
+        // Arrange: postpone is only allowed from Scheduled/InProgress (portal mirror)
+        var wo = CreateWorkOrder();
+
+        // Act
+        var act = () => wo.Postpone("Parts missing");
+
+        // Assert
+        act.Should().Throw<WorkOrderStateConflictException>()
+            .WithMessage($"Cannot postpone work order in {WorkOrderStatus.Reported} status");
+    }
+
+    [Fact]
+    public void Reject_FromInProgress_ShouldThrowStateConflictException()
+    {
+        // Arrange: reject is only allowed from Reported/Scheduled (portal mirror)
+        var wo = CreateWorkOrder();
+        wo.Schedule(DateTime.UtcNow.AddDays(1), 2.0m);
+        wo.AssignInternalTechnician(_employeeId);
+        wo.StartWork();
+
+        // Act
+        var act = () => wo.Reject("Not needed");
+
+        // Assert
+        act.Should().Throw<WorkOrderStateConflictException>()
+            .WithMessage($"Cannot reject work order in {WorkOrderStatus.InProgress} status");
+    }
+
+    [Fact]
+    public void InputValidationError_ShouldNotBeStateConflict()
+    {
+        // Arrange: valid state (Reported → schedule allowed), invalid input (past date)
+        var wo = CreateWorkOrder();
+
+        // Act
+        var act = () => wo.Schedule(DateTime.UtcNow.AddDays(-1), 2.0m);
+
+        // Assert: 400-contract — plain DomainException, NOT the 409 conflict subtype
+        act.Should().Throw<DomainException>()
+            .Which.Should().NotBeOfType<WorkOrderStateConflictException>();
+    }
+
+    private WorkOrder CreateWorkOrder()
+    {
+        return WorkOrder.Create(
+            _tenantId,
+            _assetId,
+            WorkOrderType.Corrective,
+            WorkOrderPriority.High,
+            "Fix belt",
+            "Belt replacement");
     }
 }

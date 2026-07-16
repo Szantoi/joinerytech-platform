@@ -93,6 +93,12 @@ public class AssetEntityTypeConfiguration : IEntityTypeConfiguration<Asset>
             plans.ToTable("asset_maintenance_plans", "maintenance");
             plans.WithOwner().HasForeignKey("asset_id");
 
+            // Key column must be mapped explicitly — the table column is "id"
+            // (without this the runtime model expects a PascalCase "Id" column)
+            plans.Property(p => p.Id)
+                .HasMaxLength(36)
+                .HasColumnName("id");
+
             plans.Property(p => p.Label)
                 .IsRequired()
                 .HasMaxLength(200)

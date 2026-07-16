@@ -5,13 +5,13 @@ namespace SpaceOS.Modules.Maintenance.Application.Validators;
 
 /// <summary>
 /// Validator for ReopenWorkOrderCommand.
+/// No payload to validate — reopen carries no reason (portal contract:
+/// empty body; the aggregate clears assignment/schedule/reasons itself).
 /// </summary>
 public class ReopenWorkOrderValidator : AbstractValidator<ReopenWorkOrderCommand>
 {
     public ReopenWorkOrderValidator()
     {
-        RuleFor(x => x.Reason)
-            .NotEmpty().WithMessage("Reopen reason is required")
-            .Length(1, 500).WithMessage("Reopen reason must be between 1 and 500 characters");
+        // No special validation required
     }
 }

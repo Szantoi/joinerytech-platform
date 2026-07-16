@@ -20,16 +20,19 @@ public class AssetApiTests
     }
 
     [Fact]
-    public async Task ListAssets_ReturnsOkStatus_OnFirstCall()
+    public async Task ListAssets_QueryableAfterMigration_OnFirstCall()
     {
+        // NOTE (MAINT-BE-TRANSITIONS): the fixture has no HTTP server behind the
+        // client — real endpoint contract tests live in Tests.Api (TestServer).
+        // This verifies the migrated schema is queryable through the DbContext.
         // Arrange
-        var client = _fixture.Client!;
+        var dbContext = _fixture.DbContext!;
 
         // Act
-        var response = await client.GetAsync("/api/maintenance/assets");
+        var act = () => dbContext.Assets.ToList();
 
         // Assert
-        response.StatusCode.Should().Be(System.Net.HttpStatusCode.OK);
+        act.Should().NotThrow();
     }
 
     [Fact]
@@ -55,10 +58,12 @@ public class AssetApiTests
         // Act
         // Note: Full API test would require WebApplicationFactory setup
         // This test verifies the repository pattern is working
+        // (the maintenance plans owned collection loads without schema errors)
         var assets = dbContext.Assets.ToList();
 
         // Assert
-        assets.Should().BeOfType<List<object>>();
+        assets.Should().NotBeNull();
+        assets.All(a => a.MaintenancePlans != null).Should().BeTrue();
     }
 
     [Fact]

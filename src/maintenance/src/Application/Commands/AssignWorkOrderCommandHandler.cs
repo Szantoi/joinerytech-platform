@@ -1,58 +1,33 @@
-using Ardalis.Result;
-using MediatR;
-using SpaceOS.Kernel.Domain.ValueObjects;
+using Microsoft.Extensions.Logging;
+using SpaceOS.Modules.Maintenance.Domain.Aggregates;
 using SpaceOS.Modules.Maintenance.Domain.Repositories;
 
 namespace SpaceOS.Modules.Maintenance.Application.Commands;
 
 /// <summary>
-/// Handler for AssignWorkOrderCommand.
+/// Handler for AssignWorkOrderCommand (status-guarded: Reported/Scheduled only).
 /// </summary>
-public class AssignWorkOrderCommandHandler : IRequestHandler<AssignWorkOrderCommand, Result>
+public class AssignWorkOrderCommandHandler : WorkOrderTransitionHandlerBase<AssignWorkOrderCommand>
 {
-    private readonly IWorkOrderRepository _workOrderRepository;
-
-    public AssignWorkOrderCommandHandler(IWorkOrderRepository workOrderRepository)
+    public AssignWorkOrderCommandHandler(
+        IWorkOrderRepository workOrderRepository,
+        IAssetRepository assetRepository,
+        ILogger<AssignWorkOrderCommandHandler> logger)
+        : base(workOrderRepository, assetRepository, logger)
     {
-        _workOrderRepository = workOrderRepository;
     }
 
-    public async Task<Result> Handle(AssignWorkOrderCommand request, CancellationToken ct)
+    protected override string ActionName => "assign";
+
+    protected override void Apply(WorkOrder workOrder, AssignWorkOrderCommand request)
     {
-        try
+        if (request.AssignmentType == Domain.Enums.AssignmentType.Internal)
         {
-            var workOrder = await _workOrderRepository
-                .GetByIdAsync(request.WorkOrderId, ct)
-                .ConfigureAwait(false);
-
-            if (workOrder == null)
-            {
-                return Result.NotFound($"Work order with ID '{request.WorkOrderId}' not found");
-            }
-
-            // Assign the work order based on assignment type
-            if (request.AssignmentType == Domain.Enums.AssignmentType.Internal)
-            {
-                workOrder.AssignInternalTechnician(request.AssignedTo);
-            }
-            else
-            {
-                workOrder.AssignExternalContractor(request.AssignedTo);
-            }
-
-            await _workOrderRepository.UpdateAsync(workOrder, ct).ConfigureAwait(false);
-
-            return Result.Success();
+            workOrder.AssignInternalTechnician(request.AssignedTo);
         }
-        catch (ArgumentException ex)
+        else
         {
-            // Domain validation errors
-            return Result.Error(ex.Message);
-        }
-        catch (Exception ex)
-        {
-            // Infrastructure errors
-            return Result.Error($"Failed to assign work order: {ex.Message}");
+            workOrder.AssignExternalContractor(request.AssignedTo);
         }
     }
 }

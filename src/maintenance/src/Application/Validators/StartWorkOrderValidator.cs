@@ -5,7 +5,8 @@ namespace SpaceOS.Modules.Maintenance.Application.Validators;
 
 /// <summary>
 /// Validator for StartWorkOrderCommand.
-/// No special validation (RequiresDowntime is bool).
+/// No payload to validate — start carries no body (portal contract:
+/// RequiresDowntime is fixed at creation time on the aggregate).
 /// </summary>
 public class StartWorkOrderValidator : AbstractValidator<StartWorkOrderCommand>
 {

@@ -128,6 +128,12 @@ public class WorkOrderEntityTypeConfiguration : IEntityTypeConfiguration<WorkOrd
             parts.ToTable("work_order_parts", "maintenance");
             parts.WithOwner().HasForeignKey("work_order_id");
 
+            // Key column must be mapped explicitly — the table column is "id"
+            // (without this the runtime model expects a PascalCase "Id" column)
+            parts.Property(p => p.Id)
+                .HasMaxLength(36)
+                .HasColumnName("id");
+
             parts.Property(p => p.CatalogCode)
                 .IsRequired()
                 .HasMaxLength(50)

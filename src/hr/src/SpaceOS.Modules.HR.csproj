@@ -7,7 +7,22 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../../backend/spaceos-kernel/SpaceOS.Kernel.Domain/SpaceOS.Kernel.Domain.csproj" />
+    <!-- The API host is its own project (Api/SpaceOS.Modules.HR.Api.csproj) — keep its
+         sources out of the module assembly's default glob. -->
+    <Compile Remove="Api/**" />
+    <Content Remove="Api/**" />
+    <None Remove="Api/**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Kernel Domain Primitives (AggregateRoot, IDomainEvent, TenantId) — src/spaceos-kernel
+         submodule (path fixed from the stale backend/ prefix, mirroring the src/ehs and
+         src/qa csproj fixes). -->
+    <ProjectReference Include="../../spaceos-kernel/SpaceOS.Kernel.Domain/SpaceOS.Kernel.Domain.csproj" />
   </ItemGroup>
 
   <ItemGroup>

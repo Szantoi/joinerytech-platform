@@ -11,6 +11,18 @@ public interface IEmployeeRepository
     Task<Employee?> GetByIdAsync(EmployeeId id, CancellationToken ct = default);
     
     Task<Employee?> GetByEmailAsync(TenantId tenantId, string email, CancellationToken ct = default);
+
+    /// <summary>
+    /// Lists employees for the tenant with the API's optional filters
+    /// (portal contract: dept / q / skill), ordered by name.
+    /// </summary>
+    Task<IReadOnlyList<Employee>> ListAsync(
+        TenantId tenantId,
+        Department? department = null,
+        SkillKey? skill = null,
+        string? searchText = null,
+        bool activeOnly = true,
+        CancellationToken ct = default);
     
     Task<IEnumerable<Employee>> GetActiveByDepartmentAsync(TenantId tenantId, Department department, CancellationToken ct = default);
     

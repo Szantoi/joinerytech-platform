@@ -6,9 +6,10 @@ using SpaceOS.Modules.HR.Domain.Repositories;
 namespace SpaceOS.Modules.HR.Application.Queries;
 
 /// <summary>
-/// Handler for GetEmployeesQuery.
+/// Handler for GetEmployeesQuery — the filtering happens in the repository (SQL),
+/// not in memory.
 /// </summary>
-public class GetEmployeesQueryHandler : IRequestHandler<GetEmployeesQuery, Result<List<EmployeeListDto>>>
+public class GetEmployeesQueryHandler : IRequestHandler<GetEmployeesQuery, Result<IReadOnlyList<EmployeeDto>>>
 {
     private readonly IEmployeeRepository _employeeRepository;
 
@@ -17,47 +18,20 @@ public class GetEmployeesQueryHandler : IRequestHandler<GetEmployeesQuery, Resul
         _employeeRepository = employeeRepository;
     }
 
-    public async Task<Result<List<EmployeeListDto>>> Handle(GetEmployeesQuery request, CancellationToken ct)
+    public async Task<Result<IReadOnlyList<EmployeeDto>>> Handle(GetEmployeesQuery request, CancellationToken ct)
     {
-        try
-        {
-            IEnumerable<Domain.Aggregates.Employee> employees;
+        var employees = await _employeeRepository
+            .ListAsync(
+                request.TenantId,
+                request.Department,
+                request.Skill,
+                request.SearchText,
+                request.ActiveOnly,
+                ct)
+            .ConfigureAwait(false);
 
-            if (request.Department.HasValue)
-            {
-                employees = await _employeeRepository
-                    .GetActiveByDepartmentAsync(request.TenantId, request.Department.Value, ct)
-                    .ConfigureAwait(false);
-            }
-            else
-            {
-                // TODO: Repository doesn't have GetAll method - using GetActiveByDepartment workaround
-                // For now, return empty list - needs repository enhancement
-                employees = Enumerable.Empty<Domain.Aggregates.Employee>();
-            }
+        IReadOnlyList<EmployeeDto> dtos = employees.Select(HrDtoMapper.ToDto).ToList();
 
-            // Filter by Active if requested
-            if (request.ActiveOnly == true)
-            {
-                employees = employees.Where(e => e.Active);
-            }
-
-            // Map to DTOs
-            var dtos = employees.Select(e => new EmployeeListDto(
-                Id: e.Id.Value,
-                FullName: e.Name,
-                Email: e.Email,
-                JobTitle: e.Role,
-                DepartmentId: Guid.Empty, // NOTE: Domain has Department enum, not Guid
-                IsActive: e.Active,
-                HireDate: DateTime.UtcNow // NOTE: Domain doesn't have HireDate
-            )).ToList();
-
-            return Result<List<EmployeeListDto>>.Success(dtos);
-        }
-        catch (Exception ex)
-        {
-            return Result<List<EmployeeListDto>>.Error($"Failed to retrieve employees: {ex.Message}");
-        }
+        return Result<IReadOnlyList<EmployeeDto>>.Success(dtos);
     }
 }

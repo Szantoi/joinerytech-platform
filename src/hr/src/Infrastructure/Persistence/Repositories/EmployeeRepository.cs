@@ -44,6 +44,45 @@ public class EmployeeRepository : IEmployeeRepository
             .ConfigureAwait(false);
     }
 
+    public async Task<IReadOnlyList<Employee>> ListAsync(
+        TenantId tenantId,
+        Department? department = null,
+        SkillKey? skill = null,
+        string? searchText = null,
+        bool activeOnly = true,
+        CancellationToken ct = default)
+    {
+        var query = _context.Employees.Where(e => e.TenantId == tenantId);
+
+        if (activeOnly)
+        {
+            query = query.Where(e => e.Active);
+        }
+
+        if (department.HasValue)
+        {
+            query = query.Where(e => e.Department == department.Value);
+        }
+
+        if (skill.HasValue)
+        {
+            query = query.Where(e => e.Skills.Any(s => s.Key == skill.Value));
+        }
+
+        if (!string.IsNullOrWhiteSpace(searchText))
+        {
+            // Portal contract: free-text search over name + role (case-insensitive).
+            var pattern = $"%{searchText.Trim()}%";
+            query = query.Where(e =>
+                EF.Functions.ILike(e.Name, pattern) || EF.Functions.ILike(e.Role, pattern));
+        }
+
+        return await query
+            .OrderBy(e => e.Name)
+            .ToListAsync(ct)
+            .ConfigureAwait(false);
+    }
+
     public async Task<IEnumerable<Employee>> GetActiveByDepartmentAsync(
         TenantId tenantId,
         Department department,

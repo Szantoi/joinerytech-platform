@@ -6,11 +6,97 @@ namespace SpaceOS.Modules.HR.Domain.Services;
 
 public class CapacityCalculationService : ICapacityCalculationService
 {
+    /// <summary>
+    /// Thresholds are config-driven (Hr:Capacity); the parameterless default keeps the
+    /// domain usable standalone (Production module, unit tests).
+    /// </summary>
+    public CapacityCalculationService(HrCapacityConfiguration? configuration = null)
+    {
+        Configuration = configuration ?? HrCapacityConfiguration.Default;
+    }
+
+    public HrCapacityConfiguration Configuration { get; }
+
     public decimal CalculateDailyCapacity(Employee employee)
     {
-        // Assume 5-day work week
-        return employee.WeeklyHours / 5;
+        return employee.WeeklyHours / Configuration.WorkdaysPerWeek;
     }
+
+    public WeekCapacityGrid CalculateWeekGrid(
+        IEnumerable<Employee> employees,
+        DateOnly monday,
+        IEnumerable<Absence> absences)
+    {
+        var absenceList = absences.ToList();
+        var days = Enumerable
+            .Range(0, Configuration.WorkdaysPerWeek)
+            .Select(monday.AddDays)
+            .ToList();
+
+        var rows = employees
+            .Select(employee => CalculateEmployeeWeek(employee, days, absenceList))
+            .ToList();
+
+        return new WeekCapacityGrid(monday, days, rows);
+    }
+
+    private EmployeeWeekCapacity CalculateEmployeeWeek(
+        Employee employee,
+        IReadOnlyList<DateOnly> days,
+        IReadOnlyList<Absence> absences)
+    {
+        var cells = days.Select(day => CalculateDay(employee, day, absences)).ToList();
+
+        var capacity = cells.Sum(c => c.Capacity);
+        var assigned = cells.Sum(c => c.Assigned);
+
+        return new EmployeeWeekCapacity(
+            employee.Id,
+            cells,
+            capacity,
+            assigned,
+            capacity > 0 ? assigned / capacity : 0m);
+    }
+
+    private CapacityDay CalculateDay(Employee employee, DateOnly day, IReadOnlyList<Absence> absences)
+    {
+        var workday = IsWorkday(day);
+        var blocking = workday ? FindBlockingAbsence(employee.Id, day, absences) : null;
+
+        // Weekend or blocking absence: the day carries no capacity at all.
+        if (!workday || blocking != null)
+        {
+            return new CapacityDay(
+                day, workday, 0m, 0m, 0m, false,
+                blocking == null ? null : new CapacityAbsenceRef(blocking.Id, blocking.Type));
+        }
+
+        var capacity = CalculateDailyCapacity(employee);
+        // No Assignment aggregate in the HR domain yet — booked hours are 0 (documented gap).
+        const decimal assigned = 0m;
+
+        return new CapacityDay(
+            day,
+            Workday: true,
+            Capacity: capacity,
+            Assigned: assigned,
+            Free: Math.Max(0m, capacity - assigned),
+            Overloaded: assigned > capacity + Configuration.OverloadEpsilon,
+            Absence: null);
+    }
+
+    private static bool IsWorkday(DateOnly day)
+        => day.DayOfWeek != DayOfWeek.Saturday && day.DayOfWeek != DayOfWeek.Sunday;
+
+    private static Absence? FindBlockingAbsence(
+        EmployeeId employeeId,
+        DateOnly day,
+        IReadOnlyList<Absence> absences)
+        => absences.FirstOrDefault(a =>
+            a.EmployeeId.Value == employeeId.Value &&
+            IsBlockingAbsence(a.Status) &&
+            a.StartDate <= day &&
+            a.EndDate >= day);
 
     public DailyLoad CalculateDailyLoad(
         EmployeeId employeeId,
@@ -50,8 +136,8 @@ public class CapacityCalculationService : ICapacityCalculationService
         int daysAbsent = 0;
         int daysOverloaded = 0;
 
-        // Calculate for Mon-Fri only
-        for (int i = 0; i < 5; i++)
+        // Calculate for the configured workdays only (Mon-Fri by default)
+        for (int i = 0; i < Configuration.WorkdaysPerWeek; i++)
         {
             var date = monday.AddDays(i);
             var dailyLoad = CalculateDailyLoad(employeeId, date, assignments, absences);

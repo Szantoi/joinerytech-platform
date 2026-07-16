@@ -6,7 +6,8 @@ using SpaceOS.Modules.HR.Domain.Repositories;
 namespace SpaceOS.Modules.HR.Application.Queries;
 
 /// <summary>
-/// Handler for GetAbsenceQuery.
+/// Handler for GetAbsenceQuery (detail). Tenant isolation is enforced by RLS on the
+/// ID lookup — the repository's documented hybrid pattern.
 /// </summary>
 public class GetAbsenceQueryHandler : IRequestHandler<GetAbsenceQuery, Result<AbsenceDto>>
 {
@@ -23,44 +24,19 @@ public class GetAbsenceQueryHandler : IRequestHandler<GetAbsenceQuery, Result<Ab
 
     public async Task<Result<AbsenceDto>> Handle(GetAbsenceQuery request, CancellationToken ct)
     {
-        try
+        var absence = await _absenceRepository
+            .GetByIdAsync(request.AbsenceId, ct)
+            .ConfigureAwait(false);
+
+        if (absence == null)
         {
-            var absence = await _absenceRepository
-                .GetByIdAsync(request.AbsenceId, ct)
-                .ConfigureAwait(false);
-
-            if (absence == null)
-            {
-                return Result<AbsenceDto>.NotFound($"Absence with ID '{request.AbsenceId}' not found");
-            }
-
-            // Get employee name
-            var employee = await _employeeRepository
-                .GetByIdAsync(absence.EmployeeId, ct)
-                .ConfigureAwait(false);
-            var employeeName = employee?.Name ?? "Unknown";
-
-            // Map to DTO
-            var dto = new AbsenceDto(
-                Id: absence.Id.Value,
-                EmployeeId: absence.EmployeeId.Value,
-                EmployeeName: employeeName,
-                StartDate: absence.StartDate.ToDateTime(TimeOnly.MinValue),
-                EndDate: absence.EndDate.ToDateTime(TimeOnly.MinValue),
-                Type: absence.Type,
-                Status: absence.Status,
-                Reason: absence.Reason,
-                ApproverId: absence.ApprovedByUserId,
-                ApprovedAt: absence.ApprovedAt,
-                RejectionReason: absence.RejectionReason,
-                CreatedAt: DateTime.UtcNow // NOTE: Domain doesn't track CreatedAt
-            );
-
-            return Result<AbsenceDto>.Success(dto);
+            return Result<AbsenceDto>.NotFound($"Absence with ID '{request.AbsenceId}' not found");
         }
-        catch (Exception ex)
-        {
-            return Result<AbsenceDto>.Error($"Failed to retrieve absence: {ex.Message}");
-        }
+
+        var employee = await _employeeRepository
+            .GetByIdAsync(absence.EmployeeId, ct)
+            .ConfigureAwait(false);
+
+        return Result<AbsenceDto>.Success(HrDtoMapper.ToDto(absence, employee?.Name ?? string.Empty));
     }
 }

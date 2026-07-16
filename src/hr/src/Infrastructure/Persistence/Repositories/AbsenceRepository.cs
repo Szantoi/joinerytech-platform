@@ -55,6 +55,44 @@ public class AbsenceRepository : IAbsenceRepository
             .ConfigureAwait(false);
     }
 
+    public async Task<IReadOnlyList<Absence>> ListAsync(
+        TenantId tenantId,
+        AbsenceStatus? status = null,
+        EmployeeId? employeeId = null,
+        CancellationToken ct = default)
+    {
+        var query = _context.Absences.Where(a => a.TenantId == tenantId);
+
+        if (status.HasValue)
+        {
+            query = query.Where(a => a.Status == status.Value);
+        }
+
+        if (employeeId != null)
+        {
+            query = query.Where(a => a.EmployeeId == employeeId);
+        }
+
+        // Portal contract: newest request first (no CreatedAt on the aggregate yet —
+        // start date is the closest stable proxy; see the HR-BE-HOST follow-ups).
+        return await query
+            .OrderByDescending(a => a.StartDate)
+            .ToListAsync(ct)
+            .ConfigureAwait(false);
+    }
+
+    public async Task<IReadOnlyList<Absence>> GetOverlappingAsync(
+        TenantId tenantId,
+        DateOnly from,
+        DateOnly to,
+        CancellationToken ct = default)
+    {
+        return await _context.Absences
+            .Where(a => a.TenantId == tenantId && a.StartDate <= to && a.EndDate >= from)
+            .ToListAsync(ct)
+            .ConfigureAwait(false);
+    }
+
     public async Task<IEnumerable<Absence>> GetActiveAbsencesAsync(
         TenantId tenantId,
         DateOnly date,

@@ -9,7 +9,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- Minimal API endpoint tests (TestServer + mocked IMediator) need the ASP.NET Core framework -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="FluentAssertions" Version="6.12.0" />
+    <PackageReference Include="Microsoft.AspNetCore.TestHost" Version="8.0.7" />
     <PackageReference Include="FluentValidation" Version="12.1.1" />
     <PackageReference Include="MediatR" Version="12.4.1" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
@@ -34,6 +40,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../src/SpaceOS.Modules.HR.csproj" />
+    <ProjectReference Include="../src/Api/SpaceOS.Modules.HR.Api.csproj" />
   </ItemGroup>
 
 </Project>

@@ -104,8 +104,10 @@ public class AbsenceTests
         var act = () => absence.Approve(Guid.NewGuid());
 
         // Assert
+        // FSM guard → InvalidStatusTransitionException (a DomainException; API 409),
+        // and the message now names the allowed targets.
         act.Should().Throw<DomainException>()
-            .WithMessage("Cannot approve absence in * status");
+            .WithMessage("Cannot approve absence in * status *");
     }
 
     [Fact]
@@ -243,8 +245,9 @@ public class AbsenceTests
         var act = () => absence.Reopen();
 
         // Assert
+        // Reopen is only valid from Rejected — the guard message lists the allowed targets.
         act.Should().Throw<DomainException>()
-            .WithMessage("*only Rejected absences can be reopened");
+            .WithMessage("Cannot reopen absence in Pending status *");
     }
 
     [Theory]

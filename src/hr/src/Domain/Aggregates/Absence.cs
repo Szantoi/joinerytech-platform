@@ -2,6 +2,8 @@ using SpaceOS.Kernel.Domain.Exceptions;
 using SpaceOS.Kernel.Domain.Primitives;
 using SpaceOS.Modules.HR.Domain.Enums;
 using SpaceOS.Modules.HR.Domain.Events;
+using SpaceOS.Modules.HR.Domain.Exceptions;
+using SpaceOS.Modules.HR.Domain.FSM;
 using SpaceOS.Modules.HR.Domain.StrongIds;
 
 namespace SpaceOS.Modules.HR.Domain.Aggregates;
@@ -93,8 +95,7 @@ public class Absence : AggregateRoot
     /// </summary>
     public void Approve(Guid approvedBy)
     {
-        if (Status != AbsenceStatus.Pending)
-            throw new DomainException($"Cannot approve absence in {Status} status");
+        GuardTransition(AbsenceStatus.Approved, "approve");
 
         if (approvedBy == Guid.Empty)
             throw new DomainException("ApprovedBy user ID is required");
@@ -115,8 +116,7 @@ public class Absence : AggregateRoot
     /// </summary>
     public void Reject(Guid rejectedBy, string rejectionReason)
     {
-        if (Status != AbsenceStatus.Pending)
-            throw new DomainException($"Cannot reject absence in {Status} status");
+        GuardTransition(AbsenceStatus.Rejected, "reject");
 
         if (rejectedBy == Guid.Empty)
             throw new DomainException("RejectedBy user ID is required");
@@ -144,8 +144,7 @@ public class Absence : AggregateRoot
     /// </summary>
     public void StartAbsence()
     {
-        if (Status != AbsenceStatus.Approved)
-            throw new DomainException($"Cannot start absence in {Status} status, must be Approved first");
+        GuardTransition(AbsenceStatus.InProgress, "start");
 
         Status = AbsenceStatus.InProgress;
 
@@ -160,8 +159,7 @@ public class Absence : AggregateRoot
     /// </summary>
     public void CompleteAbsence()
     {
-        if (Status != AbsenceStatus.InProgress)
-            throw new DomainException($"Cannot complete absence in {Status} status, must be InProgress first");
+        GuardTransition(AbsenceStatus.Completed, "complete");
 
         Status = AbsenceStatus.Completed;
 
@@ -176,8 +174,7 @@ public class Absence : AggregateRoot
     /// </summary>
     public void Reopen()
     {
-        if (Status != AbsenceStatus.Rejected)
-            throw new DomainException($"Cannot reopen absence in {Status} status, only Rejected absences can be reopened");
+        GuardTransition(AbsenceStatus.Pending, "reopen");
 
         Status = AbsenceStatus.Pending;
         RejectedByUserId = null;
@@ -188,6 +185,23 @@ public class Absence : AggregateRoot
             Id,
             TenantId,
             EmployeeId));
+    }
+
+    /// <summary>
+    /// Single FSM gate for every status-changing action: the allowed edges live in
+    /// <see cref="AbsenceStatusTransitions"/> (one source of truth, mirrored by the
+    /// portal's ABSENCE_FSM table). A forbidden edge raises
+    /// <see cref="InvalidStatusTransitionException"/>, which the API maps to 409 —
+    /// as opposed to a plain <see cref="DomainException"/> (payload → 400).
+    /// </summary>
+    private void GuardTransition(AbsenceStatus target, string action)
+    {
+        if (!AbsenceStatusTransitions.IsValidTransition(Status, target))
+        {
+            throw new InvalidStatusTransitionException(
+                $"Cannot {action} absence in {Status} status (allowed targets: " +
+                $"{string.Join(", ", AbsenceStatusTransitions.GetAllowedTransitions(Status))})");
+        }
     }
 
     /// <summary>

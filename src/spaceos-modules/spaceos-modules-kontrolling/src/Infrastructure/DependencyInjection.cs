@@ -5,6 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using SpaceOS.Modules.Kontrolling.Application.Services;
 using SpaceOS.Modules.Kontrolling.Infrastructure.MultiTenancy;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using SpaceOS.Modules.Kontrolling.Infrastructure.Persistence;
 using SpaceOS.Modules.Kontrolling.Infrastructure.Persistence.Repositories;
 
@@ -24,7 +25,7 @@ public static class DependencyInjection
         var connectionString = configuration.GetConnectionString("KontrollingDb")
             ?? throw new InvalidOperationException("KontrollingDb connection string is missing");
 
-        services.AddDbContext<KontrollingDbContext>(options =>
+        services.AddDbContext<KontrollingDbContext>((serviceProvider, options) =>
         {
             options.UseNpgsql(
                 connectionString,
@@ -34,18 +35,17 @@ public static class DependencyInjection
                     npgsqlOptions.EnableRetryOnFailure(maxRetryCount: 3);
                 });
 
-            // Add tenant interceptor
+            // Resolved from the scope that owns the DbContext (EHS precedent).
+            // The interceptor reads the tenant of the CURRENT request, so it
+            // must not be captured from a container built at registration time.
             options.AddInterceptors(
-                services.BuildServiceProvider().GetRequiredService<TenantDbConnectionInterceptor>());
+                new TenantDbConnectionInterceptor(serviceProvider.GetRequiredService<ITenantContext>()));
 
 #if DEBUG
             options.EnableSensitiveDataLogging();
             options.EnableDetailedErrors();
 #endif
         });
-
-        // Register TenantDbConnectionInterceptor
-        services.AddSingleton<TenantDbConnectionInterceptor>();
 
         // Register repositories
         services.AddScoped<IOverheadConfigRepository, OverheadConfigRepository>();

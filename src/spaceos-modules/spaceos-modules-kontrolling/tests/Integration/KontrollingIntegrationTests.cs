@@ -61,9 +61,9 @@ public class KontrollingIntegrationTests : IAsyncLifetime
 
         // Add repositories
         services.AddScoped<SpaceOS.Modules.Kontrolling.Application.Services.IOverheadConfigRepository,
-            SpaceOS.Modules.Kontrolling.Infrastructure.Repositories.OverheadConfigRepository>();
+            SpaceOS.Modules.Kontrolling.Infrastructure.Persistence.Repositories.OverheadConfigRepository>();
         services.AddScoped<SpaceOS.Modules.Kontrolling.Application.Services.ICostAdjustmentRepository,
-            SpaceOS.Modules.Kontrolling.Infrastructure.Repositories.CostAdjustmentRepository>();
+            SpaceOS.Modules.Kontrolling.Infrastructure.Persistence.Repositories.CostAdjustmentRepository>();
 
         _serviceProvider = services.BuildServiceProvider();
         _mediator = _serviceProvider.GetRequiredService<IMediator>();

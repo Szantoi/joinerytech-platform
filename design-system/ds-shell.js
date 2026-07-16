@@ -6,6 +6,7 @@ const PAGES=[
  {file:"tipografia.html",label:"Tipográfia",sub:"Inter · JetBrains Mono"},
  {file:"komponensek.html",label:"Komponensek",sub:"Gombok · pill-ek · kártyák"},
  {file:"mintak.html",label:"Minták",sub:"Táblázat · üres állapot · nav"},
+ {file:"dark-mode.html",label:"Dark mode",sub:"Felület- és token-térkép"},
 ];
 const cur=(location.pathname.split("/").pop()||"index.html");
 function grainMark(){return '<svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><rect x="1" y="1" width="20" height="20" rx="5" fill="none" stroke="#0c1322" stroke-opacity=".22"></rect><path d="M5 16 Q 11 6, 17 16" fill="none" stroke="#0c1322" stroke-opacity=".95" stroke-width="1.4" stroke-linecap="round"></path><path d="M5 13 Q 11 5, 17 13" fill="none" stroke="#5eead4" stroke-width="1.4" stroke-linecap="round"></path><path d="M5 19 Q 11 9, 17 19" fill="none" stroke="#0c1322" stroke-opacity=".4" stroke-width="1.4" stroke-linecap="round"></path></svg>';}

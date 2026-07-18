@@ -1,13 +1,22 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using System.Text.Encodings.Web;
 using FluentValidation;
 using MediatR;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
-using SpaceOS.Modules.HR.Application.Contracts;
+using SpaceOS.Modules.Hosting.Tenancy;
+using SpaceOS.Modules.HR.Api.Endpoints;
 using SpaceOS.Modules.HR.Infrastructure;
 using SpaceOS.Modules.HR.Infrastructure.Persistence;
 using Testcontainers.PostgreSql;
@@ -22,7 +31,11 @@ namespace SpaceOS.Modules.HR.Tests.Integration.Api;
 /// </summary>
 public class ApiTestFixture : IAsyncLifetime
 {
+    /// <summary>Fixed fixture tenant — matches the test auth scheme's tid claim.</summary>
+    public static readonly Guid TenantId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+
     private readonly PostgreSqlContainer _dbContainer;
+    private IHost? _host;
     private IServiceProvider? _serviceProvider;
     public HttpClient? Client { get; private set; }
     public HRDbContext? DbContext { get; private set; }
@@ -42,38 +55,56 @@ public class ApiTestFixture : IAsyncLifetime
         // Start PostgreSQL container
         await _dbContainer.StartAsync().ConfigureAwait(false);
 
-        // Setup DI container
-        var services = new ServiceCollection();
-
-        // Configuration
-        var configuration = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?>
-            {
-                { "ConnectionStrings:HRDatabase", _dbContainer.GetConnectionString() }
-            })
-            .Build();
-
-        // Register HR infrastructure
-        services.AddHRInfrastructure(configuration);
-
-        // Add MediatR with validation behavior
-        // Note: HR Application commands/queries are in the same assembly as DbContext
-        services.AddMediatR(cfg =>
+        var configuration = new Dictionary<string, string?>
         {
-            cfg.RegisterServicesFromAssembly(typeof(HRDbContext).Assembly);
-            cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
-        });
+            { "ConnectionStrings:HRDatabase", _dbContainer.GetConnectionString() }
+        };
 
-        // Note: Validators are auto-registered by MediatR from the HR.Application assembly
+        // Real TestServer host over the real database (QA/DMS fixture repair pattern) —
+        // the old fixture handed out a phantom HttpClient (http://localhost, no server),
+        // so every endpoint-driven test failed with connection refused.
+        _host = await new HostBuilder()
+            .ConfigureAppConfiguration(config => config.AddInMemoryCollection(configuration))
+            .ConfigureWebHost(webBuilder => webBuilder
+                .UseTestServer()
+                .ConfigureServices((context, services) =>
+                {
+                    services.AddRouting();
+                    services.AddLogging(logging => logging.SetMinimumLevel(LogLevel.Warning));
+                    services.AddAuthentication(HrTestAuthHandler.Scheme)
+                        .AddScheme<AuthenticationSchemeOptions, HrTestAuthHandler>(HrTestAuthHandler.Scheme, _ => { });
+                    services.AddAuthorization();
+                    services.ConfigureHttpJsonOptions(options =>
+                        options.SerializerOptions.Converters.Add(
+                            new System.Text.Json.Serialization.JsonStringEnumConverter()));
 
-        // Add HTTP context accessor
-        services.AddHttpContextAccessor();
+                    // HR infrastructure (DbContext + shared tenancy + repositories)
+                    services.AddHRInfrastructure(context.Configuration);
 
-        // Register mock tenant context
-        services.AddScoped<ITenantContext>(provider =>
-            new TestTenantContext(Guid.Parse("11111111-1111-1111-1111-111111111111")));
+                    // MediatR with the validation behavior the production pipeline mirrors
+                    services.AddMediatR(cfg =>
+                    {
+                        cfg.RegisterServicesFromAssembly(typeof(HRDbContext).Assembly);
+                        cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
+                    });
+                })
+                .Configure(app =>
+                {
+                    app.UseRouting();
+                    app.UseAuthentication();
+                    app.UseAuthorization();
+                    app.UseSpaceOsModuleTenancy();
+                    app.UseEndpoints(endpoints =>
+                    {
+                        endpoints.MapEmployeeEndpoints();
+                        endpoints.MapAbsenceEndpoints();
+                        endpoints.MapCapacityEndpoints();
+                    });
+                }))
+            .StartAsync()
+            .ConfigureAwait(false);
 
-        _serviceProvider = services.BuildServiceProvider();
+        _serviceProvider = _host.Services;
 
         // Get DbContext
         DbContext = _serviceProvider.GetRequiredService<HRDbContext>();
@@ -81,24 +112,21 @@ public class ApiTestFixture : IAsyncLifetime
         // Apply migrations
         await DbContext.Database.MigrateAsync().ConfigureAwait(false);
 
-        // Create HTTP client for API testing
-        Client = new HttpClient { BaseAddress = new Uri("http://localhost") };
-
-        // Add default JWT token to all requests
+        // HTTP client for API testing (TestServer-backed)
+        Client = _host.GetTestClient();
         Client.DefaultRequestHeaders.Add("Authorization", $"Bearer {GenerateTestJwt()}");
+        Client.DefaultRequestHeaders.Add("X-Tenant-Id", TenantId.ToString());
     }
 
     public async Task DisposeAsync()
     {
-        if (DbContext != null)
-            await DbContext.DisposeAsync().ConfigureAwait(false);
-
-        if (_serviceProvider is IAsyncDisposable asyncDisposable)
-            await asyncDisposable.DisposeAsync().ConfigureAwait(false);
-        else
-            (_serviceProvider as IDisposable)?.Dispose();
-
         Client?.Dispose();
+
+        if (_host is not null)
+        {
+            await _host.StopAsync().ConfigureAwait(false);
+            _host.Dispose();
+        }
 
         if (_dbContainer != null)
             await _dbContainer.DisposeAsync().ConfigureAwait(false);
@@ -130,34 +158,34 @@ public class ApiTestFixture : IAsyncLifetime
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
 
-    /// <summary>
-    /// Create a new test tenant context with the specified tenant ID.
-    /// </summary>
-    public void SetTenantContext(Guid tenantId)
-    {
-        var tenantContext = _serviceProvider!.GetRequiredService<ITenantContext>();
-        if (tenantContext is TestTenantContext testContext)
-        {
-            testContext.SetTenantId(tenantId);
-        }
-    }
 }
 
 /// <summary>
-/// Minimal tenant context implementation for testing.
+/// Always-authenticated test scheme carrying a real "tid" claim (ADR-061): hosts resolve
+/// the tenant from the token, and the X-Tenant-Id header is only accepted when it matches.
 /// </summary>
-internal class TestTenantContext : ITenantContext
+internal sealed class HrTestAuthHandler : AuthenticationHandler<AuthenticationSchemeOptions>
 {
-    public Guid TenantId { get; private set; }
+    public new const string Scheme = "Test";
 
-    public TestTenantContext(Guid tenantId)
+    public HrTestAuthHandler(
+        IOptionsMonitor<AuthenticationSchemeOptions> options,
+        ILoggerFactory logger,
+        UrlEncoder encoder)
+        : base(options, logger, encoder)
     {
-        TenantId = tenantId;
     }
 
-    public void SetTenantId(Guid tenantId)
+    protected override Task<AuthenticateResult> HandleAuthenticateAsync()
     {
-        TenantId = tenantId;
+        var identity = new ClaimsIdentity(
+            new[]
+            {
+                new Claim(ClaimTypes.NameIdentifier, "test-user"),
+                new Claim("tid", ApiTestFixture.TenantId.ToString()),
+            }, Scheme);
+        return Task.FromResult(AuthenticateResult.Success(
+            new AuthenticationTicket(new ClaimsPrincipal(identity), Scheme)));
     }
 }
 

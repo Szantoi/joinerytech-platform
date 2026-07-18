@@ -35,7 +35,8 @@ public static class PpeEndpoints
     {
         var items = app.MapGroup("/api/ehs/ppe-items")
             .WithTags("PpeItems")
-            .WithOpenApi();
+            .WithOpenApi()
+            .RequireAuthorization();
 
         items.MapPost("/", CreateItem)
             .WithName("CreatePpeItem")
@@ -76,7 +77,8 @@ public static class PpeEndpoints
     {
         var issuances = app.MapGroup("/api/ehs/ppe-issuances")
             .WithTags("PpeIssuances")
-            .WithOpenApi();
+            .WithOpenApi()
+            .RequireAuthorization();
 
         issuances.MapPost("/", IssuePpe)
             .WithName("IssuePpe")

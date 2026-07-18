@@ -59,6 +59,15 @@ public class KontrollingIntegrationTests : IAsyncLifetime
         services.AddMediatR(cfg =>
             cfg.RegisterServicesFromAssemblyContaining<SetOverheadConfigCommand>());
 
+        // Handler dependencies the assembly-wide MediatR scan pulls in (the fixture
+        // predated these registrations — the handlers gained IMemoryCache and the cost
+        // calculation service during KONTROLLING-BE-HOST).
+        services.AddMemoryCache();
+        services.AddScoped<SpaceOS.Modules.Kontrolling.Application.Services.IIntegrationDataProvider,
+            SpaceOS.Modules.Kontrolling.Application.Services.IntegrationDataProvider>();
+        services.AddScoped<SpaceOS.Modules.Kontrolling.Application.Services.IProjectCostCalculationService,
+            SpaceOS.Modules.Kontrolling.Application.Services.ProjectCostCalculationService>();
+
         // Add repositories
         services.AddScoped<SpaceOS.Modules.Kontrolling.Application.Services.IOverheadConfigRepository,
             SpaceOS.Modules.Kontrolling.Infrastructure.Persistence.Repositories.OverheadConfigRepository>();

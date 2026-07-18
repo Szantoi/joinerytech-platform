@@ -1,18 +1,33 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using MediatR;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
 using Testcontainers.PostgreSql;
 using Xunit;
-using SpaceOS.Modules.QA.Application;
+using SpaceOS.Modules.Hosting.Tenancy;
+using SpaceOS.Modules.QA.Api.Endpoints;
 using SpaceOS.Modules.QA.Infrastructure;
 using SpaceOS.Modules.QA.Infrastructure.Persistence;
 
 namespace SpaceOS.Modules.QA.Tests.Integration.Api;
+
+/// <summary>
+/// Collection definition for the "QA API Tests" collection — without this the collection
+/// had no fixture wiring and every test in it failed at discovery ("constructor parameters
+/// did not have matching fixture data"), i.e. the API integration set never ran
+/// (QA-INTEGRATION-FIX debt, repaired in ADR-IMPL-HOSTING).
+/// </summary>
+[CollectionDefinition("QA API Tests")]
+public class QaApiTestCollection : ICollectionFixture<ApiTestFixture>
+{
+}
 
 /// <summary>
 /// API test fixture providing PostgreSQL Testcontainer and configured DI for integration tests.
@@ -21,6 +36,7 @@ namespace SpaceOS.Modules.QA.Tests.Integration.Api;
 public class ApiTestFixture : IAsyncLifetime
 {
     private readonly PostgreSqlContainer _dbContainer;
+    private IHost? _host;
     private IServiceProvider? _serviceProvider;
     public HttpClient? Client { get; private set; }
     public QADbContext? DbContext { get; private set; }
@@ -39,39 +55,67 @@ public class ApiTestFixture : IAsyncLifetime
     {
         await _dbContainer.StartAsync().ConfigureAwait(false);
 
-        var services = new ServiceCollection();
-        var configuration = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?>
-            {
-                { "ConnectionStrings:QADatabase", _dbContainer.GetConnectionString() }
-            })
-            .Build();
+        var configuration = new Dictionary<string, string?>
+        {
+            // Key repaired: AddQAInfrastructure reads ConnectionStrings:QA — the old
+            // "QADatabase" key silently fell back to localhost (QA-INTEGRATION-FIX debt).
+            { "ConnectionStrings:QA", _dbContainer.GetConnectionString() }
+        };
 
-        services.AddQAInfrastructure(configuration);
-        services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(QADbContext).Assembly));
+        // Real TestServer host over the real database (DMS fixture precedent) — the old
+        // fixture handed out a phantom HttpClient (http://localhost, no server behind it),
+        // so every endpoint-driven test failed with connection refused.
+        _host = await new HostBuilder()
+            .ConfigureAppConfiguration(config => config.AddInMemoryCollection(configuration))
+            .ConfigureWebHost(webBuilder => webBuilder
+                .UseTestServer()
+                .ConfigureServices((context, services) =>
+                {
+                    services.AddRouting();
+                    services.AddLogging();
+                    services.AddAuthentication(Tests.Api.TestAuthHandler.Scheme)
+                        .AddScheme<Microsoft.AspNetCore.Authentication.AuthenticationSchemeOptions,
+                            Tests.Api.TestAuthHandler>(Tests.Api.TestAuthHandler.Scheme, _ => { });
+                    services.AddAuthorization();
+                    services.ConfigureHttpJsonOptions(options =>
+                        options.SerializerOptions.Converters.Add(
+                            new System.Text.Json.Serialization.JsonStringEnumConverter()));
+                    services.AddQAInfrastructure(context.Configuration);
+                    services.AddQAApplication();
+                })
+                .Configure(app =>
+                {
+                    app.UseRouting();
+                    app.UseAuthentication();
+                    app.UseAuthorization();
+                    app.UseSpaceOsModuleTenancy();
+                    app.UseEndpoints(endpoints =>
+                    {
+                        endpoints.MapQACheckpointEndpoints();
+                        endpoints.MapInspectionEndpoints();
+                        endpoints.MapTicketEndpoints();
+                        endpoints.MapQAMetricsEndpoints();
+                    });
+                }))
+            .StartAsync()
+            .ConfigureAwait(false);
 
-        services.AddHttpContextAccessor();
-        services.AddScoped<ITenantContext>(provider =>
-            new TestTenantContext(Guid.Parse("11111111-1111-1111-1111-111111111111")));
-
-        _serviceProvider = services.BuildServiceProvider();
+        _serviceProvider = _host.Services;
         DbContext = _serviceProvider.GetRequiredService<QADbContext>();
         await DbContext.Database.MigrateAsync().ConfigureAwait(false);
 
-        Client = new HttpClient { BaseAddress = new Uri("http://localhost") };
+        Client = _host.GetTestClient();
         Client.DefaultRequestHeaders.Add("Authorization", $"Bearer {GenerateTestJwt()}");
         Client.DefaultRequestHeaders.Add("X-Tenant-Id", "11111111-1111-1111-1111-111111111111");
     }
 
     public async Task DisposeAsync()
     {
-        if (_serviceProvider is IAsyncDisposable asyncDisposable)
+        Client?.Dispose();
+        if (_host is not null)
         {
-            await asyncDisposable.DisposeAsync().ConfigureAwait(false);
-        }
-        else if (_serviceProvider is IDisposable disposable)
-        {
-            disposable.Dispose();
+            await _host.StopAsync().ConfigureAwait(false);
+            _host.Dispose();
         }
 
         await _dbContainer.StopAsync().ConfigureAwait(false);
@@ -97,18 +141,5 @@ public class ApiTestFixture : IAsyncLifetime
         );
 
         return new JwtSecurityTokenHandler().WriteToken(token);
-    }
-}
-
-/// <summary>
-/// Mock ITenantContext for testing with fixed tenant ID.
-/// </summary>
-public class TestTenantContext : ITenantContext
-{
-    public Guid TenantId { get; }
-
-    public TestTenantContext(Guid tenantId)
-    {
-        TenantId = tenantId;
     }
 }

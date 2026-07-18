@@ -25,8 +25,12 @@ public sealed class DeleteCostAdjustmentCommandHandler : IRequestHandler<DeleteC
         DeleteCostAdjustmentCommand request,
         CancellationToken ct)
     {
+        // GetForUpdateAsync: tracked and unfiltered by IsDeleted — the read-path
+        // GetByIdAsync is AsNoTracking, so mutating its result never persisted
+        // (the soft delete silently no-oped; same bug class the contract delete
+        // path already had fixed in KONTROLLING-BE-HOST).
         var adjustment = await _repository
-            .GetByIdAsync(request.AdjustmentId, request.TenantId, ct)
+            .GetForUpdateAsync(request.AdjustmentId, request.TenantId, ct)
             .ConfigureAwait(false);
 
         if (adjustment is null)

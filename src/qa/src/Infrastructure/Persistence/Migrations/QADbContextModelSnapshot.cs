@@ -148,6 +148,104 @@ namespace SpaceOS.Modules.QA.src.Infrastructure.Persistence.Migrations
                     b.ToTable("qa_checkpoints", "qa");
                 });
 
+            modelBuilder.Entity("SpaceOS.Modules.QA.Domain.Aggregates.Ticket", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime?>("AssignedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("assigned_at");
+
+                    b.Property<Guid?>("AssignedTo")
+                        .HasColumnType("uuid")
+                        .HasColumnName("assigned_to");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("description");
+
+                    b.Property<Guid?>("InspectionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("inspection_id");
+
+                    b.Property<Guid?>("OrderId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("order_id");
+
+                    b.Property<string>("Priority")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("priority");
+
+                    b.Property<Guid?>("ProductId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("product_id");
+
+                    b.Property<DateTime>("ReportedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("reported_at");
+
+                    b.Property<Guid>("ReportedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("reported_by");
+
+                    b.Property<string>("ResolutionNotes")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("resolution_notes");
+
+                    b.Property<DateTime?>("ResolvedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("resolved_at");
+
+                    b.Property<DateTime?>("StartedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("started_at");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("status");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<string>("TicketType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("ticket_type");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("title");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AssignedTo")
+                        .HasDatabaseName("ix_tickets_assigned_to");
+
+                    b.HasIndex("ReportedAt")
+                        .HasDatabaseName("ix_tickets_reported_at");
+
+                    b.HasIndex("Status")
+                        .HasDatabaseName("ix_tickets_status");
+
+                    b.HasIndex("TenantId")
+                        .HasDatabaseName("ix_tickets_tenant_id");
+
+                    b.ToTable("tickets", "qa");
+                });
+
             modelBuilder.Entity("SpaceOS.Modules.QA.Domain.Aggregates.Inspection", b =>
                 {
                     b.OwnsMany("SpaceOS.Modules.QA.Domain.ValueObjects.FailureNote", "FailureNotes", b1 =>
@@ -232,6 +330,70 @@ namespace SpaceOS.Modules.QA.src.Infrastructure.Persistence.Migrations
                         });
 
                     b.Navigation("Criteria");
+                });
+
+            modelBuilder.Entity("SpaceOS.Modules.QA.Domain.Aggregates.Ticket", b =>
+                {
+                    b.OwnsMany("SpaceOS.Modules.QA.Domain.ValueObjects.ResolutionAction", "ResolutionActions", b1 =>
+                        {
+                            b1.Property<Guid>("ticket_id")
+                                .HasColumnType("uuid");
+
+                            b1.Property<string>("Id")
+                                .HasMaxLength(36)
+                                .HasColumnType("character varying(36)")
+                                .HasColumnName("id");
+
+                            b1.Property<string>("ActionType")
+                                .IsRequired()
+                                .HasMaxLength(50)
+                                .HasColumnType("character varying(50)")
+                                .HasColumnName("action_type");
+
+                            b1.Property<string>("Description")
+                                .IsRequired()
+                                .HasMaxLength(1000)
+                                .HasColumnType("character varying(1000)")
+                                .HasColumnName("description");
+
+                            b1.HasKey("ticket_id", "Id");
+
+                            b1.ToTable("ticket_resolution_actions", "qa");
+
+                            b1.WithOwner()
+                                .HasForeignKey("ticket_id");
+
+                            b1.OwnsOne("SpaceOS.Modules.QA.Domain.ValueObjects.Money", "Cost", b2 =>
+                                {
+                                    b2.Property<Guid>("ResolutionActionticket_id")
+                                        .HasColumnType("uuid");
+
+                                    b2.Property<string>("ResolutionActionId")
+                                        .HasColumnType("character varying(36)");
+
+                                    b2.Property<decimal>("Amount")
+                                        .HasColumnType("decimal(18,2)")
+                                        .HasColumnName("cost_amount");
+
+                                    b2.Property<string>("Currency")
+                                        .IsRequired()
+                                        .HasMaxLength(3)
+                                        .HasColumnType("character varying(3)")
+                                        .HasColumnName("cost_currency");
+
+                                    b2.HasKey("ResolutionActionticket_id", "ResolutionActionId");
+
+                                    b2.ToTable("ticket_resolution_actions", "qa");
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("ResolutionActionticket_id", "ResolutionActionId");
+                                });
+
+                            b1.Navigation("Cost")
+                                .IsRequired();
+                        });
+
+                    b.Navigation("ResolutionActions");
                 });
 #pragma warning restore 612, 618
         }

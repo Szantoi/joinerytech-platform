@@ -97,8 +97,14 @@ public sealed class TestAuthHandler : AuthenticationHandler<AuthenticationScheme
 
     protected override Task<AuthenticateResult> HandleAuthenticateAsync()
     {
+        // Carries a real "tid" claim (ADR-061): hosts resolve the tenant from the token,
+        // and the X-Tenant-Id header is only accepted when it matches this claim.
         var identity = new ClaimsIdentity(
-            new[] { new Claim(ClaimTypes.NameIdentifier, "test-user") }, Scheme);
+            new[]
+            {
+                new Claim(ClaimTypes.NameIdentifier, "test-user"),
+                new Claim("tid", QaEndpointTestHost.TenantId.ToString()),
+            }, Scheme);
         var ticket = new AuthenticationTicket(new ClaimsPrincipal(identity), Scheme);
         return Task.FromResult(AuthenticateResult.Success(ticket));
     }

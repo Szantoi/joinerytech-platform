@@ -58,7 +58,7 @@ public class GetWorkOrdersQueryHandler : IRequestHandler<GetWorkOrdersQuery, Res
 
             var assetDict = assetResults
                 .Where(a => a != null)
-                .ToDictionary(a => a!.Id.Value, a => a.Code);
+                .ToDictionary(a => a!.Id.Value, a => a!.Code);
 
             // Map to DTOs
             var dtos = workOrderList.Select(wo => new WorkOrderListDto(

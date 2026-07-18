@@ -20,7 +20,8 @@ public static class LocationEndpoints
     {
         var group = app.MapGroup("/api/ehs/locations")
             .WithTags("Locations")
-            .WithOpenApi();
+            .WithOpenApi()
+            .RequireAuthorization();
 
         // GET /api/ehs/locations
         group.MapGet("/", ListLocations)

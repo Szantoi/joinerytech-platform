@@ -2,7 +2,6 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using SpaceOS.Modules.DMS.Application.Contracts;
 using SpaceOS.Modules.DMS.Infrastructure;
 
 namespace SpaceOS.Modules.DMS.Api;
@@ -13,18 +12,16 @@ namespace SpaceOS.Modules.DMS.Api;
 public static class DmsServiceCollectionExtensions
 {
     /// <summary>
-    /// Registers all DMS module services: tenant context, DbContext + RLS
-    /// interceptor, repositories, blob store, expiry options and MediatR handlers.
+    /// Registers all DMS module services: shared tenancy (ADR-061 — claims tenant
+    /// context + RLS session interceptor), DbContext, repositories, blob store,
+    /// expiry options and MediatR handlers.
     /// </summary>
     public static IServiceCollection AddDmsModule(
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        // HttpContextAccessor + tenant context (RLS scoping input)
-        services.AddHttpContextAccessor();
-        services.AddScoped<ITenantContext, HttpTenantContext>();
-
-        // Infrastructure (DbContext, repositories, interceptor, blob store, options)
+        // Infrastructure (shared tenancy + adapter, DbContext + shared RLS
+        // interceptor, repositories, blob store, options)
         services.AddDMSInfrastructure(configuration);
 
         // Application (MediatR handlers)

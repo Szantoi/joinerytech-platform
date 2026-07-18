@@ -3,6 +3,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using SpaceOS.Modules.Hosting.Tenancy;
 using SpaceOS.Modules.Maintenance.Infrastructure;
 using SpaceOS.Modules.Maintenance.Infrastructure.Persistence;
 using Testcontainers.PostgreSql;
@@ -48,6 +49,11 @@ public class ApiTestFixture : IAsyncLifetime
             })
             .Build();
 
+        // Fixed tenant BEFORE the module DI: AddSpaceOsModuleTenancy uses TryAdd,
+        // so this pre-registration replaces the claims-backed context in tests.
+        services.AddScoped<ITenantContext>(_ =>
+            new FixedTenantContext(Guid.Parse("11111111-1111-1111-1111-111111111111")));
+
         // Register Maintenance infrastructure
         services.AddMaintenanceInfrastructure(configuration);
 
@@ -60,10 +66,6 @@ public class ApiTestFixture : IAsyncLifetime
 
         // Add HTTP context accessor
         services.AddHttpContextAccessor();
-
-        // Register mock tenant context
-        services.AddScoped<ITenantContext>(provider =>
-            new TestTenantContext(Guid.Parse("11111111-1111-1111-1111-111111111111")));
 
         _serviceProvider = services.BuildServiceProvider();
 
@@ -98,35 +100,6 @@ public class ApiTestFixture : IAsyncLifetime
             await _dbContainer.DisposeAsync().ConfigureAwait(false);
     }
 
-    /// <summary>
-    /// Create a new test tenant context with the specified tenant ID.
-    /// </summary>
-    public void SetTenantContext(Guid tenantId)
-    {
-        var tenantContext = _serviceProvider!.GetRequiredService<ITenantContext>();
-        if (tenantContext is TestTenantContext testContext)
-        {
-            testContext.SetTenantId(tenantId);
-        }
-    }
-}
-
-/// <summary>
-/// Minimal tenant context implementation for testing.
-/// </summary>
-internal class TestTenantContext : ITenantContext
-{
-    public Guid TenantId { get; private set; }
-
-    public TestTenantContext(Guid tenantId)
-    {
-        TenantId = tenantId;
-    }
-
-    public void SetTenantId(Guid tenantId)
-    {
-        TenantId = tenantId;
-    }
 }
 
 /// <summary>

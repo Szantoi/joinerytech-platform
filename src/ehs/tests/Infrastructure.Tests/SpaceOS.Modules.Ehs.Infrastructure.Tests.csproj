@@ -35,6 +35,7 @@
     <ProjectReference Include="../../src/Domain/SpaceOS.Modules.Ehs.Domain.csproj" />
     <ProjectReference Include="../../src/Application/SpaceOS.Modules.Ehs.Application.csproj" />
     <ProjectReference Include="../../src/Infrastructure/SpaceOS.Modules.Ehs.Infrastructure.csproj" />
+    <ProjectReference Include="../../../spaceos-modules-hosting/src/SpaceOS.Modules.Hosting/SpaceOS.Modules.Hosting.csproj" />
   </ItemGroup>
 
 </Project>

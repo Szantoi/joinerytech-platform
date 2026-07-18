@@ -50,8 +50,8 @@ public class InspectionApiTests
         var checkpointResponse = await client.PostAsJsonAsync("/api/qa/checkpoints", new
         {
             name = "Test Checkpoint",
-            checkpointType = "Functional",
-            criticalLevel = "High",
+            checkpointType = "Final",
+            criticalLevel = "Major",
             description = "Test inspection checkpoint"
         });
         checkpointResponse.StatusCode.Should().Be(System.Net.HttpStatusCode.Created);
@@ -90,7 +90,7 @@ public class InspectionApiTests
         // Assert
         response.StatusCode.Should().Be(System.Net.HttpStatusCode.OK);
         var content = await response.Content.ReadAsStringAsync();
-        content.Should().Contain("inspectionId");
+        content.Should().Contain("\"id\"");
     }
 
     [Fact]
@@ -129,7 +129,7 @@ public class InspectionApiTests
         // Arrange
         var client = _fixture.Client!;
         var dbContext = _fixture.DbContext!;
-        var inspections = dbContext.Inspections.Where(i => i.Status.ToString() == "Planned").ToList();
+        var inspections = dbContext.Inspections.Where(i => i.Status == SpaceOS.Modules.QA.Domain.Enums.InspectionStatus.Planned).ToList();
         if (inspections.Count == 0)
         {
             return; // Skip: "No Planned inspections available");
@@ -141,7 +141,7 @@ public class InspectionApiTests
 
         // Assert
         response.StatusCode.Should().Be(System.Net.HttpStatusCode.NoContent);
-        var updatedInspection = dbContext.Inspections.FirstOrDefault(i => i.Id.Value == inspectionId);
+        var updatedInspection = dbContext.Inspections.AsEnumerable().FirstOrDefault(i => i.Id.Value == inspectionId);
         updatedInspection?.Status.ToString().Should().Be("InProgress");
     }
 
@@ -151,7 +151,7 @@ public class InspectionApiTests
         // Arrange
         var client = _fixture.Client!;
         var dbContext = _fixture.DbContext!;
-        var inspections = dbContext.Inspections.Where(i => i.Status.ToString() == "InProgress").ToList();
+        var inspections = dbContext.Inspections.Where(i => i.Status == SpaceOS.Modules.QA.Domain.Enums.InspectionStatus.InProgress).ToList();
         if (inspections.Count == 0)
         {
             return; // Skip: "No InProgress inspections available");
@@ -166,7 +166,7 @@ public class InspectionApiTests
 
         // Assert
         response.StatusCode.Should().Be(System.Net.HttpStatusCode.NoContent);
-        var updatedInspection = dbContext.Inspections.FirstOrDefault(i => i.Id.Value == inspectionId);
+        var updatedInspection = dbContext.Inspections.AsEnumerable().FirstOrDefault(i => i.Id.Value == inspectionId);
         updatedInspection?.Status.ToString().Should().Be("Completed");
     }
 
@@ -176,7 +176,7 @@ public class InspectionApiTests
         // Arrange
         var client = _fixture.Client!;
         var dbContext = _fixture.DbContext!;
-        var inspections = dbContext.Inspections.Where(i => i.Status.ToString() == "InProgress").ToList();
+        var inspections = dbContext.Inspections.Where(i => i.Status == SpaceOS.Modules.QA.Domain.Enums.InspectionStatus.InProgress).ToList();
         if (inspections.Count == 0)
         {
             return; // Skip: "No InProgress inspections available");
@@ -203,7 +203,7 @@ public class InspectionApiTests
         // Arrange
         var client = _fixture.Client!;
         var dbContext = _fixture.DbContext!;
-        var plannedInspections = dbContext.Inspections.Where(i => i.Status.ToString() == "Planned").ToList();
+        var plannedInspections = dbContext.Inspections.Where(i => i.Status == SpaceOS.Modules.QA.Domain.Enums.InspectionStatus.Planned).ToList();
         if (plannedInspections.Count == 0)
         {
             return; // Skip: "No Planned inspections available");

@@ -1,6 +1,8 @@
 using SpaceOS.Modules.CRM.Api;
 using SpaceOS.Modules.CRM.Api.Endpoints;
 using SpaceOS.Modules.CRM.Infrastructure;
+using SpaceOS.Modules.Hosting.Auth;
+using SpaceOS.Modules.Hosting.Tenancy;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,8 +16,12 @@ builder.Services.AddCrmApiJsonOptions();
 // CRM module: DbContext, repositories, MediatR handlers, validators, CrmOptions
 builder.Services.AddCrmModule(builder.Configuration);
 
-builder.Services.AddAuthentication();
-builder.Services.AddAuthorization();
+// Shared module-host auth (ADR-061). The previous scheme-less AddAuthentication() +
+// RequireAuthorization() combination made EVERY request die with
+// "No authenticationScheme was specified" — the host was unusable, even in Development.
+builder.Services.AddSpaceOsModuleAuth(builder.Configuration, builder.Environment);
+
+builder.Services.AddHealthChecks();
 
 var app = builder.Build();
 
@@ -29,6 +35,10 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
+// Tenant from the JWT; X-Tenant-Id only as allowlist-validated selection (ADR-061 T1).
+app.UseSpaceOsModuleTenancy();
+
+app.MapHealthChecks("/health").AllowAnonymous();
 
 // Map CRM endpoints
 app.MapLeadEndpoints();

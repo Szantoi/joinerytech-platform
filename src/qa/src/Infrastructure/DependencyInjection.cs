@@ -1,7 +1,8 @@
-using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using SpaceOS.Modules.Hosting.Persistence;
+using SpaceOS.Modules.Hosting.Tenancy;
 using SpaceOS.Modules.QA.Domain.Repositories;
 using SpaceOS.Modules.QA.Infrastructure.Persistence;
 using SpaceOS.Modules.QA.Infrastructure.Persistence.Repositories;
@@ -16,22 +17,28 @@ public static class DependencyInjection
     /// <summary>
     /// Add QA Infrastructure services to the dependency injection container.
     /// </summary>
+    /// <remarks>
+    /// Tenancy comes from the shared SpaceOS.Modules.Hosting baseline (ADR-061/062):
+    /// the claims-backed <see cref="ITenantContext"/> plus the fail-loud RLS session
+    /// interceptor replace the old placeholder DefaultTenantContext and the
+    /// error-swallowing per-module interceptor copy.
+    /// </remarks>
     public static IServiceCollection AddQAInfrastructure(
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        // DbContext with interceptor
-        services.AddScoped<ITenantContext>(sp => new DefaultTenantContext());
-        services.AddScoped<TenantDbConnectionInterceptor>();
+        // Shared tenant context + RLS session interceptor (ADR-061/062).
+        services.AddSpaceOsModuleTenancy();
 
         services.AddDbContext<QADbContext>((sp, options) =>
         {
-            var connectionString = configuration.GetConnectionString("QA") ?? "Host=localhost;Database=qa;Username=postgres;Password=postgres";
-            var interceptor = sp.GetRequiredService<TenantDbConnectionInterceptor>();
+            var connectionString = configuration.GetConnectionString("QA")
+                ?? throw new InvalidOperationException(
+                    "ConnectionStrings:QA is not configured for the QA module host.");
 
             options
                 .UseNpgsql(connectionString)
-                .AddInterceptors(interceptor);
+                .AddInterceptors(sp.GetRequiredService<SpaceOsTenantSessionInterceptor>());
         });
 
         // Repository registration
@@ -58,12 +65,4 @@ public static class DependencyInjection
 
         return services;
     }
-}
-
-/// <summary>
-/// Default tenant context implementation (placeholder).
-/// </summary>
-internal class DefaultTenantContext : ITenantContext
-{
-    public Guid TenantId => Guid.Empty; // Will be set by interceptor
 }

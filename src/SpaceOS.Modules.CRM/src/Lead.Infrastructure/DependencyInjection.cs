@@ -5,6 +5,8 @@ using SpaceOS.Modules.CRM.Application;
 using SpaceOS.Modules.CRM.Domain.Repositories;
 using SpaceOS.Modules.CRM.Infrastructure.Persistence;
 using SpaceOS.Modules.CRM.Infrastructure.Persistence.Repositories;
+using SpaceOS.Modules.Hosting.Persistence;
+using SpaceOS.Modules.Hosting.Tenancy;
 
 namespace SpaceOS.Modules.CRM.Infrastructure;
 
@@ -39,11 +41,19 @@ public static class DependencyInjection
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        var connectionString = configuration.GetConnectionString(ConnectionStringName);
+        var connectionString = configuration.GetConnectionString(ConnectionStringName)
+            ?? throw new InvalidOperationException(
+                $"Connection string '{ConnectionStringName}' is not configured for the CRM host.");
 
-        services.AddDbContext<CrmDbContext>(options =>
+        // Shared tenancy (ADR-061/062): claims-backed tenant context + the fail-loud RLS
+        // session interceptor. Before this the CRM had NO tenant interceptor at all —
+        // the DbContext comment claimed "RLS in the deployed database" while no RLS existed.
+        services.AddSpaceOsModuleTenancy();
+
+        services.AddDbContext<CrmDbContext>((serviceProvider, options) =>
             options.UseNpgsql(connectionString, npgsql =>
-                npgsql.MigrationsHistoryTable("__EFMigrationsHistory", CrmDbContext.SchemaName)));
+                    npgsql.MigrationsHistoryTable("__EFMigrationsHistory", CrmDbContext.SchemaName))
+                .AddInterceptors(serviceProvider.GetRequiredService<SpaceOsTenantSessionInterceptor>()));
 
         services.AddCrmRepositories();
 

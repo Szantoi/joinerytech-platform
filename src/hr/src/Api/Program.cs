@@ -1,6 +1,5 @@
-using System.Security.Claims;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
+using SpaceOS.Modules.Hosting.Auth;
+using SpaceOS.Modules.Hosting.Tenancy;
 using SpaceOS.Modules.HR.Api;
 using SpaceOS.Modules.HR.Api.Endpoints;
 
@@ -16,32 +15,16 @@ builder.Services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.Converters.Add(
         new System.Text.Json.Serialization.JsonStringEnumConverter()));
 
-// Keycloak bearer auth — the endpoints are RequireAuthorization-gated, so the host must
-// carry a real scheme (SpaceOS.Kernel.Api Program precedent; config: "Jwt:Authority" /
-// "Jwt:Audience"). NOTE: this authenticates the caller only — the `hr.manage` permission
-// gate on approve/reject is still a documented follow-up (HR-BE-HOST.md).
-builder.Services
-    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
-    {
-        options.Authority = builder.Configuration["Jwt:Authority"];
-        options.Audience = builder.Configuration["Jwt:Audience"];
-        options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidateLifetime = true,
-            ClockSkew = TimeSpan.FromSeconds(30),
-            NameClaimType = "preferred_username",
-            RoleClaimType = ClaimTypes.Role
-        };
-    });
+// Shared module-host auth (ADR-061): the kernel-parity Keycloak wiring from
+// SpaceOS.Modules.Hosting replaces the hand-copied (and already drifted) JWT block —
+// the copy had lost the realm_access role mapping and the ProblemDetails 401/403.
+builder.Services.AddSpaceOsModuleAuth(builder.Configuration, builder.Environment);
 
-builder.Services.AddAuthorization();
-
-// Add HR module services (DbContext, Repositories, MediatR, capacity config, Validators)
+// Add HR module services (DbContext, Repositories, MediatR, capacity config, Validators,
+// Hr:PayGrades options) — includes the shared tenancy registration.
 builder.Services.AddHrModule(builder.Configuration);
+
+builder.Services.AddHealthChecks();
 
 var app = builder.Build();
 
@@ -55,6 +38,10 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
+// Tenant from the JWT; X-Tenant-Id only as allowlist-validated selection (ADR-061 T1).
+app.UseSpaceOsModuleTenancy();
+
+app.MapHealthChecks("/health").AllowAnonymous();
 
 // Map HR endpoints
 app.MapEmployeeEndpoints();

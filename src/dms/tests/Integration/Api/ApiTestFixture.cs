@@ -3,9 +3,9 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using SpaceOS.Modules.DMS.Application.Contracts;
 using SpaceOS.Modules.DMS.Infrastructure;
 using SpaceOS.Modules.DMS.Infrastructure.Persistence;
+using SpaceOS.Modules.Hosting.Tenancy;
 using Testcontainers.PostgreSql;
 using Xunit;
 
@@ -27,7 +27,6 @@ public class ApiTestFixture : IAsyncLifetime
     private readonly PostgreSqlContainer _dbContainer;
     private ServiceProvider? _serviceProvider;
 
-    public const string TenantHeader = "X-Tenant-Id";
     public static readonly Guid TenantId = Guid.Parse("11111111-1111-1111-1111-111111111111");
 
     public ApiTestFixture()
@@ -59,13 +58,17 @@ public class ApiTestFixture : IAsyncLifetime
             .Build();
 
         services.AddLogging();
+
+        // Fixed tenant context (ADR-061): pre-registered BEFORE the module DI so
+        // the TryAdd in AddSpaceOsModuleTenancy keeps it — the shared interceptor,
+        // the module ITenantContext adapter and the tenant query filters all see
+        // this tenant in the non-HTTP fixture. (The container role is a
+        // superuser, so RLS policies do not bite here — policy behavior is an
+        // ops concern, the isolation smoke lives with the platform test suite.)
+        services.AddScoped<ITenantContext>(_ => new FixedTenantContext(TenantId));
+
         services.AddDMSInfrastructure(configuration);
         services.AddDMSApplication();
-
-        // Fixed tenant context (RLS scoping input; the container role is the
-        // table owner, so RLS does not filter here — policy behavior is an ops
-        // concern, the isolation smoke lives with the platform test suite)
-        services.AddScoped<ITenantContext>(_ => new TestTenantContext(TenantId));
 
         _serviceProvider = services.BuildServiceProvider();
 
@@ -81,24 +84,6 @@ public class ApiTestFixture : IAsyncLifetime
             await _serviceProvider.DisposeAsync().ConfigureAwait(false);
 
         await _dbContainer.DisposeAsync().ConfigureAwait(false);
-    }
-}
-
-/// <summary>
-/// Minimal tenant context implementation for testing.
-/// </summary>
-internal class TestTenantContext : ITenantContext
-{
-    public Guid TenantId { get; private set; }
-
-    public TestTenantContext(Guid tenantId)
-    {
-        TenantId = tenantId;
-    }
-
-    public void SetTenantId(Guid tenantId)
-    {
-        TenantId = tenantId;
     }
 }
 

@@ -219,7 +219,7 @@ _Designer terminál — JoineryTech sziget. Re-review: az S1/S2 fix után jelezz
 ## RE-REVIEW: ✅ APPROVED — 2026-07-14
 
 > **Kiadta:** designer terminál (F2-EHS-REREVIEW) · **Scope:** az F2-EHS-FIX
-> (`docs/tasks/EPIC-UI-PORTAL-2026Q3/F2-EHS-FIX.md`) blokkolóinak vizuális ellenőrzése
+> (`docs/tasks/EPIC-UI-PORTAL-2026Q3/archive/F2-EHS-FIX.md`) blokkolóinak vizuális ellenőrzése
 > (dark mód + mobil), az adatréteg/FSM/a11y mag újranyitása nélkül.
 
 **Ellenőrizve:**

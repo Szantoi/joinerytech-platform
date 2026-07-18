@@ -1,4 +1,7 @@
+using System.Security.Claims;
+using System.Text.Encodings.Web;
 using MediatR;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Routing;
@@ -6,6 +9,7 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using SpaceOS.Modules.DMS.Api;
 using SpaceOS.Modules.DMS.Application.Contracts;
 
@@ -43,6 +47,12 @@ public sealed class DmsEndpointTestHost : IAsyncDisposable
                 {
                     services.AddRouting();
                     services.AddLogging(logging => logging.SetMinimumLevel(LogLevel.Warning));
+                    // The endpoint groups are RequireAuthorization-gated (ADR-061):
+                    // an always-authenticated test scheme with a real "tid" claim
+                    // matching the fixed tenant (QA QaEndpointTestHost precedent)
+                    services.AddAuthentication(TestAuthHandler.Scheme)
+                        .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>(TestAuthHandler.Scheme, _ => { });
+                    services.AddAuthorization();
                     services.AddSingleton(mediator);
                     services.AddSingleton<ITenantContext>(new FixedTenantContext(TenantId));
                     // Production host mirror: camelCase enum strings on the wire
@@ -51,6 +61,8 @@ public sealed class DmsEndpointTestHost : IAsyncDisposable
                 .Configure(app =>
                 {
                     app.UseRouting();
+                    app.UseAuthentication();
+                    app.UseAuthorization();
                     app.UseEndpoints(endpoints => mapEndpoints(endpoints));
                 }))
             .StartAsync()
@@ -71,5 +83,34 @@ public sealed class DmsEndpointTestHost : IAsyncDisposable
     {
         public FixedTenantContext(Guid tenantId) => TenantId = tenantId;
         public Guid TenantId { get; }
+    }
+}
+
+/// <summary>
+/// Always-authenticated test scheme so RequireAuthorization() passes; carries a
+/// real "tid" claim (ADR-061) matching <see cref="DmsEndpointTestHost.TenantId"/>.
+/// </summary>
+public sealed class TestAuthHandler : AuthenticationHandler<AuthenticationSchemeOptions>
+{
+    public new const string Scheme = "Test";
+
+    public TestAuthHandler(
+        IOptionsMonitor<AuthenticationSchemeOptions> options,
+        ILoggerFactory logger,
+        UrlEncoder encoder)
+        : base(options, logger, encoder)
+    {
+    }
+
+    protected override Task<AuthenticateResult> HandleAuthenticateAsync()
+    {
+        var identity = new ClaimsIdentity(
+            new[]
+            {
+                new Claim(ClaimTypes.NameIdentifier, "test-user"),
+                new Claim("tid", DmsEndpointTestHost.TenantId.ToString()),
+            }, Scheme);
+        var ticket = new AuthenticationTicket(new ClaimsPrincipal(identity), Scheme);
+        return Task.FromResult(AuthenticateResult.Success(ticket));
     }
 }

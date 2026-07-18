@@ -5,12 +5,13 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using SpaceOS.Modules.DMS.Application.Configuration;
-using SpaceOS.Modules.DMS.Application.Contracts;
 using SpaceOS.Modules.DMS.Domain.Repositories;
 using SpaceOS.Modules.DMS.Domain.Services;
 using SpaceOS.Modules.DMS.Infrastructure.Blob;
 using SpaceOS.Modules.DMS.Infrastructure.Persistence;
 using SpaceOS.Modules.DMS.Infrastructure.Persistence.Repositories;
+using SpaceOS.Modules.Hosting.Persistence;
+using SpaceOS.Modules.Hosting.Tenancy;
 
 namespace SpaceOS.Modules.DMS.Infrastructure;
 
@@ -22,27 +23,36 @@ public static class DependencyInjection
     /// <summary>
     /// Add DMS Infrastructure services to the dependency injection container.
     /// </summary>
+    /// <remarks>
+    /// Tenancy comes from the shared SpaceOS.Modules.Hosting baseline (ADR-061/062):
+    /// the claims-backed <see cref="ITenantContext"/> plus the fail-loud RLS session
+    /// interceptor replace the header-reading <c>HttpTenantContext</c> and the
+    /// error-prone per-module interceptor copy. The module-local
+    /// <see cref="Application.Contracts.ITenantContext"/> is an adapter over it.
+    /// </remarks>
     public static IServiceCollection AddDMSInfrastructure(
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        // DbContext with RLS interceptor
+        // Shared tenant context + RLS session interceptor (ADR-061/062).
+        // TryAdd semantics: test fixtures may pre-register a FixedTenantContext.
+        services.AddSpaceOsModuleTenancy();
+        services.AddScoped<Application.Contracts.ITenantContext, HostingTenantContextAdapter>();
+
+        // DbContext with the shared, fail-loud RLS interceptor (ADR-062)
         services.AddDbContext<DMSDbContext>((sp, options) =>
         {
             var connectionString = configuration.GetConnectionString("DMSDatabase")
                 ?? throw new InvalidOperationException("Connection string 'DMSDatabase' not found.");
 
             options.UseNpgsql(connectionString);
-            options.AddInterceptors(sp.GetRequiredService<TenantDbConnectionInterceptor>());
+            options.AddInterceptors(sp.GetRequiredService<SpaceOsTenantSessionInterceptor>());
         });
 
         // Repositories
         services.AddScoped<IDocumentRepository, DocumentRepository>();
         services.AddScoped<IDocumentCategoryRepository, DocumentCategoryRepository>();
         services.AddScoped<ITagRepository, TagRepository>();
-
-        // RLS Interceptor
-        services.AddScoped<TenantDbConnectionInterceptor>();
 
         // Blob store — filesystem stub behind the IDocumentBlobStore port
         // (the real store is an infra decision, follow-up). Root is CONFIG-DRIVEN.

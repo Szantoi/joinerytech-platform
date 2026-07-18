@@ -1,75 +1,61 @@
-# RLS (Row Level Security) Policy Template
+# RLS (Row Level Security) Policy Template — ADR-062 baseline
 
-**Use case:** Tenant isolation — User can only see their tenant's data
+**Use case:** tenant isolation — a request only ever sees its own tenant's rows.
 
-## 1. SQL Policy Setup
+> ⚠️ Ez a sablon az **ADR-062** döntést tükrözi. A kanonikus implementáció a
+> `src/spaceos-modules-hosting` csomag (`RlsMigrationSql` + `SpaceOsTenantSessionInterceptor`)
+> — modul-kódban NE kézzel írd, hanem a csomagot használd. Session-kulcs:
+> **`app.current_tenant_id`** (egyetlen kulcs, kernel-interoperábilis; a korábbi
+> `app.tenant_id` és `app.current_tenant` változatok HIBÁSAK voltak).
+
+## 1. SQL policy (a `RlsMigrationSql.EnableTenantRls` kimenete)
 
 ```sql
--- Enable RLS on table
-ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
-
--- Create policy for users (tenant isolation)
-CREATE POLICY orders_tenant_isolation ON orders
-    USING (tenant_id = current_setting('app.tenant_id')::uuid);
-
--- Create policy for admins (bypass RLS)
-CREATE POLICY orders_admin_bypass ON orders
-    USING (
-        current_setting('app.role')::text = 'admin'
-        OR tenant_id = current_setting('app.tenant_id')::uuid
-    );
-
--- Create policy for INSERT
-CREATE POLICY orders_insert ON orders
-    FOR INSERT
-    WITH CHECK (tenant_id = current_setting('app.tenant_id')::uuid);
+ALTER TABLE ehs."incidents" ENABLE ROW LEVEL SECURITY;
+-- FORCE nélkül a tábla TULAJDONOSÁRA nem érvényes a policy → csendben dísz marad:
+ALTER TABLE ehs."incidents" FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "incidents_tenant_isolation" ON ehs."incidents";
+CREATE POLICY "incidents_tenant_isolation" ON ehs."incidents"
+    USING ("tenant_id" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid)
+    WITH CHECK ("tenant_id" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid);
 ```
 
-## 2. C# DbContext Setup (EF Core)
+- `current_setting(..., true)`: hiányzó kulcsnál NULL, nem hiba.
+- `NULLIF(..., '')`: az interceptor pool-reset `''` értéke is NULL-lá válik →
+  a összehasonlítás hamis → **nulla sor** (fail-closed), nem cast-hiba.
+- ⚠️ A **superuser mindig átlépi** az RLS-t (FORCE-szal együtt is) — a deploy-szerep
+  nem lehet superuser.
+
+Gyerek-táblára (nincs saját tenant-oszlop): `RlsMigrationSql.EnableChildTenantRls` —
+EXISTS-szubquery a szülő tenant-oszlopára az FK-n keresztül.
+
+## 2. Session-kontextus beállítása (a közös interceptor)
+
+A modul-hostok a `SpaceOS.Modules.Hosting.Persistence.SpaceOsTenantSessionInterceptor`-t
+regisztrálják (DbConnectionInterceptor, **ConnectionOpened** fázis):
 
 ```csharp
-protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-{
-    base.OnConfiguring(optionsBuilder);
-
-    optionsBuilder.UseSqlServer(
-        _connectionString,
-        opt => opt.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery)
-    );
-}
-
-// In middleware or interceptor
-public class TenantInterceptor : DbCommandInterceptor
-{
-    private readonly IHttpContextAccessor _httpContextAccessor;
-
-    public override Task<InterceptionResult<DbCommand>> CommandCreatedAsync(
-        CommandEventData eventData,
-        InterceptionResult<DbCommand> result,
-        CancellationToken cancellationToken = default)
-    {
-        var tenantId = _httpContextAccessor?.HttpContext?.User
-            .FindFirst("tenant_id")?.Value;
-        var role = _httpContextAccessor?.HttpContext?.User
-            .FindFirst(ClaimTypes.Role)?.Value;
-
-        if (tenantId != null)
-        {
-            var command = eventData.Command;
-            command.CommandText = $"SET app.tenant_id = '{tenantId}';\n" +
-                                 $"SET app.role = '{role}';\n" +
-                                 command.CommandText;
-        }
-
-        return base.CommandCreatedAsync(eventData, result, cancellationToken);
-    }
-}
+// paraméterezett — SOHA nem string-interpolált — set_config, session-szintű (is_local=false):
+cmd.CommandText = "SELECT set_config(@key, @value, false)";
 ```
 
-## 3. Registration
+- `SET LOCAL` itt **no-op** lenne (nincs nyitott tranzakció a ConnectionOpened-ben) — kernel BE-P15-03.
+- Kapcsolat-zárásnál `''`-re reset (pool-szennyezés ellen).
+- **A hibát SOHA nem nyeli el** — nem létező függvény/policy = elszálló kérés, nem néma szivárgás.
+
+## 3. Regisztráció (modul-DI)
 
 ```csharp
-services.AddScoped<TenantInterceptor>();
+services.AddSpaceOsModuleTenancy(); // ITenantContext (JWT-claimből) + interceptor
+services.AddDbContext<MyDbContext>((sp, options) =>
+    options.UseNpgsql(connectionString)
+           .AddInterceptors(sp.GetRequiredService<SpaceOsTenantSessionInterceptor>()));
 ```
 
-**See also:** [MULTI_TENANT_RLS_ARCHITECTURE_2026.md](../architecture/MULTI_TENANT_RLS_ARCHITECTURE_2026.md)
+**Második réteg:** minden tenant-scoped aggregátum-gyökérre `HasQueryFilter`
+(`CurrentTenantId == null || e.TenantId == CurrentTenantId` — kernel-minta).
+
+**See also:** [ADR-062](../adr/ADR-062-rls-tenant-izolacio.md) ·
+`src/spaceos-modules-hosting/README.md` ·
+[MULTI_TENANT_RLS_ARCHITECTURE_2026.md](../architecture/MULTI_TENANT_RLS_ARCHITECTURE_2026.md)
+(⚠️ a 2026-06-22-es kutatási doksi mintakódja elavult — a kernel/hosting-csomag a mérvadó)

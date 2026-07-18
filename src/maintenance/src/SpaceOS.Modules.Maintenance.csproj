@@ -12,6 +12,9 @@
 
   <ItemGroup>
     <ProjectReference Include="../../spaceos-kernel/SpaceOS.Kernel.Domain/SpaceOS.Kernel.Domain.csproj" />
+    <!-- Shared module-host baseline (ADR-061/062): tenant context + RLS session
+         interceptor + migration SQL template. -->
+    <ProjectReference Include="../../spaceos-modules-hosting/src/SpaceOS.Modules.Hosting/SpaceOS.Modules.Hosting.csproj" />
   </ItemGroup>
 
   <ItemGroup>

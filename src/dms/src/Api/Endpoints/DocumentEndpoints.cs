@@ -35,7 +35,8 @@ public static class DocumentEndpoints
     public static IEndpointRouteBuilder MapDocumentEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/dms/documents")
-            .WithTags("DMS - Documents");
+            .WithTags("DMS - Documents")
+            .RequireAuthorization();
 
         group.MapGet("", ListDocuments)
             .WithName("ListDocuments")
@@ -156,10 +157,9 @@ public static class DocumentEndpoints
         CancellationToken ct)
         => Execute(loggerFactory, "create", async () =>
         {
-            // Tenant is mandatory for create (RLS scoping) — auth follow-up
-            if (tenantContext.TenantId == Guid.Empty)
-                return BadRequest($"Hiányzó vagy érvénytelen {HttpTenantContext.HeaderName} fejléc");
-
+            // Tenant comes from the JWT (ADR-061): the tenancy middleware rejects
+            // tenant-less callers with 403 before this handler runs, and the
+            // adapter-backed ITenantContext is fail-loud — no Guid.Empty fallback.
             if (!Enum.TryParse<DocType>(request.Type, ignoreCase: true, out var docType))
                 return BadRequest("Érvénytelen dokumentum-típus");
 

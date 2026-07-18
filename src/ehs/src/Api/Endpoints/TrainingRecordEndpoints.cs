@@ -16,7 +16,8 @@ public static class TrainingRecordEndpoints
     {
         var group = app.MapGroup("/api/ehs/training-records")
             .WithTags("Training Records")
-            .WithOpenApi();
+            .WithOpenApi()
+            .RequireAuthorization();
 
         group.MapPost("/", CreateTrainingRecord);
         group.MapGet("/{id:guid}", GetTrainingRecord);

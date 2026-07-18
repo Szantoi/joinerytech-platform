@@ -1,6 +1,7 @@
 using System;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
+using SpaceOS.Modules.Hosting.Persistence;
 
 #nullable disable
 
@@ -107,22 +108,26 @@ namespace SpaceOS.Modules.DMS.Infrastructure.Persistence.Migrations
                 unique: true);
 
             // RLS — tenant isolation (moved here from EnableRLS: the documents
-            // table is created in THIS migration). document_versions has no
-            // tenant_id column: isolation flows through the FK to documents.
-            migrationBuilder.Sql("ALTER TABLE dms.documents ENABLE ROW LEVEL SECURITY;");
-
-            migrationBuilder.Sql(@"
-                CREATE POLICY documents_tenant_isolation ON dms.documents
-                USING (tenant_id = current_setting('app.tenant_id')::uuid)
-                WITH CHECK (tenant_id = current_setting('app.tenant_id')::uuid);
-            ");
+            // table is created in THIS migration). ADR-062 rewrite: shared
+            // RlsMigrationSql template — app.current_tenant_id session key,
+            // ENABLE + FORCE, fail-closed NULLIF policy. document_versions has
+            // no tenant_id column: the FK-following child policy isolates it
+            // through dms.documents.
+            migrationBuilder.Sql(RlsMigrationSql.EnableTenantRls("dms", "documents", "tenant_id"));
+            migrationBuilder.Sql(RlsMigrationSql.EnableChildTenantRls(
+                "dms",
+                childTable: "document_versions",
+                childForeignKeyColumn: "document_id",
+                parentTable: "documents",
+                parentKeyColumn: "id",
+                parentTenantColumn: "tenant_id"));
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.Sql("DROP POLICY documents_tenant_isolation ON dms.documents;");
-            migrationBuilder.Sql("ALTER TABLE dms.documents DISABLE ROW LEVEL SECURITY;");
+            migrationBuilder.Sql(RlsMigrationSql.DisableTenantRls("dms", "document_versions"));
+            migrationBuilder.Sql(RlsMigrationSql.DisableTenantRls("dms", "documents"));
 
             migrationBuilder.DropTable(name: "document_versions", schema: "dms");
             migrationBuilder.DropTable(name: "documents", schema: "dms");

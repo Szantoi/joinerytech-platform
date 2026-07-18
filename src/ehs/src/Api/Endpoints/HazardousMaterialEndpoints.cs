@@ -22,7 +22,8 @@ public static class HazardousMaterialEndpoints
     {
         var group = app.MapGroup("/api/ehs/hazardous-materials")
             .WithTags("HazardousMaterials")
-            .WithOpenApi();
+            .WithOpenApi()
+            .RequireAuthorization();
 
         // POST /api/ehs/hazardous-materials
         group.MapPost("/", RegisterMaterial)

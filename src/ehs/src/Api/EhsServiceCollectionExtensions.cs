@@ -6,6 +6,8 @@ using SpaceOS.Modules.Ehs.Domain.Aggregates.RiskAssessmentAggregate;
 using SpaceOS.Modules.Ehs.Infrastructure.Data;
 using SpaceOS.Modules.Ehs.Infrastructure.Notifications;
 using SpaceOS.Modules.Ehs.Infrastructure.Repositories;
+using SpaceOS.Modules.Hosting.Persistence;
+using SpaceOS.Modules.Hosting.Tenancy;
 
 namespace SpaceOS.Modules.Ehs.Api;
 
@@ -21,23 +23,20 @@ public static class EhsServiceCollectionExtensions
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        // 1. HttpContextAccessor (required for HttpTenantContext)
-        services.AddHttpContextAccessor();
+        // 1-2. Shared tenancy (ADR-061): claims-backed tenant context + RLS session
+        // interceptor from SpaceOS.Modules.Hosting; the module-local ITenantContext is an
+        // adapter over it. The header-reading HttpTenantContext is gone.
+        services.AddSpaceOsModuleTenancy();
+        services.AddScoped<Infrastructure.Data.ITenantContext, HostingTenantContextAdapter>();
 
-        // 2. Tenant Context
-        services.AddScoped<ITenantContext, HttpTenantContext>();
-
-        // 3. DbContext + RLS Interceptor
+        // 3. DbContext + shared RLS interceptor (fail-loud — ADR-062)
         services.AddDbContext<EhsDbContext>((serviceProvider, options) =>
         {
             var connectionString = configuration.GetConnectionString("EhsDatabase")
                 ?? throw new InvalidOperationException("EhsDatabase connection string is missing.");
 
-            var tenantContext = serviceProvider.GetRequiredService<ITenantContext>();
-            var interceptor = new TenantDbConnectionInterceptor(tenantContext);
-
             options.UseNpgsql(connectionString)
-                   .AddInterceptors(interceptor);
+                   .AddInterceptors(serviceProvider.GetRequiredService<SpaceOsTenantSessionInterceptor>());
         });
 
         // 4. Repositories

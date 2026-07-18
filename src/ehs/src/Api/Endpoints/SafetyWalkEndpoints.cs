@@ -24,7 +24,8 @@ public static class SafetyWalkEndpoints
     {
         var group = app.MapGroup("/api/ehs/safety-walks")
             .WithTags("SafetyWalks")
-            .WithOpenApi();
+            .WithOpenApi()
+            .RequireAuthorization();
 
         // POST /api/ehs/safety-walks
         group.MapPost("/", ScheduleWalk)

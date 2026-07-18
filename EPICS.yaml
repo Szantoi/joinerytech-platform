@@ -110,3 +110,43 @@ epics:
       mailbox: "Nexus MCP (localhost:3458) — create_task/submit_done, epic_id-vel"
       tasks_issued:
         [MSG-CONDUCTOR-002, MSG-FRONTEND-001, MSG-DESIGNER-002, MSG-BACKEND-001, MSG-MONITOR-001]
+
+  - id: EPIC-UI-WORLDS-2026Q3
+    title: "Legacy világok modernizálása — API-FIRST a futó spaceos-backendekre"
+    owner: root
+    coordinator: conductor
+    started: 2026-07-18
+    status: in_progress
+    goal: >
+      A portál ~16 legacy világából az (a) csoport (van mögöttük spaceos-backend)
+      a bevált modul-gyártósorral modernizálódik (PORTAL_WORLDS_INVENTORY_2026-07-16.md),
+      de API-FIRST (Gábor, 2026-07-18): a valós spaceos-kontraktusból (submodule-forrás
+      + futó VPS-service) indul a zod-séma és az adatréteg — az MSW csak ennek tükre,
+      nem előkép. Design: DESIGN_SYSTEM_SPEC_V1 + dark mode token-réteg kötelező.
+    stop_condition: >
+      Tranche 1 (production, warehouse) designer-review APPROVED, build+teszt zöld,
+      a világok a valós API-alakot beszélik (MSW-tükör kontraktus-tesztekkel bizonyítva).
+      Sales/shopfloor és a (b) csoport scope-döntése Gáboré.
+    plan_doc: docs/knowledge/architecture/PORTAL_WORLDS_INVENTORY_2026-07-16.md
+    milestones:
+      - id: W0-kontraktus-audit
+        status: in_progress
+        started: 2026-07-18
+        done_when: "cutting+joinery+inventory+procurement teljes API-kontraktus doksi (route-csoportok, DTO-k, enumok, FSM-ek, hiány-lista) a docs/knowledge/architecture/ alatt"
+        tasks:
+          - { id: WORLDS-API-AUDIT, role: backend, title: "Production+Warehouse backend kontraktus-audit a submodule-forrásból (API-first alap)", status: in_progress, output: docs/knowledge/architecture/WORLDS_API_CONTRACTS_2026-07-18.md }
+      - id: W1-production
+        status: pending
+        done_when: "production világ (szabászat/megmunkálás/workflow) a modul-sablonra, valós cutting+joinery kontraktussal, designer APPROVED"
+        tasks:
+          - { id: WORLDS-PRODUCTION-FE, role: frontend, title: "Production világ modernizálás (cutting+joinery API-ra)", status: pending, depends_on: [WORLDS-API-AUDIT] }
+          - { id: WORLDS-PRODUCTION-REVIEW, role: designer, title: "Production designer-review", status: pending, depends_on: [WORLDS-PRODUCTION-FE] }
+      - id: W2-warehouse
+        status: pending
+        done_when: "warehouse világ (készlet/beszerzés/mozgások) a modul-sablonra, valós inventory+procurement kontraktussal, designer APPROVED"
+        tasks:
+          - { id: WORLDS-WAREHOUSE-FE, role: frontend, title: "Warehouse világ modernizálás (inventory+procurement API-ra)", status: pending, depends_on: [WORLDS-API-AUDIT, WORLDS-PRODUCTION-FE] }
+          - { id: WORLDS-WAREHOUSE-REVIEW, role: designer, title: "Warehouse designer-review", status: pending, depends_on: [WORLDS-WAREHOUSE-FE] }
+    coordination:
+      mailbox: "Nexus MCP — dokumentálás minden mérföldkőnél (Gábor-szabály 2026-07-18)"
+      note: "Párhuzam-szabály: a portált egyszerre EGY FE-agent mutálhatja; az ADR-IMPL-HOSTING (backend modulok) ettől független sávon fut."

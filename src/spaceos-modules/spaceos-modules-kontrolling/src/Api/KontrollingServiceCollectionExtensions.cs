@@ -7,7 +7,7 @@ using SpaceOS.Modules.Kontrolling.Application.Portfolio;
 using SpaceOS.Modules.Kontrolling.Application.Services;
 using SpaceOS.Modules.Kontrolling.Domain.Enums;
 using SpaceOS.Modules.Kontrolling.Infrastructure;
-using SpaceOS.Modules.Kontrolling.Infrastructure.MultiTenancy;
+using SpaceOS.Modules.Hosting.Tenancy;
 using SpaceOS.Modules.Kontrolling.Infrastructure.Portfolio;
 
 /// <summary>
@@ -31,9 +31,10 @@ public static class KontrollingServiceCollectionExtensions
     {
         services.AddKontrollingApiJsonOptions();
 
-        // Tenant scope of the request — the RLS interceptor depends on it.
-        services.AddHttpContextAccessor();
-        services.AddScoped<ITenantContext, HttpTenantContext>();
+        // Tenant scope of the request — shared SpaceOS.Modules.Hosting baseline
+        // (ADR-061): claims-backed tenant context + fail-loud RLS interceptor. The
+        // header-reading HttpTenantContext is gone.
+        services.AddSpaceOsModuleTenancy();
 
         // Read-model thresholds — config-driven, fail fast (EHS RiskBandConfiguration precedent).
         services.AddSingleton(BindThresholds(configuration));

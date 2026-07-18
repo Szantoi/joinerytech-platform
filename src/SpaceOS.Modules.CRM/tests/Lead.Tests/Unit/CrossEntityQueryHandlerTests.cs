@@ -27,7 +27,12 @@ public class CrossEntityQueryHandlerTests
 {
     private static readonly Guid TenantId = Guid.Parse("11111111-1111-1111-1111-111111111111");
     private static readonly Guid UserId = Guid.Parse("22222222-2222-2222-2222-222222222222");
-    private static readonly DateTimeOffset Now = new(2026, 7, 16, 10, 0, 0, TimeSpan.Zero);
+    // Anchored to the real date on purpose: the aggregates validate due dates against the
+    // REAL clock (DateTimeOffset.UtcNow — TimeProvider injection is a domain follow-up),
+    // so a hardcoded past date silently rejects task creation and the test rots
+    // (it started failing the day after it was written). All assertions are Now-relative.
+    private static readonly DateTimeOffset Now =
+        new DateTimeOffset(DateTime.UtcNow.Date, TimeSpan.Zero).AddDays(1).AddHours(10);
 
     private static readonly TimeProvider Clock = new FakeTimeProvider(Now);
 

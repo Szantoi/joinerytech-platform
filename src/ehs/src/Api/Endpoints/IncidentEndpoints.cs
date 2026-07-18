@@ -21,7 +21,8 @@ public static class IncidentEndpoints
     {
         var group = app.MapGroup("/api/ehs/incidents")
             .WithTags("Incidents")
-            .WithOpenApi();
+            .WithOpenApi()
+            .RequireAuthorization();
 
         // POST /api/ehs/incidents
         group.MapPost("/", CreateIncident)

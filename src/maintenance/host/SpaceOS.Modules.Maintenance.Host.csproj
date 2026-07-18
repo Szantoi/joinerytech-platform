@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>SpaceOS.Modules.Maintenance.Host</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.8.*" />
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="11.10.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The Maintenance module (Domain + Application + Infrastructure + Api endpoints in
+         one project). The runnable host lives under host/ because the module csproj
+         compile-glob would swallow a Program.cs placed under src/ (QA/DMS layout precedent). -->
+    <ProjectReference Include="../src/SpaceOS.Modules.Maintenance.csproj" />
+  </ItemGroup>
+
+</Project>

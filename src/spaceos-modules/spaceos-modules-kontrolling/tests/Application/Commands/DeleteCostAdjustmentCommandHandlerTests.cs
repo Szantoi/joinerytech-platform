@@ -41,7 +41,7 @@ public sealed class DeleteCostAdjustmentCommandHandlerTests
         );
 
         _repositoryMock
-            .Setup(x => x.GetByIdAsync(adjustmentId, tenantId, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetForUpdateAsync(adjustmentId, tenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(adjustment);
 
         var command = new DeleteCostAdjustmentCommand(adjustmentId, tenantId, deletedBy);
@@ -66,7 +66,7 @@ public sealed class DeleteCostAdjustmentCommandHandlerTests
         var tenantId = Guid.NewGuid();
 
         _repositoryMock
-            .Setup(x => x.GetByIdAsync(adjustmentId, tenantId, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetForUpdateAsync(adjustmentId, tenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((CostAdjustment?)null);
 
         var command = new DeleteCostAdjustmentCommand(adjustmentId, tenantId, Guid.NewGuid());
@@ -97,7 +97,7 @@ public sealed class DeleteCostAdjustmentCommandHandlerTests
         adjustment.Delete(Guid.NewGuid()); // Already deleted
 
         _repositoryMock
-            .Setup(x => x.GetByIdAsync(adjustmentId, tenantId, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetForUpdateAsync(adjustmentId, tenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(adjustment);
 
         var command = new DeleteCostAdjustmentCommand(adjustmentId, tenantId, Guid.NewGuid());
@@ -129,7 +129,7 @@ public sealed class DeleteCostAdjustmentCommandHandlerTests
         );
 
         _repositoryMock
-            .Setup(x => x.GetByIdAsync(adjustmentId, tenantId, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetForUpdateAsync(adjustmentId, tenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(adjustment);
 
         // Pre-populate cache
@@ -163,7 +163,7 @@ public sealed class DeleteCostAdjustmentCommandHandlerTests
         );
 
         _repositoryMock
-            .Setup(x => x.GetByIdAsync(adjustmentId, tenantId, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetForUpdateAsync(adjustmentId, tenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(adjustment);
 
         // Pre-populate cache
@@ -195,7 +195,7 @@ public sealed class DeleteCostAdjustmentCommandHandlerTests
         );
 
         _repositoryMock
-            .Setup(x => x.GetByIdAsync(adjustmentId, tenantId, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetForUpdateAsync(adjustmentId, tenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(adjustment);
 
         var command = new DeleteCostAdjustmentCommand(adjustmentId, tenantId, Guid.NewGuid());

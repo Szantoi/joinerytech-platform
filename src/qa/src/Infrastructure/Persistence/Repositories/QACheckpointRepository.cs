@@ -42,8 +42,15 @@ public class QACheckpointRepository : IQACheckpointRepository
     /// </summary>
     public async Task<IEnumerable<QACheckpoint>> GetByTypeAsync(Guid tenantId, string checkpointType, CancellationToken ct = default)
     {
+        // Enum.ToString() is not translatable to SQL (the old form threw at runtime on
+        // PostgreSQL); parse once and compare enum values server-side instead.
+        if (!Enum.TryParse<Domain.Enums.CheckpointType>(checkpointType, ignoreCase: true, out var parsedType))
+        {
+            return [];
+        }
+
         return await _context.QACheckpoints
-            .Where(q => q.TenantId == tenantId && q.CheckpointType.ToString() == checkpointType)
+            .Where(q => q.TenantId == tenantId && q.CheckpointType == parsedType)
             .ToListAsync(ct);
     }
 

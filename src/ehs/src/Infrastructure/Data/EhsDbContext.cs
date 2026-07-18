@@ -28,10 +28,29 @@ public class EhsDbContext : DbContext
     /// <summary>Unified CAPA registry — incident and safety-walk sourced actions</summary>
     public DbSet<CorrectiveAction> CorrectiveActions { get; set; } = null!;
 
+    private readonly SpaceOS.Modules.Hosting.Tenancy.ITenantContext? _tenantContext;
+
     public EhsDbContext(DbContextOptions<EhsDbContext> options)
         : base(options)
     {
     }
+
+    /// <summary>
+    /// DI constructor carrying the shared tenant context so the second isolation layer
+    /// (tenant query filters, ADR-062) is active in hosts. Tools/tests using the
+    /// options-only constructor run without the filter (RLS still guards in PostgreSQL).
+    /// </summary>
+    public EhsDbContext(
+        DbContextOptions<EhsDbContext> options,
+        SpaceOS.Modules.Hosting.Tenancy.ITenantContext tenantContext)
+        : base(options)
+    {
+        _tenantContext = tenantContext;
+    }
+
+    /// <summary>Current tenant for the query filters; null disables the filter (kernel pattern).</summary>
+    private Guid? CurrentTenantId =>
+        _tenantContext is { HasTenant: true } ? _tenantContext.TenantId : null;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -47,5 +66,27 @@ public class EhsDbContext : DbContext
         modelBuilder.ApplyConfiguration(new PpeIssuanceEntityTypeConfiguration());
         modelBuilder.ApplyConfiguration(new SafetyWalkEntityTypeConfiguration());
         modelBuilder.ApplyConfiguration(new CorrectiveActionEntityTypeConfiguration());
+
+        // ADR-062 second isolation layer: tenant query filter on every aggregate root
+        // (kernel AppDbContext pattern). RLS is the first layer; this guards against a
+        // forgotten WHERE, a FORCE-less table or a misconfigured deploy role.
+        modelBuilder.Entity<Incident>()
+            .HasQueryFilter(i => CurrentTenantId == null || i.TenantId == CurrentTenantId);
+        modelBuilder.Entity<RiskAssessment>()
+            .HasQueryFilter(r => CurrentTenantId == null || r.TenantId == CurrentTenantId);
+        modelBuilder.Entity<TrainingRecord>()
+            .HasQueryFilter(t => CurrentTenantId == null || t.TenantId == CurrentTenantId);
+        modelBuilder.Entity<EhsLocation>()
+            .HasQueryFilter(l => CurrentTenantId == null || l.TenantId == CurrentTenantId);
+        modelBuilder.Entity<HazardousMaterial>()
+            .HasQueryFilter(h => CurrentTenantId == null || h.TenantId == CurrentTenantId);
+        modelBuilder.Entity<PpeItem>()
+            .HasQueryFilter(p => CurrentTenantId == null || p.TenantId == CurrentTenantId);
+        modelBuilder.Entity<PpeIssuance>()
+            .HasQueryFilter(p => CurrentTenantId == null || p.TenantId == CurrentTenantId);
+        modelBuilder.Entity<SafetyWalk>()
+            .HasQueryFilter(s => CurrentTenantId == null || s.TenantId == CurrentTenantId);
+        modelBuilder.Entity<CorrectiveAction>()
+            .HasQueryFilter(c => CurrentTenantId == null || c.TenantId == CurrentTenantId);
     }
 }

@@ -1,6 +1,6 @@
-using System;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
+using SpaceOS.Modules.Hosting.Persistence;
 
 #nullable disable
 
@@ -15,55 +15,42 @@ namespace SpaceOS.Modules.DMS.Infrastructure.Persistence.Migrations
     ///    DocumentApprovalWorkflow migration: the documents table did not exist
     ///    at this point (InitialCreate only created categories/tags), so this
     ///    migration could never have applied successfully.
+    ///
+    /// ADR-062 rewrite (zero-data platform, nothing deployed): the RLS SQL now
+    /// comes from the shared <see cref="RlsMigrationSql"/> template — single
+    /// session key <c>app.current_tenant_id</c> (the module-local
+    /// <c>app.tenant_id</c> key is retired), <c>ENABLE</c> +
+    /// <c>FORCE ROW LEVEL SECURITY</c> and fail-closed
+    /// <c>NULLIF(current_setting(...), '')</c> policies.
     /// </remarks>
     [DbContext(typeof(DMSDbContext))]
     [Migration("20260707080001_EnableRLS")]
     public partial class EnableRLS : Migration
     {
+        private const string Schema = "dms";
+
+        private static readonly (string Table, string TenantColumn)[] RootTables =
+        [
+            ("document_categories", "tenant_id"),
+            ("tags", "tenant_id"),
+        ];
+
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            // Create tenant context setter function
-            migrationBuilder.Sql(@"
-                CREATE OR REPLACE FUNCTION dms.set_tenant_context(p_tenant_id uuid)
-                RETURNS void AS $$
-                BEGIN
-                    PERFORM set_config('app.tenant_id', p_tenant_id::text, false);
-                END;
-                $$ LANGUAGE plpgsql;
-            ");
+            migrationBuilder.Sql(RlsMigrationSql.CreateSetTenantContextFunction(Schema));
 
-            // Enable RLS on document_categories table
-            migrationBuilder.Sql("ALTER TABLE dms.document_categories ENABLE ROW LEVEL SECURITY;");
-
-            migrationBuilder.Sql(@"
-                CREATE POLICY document_categories_tenant_isolation ON dms.document_categories
-                USING (tenant_id = current_setting('app.tenant_id')::uuid)
-                WITH CHECK (tenant_id = current_setting('app.tenant_id')::uuid);
-            ");
-
-            // Enable RLS on tags table
-            migrationBuilder.Sql("ALTER TABLE dms.tags ENABLE ROW LEVEL SECURITY;");
-
-            migrationBuilder.Sql(@"
-                CREATE POLICY tags_tenant_isolation ON dms.tags
-                USING (tenant_id = current_setting('app.tenant_id')::uuid)
-                WITH CHECK (tenant_id = current_setting('app.tenant_id')::uuid);
-            ");
+            foreach (var (table, tenantColumn) in RootTables)
+                migrationBuilder.Sql(RlsMigrationSql.EnableTenantRls(Schema, table, tenantColumn));
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            // Drop policies and disable RLS
-            migrationBuilder.Sql("DROP POLICY document_categories_tenant_isolation ON dms.document_categories;");
-            migrationBuilder.Sql("ALTER TABLE dms.document_categories DISABLE ROW LEVEL SECURITY;");
+            foreach (var (table, _) in RootTables)
+                migrationBuilder.Sql(RlsMigrationSql.DisableTenantRls(Schema, table));
 
-            migrationBuilder.Sql("DROP POLICY tags_tenant_isolation ON dms.tags;");
-            migrationBuilder.Sql("ALTER TABLE dms.tags DISABLE ROW LEVEL SECURITY;");
-
-            // Drop the context setter function
-            migrationBuilder.Sql("DROP FUNCTION IF EXISTS dms.set_tenant_context(uuid);");
+            migrationBuilder.Sql(RlsMigrationSql.DropSetTenantContextFunction(Schema));
         }
     }
 }

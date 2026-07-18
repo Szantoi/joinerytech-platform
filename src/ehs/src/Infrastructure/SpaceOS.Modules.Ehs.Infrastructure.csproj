@@ -26,6 +26,8 @@
     <!-- Reference Domain and Application layers -->
     <ProjectReference Include="../Domain/SpaceOS.Modules.Ehs.Domain.csproj" />
     <ProjectReference Include="../Application/SpaceOS.Modules.Ehs.Application.csproj" />
+    <!-- Shared module hosting baseline: tenant context + RLS interceptor + migration SQL template (ADR-061/062) -->
+    <ProjectReference Include="../../../spaceos-modules-hosting/src/SpaceOS.Modules.Hosting/SpaceOS.Modules.Hosting.csproj" />
   </ItemGroup>
 
 </Project>

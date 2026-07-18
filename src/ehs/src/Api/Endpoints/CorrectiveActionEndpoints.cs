@@ -18,7 +18,8 @@ public static class CorrectiveActionEndpoints
     {
         var group = app.MapGroup("/api/ehs/corrective-actions")
             .WithTags("CorrectiveActions")
-            .WithOpenApi();
+            .WithOpenApi()
+            .RequireAuthorization();
 
         // GET /api/ehs/corrective-actions
         group.MapGet("/", ListActions)

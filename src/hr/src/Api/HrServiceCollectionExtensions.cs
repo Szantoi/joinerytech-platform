@@ -20,14 +20,18 @@ public static class HrServiceCollectionExtensions
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        // 1. HttpContextAccessor (required by HttpTenantContext)
-        services.AddHttpContextAccessor();
-
-        // 2. Tenant context (X-Tenant-Id header → RLS session context)
-        services.AddScoped<ITenantContext, HttpTenantContext>();
-
-        // 3. DbContext + repositories + RLS interceptor (Infrastructure layer)
+        // 1-3. DbContext + repositories + shared tenancy (ADR-061): the claims-backed
+        // tenant context, its Application.Contracts.ITenantContext adapter and the shared
+        // fail-loud RLS interceptor are registered inside AddHRInfrastructure. The
+        // header-reading HttpTenantContext is gone.
         services.AddHRInfrastructure(configuration);
+
+        // 3b. Pay grade hourly rates — CONFIG-DRIVEN (section "Hr:PayGrades", keys:
+        //     Helper/SkilledWorker/Master/Engineer/Lead; missing keys fall back to the
+        //     domain defaults = portal HR_PAY_GRADE_META mirror). Invalid values fail
+        //     fast on first handler resolution (ADR-060, options pattern).
+        services.Configure<Application.Configuration.HrPayGradesOptions>(
+            configuration.GetSection(Application.Configuration.HrPayGradesOptions.SectionName));
 
         // 4. Capacity thresholds — CONFIG-DRIVEN (section "Hr:Capacity", keys:
         //    WorkdaysPerWeek / OverloadEpsilon / UtilizationWarnThreshold; missing keys

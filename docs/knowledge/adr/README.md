@@ -86,7 +86,7 @@ Ezek **nem ADR-kérdések** — az audit találta őket, és jóváhagyás után
 | Hamis komment: „RLS in the deployed database" | `SpaceOS.Modules.CRM/…/CrmDbContext.cs:8-9` | **Hamis biztonság** — nincs ilyen RLS |
 | Authority-drift | `spaceos-modules-ehs/Ehs.Api/appsettings.json:17-19` (`auth.spaceos.local`) | Eltér a kernel/hr Authorityjétől |
 | Elavult/hibás doksi | `patterns/DATABASE_PATTERNS.md` (3 hiba), `architecture/MULTI_TENANT_RLS_ARCHITECTURE_2026.md` | **Érvénytelen SQL-példa + 3 különböző session-kulcs** — ADR-forrásként félrevezet |
-| Elavult ADR-jelölt | `docs/tasks/EPIC-UI-PORTAL-2026Q3/F2-DMS-FE.md` 2. pont | A DMS-BE-HOST azóta lezárta (→ ADR-064 §3) |
+| Elavult ADR-jelölt | `docs/tasks/EPIC-UI-PORTAL-2026Q3/archive/F2-DMS-FE.md` 2. pont | A DMS-BE-HOST azóta lezárta (→ ADR-064 §3) |
 
 ---
 

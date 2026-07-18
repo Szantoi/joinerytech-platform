@@ -1,218 +1,65 @@
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
+using SpaceOS.Modules.Hosting.Persistence;
 
 namespace SpaceOS.Modules.Maintenance.Infrastructure.Persistence.Migrations;
 
 /// <summary>
-/// Enables Row-Level Security (RLS) for multi-tenancy in Maintenance module.
-/// Creates PostgreSQL function for tenant context management and RLS policies.
-/// Reuses DMS Week 3 pattern for consistency.
-/// NOTE (MAINT-BE-TRANSITIONS): [DbContext]/[Migration] attributes added for EF discovery.
+/// ADR-062: tenant isolation baseline for the maintenance schema. The pre-ADR version
+/// of this migration used the divergent <c>app.tenant_id</c> session key with
+/// <c>ENABLE</c>-only RLS (inert for the table owner) and fail-open
+/// <c>current_setting</c> casts; rewritten in place on the shared
+/// <see cref="RlsMigrationSql"/> template (zero-data platform — nothing deployed).
+/// <para>
+/// Creates the <c>set_tenant_context</c> helper, fail-closed policies with
+/// <c>ENABLE</c> + <c>FORCE ROW LEVEL SECURITY</c> on the two aggregate-root tables
+/// (own <c>tenant_id</c>) and FK-following policies on the two owned-collection
+/// tables. Session key: <c>app.current_tenant_id</c> (single key, kernel-interoperable).
+/// </para>
+/// <remarks>
+/// NOTE (MAINT-BE-TRANSITIONS): the [DbContext]/[Migration] attributes are required for
+/// EF discovery — hand-written migrations without them never apply.
+/// </remarks>
 /// </summary>
 #nullable disable
 [DbContext(typeof(MaintenanceDbContext))]
 [Migration("20260707000002_EnableRLS")]
 public partial class EnableRLS : Migration
 {
+    private const string Schema = "maintenance";
+
+    private static readonly (string Table, string TenantColumn)[] RootTables =
+    [
+        ("assets", "tenant_id"),
+        ("work_orders", "tenant_id"),
+    ];
+
+    private static readonly (string Child, string Fk, string Parent, string ParentKey)[] ChildTables =
+    [
+        ("asset_maintenance_plans", "asset_id", "assets", "id"),
+        ("work_order_parts", "work_order_id", "work_orders", "id"),
+    ];
+
     protected override void Up(MigrationBuilder migrationBuilder)
     {
-        // Create PostgreSQL function to set tenant context
-        migrationBuilder.Sql(@"
-            CREATE OR REPLACE FUNCTION maintenance.set_tenant_context(p_tenant_id UUID)
-            RETURNS VOID AS $$
-            BEGIN
-                PERFORM set_config('app.tenant_id', p_tenant_id::text, false);
-            END;
-            $$ LANGUAGE plpgsql;
-        ");
+        migrationBuilder.Sql(RlsMigrationSql.CreateSetTenantContextFunction(Schema));
 
-        // Enable RLS on assets table
-        migrationBuilder.Sql("ALTER TABLE maintenance.assets ENABLE ROW LEVEL SECURITY;");
+        foreach (var (table, tenantColumn) in RootTables)
+            migrationBuilder.Sql(RlsMigrationSql.EnableTenantRls(Schema, table, tenantColumn));
 
-        // Create RLS policies for assets table (SELECT, INSERT, UPDATE, DELETE)
-        migrationBuilder.Sql(@"
-            CREATE POLICY tenant_isolation_assets_select ON maintenance.assets
-            FOR SELECT
-            USING (tenant_id = current_setting('app.tenant_id')::uuid);
-        ");
-
-        migrationBuilder.Sql(@"
-            CREATE POLICY tenant_isolation_assets_insert ON maintenance.assets
-            FOR INSERT
-            WITH CHECK (tenant_id = current_setting('app.tenant_id')::uuid);
-        ");
-
-        migrationBuilder.Sql(@"
-            CREATE POLICY tenant_isolation_assets_update ON maintenance.assets
-            FOR UPDATE
-            USING (tenant_id = current_setting('app.tenant_id')::uuid)
-            WITH CHECK (tenant_id = current_setting('app.tenant_id')::uuid);
-        ");
-
-        migrationBuilder.Sql(@"
-            CREATE POLICY tenant_isolation_assets_delete ON maintenance.assets
-            FOR DELETE
-            USING (tenant_id = current_setting('app.tenant_id')::uuid);
-        ");
-
-        // Enable RLS on work_orders table
-        migrationBuilder.Sql("ALTER TABLE maintenance.work_orders ENABLE ROW LEVEL SECURITY;");
-
-        // Create RLS policies for work_orders table
-        migrationBuilder.Sql(@"
-            CREATE POLICY tenant_isolation_work_orders_select ON maintenance.work_orders
-            FOR SELECT
-            USING (tenant_id = current_setting('app.tenant_id')::uuid);
-        ");
-
-        migrationBuilder.Sql(@"
-            CREATE POLICY tenant_isolation_work_orders_insert ON maintenance.work_orders
-            FOR INSERT
-            WITH CHECK (tenant_id = current_setting('app.tenant_id')::uuid);
-        ");
-
-        migrationBuilder.Sql(@"
-            CREATE POLICY tenant_isolation_work_orders_update ON maintenance.work_orders
-            FOR UPDATE
-            USING (tenant_id = current_setting('app.tenant_id')::uuid)
-            WITH CHECK (tenant_id = current_setting('app.tenant_id')::uuid);
-        ");
-
-        migrationBuilder.Sql(@"
-            CREATE POLICY tenant_isolation_work_orders_delete ON maintenance.work_orders
-            FOR DELETE
-            USING (tenant_id = current_setting('app.tenant_id')::uuid);
-        ");
-
-        // Enable RLS on asset_maintenance_plans table (via parent FK filtering)
-        migrationBuilder.Sql("ALTER TABLE maintenance.asset_maintenance_plans ENABLE ROW LEVEL SECURITY;");
-
-        // Create RLS policies for asset_maintenance_plans table
-        migrationBuilder.Sql(@"
-            CREATE POLICY tenant_isolation_asset_maintenance_plans_select ON maintenance.asset_maintenance_plans
-            FOR SELECT
-            USING (EXISTS (
-                SELECT 1 FROM maintenance.assets
-                WHERE assets.id = asset_maintenance_plans.asset_id
-                AND assets.tenant_id = current_setting('app.tenant_id')::uuid
-            ));
-        ");
-
-        migrationBuilder.Sql(@"
-            CREATE POLICY tenant_isolation_asset_maintenance_plans_insert ON maintenance.asset_maintenance_plans
-            FOR INSERT
-            WITH CHECK (EXISTS (
-                SELECT 1 FROM maintenance.assets
-                WHERE assets.id = asset_maintenance_plans.asset_id
-                AND assets.tenant_id = current_setting('app.tenant_id')::uuid
-            ));
-        ");
-
-        migrationBuilder.Sql(@"
-            CREATE POLICY tenant_isolation_asset_maintenance_plans_update ON maintenance.asset_maintenance_plans
-            FOR UPDATE
-            USING (EXISTS (
-                SELECT 1 FROM maintenance.assets
-                WHERE assets.id = asset_maintenance_plans.asset_id
-                AND assets.tenant_id = current_setting('app.tenant_id')::uuid
-            ))
-            WITH CHECK (EXISTS (
-                SELECT 1 FROM maintenance.assets
-                WHERE assets.id = asset_maintenance_plans.asset_id
-                AND assets.tenant_id = current_setting('app.tenant_id')::uuid
-            ));
-        ");
-
-        migrationBuilder.Sql(@"
-            CREATE POLICY tenant_isolation_asset_maintenance_plans_delete ON maintenance.asset_maintenance_plans
-            FOR DELETE
-            USING (EXISTS (
-                SELECT 1 FROM maintenance.assets
-                WHERE assets.id = asset_maintenance_plans.asset_id
-                AND assets.tenant_id = current_setting('app.tenant_id')::uuid
-            ));
-        ");
-
-        // Enable RLS on work_order_parts table (via parent FK filtering)
-        migrationBuilder.Sql("ALTER TABLE maintenance.work_order_parts ENABLE ROW LEVEL SECURITY;");
-
-        // Create RLS policies for work_order_parts table
-        migrationBuilder.Sql(@"
-            CREATE POLICY tenant_isolation_work_order_parts_select ON maintenance.work_order_parts
-            FOR SELECT
-            USING (EXISTS (
-                SELECT 1 FROM maintenance.work_orders
-                WHERE work_orders.id = work_order_parts.work_order_id
-                AND work_orders.tenant_id = current_setting('app.tenant_id')::uuid
-            ));
-        ");
-
-        migrationBuilder.Sql(@"
-            CREATE POLICY tenant_isolation_work_order_parts_insert ON maintenance.work_order_parts
-            FOR INSERT
-            WITH CHECK (EXISTS (
-                SELECT 1 FROM maintenance.work_orders
-                WHERE work_orders.id = work_order_parts.work_order_id
-                AND work_orders.tenant_id = current_setting('app.tenant_id')::uuid
-            ));
-        ");
-
-        migrationBuilder.Sql(@"
-            CREATE POLICY tenant_isolation_work_order_parts_update ON maintenance.work_order_parts
-            FOR UPDATE
-            USING (EXISTS (
-                SELECT 1 FROM maintenance.work_orders
-                WHERE work_orders.id = work_order_parts.work_order_id
-                AND work_orders.tenant_id = current_setting('app.tenant_id')::uuid
-            ))
-            WITH CHECK (EXISTS (
-                SELECT 1 FROM maintenance.work_orders
-                WHERE work_orders.id = work_order_parts.work_order_id
-                AND work_orders.tenant_id = current_setting('app.tenant_id')::uuid
-            ));
-        ");
-
-        migrationBuilder.Sql(@"
-            CREATE POLICY tenant_isolation_work_order_parts_delete ON maintenance.work_order_parts
-            FOR DELETE
-            USING (EXISTS (
-                SELECT 1 FROM maintenance.work_orders
-                WHERE work_orders.id = work_order_parts.work_order_id
-                AND work_orders.tenant_id = current_setting('app.tenant_id')::uuid
-            ));
-        ");
+        foreach (var (child, fk, parent, parentKey) in ChildTables)
+            migrationBuilder.Sql(RlsMigrationSql.EnableChildTenantRls(
+                Schema, child, fk, parent, parentKey, "tenant_id"));
     }
 
     protected override void Down(MigrationBuilder migrationBuilder)
     {
-        // Drop RLS policies
-        migrationBuilder.Sql("DROP POLICY IF EXISTS tenant_isolation_assets_select ON maintenance.assets;");
-        migrationBuilder.Sql("DROP POLICY IF EXISTS tenant_isolation_assets_insert ON maintenance.assets;");
-        migrationBuilder.Sql("DROP POLICY IF EXISTS tenant_isolation_assets_update ON maintenance.assets;");
-        migrationBuilder.Sql("DROP POLICY IF EXISTS tenant_isolation_assets_delete ON maintenance.assets;");
+        foreach (var (child, _, _, _) in ChildTables)
+            migrationBuilder.Sql(RlsMigrationSql.DisableTenantRls(Schema, child));
 
-        migrationBuilder.Sql("DROP POLICY IF EXISTS tenant_isolation_work_orders_select ON maintenance.work_orders;");
-        migrationBuilder.Sql("DROP POLICY IF EXISTS tenant_isolation_work_orders_insert ON maintenance.work_orders;");
-        migrationBuilder.Sql("DROP POLICY IF EXISTS tenant_isolation_work_orders_update ON maintenance.work_orders;");
-        migrationBuilder.Sql("DROP POLICY IF EXISTS tenant_isolation_work_orders_delete ON maintenance.work_orders;");
+        foreach (var (table, _) in RootTables)
+            migrationBuilder.Sql(RlsMigrationSql.DisableTenantRls(Schema, table));
 
-        migrationBuilder.Sql("DROP POLICY IF EXISTS tenant_isolation_asset_maintenance_plans_select ON maintenance.asset_maintenance_plans;");
-        migrationBuilder.Sql("DROP POLICY IF EXISTS tenant_isolation_asset_maintenance_plans_insert ON maintenance.asset_maintenance_plans;");
-        migrationBuilder.Sql("DROP POLICY IF EXISTS tenant_isolation_asset_maintenance_plans_update ON maintenance.asset_maintenance_plans;");
-        migrationBuilder.Sql("DROP POLICY IF EXISTS tenant_isolation_asset_maintenance_plans_delete ON maintenance.asset_maintenance_plans;");
-
-        migrationBuilder.Sql("DROP POLICY IF EXISTS tenant_isolation_work_order_parts_select ON maintenance.work_order_parts;");
-        migrationBuilder.Sql("DROP POLICY IF EXISTS tenant_isolation_work_order_parts_insert ON maintenance.work_order_parts;");
-        migrationBuilder.Sql("DROP POLICY IF EXISTS tenant_isolation_work_order_parts_update ON maintenance.work_order_parts;");
-        migrationBuilder.Sql("DROP POLICY IF EXISTS tenant_isolation_work_order_parts_delete ON maintenance.work_order_parts;");
-
-        // Disable RLS on tables
-        migrationBuilder.Sql("ALTER TABLE maintenance.assets DISABLE ROW LEVEL SECURITY;");
-        migrationBuilder.Sql("ALTER TABLE maintenance.work_orders DISABLE ROW LEVEL SECURITY;");
-        migrationBuilder.Sql("ALTER TABLE maintenance.asset_maintenance_plans DISABLE ROW LEVEL SECURITY;");
-        migrationBuilder.Sql("ALTER TABLE maintenance.work_order_parts DISABLE ROW LEVEL SECURITY;");
-
-        // Drop function
-        migrationBuilder.Sql("DROP FUNCTION IF EXISTS maintenance.set_tenant_context(UUID);");
+        migrationBuilder.Sql(RlsMigrationSql.DropSetTenantContextFunction(Schema));
     }
 }

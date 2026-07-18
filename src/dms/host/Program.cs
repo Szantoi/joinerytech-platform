@@ -2,6 +2,8 @@ using Microsoft.EntityFrameworkCore;
 using SpaceOS.Modules.DMS.Api;
 using SpaceOS.Modules.DMS.Api.Endpoints;
 using SpaceOS.Modules.DMS.Infrastructure.Persistence;
+using SpaceOS.Modules.Hosting.Auth;
+using SpaceOS.Modules.Hosting.Tenancy;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,7 +15,11 @@ builder.Services.AddSwaggerGen();
 // type "rajz", linkType "project", expiry "lejart"; status "draft"/"underReview"/…)
 builder.Services.AddDmsApiJsonOptions();
 
-// DMS module services (tenant context, DbContext + RLS, repositories,
+// Shared module-host auth (ADR-061): Keycloak JWT bearer from the Jwt section, kernel-parity
+// wiring, fail-fast configuration. The pre-ADR host ran with NO authentication at all.
+builder.Services.AddSpaceOsModuleAuth(builder.Configuration, builder.Environment);
+
+// DMS module services (shared tenancy + adapter, DbContext + RLS, repositories,
 // blob store stub, expiry options, MediatR handlers)
 builder.Services.AddDmsModule(builder.Configuration);
 
@@ -37,14 +43,21 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseAuthentication();
+app.UseAuthorization();
+// Tenant from the JWT; X-Tenant-Id only as allowlist-validated selection (ADR-061 T1).
+app.UseSpaceOsModuleTenancy();
+
 // Map DMS endpoints (Document core — DMS-BE-HOST; the DocumentCategory/Tag
-// slice is handler-ready, its endpoint layer is a separate task)
+// slice is handler-ready, its endpoint layer is a separate task).
+// Every business group is RequireAuthorization-gated (DocumentEndpoints).
 app.MapDocumentEndpoints();
 
 // Liveness probe (grounded "it runs" evidence — QUALITY.md 8.)
 app.MapGet("/health", () => Results.Ok(new { status = "ok", module = "dms" }))
     .WithName("Health")
-    .WithTags("Health");
+    .WithTags("Health")
+    .AllowAnonymous();
 
 app.Logger.LogInformation("DMS API host started — module endpoints mapped under /api/dms");
 

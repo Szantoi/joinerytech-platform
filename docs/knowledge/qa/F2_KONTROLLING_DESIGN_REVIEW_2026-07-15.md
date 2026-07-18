@@ -311,7 +311,7 @@ _Designer terminál — JoineryTech sziget. Re-review: az S1/S2 fix után jelezz
 
 ## RE-REVIEW: ✅ APPROVED — 2026-07-15 (F2-KONTROLLING-REREVIEW)
 
-> **Scope:** az F2-KONTROLLING-FIX (`docs/tasks/EPIC-UI-PORTAL-2026Q3/F2-KONTROLLING-FIX.md`)
+> **Scope:** az F2-KONTROLLING-FIX (`docs/tasks/EPIC-UI-PORTAL-2026Q3/archive/F2-KONTROLLING-FIX.md`)
 > blokkolóinak (S1, S2) és kért tételeinek (M1–M3) célzott ellenőrzése kódolvasással +
 > tesztfuttatással, az adatréteg/calc/MSW mag újranyitása NÉLKÜL. Vizsgált állapot:
 > `main` @ `9a54a30`.

@@ -114,20 +114,27 @@ passwordless sudo. Tailnet: 100.82.133.87. Távoli parancs: `ssh joinerytech-vps
 Deploy után **mindig** ellenőrizd, hogy az új kód fut: `ssh joinerytech-vps 'sudo ss -tlnp | grep <port>'`
 — a PID egyezzen a service MainPID-jével (bennragadt régi processz csendben tovább szolgálhat ki).
 
-> ⚠️ **A systemd unit-ok elavult útvonalra mutatnak — 10 service crash-loopban.**
-> Részletek + javítási terv: [docs/knowledge/architecture/VPS_SERVICE_STATE_2026-07-16.md](docs/knowledge/architecture/VPS_SERVICE_STATE_2026-07-16.md)
+> ✅ **VPS megjavítva (2026-07-16): mind a 11 spaceos-service fut** — történet + repair-log:
+> [docs/knowledge/architecture/VPS_SERVICE_STATE_2026-07-16.md](docs/knowledge/architecture/VPS_SERVICE_STATE_2026-07-16.md)
+> Ismert maradvány: a futó inventory-publish régebbi a develop-pinnél (redeploy-jelölt, WORLDS_API_CONTRACTS).
 
 ---
 
-## ÁLLAPOT (2026-07-16 este) + ADÓSSÁGOK
+## ÁLLAPOT (2026-07-18) + ADÓSSÁGOK
 
 **Az „első kör" lezárva:** 7/7 modul APPROVED, portal v1.0.0 + platform v0.2.0 release,
 dark mode a design-system spec szerint, **mind a 7 modul mögött futtatható backend-host**,
-0 tesztbukás (1432 zöld). **ADR-059..064 ELFOGADVA** (docs/knowledge/adr/ — wire-nyelv:
-magyar kulcsok a dróton; host-auth+RLS: közös hosting-csomag, tenant a JWT-claimből).
-Végrehajtás: ADR-060 (HR-taxonómia) és ADR-063 (QA-rework) KÉSZ; ADR-061/062
-(hosting-csomag) folyamatban; utána ADR-059 EnumWireMap → portál MSW→API élesítés.
+0 tesztbukás (1432 zöld). **ADR-059..064 ELFOGADVA** (docs/knowledge/adr/).
+Végrehajtás: ADR-060 (HR-taxonómia), ADR-063 (QA-rework) és **ADR-061/062 (hosting-csomag:
+src/spaceos-modules-hosting — közös Keycloak-auth + tenant a JWT-ből + RLS-baseline mind a
+7 modulon, qa.tickets migráció pótolva) KÉSZ**; következik: ADR-059 EnumWireMap →
+portál MSW→API élesítés (wave 2) → ADR-064 részletek.
+**EPIC-UI-WORLDS-2026Q3 fut (API-first):** WORLDS-API-AUDIT kész
+(WORLDS_API_CONTRACTS_2026-07-18.md), production/warehouse FE következik.
 **VPS: mind a 11 spaceos-service fut** (VPS_SERVICE_STATE_2026-07-16.md).
+**Program-pillanatkép:** PROJECT_STATE_ASSESSMENT_2026-07-18.md (Codex-felmérés — G0-G6
+programkapuk, projekt/B2BHandshake bounded-context irány).
+**Task-archívum konvenció (Gábor):** kész taskok → `docs/tasks/<EPIC>/archive/`.
 
 Teljes térkép: **[docs/knowledge/architecture/PORTAL_WORLDS_INVENTORY_2026-07-16.md](docs/knowledge/architecture/PORTAL_WORLDS_INVENTORY_2026-07-16.md)**
 (élő státusz: `EPICS.yaml` backlog_f2). Nyitott adósságok:

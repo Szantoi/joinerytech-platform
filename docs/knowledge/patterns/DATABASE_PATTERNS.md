@@ -93,65 +93,69 @@ migrationBuilder.Sql(@"CREATE INDEX CONCURRENTLY idx2 ON ...", suppressTransacti
 
 ---
 
-## 2. RLS (Row-Level Security) & EF Core
+## 2. RLS (Row-Level Security) & EF Core — ADR-062 baseline
+
+> ♻️ **2026-07-18 (ADR-IMPL-HOSTING):** ez a szekció korábban HÁROM hibát tartalmazott —
+> rossz session-kulcs (`app.current_tenant`), string-interpolált `SET`, és érvénytelen
+> `DISABLE ROW LEVEL SECURITY ON` SQL-példa. A kanonikus implementáció:
+> `src/spaceos-modules-hosting` (`RlsMigrationSql` + `SpaceOsTenantSessionInterceptor`)
+> és a kernel `TenantSessionInterceptor`. Session-kulcs mindenhol:
+> **`app.current_tenant_id`** (ADR-062 K1).
 
 ### Pattern: Tenant-scoped queries
 
-A SpaceOS kernel minden query-t automatikusan tenant-scope-ol az RLS policy-n keresztül:
-
-```csharp
-// RLS policy PostgreSQL-ben
-CREATE POLICY "tenant_isolation" ON "Orders"
-  USING ("TenantId" = current_setting('app.current_tenant')::uuid);
-
-// EF Core interceptor (automatikus)
-public class TenantScopeInterceptor : SaveChangesInterceptor
-{
-    public override InterceptionResult<int> SavingChanges(DbContextEventData eventData, InterceptionResult<int> result)
-    {
-        var conn = (NpgsqlConnection)eventData.DbContextEventData.Context.Database.GetDbConnection();
-        conn.Open(); // vagy már nyitva
-        conn.ExecuteNonQuery($"SET app.current_tenant TO '{TenantId}'");
-        return result;
-    }
-}
+```sql
+-- RLS policy PostgreSQL-ben (a RlsMigrationSql.EnableTenantRls kimenete):
+ALTER TABLE ehs."incidents" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ehs."incidents" FORCE ROW LEVEL SECURITY;  -- enélkül a tábla-tulajdonosra NEM érvényes!
+CREATE POLICY "incidents_tenant_isolation" ON ehs."incidents"
+    USING ("tenant_id" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid)
+    WITH CHECK ("tenant_id" = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid);
 ```
 
-### Gotcha: Migration-ban RLS ki kell kapcsolni
+- fail-closed: hiányzó/üres kulcs → NULL → nulla sor (nem hiba, nem teljes olvasás);
+- ⚠️ a superuser MINDIG átlépi az RLS-t — a deploy-szerep nem lehet superuser;
+- gyerek-táblák (saját tenant-oszlop nélkül): FK-követő EXISTS-policy
+  (`RlsMigrationSql.EnableChildTenantRls`).
 
-```csharp
-// ✅ Migration setup
-migrationBuilder.Sql("DISABLE ROW LEVEL SECURITY ON \"Orders\";");
-migrationBuilder.CreateTable(...); // new table
-migrationBuilder.Sql("ENABLE ROW LEVEL SECURITY ON \"Orders\";");
-```
+### Gotcha: helyes ALTER-szintaxis
+
+A `DISABLE ROW LEVEL SECURITY ON "Orders";` alak **érvénytelen PostgreSQL** — helyesen:
+`ALTER TABLE "Orders" DISABLE ROW LEVEL SECURITY;`. Migrációban jellemzően nincs is rá
+szükség: a migrációt futtató szerep vagy bypass-ol (superuser), vagy a DDL nem esik RLS alá;
+seed-INSERT-nél a tenant-kontextust kell beállítani, nem az RLS-t kikapcsolni.
 
 ---
 
-## 3. DbConnectionInterceptor — Connection Pool & Env-based auth
+## 3. DbConnectionInterceptor — Connection Pool & tenant-kontextus
 
 ### Pattern: Spoof-proof connection initialization
 
-A `DbConnectionInterceptor` futtatja az env-based autentifikációs logikát
-és a tenant kontextust minden új connection-nél:
+A közös `SpaceOsTenantSessionInterceptor` (`src/spaceos-modules-hosting`) minta —
+**ConnectionOpened** (nem Opening: ott a kapcsolat még nincs nyitva), **paraméterezett**
+`set_config` (nem interpolált `SET` — a claim-manipulációs SQL-injektálás ellen),
+session-szint (`is_local=false` — a `SET LOCAL` a ConnectionOpened-ben tranzakció híján
+no-op, kernel BE-P15-03):
 
 ```csharp
-public override async ValueTask<InterceptionResult> ConnectionOpeningAsync(
-    DbConnection connection, ConnectionEventData eventData, InterceptionResult result)
+public override async Task ConnectionOpenedAsync(
+    DbConnection connection, ConnectionEndEventData eventData, CancellationToken ct)
 {
-    var npgsqlConn = (NpgsqlConnection)connection;
-    
-    // Env-ből olvassa az auth adatokat
-    var tenantId = Environment.GetEnvironmentVariable("SPACEOS_TENANT_ID");
-    
-    await npgsqlConn.OpenAsync();
-    using var cmd = npgsqlConn.CreateCommand();
-    cmd.CommandText = $"SET app.current_tenant TO '{tenantId}'";
-    await cmd.ExecuteNonQueryAsync();
-    
-    return result;
+    // A tenant a JWT-ből feloldott ITenantContext-ből jön (ADR-061 T1) — SOHA nem
+    // hitelesítetlen headerből vagy env-változóból.
+    await using var cmd = connection.CreateCommand();
+    cmd.CommandText = "SELECT set_config(@key, @value, false)";
+    // @key = "app.current_tenant_id", @value = tenantId — paraméterként!
+    await cmd.ExecuteNonQueryAsync(ct);
 }
 ```
+
+Kötelező viselkedés (ADR-062):
+- **hibát SOHA nem nyel el** — a `catch (Exception) {}` az EHS/QA-ban néma
+  tenant-szivárgást okozott;
+- hitelesített kérés feloldott tenant nélkül → kivétel (fail-loud);
+- kapcsolat-zárásnál reset `''`-re (pool-szennyezés ellen);
+- csak PostgreSQL providerrel regisztrálandó (SQLite/InMemory alatt nincs `set_config`).
 
 ---
 

@@ -3,8 +3,8 @@ namespace SpaceOS.Modules.Kontrolling.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using SpaceOS.Modules.Hosting.Persistence;
 using SpaceOS.Modules.Kontrolling.Application.Services;
-using SpaceOS.Modules.Kontrolling.Infrastructure.MultiTenancy;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using SpaceOS.Modules.Kontrolling.Infrastructure.Persistence;
 using SpaceOS.Modules.Kontrolling.Infrastructure.Persistence.Repositories;
@@ -35,11 +35,10 @@ public static class DependencyInjection
                     npgsqlOptions.EnableRetryOnFailure(maxRetryCount: 3);
                 });
 
-            // Resolved from the scope that owns the DbContext (EHS precedent).
-            // The interceptor reads the tenant of the CURRENT request, so it
-            // must not be captured from a container built at registration time.
+            // Shared, fail-loud RLS session interceptor (ADR-062) — resolved from the
+            // scope that owns the DbContext, so it reads the CURRENT request's tenant.
             options.AddInterceptors(
-                new TenantDbConnectionInterceptor(serviceProvider.GetRequiredService<ITenantContext>()));
+                serviceProvider.GetRequiredService<SpaceOsTenantSessionInterceptor>());
 
 #if DEBUG
             options.EnableSensitiveDataLogging();

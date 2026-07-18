@@ -1,5 +1,7 @@
 using SpaceOS.Modules.Ehs.Api;
 using SpaceOS.Modules.Ehs.Api.Endpoints;
+using SpaceOS.Modules.Hosting.Auth;
+using SpaceOS.Modules.Hosting.Tenancy;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,8 +15,15 @@ builder.Services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.Converters.Add(
         new System.Text.Json.Serialization.JsonStringEnumConverter()));
 
+// Shared module-host auth (ADR-061): Keycloak JWT bearer from the Jwt section, kernel-parity
+// wiring, fail-fast configuration. The pre-ADR host ran with NO authentication at all.
+builder.Services.AddSpaceOsModuleAuth(builder.Configuration, builder.Environment);
+
 // Add EHS module services (DbContext, Repositories, MediatR, AutoMapper, Validators)
+// — includes AddSpaceOsModuleTenancy (claims tenant context + RLS interceptor).
 builder.Services.AddEhsModule(builder.Configuration);
+
+builder.Services.AddHealthChecks();
 
 var app = builder.Build();
 
@@ -27,7 +36,14 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-// Map EHS endpoints
+app.UseAuthentication();
+app.UseAuthorization();
+// Tenant from the JWT; X-Tenant-Id only as allowlist-validated selection (ADR-061 T1).
+app.UseSpaceOsModuleTenancy();
+
+app.MapHealthChecks("/health").AllowAnonymous();
+
+// Map EHS endpoints (all groups RequireAuthorization-gated)
 app.MapIncidentEndpoints();
 app.MapRiskAssessmentEndpoints();
 app.MapTrainingRecordEndpoints();

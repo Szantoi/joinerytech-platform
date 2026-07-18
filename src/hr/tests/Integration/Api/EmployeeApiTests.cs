@@ -71,7 +71,7 @@ public class EmployeeApiTests
         var employees = dbContext.Employees.ToList();
 
         // Assert
-        employees.Should().BeOfType<List<object>>();
+        employees.Should().BeOfType<List<SpaceOS.Modules.HR.Domain.Aggregates.Employee>>();
     }
 
     [Fact]
@@ -110,7 +110,7 @@ public class EmployeeApiTests
         var employees = dbContext.Employees.ToList();
 
         // Assert
-        employees.Should().BeOfType<List<object>>();
+        employees.Should().BeOfType<List<SpaceOS.Modules.HR.Domain.Aggregates.Employee>>();
     }
 
     [Fact]

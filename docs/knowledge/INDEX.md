@@ -3,7 +3,26 @@
 **Sziget:** JoineryTech (`/opt/joinerytech/`)
 **Fókusz:** Faipar SaaS Platform
 **Port:** 3458-3459
-**Frissítve:** 2026-07-11
+**Frissítve:** 2026-07-18
+
+---
+
+## Aktuális belépési pontok — 2026-07-18
+
+> Az alábbi dokumentumok az aktuális állapot elsődleges tudástári forrásai. A
+> `docs/joinerytech/` történeti design- és prototípus-korpusz; az élő cél- és
+> státuszforrás az `EPICS.yaml`.
+
+- [`architecture/PROJECT_STATE_ASSESSMENT_2026-07-18.md`](architecture/PROJECT_STATE_ASSESSMENT_2026-07-18.md)
+  — teljes programállapot, QUALITY-megfelelés, kockázatok, lehetőségek és kapuk
+- [`../../EPICS.yaml`](../../EPICS.yaml) — élő program/epic goal-config
+- [`architecture/WORLDS_API_CONTRACTS_2026-07-18.md`](architecture/WORLDS_API_CONTRACTS_2026-07-18.md)
+  — production + warehouse API-first kontraktusaudit
+- [`architecture/PORTAL_WORLDS_INVENTORY_2026-07-16.md`](architecture/PORTAL_WORLDS_INVENTORY_2026-07-16.md)
+  — modernizált és legacy világok leltára
+- [`adr/README.md`](adr/README.md) — ADR-059..064 döntések és végrehajtási kapuk
+- [`architecture/VPS_SERVICE_STATE_2026-07-16.md`](architecture/VPS_SERVICE_STATE_2026-07-16.md)
+  — VPS service-történet és ellenőrzési minta
 
 ---
 
@@ -48,7 +67,7 @@ A JoineryTech sziget a **faipari SaaS platform fejlesztési központja**. 7 modu
 - `TESTING_STRATEGIES.md` — E2E, Integration, Unit testing
 - `ENTERPRISE_GOVERNANCE_PATTERNS.md` — Governance
 
-### architecture/ (7 dokumentum)
+### architecture/ (folyamatosan bővülő, dátumozott állapotokkal)
 
 - `DOTNET_8_CLEAN_ARCHITECTURE_2026.md` — .NET 8 Clean Architecture
 - `MULTI_TENANT_RLS_ARCHITECTURE_2026.md` — PostgreSQL RLS multi-tenancy
@@ -57,6 +76,10 @@ A JoineryTech sziget a **faipari SaaS platform fejlesztési központja**. 7 modu
 - `ARCHITECTURAL_PATTERNS_CATALOGUE.md` — Összefoglaló
 - `ADR_CATALOGUE.md` — Architekturális döntések
 - `ADR-048-Datahaven-UI-Planning-Components.md` — Planning UI
+- `PROJECT_STATE_ASSESSMENT_2026-07-18.md` — aktuális program- és projektállapot
+- `PORTAL_WORLDS_INVENTORY_2026-07-16.md` — portál világ-leltár
+- `WORLDS_API_CONTRACTS_2026-07-18.md` — API-first production/warehouse kontraktusok
+- `VPS_SERVICE_STATE_2026-07-16.md` — VPS service-állapot és helyreállítás
 
 ### engineering/ (8 dokumentum)
 
@@ -126,7 +149,8 @@ A JoineryTech sziget a **faipari SaaS platform fejlesztési központja**. 7 modu
 - MediatR (CQRS)
 
 **Frontend:**
-- React 18 (TypeScript)
+- React 19.2 (TypeScript 6.0)
+- Vite 8
 - TanStack Query (React Query v5)
 - Zustand (state management)
 - Orval (OpenAPI → hooks)
@@ -148,12 +172,12 @@ A JoineryTech sziget a **faipari SaaS platform fejlesztési központja**. 7 modu
 
 ## Következő Lépések
 
-1. **7 Modul Domain Modeling** — ADR-054 → ADR-058 implementálása
-2. **Orval Integration** — OpenAPI → React Query hooks generálás
-3. **RLS Multi-tenancy** — Tenant isolation PostgreSQL-ben
-4. **E2E Testing** — Playwright test suite minden modulhoz
-5. **Walking Skeleton** — Teljes vertical slice minden modulhoz
+1. **Hosting/Auth/RLS kapu** — ADR-061/062 közös csomag, tenant-izolációs bizonyíték
+2. **API-first világmodernizálás** — production, majd warehouse
+3. **Valós API vertical slice** — MSW/API feature flag + contract drift + E2E
+4. **Projekt-platform ADR** — hierarchy + FlowEpic + actor-nézet + B2BHandshake ownership
+5. **Reprodukálhatóság** — determinisztikus tesztkapu, gitlink-javítás, README-k
 
 ---
 
-_JoineryTech Knowledge Base v1.0 — 2026-07-11_
+_JoineryTech Knowledge Base — aktuális index: 2026-07-18_

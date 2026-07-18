@@ -27,7 +27,8 @@ public static class RiskAssessmentEndpoints
     {
         var group = app.MapGroup("/api/ehs/risk-assessments")
             .WithTags("Risk Assessments")
-            .WithOpenApi();
+            .WithOpenApi()
+            .RequireAuthorization();
 
         // POST /api/ehs/risk-assessments
         group.MapPost("/", CreateRiskAssessment)

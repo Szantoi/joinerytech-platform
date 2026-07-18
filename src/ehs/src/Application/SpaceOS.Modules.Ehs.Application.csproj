@@ -28,6 +28,8 @@
   <ItemGroup>
     <!-- Reference Domain layer -->
     <ProjectReference Include="../Domain/SpaceOS.Modules.Ehs.Domain.csproj" />
+    <!-- Shared wire vocabulary mechanics: EnumWireMap + WireEnumConverter (ADR-059/061) -->
+    <ProjectReference Include="../../../spaceos-modules-hosting/src/SpaceOS.Modules.Hosting/SpaceOS.Modules.Hosting.csproj" />
   </ItemGroup>
 
 </Project>

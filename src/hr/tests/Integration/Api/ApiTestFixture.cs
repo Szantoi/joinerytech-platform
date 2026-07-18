@@ -16,6 +16,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using SpaceOS.Modules.Hosting.Tenancy;
+using SpaceOS.Modules.HR.Api;
 using SpaceOS.Modules.HR.Api.Endpoints;
 using SpaceOS.Modules.HR.Infrastructure;
 using SpaceOS.Modules.HR.Infrastructure.Persistence;
@@ -74,9 +75,8 @@ public class ApiTestFixture : IAsyncLifetime
                     services.AddAuthentication(HrTestAuthHandler.Scheme)
                         .AddScheme<AuthenticationSchemeOptions, HrTestAuthHandler>(HrTestAuthHandler.Scheme, _ => { });
                     services.AddAuthorization();
-                    services.ConfigureHttpJsonOptions(options =>
-                        options.SerializerOptions.Converters.Add(
-                            new System.Text.Json.Serialization.JsonStringEnumConverter()));
+                    // Production host mirror: ADR-059 Hungarian wire vocabulary (HrWire).
+                    services.AddHrApiJsonOptions();
 
                     // HR infrastructure (DbContext + shared tenancy + repositories)
                     services.AddHRInfrastructure(context.Configuration);

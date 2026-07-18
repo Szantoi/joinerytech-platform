@@ -1,6 +1,7 @@
 namespace SpaceOS.Modules.Kontrolling.Tests.Application.Portfolio;
 
 using FluentAssertions;
+using SpaceOS.Modules.Hosting.Wire;
 using SpaceOS.Modules.Kontrolling.Api;
 using SpaceOS.Modules.Kontrolling.Application.Portfolio;
 using SpaceOS.Modules.Kontrolling.Domain.Entities;

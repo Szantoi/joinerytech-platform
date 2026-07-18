@@ -1,8 +1,9 @@
-using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using SpaceOS.Modules.DMS.Domain.Enums;
 using SpaceOS.Modules.DMS.Infrastructure;
+using SpaceOS.Modules.Hosting.Wire;
 
 namespace SpaceOS.Modules.DMS.Api;
 
@@ -31,18 +32,28 @@ public static class DmsServiceCollectionExtensions
     }
 
     /// <summary>
-    /// Wire JSON setup shared by the host and the endpoint tests (Maintenance
-    /// AddMaintenanceApiJsonOptions precedent): enums travel as CAMELCASE
-    /// strings so the portal's canonical keys match exactly — DocType "rajz",
-    /// DocLinkType "project", ExpiryState "lejart"; DocumentStatus is the
-    /// English FSM naming ("draft"/"underReview"/"released"/"archived" —
-    /// wire-language ADR candidate). String values remain accepted on input.
+    /// Wire JSON setup shared by the host and the endpoint tests: enums travel
+    /// as the portal's canonical Hungarian wire keys via the shared
+    /// <see cref="WireEnumConverter{TEnum}"/> seam (ADR-059, kontrolling
+    /// precedent — see <see cref="DmsWire"/>): DocumentStatus
+    /// "piszkozat"/"ellenorzes"/"kiadott"/"archivalt", DocType "rajz"/…,
+    /// DocLinkType "project"/…, ExpiryState "lejart"/"lejaro". Unknown keys
+    /// throw JsonException → 400; parsing is case-sensitive (the contract is
+    /// exact). <see cref="JsonStringEnumConverter"/> is registered LAST as the
+    /// fallback for any enum without an explicit map, keeping the "enums as
+    /// strings" convention intact.
     /// </summary>
     public static IServiceCollection AddDmsApiJsonOptions(this IServiceCollection services)
     {
         services.ConfigureHttpJsonOptions(options =>
-            options.SerializerOptions.Converters.Add(
-                new JsonStringEnumConverter(JsonNamingPolicy.CamelCase)));
+        {
+            var converters = options.SerializerOptions.Converters;
+            converters.Add(new WireEnumConverter<DocumentStatus>(DmsWire.Status));
+            converters.Add(new WireEnumConverter<DocType>(DmsWire.Type));
+            converters.Add(new WireEnumConverter<DocLinkType>(DmsWire.LinkType));
+            converters.Add(new WireEnumConverter<ExpiryState>(DmsWire.Expiry));
+            converters.Add(new JsonStringEnumConverter());
+        });
 
         return services;
     }

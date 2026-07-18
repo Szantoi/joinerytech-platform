@@ -9,6 +9,7 @@ using SpaceOS.Modules.Ehs.Application.SafetyWalks.Commands.ScheduleSafetyWalk;
 using SpaceOS.Modules.Ehs.Application.SafetyWalks.Commands.StartSafetyWalk;
 using SpaceOS.Modules.Ehs.Application.SafetyWalks.Queries.GetSafetyWalkById;
 using SpaceOS.Modules.Ehs.Application.SafetyWalks.Queries.ListSafetyWalks;
+using SpaceOS.Modules.Ehs.Application.Wire;
 using SpaceOS.Modules.Ehs.Infrastructure.Data;
 
 namespace SpaceOS.Modules.Ehs.Api.Endpoints;
@@ -124,9 +125,14 @@ public static class SafetyWalkEndpoints
         [FromServices] ITenantContext tenantContext,
         CancellationToken ct)
     {
+        // Query-string enums bypass the JSON converters — parse the Hungarian
+        // wire keys by hand (ADR-059); unknown key → 400, not an empty list.
+        if (!WireQuery.TryParse(EhsWire.SafetyWalkStatus, request.Status, "bejárás-státusz", out var status, out var statusError))
+            return statusError!;
+
         var filter = new SafetyWalkFilter(
             request.LocationId,
-            request.Status,
+            status,
             request.ScheduledAfter,
             request.ScheduledBefore);
 
@@ -289,9 +295,13 @@ public record ScheduleSafetyWalkRequest(
     List<Guid>? Participants
 );
 
+/// <summary>
+/// List filter — the status filter travels as a raw string and is parsed
+/// against the EhsWire map in the handler (ADR-059 Hungarian wire keys).
+/// </summary>
 public record ListSafetyWalksRequest(
     Guid? LocationId = null,
-    Domain.Enums.SafetyWalkStatus? Status = null,
+    string? Status = null,
     DateTimeOffset? ScheduledAfter = null,
     DateTimeOffset? ScheduledBefore = null
 );

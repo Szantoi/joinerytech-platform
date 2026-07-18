@@ -327,7 +327,7 @@ paths:
     post:
       operationId: createInspection
       tags: [Inspections]
-      summary: Create inspection (Planned state)
+      summary: Create inspection (nyitott/Planned state)
       requestBody:
         required: true
         content:
@@ -369,7 +369,7 @@ paths:
     post:
       operationId: startInspection
       tags: [Inspections]
-      summary: Start inspection (Planned → InProgress) — returns the fresh InspectionDto
+      summary: Start inspection (nyitott → folyamatban) — returns the fresh InspectionDto
       parameters:
         - $ref: '#/components/parameters/InspectionId'
       responses:
@@ -638,7 +638,7 @@ paths:
         - name: open
           in: query
           required: false
-          description: true → only open tickets (Reported/Assigned/InProgress)
+          description: true → only open tickets (bejelentve/kiosztva/folyamatban)
           schema:
             type: boolean
         - name: q
@@ -663,7 +663,7 @@ paths:
     post:
       operationId: createTicket
       tags: [Tickets]
-      summary: Create ticket (Reported state)
+      summary: Create ticket (bejelentve/Reported state)
       requestBody:
         required: true
         content:
@@ -705,7 +705,7 @@ paths:
     put:
       operationId: assignTicket
       tags: [Tickets]
-      summary: Assign ticket (Reported → Assigned)
+      summary: Assign ticket (bejelentve → kiosztva)
       parameters:
         - $ref: '#/components/parameters/TicketId'
       requestBody:
@@ -738,7 +738,7 @@ paths:
     put:
       operationId: startTicket
       tags: [Tickets]
-      summary: Start work on ticket (Assigned → InProgress)
+      summary: Start work on ticket (kiosztva → folyamatban)
       parameters:
         - $ref: '#/components/parameters/TicketId'
       responses:
@@ -829,7 +829,7 @@ paths:
     put:
       operationId: reopenTicket
       tags: [Tickets]
-      summary: Reopen ticket (Rejected → Reported)
+      summary: Reopen ticket (elutasitva → bejelentve)
       parameters:
         - $ref: '#/components/parameters/TicketId'
       responses:
@@ -1111,43 +1111,66 @@ components:
   schemas:
     CheckpointType:
       type: string
-      enum: [Incoming, InProcess, Final]
+      enum: [beerkezo, gyartaskozi, vegso]
+      description: "Wire keys (ADR-059): beerkezo=Incoming, gyartaskozi=InProcess, vegso=Final."
 
     CriticalLevel:
       type: string
-      enum: [Critical, Major, Minor]
+      enum: [kritikus, jelentos, enyhe]
+      description: "Wire keys (ADR-059): kritikus=Critical, jelentos=Major, enyhe=Minor."
 
     CriteriaType:
       type: string
-      enum: [Visual, Dimensional, Functional]
+      enum: [vizualis, meretes, funkcionalis]
+      description: "Wire keys (ADR-059): vizualis=Visual, meretes=Dimensional, funkcionalis=Functional."
 
     InspectionStatus:
       type: string
-      enum: [Planned, InProgress, Completed]
+      enum: [nyitott, folyamatban, lezarva]
+      description: >-
+        Wire keys (ADR-059): nyitott=Planned, folyamatban=InProgress,
+        lezarva=Completed. The portal's "megfelelt"/"selejt" view-states are
+        DERIVED from lezarva + InspectionResult (ADR-063) — not wire statuses.
 
     InspectionResult:
       type: string
-      enum: [Pending, Pass, Fail, Conditional]
+      enum: [fuggoben, megfelelt, selejt, felteteles]
+      description: "Wire keys (ADR-059): fuggoben=Pending, megfelelt=Pass, selejt=Fail, felteteles=Conditional."
 
     FailureType:
       type: string
-      enum: [Scratch, Gap, Misalignment, Color, Dimension, Surface, Functional, Missing, Damage, Other]
+      enum: [karc, hezag, illeszkedes, szin, meret, felulet, funkcionalis, hianyzo, serules, egyeb]
+      description: >-
+        Wire keys (ADR-059): karc=Scratch, hezag=Gap, illeszkedes=Misalignment,
+        szin=Color, meret=Dimension, felulet=Surface, funkcionalis=Functional,
+        hianyzo=Missing, serules=Damage, egyeb=Other.
 
     TicketType:
       type: string
-      enum: [Warranty, Repair, Missing]
+      enum: [garancia, javitas, hiany]
+      description: "Wire keys (ADR-059): garancia=Warranty, javitas=Repair, hiany=Missing."
 
     TicketStatus:
       type: string
-      enum: [Reported, Assigned, InProgress, Resolved, Rejected]
+      enum: [bejelentve, kiosztva, folyamatban, megoldva, elutasitva]
+      description: >-
+        Wire keys (ADR-059): bejelentve=Reported, kiosztva=Assigned,
+        folyamatban=InProgress, megoldva=Resolved, elutasitva=Rejected.
 
     TicketPriority:
       type: string
-      enum: [Critical, High, Medium, Low]
+      enum: [alacsony, kozepes, magas, kritikus]
+      description: >-
+        Documents CrmTaskPriority — the dead domain TicketPriority enum never
+        crosses the wire. Wire keys (ADR-059): alacsony=Low, kozepes=Medium,
+        magas=High, kritikus=Critical.
 
     ActionType:
       type: string
-      enum: [Repair, Replace, Refund, NoAction]
+      enum: [javitas, csere, visszaterites, nincs_intezkedes]
+      description: >-
+        Wire keys (ADR-059): javitas=Repair, csere=Replace,
+        visszaterites=Refund, nincs_intezkedes=NoAction.
 
     QACheckpointDto:
       type: object

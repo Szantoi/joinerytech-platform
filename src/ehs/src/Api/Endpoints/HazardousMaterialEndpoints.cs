@@ -8,6 +8,7 @@ using SpaceOS.Modules.Ehs.Application.HazardousMaterials.Commands.UpdateHazardou
 using SpaceOS.Modules.Ehs.Application.HazardousMaterials.Queries.GetExpiringSds;
 using SpaceOS.Modules.Ehs.Application.HazardousMaterials.Queries.GetHazardousMaterialById;
 using SpaceOS.Modules.Ehs.Application.HazardousMaterials.Queries.ListHazardousMaterials;
+using SpaceOS.Modules.Ehs.Application.Wire;
 using SpaceOS.Modules.Ehs.Infrastructure.Data;
 
 namespace SpaceOS.Modules.Ehs.Api.Endpoints;
@@ -119,7 +120,14 @@ public static class HazardousMaterialEndpoints
         [FromServices] ITenantContext tenantContext,
         CancellationToken ct)
     {
-        var filter = new MaterialFilter(request.Status, request.LocationId, request.Validity);
+        // Query-string enums bypass the JSON converters — parse the Hungarian
+        // wire keys by hand (ADR-059); unknown key → 400, not an empty list.
+        if (!WireQuery.TryParse(EhsWire.MaterialStatus, request.Status, "anyag-státusz", out var status, out var statusError))
+            return statusError!;
+        if (!WireQuery.TryParse(EhsWire.SdsValidity, request.Validity, "SDS-érvényesség", out var validity, out var validityError))
+            return validityError!;
+
+        var filter = new MaterialFilter(status, request.LocationId, validity);
         var query = new ListHazardousMaterialsQuery(tenantContext.TenantId, filter);
 
         var result = await mediator.Send(query, ct).ConfigureAwait(false);
@@ -263,10 +271,14 @@ public record RegisterHazardousMaterialRequest(
     Guid? SdsDocumentId
 );
 
+/// <summary>
+/// List filter — enum filters travel as raw strings and are parsed against
+/// the EhsWire maps in the handler (ADR-059 Hungarian wire keys).
+/// </summary>
 public record ListHazardousMaterialsRequest(
-    Domain.Enums.MaterialStatus? Status = null,
+    string? Status = null,
     Guid? LocationId = null,
-    Domain.Enums.SdsValidity? Validity = null
+    string? Validity = null
 );
 
 public record UpdateHazardousMaterialRequest(

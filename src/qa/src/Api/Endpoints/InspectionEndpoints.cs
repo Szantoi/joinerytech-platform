@@ -212,9 +212,9 @@ public static class InspectionEndpoints
         [FromHeader(Name = "X-Tenant-Id")] Guid tenantId,
         CancellationToken ct)
     {
-        if (!Enum.TryParse<FailureType>(request.FailureType, ignoreCase: true, out var failureType))
+        if (!QaWire.FailureType.TryParse(request.FailureType, out var failureType))
         {
-            return Results.BadRequest(new { error = "Invalid failure type" });
+            return Results.BadRequest(new { error = UnknownFailureTypeMessage(request.FailureType) });
         }
 
         var command = new AddInspectionFailureNoteCommand(
@@ -274,9 +274,9 @@ public static class InspectionEndpoints
         [FromHeader(Name = "X-Tenant-Id")] Guid tenantId,
         CancellationToken ct)
     {
-        if (!TryParseFailureNotes(request.FailureNotes, out var failureNotes))
+        if (!TryParseFailureNotes(request.FailureNotes, out var failureNotes, out var unknownFailureType))
         {
-            return Results.BadRequest(new { error = "Invalid failure type" });
+            return Results.BadRequest(new { error = UnknownFailureTypeMessage(unknownFailureType) });
         }
 
         var command = new CompleteInspectionWithFailCommand(
@@ -305,9 +305,9 @@ public static class InspectionEndpoints
         [FromHeader(Name = "X-Tenant-Id")] Guid tenantId,
         CancellationToken ct)
     {
-        if (!TryParseFailureNotes(request.FailureNotes, out var failureNotes))
+        if (!TryParseFailureNotes(request.FailureNotes, out var failureNotes, out var unknownFailureType))
         {
-            return Results.BadRequest(new { error = "Invalid failure type" });
+            return Results.BadRequest(new { error = UnknownFailureTypeMessage(unknownFailureType) });
         }
 
         var command = new CompleteInspectionWithConditionalCommand(
@@ -387,14 +387,17 @@ public static class InspectionEndpoints
     }
 
     /// <summary>
-    /// Parses the wire failure notes (string enum, case-insensitive) into command
-    /// inputs; false = at least one unknown failure type (endpoint contract: 400).
+    /// Parses the wire failure notes (ADR-059 vocabulary, exact match) into
+    /// command inputs; false = at least one unknown failure type (endpoint
+    /// contract: 400, with the offending key in <paramref name="unknownFailureType"/>).
     /// </summary>
     private static bool TryParseFailureNotes(
         List<FailureNoteInputDto>? dtos,
-        out List<FailureNoteInput> failureNotes)
+        out List<FailureNoteInput> failureNotes,
+        out string? unknownFailureType)
     {
         failureNotes = new List<FailureNoteInput>();
+        unknownFailureType = null;
         if (dtos == null)
         {
             return true;
@@ -402,8 +405,9 @@ public static class InspectionEndpoints
 
         foreach (var fn in dtos)
         {
-            if (!Enum.TryParse<FailureType>(fn.FailureType, ignoreCase: true, out var failureType))
+            if (!QaWire.FailureType.TryParse(fn.FailureType, out var failureType))
             {
+                unknownFailureType = fn.FailureType;
                 return false;
             }
 
@@ -412,6 +416,11 @@ public static class InspectionEndpoints
 
         return true;
     }
+
+    /// <summary>400 body for an unknown failure-type wire key, listing the accepted spellings.</summary>
+    private static string UnknownFailureTypeMessage(string? failureType)
+        => $"Ismeretlen hibatípus: '{failureType}'. " +
+           $"Lehetséges értékek: {string.Join(", ", QaWire.FailureType.Spellings)}.";
 
     /// <summary>
     /// Resolves the auto-spawned rework ticket's priority from configuration

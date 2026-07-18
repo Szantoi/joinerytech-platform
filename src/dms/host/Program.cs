@@ -11,8 +11,9 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// Enums travel as CAMELCASE strings on the wire (portal MSW contract:
-// type "rajz", linkType "project", expiry "lejart"; status "draft"/"underReview"/…)
+// Enums travel as the portal's canonical Hungarian wire keys (ADR-059, DmsWire maps:
+// status "piszkozat"/"ellenorzes"/"kiadott"/"archivalt"; type "rajz"/…;
+// linkType "project"/…; expiry "lejart"/"lejaro")
 builder.Services.AddDmsApiJsonOptions();
 
 // Shared module-host auth (ADR-061): Keycloak JWT bearer from the Jwt section, kernel-parity

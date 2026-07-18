@@ -11,6 +11,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using SpaceOS.Modules.QA.Api;
 
 namespace SpaceOS.Modules.QA.Tests.Api;
 
@@ -54,10 +55,8 @@ public sealed class QaEndpointTestHost : IAsyncDisposable
                         .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>(TestAuthHandler.Scheme, _ => { });
                     services.AddAuthorization();
                     services.AddSingleton(mediator);
-                    // Production host mirror: enums as strings on the wire (EHS precedent)
-                    services.ConfigureHttpJsonOptions(options =>
-                        options.SerializerOptions.Converters.Add(
-                            new System.Text.Json.Serialization.JsonStringEnumConverter()));
+                    // Production host mirror: ADR-059 Hungarian wire vocabulary (QaWire)
+                    services.AddQaApiJsonOptions();
                 })
                 .Configure(app =>
                 {

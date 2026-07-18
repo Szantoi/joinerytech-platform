@@ -15,7 +15,11 @@
 
 - [`architecture/PROJECT_STATE_ASSESSMENT_2026-07-18.md`](architecture/PROJECT_STATE_ASSESSMENT_2026-07-18.md)
   — teljes programállapot, QUALITY-megfelelés, kockázatok, lehetőségek és kapuk
+- [`architecture/SPACEOS_MODULAR_PRODUCT_ARCHITECTURE_2026-07-18.md`](architecture/SPACEOS_MODULAR_PRODUCT_ARCHITECTURE_2026-07-18.md)
+  — ERP/domain szétválasztás, modul-bundle, instance pack és agent-végrehajtási terv
 - [`../../EPICS.yaml`](../../EPICS.yaml) — élő program/epic goal-config
+- [`../tasks/README.md`](../tasks/README.md) — agent-végrehajtási backlog,
+  függőségek, fájlhatárok és Definition of Done
 - [`architecture/WORLDS_API_CONTRACTS_2026-07-18.md`](architecture/WORLDS_API_CONTRACTS_2026-07-18.md)
   — production + warehouse API-first kontraktusaudit
 - [`architecture/PORTAL_WORLDS_INVENTORY_2026-07-16.md`](architecture/PORTAL_WORLDS_INVENTORY_2026-07-16.md)
@@ -77,6 +81,7 @@ A JoineryTech sziget a **faipari SaaS platform fejlesztési központja**. 7 modu
 - `ADR_CATALOGUE.md` — Architekturális döntések
 - `ADR-048-Datahaven-UI-Planning-Components.md` — Planning UI
 - `PROJECT_STATE_ASSESSMENT_2026-07-18.md` — aktuális program- és projektállapot
+- `SPACEOS_MODULAR_PRODUCT_ARCHITECTURE_2026-07-18.md` — moduláris termékcsalád-célarchitektúra
 - `PORTAL_WORLDS_INVENTORY_2026-07-16.md` — portál világ-leltár
 - `WORLDS_API_CONTRACTS_2026-07-18.md` — API-first production/warehouse kontraktusok
 - `VPS_SERVICE_STATE_2026-07-16.md` — VPS service-állapot és helyreállítás

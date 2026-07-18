@@ -11,6 +11,7 @@ using SpaceOS.Modules.DMS.Application.DTOs;
 using SpaceOS.Modules.DMS.Application.Queries;
 using SpaceOS.Modules.DMS.Domain.Enums;
 using SpaceOS.Modules.DMS.Domain.Exceptions;
+using SpaceOS.Modules.Hosting.Wire;
 
 namespace SpaceOS.Modules.DMS.Api.Endpoints;
 
@@ -121,13 +122,16 @@ public static class DocumentEndpoints
         [FromQuery(Name = "expiring")] bool? expiring,
         CancellationToken ct)
     {
-        // Module pattern: enums travel as strings, parsed with TryParse — invalid → 400
-        if (!TryParseFilter<DocumentStatus>(status, out var statusFilter))
-            return BadRequest("Érvénytelen státusz-szűrő");
-        if (!TryParseFilter<DocType>(type, out var typeFilter))
-            return BadRequest("Érvénytelen típus-szűrő");
-        if (!TryParseFilter<DocLinkType>(linkType, out var linkTypeFilter))
-            return BadRequest("Érvénytelen kapcsolat-szűrő");
+        // Query-string enums bypass the JSON converters, so the wire maps are
+        // applied by hand here (ADR-059, kontrolling precedent): exact,
+        // case-sensitive Hungarian keys — an unknown label is a bad request,
+        // not an empty list.
+        if (!TryParseFilter(DmsWire.Status, status, out var statusFilter))
+            return BadRequest(InvalidFilterMessage("Érvénytelen státusz-szűrő", status, DmsWire.Status.Spellings));
+        if (!TryParseFilter(DmsWire.Type, type, out var typeFilter))
+            return BadRequest(InvalidFilterMessage("Érvénytelen típus-szűrő", type, DmsWire.Type.Spellings));
+        if (!TryParseFilter(DmsWire.LinkType, linkType, out var linkTypeFilter))
+            return BadRequest(InvalidFilterMessage("Érvénytelen kapcsolat-szűrő", linkType, DmsWire.LinkType.Spellings));
 
         var query = new ListDocumentsQuery(
             Status: statusFilter,
@@ -160,14 +164,15 @@ public static class DocumentEndpoints
             // Tenant comes from the JWT (ADR-061): the tenancy middleware rejects
             // tenant-less callers with 403 before this handler runs, and the
             // adapter-backed ITenantContext is fail-loud — no Guid.Empty fallback.
-            if (!Enum.TryParse<DocType>(request.Type, ignoreCase: true, out var docType))
-                return BadRequest("Érvénytelen dokumentum-típus");
+            // Wire maps (ADR-059): exact, case-sensitive Hungarian keys.
+            if (!DmsWire.Type.TryParse(request.Type, out var docType))
+                return BadRequest(InvalidFilterMessage("Érvénytelen dokumentum-típus", request.Type, DmsWire.Type.Spellings));
 
             var docLinkType = DocLinkType.None;
             if (request.LinkType is not null
-                && !Enum.TryParse(request.LinkType, ignoreCase: true, out docLinkType))
+                && !DmsWire.LinkType.TryParse(request.LinkType, out docLinkType))
             {
-                return BadRequest("Érvénytelen kapcsolat-típus");
+                return BadRequest(InvalidFilterMessage("Érvénytelen kapcsolat-típus", request.LinkType, DmsWire.LinkType.Spellings));
             }
 
             var command = new CreateDocumentCommand(
@@ -303,25 +308,34 @@ public static class DocumentEndpoints
     private static IResult BadRequest(string message)
         => Results.Json(new ErrorBody("BadRequest", message), statusCode: StatusCodes.Status400BadRequest);
 
-    private static bool TryParseFilter<TEnum>(string? value, out TEnum? parsed)
+    /// <summary>
+    /// Optional filter parse via the wire map (ADR-059): absent → no filter;
+    /// present → must be an exact (case-sensitive) wire key, else 400.
+    /// </summary>
+    private static bool TryParseFilter<TEnum>(EnumWireMap<TEnum> map, string? value, out TEnum? parsed)
         where TEnum : struct, Enum
     {
         parsed = null;
         if (string.IsNullOrWhiteSpace(value))
             return true;
 
-        if (!Enum.TryParse<TEnum>(value, ignoreCase: true, out var result))
+        if (!map.TryParse(value, out var result))
             return false;
 
         parsed = result;
         return true;
     }
+
+    /// <summary>400 body text: the rejected value + every accepted wire key.</summary>
+    private static string InvalidFilterMessage(string prefix, string? value, IEnumerable<string> spellings)
+        => $"{prefix}: '{value}'. Lehetséges értékek: {string.Join(", ", spellings)}.";
 }
 
 /// <summary>MSW jsonError body mirror: {error, message}.</summary>
 public record ErrorBody(string Error, string Message);
 
-// Request DTOs (module pattern: enums travel as strings, parsed with TryParse)
+// Request DTOs (module pattern: enums travel as strings, parsed via the
+// DmsWire maps — exact Hungarian wire keys, ADR-059)
 
 public record CreateDocumentRequest(
     string Name,

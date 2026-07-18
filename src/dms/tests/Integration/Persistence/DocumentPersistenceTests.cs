@@ -28,7 +28,7 @@ public class DocumentPersistenceTests
 
     private static Document NewDocument(
         string name = "Doorstar ajtó sorozat — gyártási rajz",
-        DocType type = DocType.Rajz,
+        DocType type = DocType.Drawing,
         DocLinkType linkType = DocLinkType.Order,
         DateOnly? validUntil = null)
         => Document.Create(
@@ -92,7 +92,7 @@ public class DocumentPersistenceTests
     public async Task ListAsync_Filters_StatusTypeSearch()
     {
         var draft = NewDocument(name: "Belváros Café — pultsor kiviteli rajz FILTERTEST");
-        var released = NewDocument(name: "Élzárás munkautasítás FILTERTEST", type: DocType.Utasitas);
+        var released = NewDocument(name: "Élzárás munkautasítás FILTERTEST", type: DocType.Instruction);
         released.SubmitForReview();
         released.Approve();
 
@@ -112,7 +112,7 @@ public class DocumentPersistenceTests
             draftRows.Should().ContainSingle().Which.Id.Should().Be(draft.Id);
 
             var typeRows = await repository.ListAsync(new DocumentFilter(
-                Type: DocType.Utasitas, Search: "filtertest"));
+                Type: DocType.Instruction, Search: "filtertest"));
             typeRows.Should().ContainSingle("az ILike kis-nagybetű független")
                 .Which.Id.Should().Be(released.Id);
         }
@@ -124,19 +124,19 @@ public class DocumentPersistenceTests
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
 
         var expired = NewDocument(name: "FSC eredetigazolás EXPIRYTEST",
-            type: DocType.Tanusitvany, validUntil: today.AddDays(-10));
+            type: DocType.Certificate, validUntil: today.AddDays(-10));
         expired.SubmitForReview();
         expired.Approve();
 
         var expiring = NewDocument(name: "Keretszerződés EXPIRYTEST",
-            type: DocType.Szerzodes, validUntil: today.AddDays(14));
+            type: DocType.Contract, validUntil: today.AddDays(14));
 
         var archivedExpired = NewDocument(name: "CE 2025 EXPIRYTEST",
-            type: DocType.Tanusitvany, validUntil: today.AddDays(-200));
+            type: DocType.Certificate, validUntil: today.AddDays(-200));
         archivedExpired.Archive();
 
         var longValid = NewDocument(name: "SOP EXPIRYTEST",
-            type: DocType.Utasitas, validUntil: today.AddDays(120));
+            type: DocType.Instruction, validUntil: today.AddDays(120));
 
         using (var scope = _fixture.CreateScope())
         {

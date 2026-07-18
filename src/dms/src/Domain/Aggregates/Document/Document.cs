@@ -274,8 +274,8 @@ public class Document : AggregateRoot
 
     /// <summary>
     /// Expiry state relative to <paramref name="today"/> with the configured
-    /// warning window (portal expiryState mirror): past → Lejart; within the
-    /// window (the ValidUntil day itself is still valid → Lejaro); else null.
+    /// warning window (portal expiryState mirror): past → Expired; within the
+    /// window (the ValidUntil day itself is still valid → Expiring); else null.
     /// </summary>
     public ExpiryState? GetExpiryState(DateOnly today, int warnDays)
     {
@@ -284,8 +284,8 @@ public class Document : AggregateRoot
 
         var days = validUntil.DayNumber - today.DayNumber;
         if (days < 0)
-            return ExpiryState.Lejart;
-        return days <= warnDays ? ExpiryState.Lejaro : null;
+            return ExpiryState.Expired;
+        return days <= warnDays ? ExpiryState.Expiring : null;
     }
 
     // ── Admin-level soft delete (outside the FSM — legacy Deleted preserved) ─

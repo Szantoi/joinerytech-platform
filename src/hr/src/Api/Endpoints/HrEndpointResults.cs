@@ -19,7 +19,12 @@ internal static class HrEndpointResults
         return result.Status switch
         {
             ResultStatus.NotFound => Results.NotFound(),
-            ResultStatus.Conflict => Results.Conflict(new { error = FirstMessage(result) }),
+            // 409 = forbidden absence FSM transition. The domain guard interpolates
+            // the English AbsenceStatus member names ("Cannot approve absence in
+            // Approved status …"); ADR-059 says status names in error messages are
+            // wire keys, so this API seam translates them (domain stays English).
+            ResultStatus.Conflict => Results.Conflict(
+                new { error = HrWire.AbsenceStatus.TranslateNames(FirstMessage(result)) }),
             ResultStatus.Invalid => Results.BadRequest(new { error = FirstValidationMessage(result) }),
             _ => Results.BadRequest(result.Errors)
         };

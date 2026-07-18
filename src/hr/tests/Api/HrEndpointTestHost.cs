@@ -11,6 +11,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using SpaceOS.Modules.HR.Api;
 
 namespace SpaceOS.Modules.HR.Tests.Api;
 
@@ -18,7 +19,7 @@ namespace SpaceOS.Modules.HR.Tests.Api;
 /// Lightweight endpoint test host: TestServer + mocked IMediator (NO database, NO Docker).
 /// Exercises the REST layer contract in isolation — routing, request parsing,
 /// Ardalis.Result → HTTP status mapping (200/201/400/404/409) and DTO bodies.
-/// Mirrors the production host's JSON setup (JsonStringEnumConverter — Program.cs).
+/// Mirrors the production host's JSON setup (AddHrApiJsonOptions — Program.cs).
 /// Copy of the QA QaEndpointTestHost pattern.
 /// </summary>
 public sealed class HrEndpointTestHost : IAsyncDisposable
@@ -54,10 +55,8 @@ public sealed class HrEndpointTestHost : IAsyncDisposable
                         .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>(TestAuthHandler.Scheme, _ => { });
                     services.AddAuthorization();
                     services.AddSingleton(mediator);
-                    // Production host mirror: enums as strings on the wire.
-                    services.ConfigureHttpJsonOptions(options =>
-                        options.SerializerOptions.Converters.Add(
-                            new System.Text.Json.Serialization.JsonStringEnumConverter()));
+                    // Production host mirror: ADR-059 Hungarian wire vocabulary (HrWire).
+                    services.AddHrApiJsonOptions();
                 })
                 .Configure(app =>
                 {

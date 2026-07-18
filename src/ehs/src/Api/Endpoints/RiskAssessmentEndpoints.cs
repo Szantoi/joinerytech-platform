@@ -11,6 +11,7 @@ using SpaceOS.Modules.Ehs.Application.RiskAssessments.Commands.UpdateRiskAssessm
 using SpaceOS.Modules.Ehs.Application.RiskAssessments.Queries.GetRiskAssessmentById;
 using SpaceOS.Modules.Ehs.Application.RiskAssessments.Queries.GetRiskMatrixSummary;
 using SpaceOS.Modules.Ehs.Application.RiskAssessments.Queries.ListRiskAssessments;
+using SpaceOS.Modules.Ehs.Application.Wire;
 using SpaceOS.Modules.Ehs.Infrastructure.Data;
 
 namespace SpaceOS.Modules.Ehs.Api.Endpoints;
@@ -144,9 +145,16 @@ public static class RiskAssessmentEndpoints
         [FromServices] ITenantContext tenantContext,
         CancellationToken ct)
     {
+        // Query-string enums bypass the JSON converters — parse the Hungarian
+        // wire keys by hand (ADR-059); unknown key → 400, not an empty list.
+        if (!WireQuery.TryParse(EhsWire.RiskLevel, request.RiskLevel, "kockázati-szint", out var riskLevel, out var levelError))
+            return levelError!;
+        if (!WireQuery.TryParse(EhsWire.RiskStatus, request.Status, "kockázatértékelés-státusz", out var status, out var statusError))
+            return statusError!;
+
         var filter = new RiskAssessmentFilter(
-            request.RiskLevel,
-            request.Status,
+            riskLevel,
+            status,
             request.LocationId,
             request.ReviewDueBefore);
 
@@ -320,9 +328,13 @@ public record UpdateRiskAssessmentRequest(
     Guid? LocationId
 );
 
+/// <summary>
+/// List filter — enum filters travel as raw strings and are parsed against
+/// the EhsWire maps in the handler (ADR-059 Hungarian wire keys).
+/// </summary>
 public record ListRiskAssessmentsRequest(
-    Domain.Enums.RiskLevel? RiskLevel = null,
-    Domain.Enums.RiskStatus? Status = null,
+    string? RiskLevel = null,
+    string? Status = null,
     Guid? LocationId = null,
     DateTimeOffset? ReviewDueBefore = null
 );

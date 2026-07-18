@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Logging;
 using SpaceOS.Modules.CRM.Application.Commands;
 using SpaceOS.Modules.CRM.Application.Queries;
+using SpaceOS.Modules.CRM.Application.Wire;
 using SpaceOS.Modules.CRM.Domain.Enums;
 
 namespace SpaceOS.Modules.CRM.Api.Endpoints;
@@ -110,9 +111,11 @@ public static class LeadEndpoints
         [FromHeader(Name = CrmApiHeaders.TenantId)] Guid tenantId,
         CancellationToken ct)
     {
-        if (!Enum.TryParse<LeadSource>(request.Source, ignoreCase: true, out var source))
+        if (!CrmWire.LeadSource.TryParse(request.Source, out var source))
         {
-            return CrmEndpointResults.BadRequest($"Invalid lead source '{request.Source}'");
+            return CrmEndpointResults.BadRequest(
+                $"Invalid lead source '{request.Source}'. Lehetséges értékek: " +
+                $"{string.Join(", ", CrmWire.LeadSource.Spellings)}.");
         }
 
         var command = new CreateLeadCommand
@@ -150,9 +153,11 @@ public static class LeadEndpoints
         LeadStatus? statusFilter = null;
         if (!string.IsNullOrWhiteSpace(status))
         {
-            if (!Enum.TryParse<LeadStatus>(status, ignoreCase: true, out var parsed))
+            if (!CrmWire.LeadStatus.TryParse(status, out var parsed))
             {
-                return CrmEndpointResults.BadRequest($"Invalid status filter '{status}'");
+                return CrmEndpointResults.BadRequest(
+                    $"Invalid status filter '{status}'. Lehetséges értékek: " +
+                    $"{string.Join(", ", CrmWire.LeadStatus.Spellings)}.");
             }
             statusFilter = parsed;
         }

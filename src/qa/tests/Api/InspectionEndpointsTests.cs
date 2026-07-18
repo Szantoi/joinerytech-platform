@@ -68,7 +68,7 @@ public class InspectionEndpointsTests
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         body.RootElement.GetProperty("id").GetGuid().Should().Be(InspectionGuid);
-        body.RootElement.GetProperty("status").GetString().Should().Be("InProgress");
+        body.RootElement.GetProperty("status").GetString().Should().Be("folyamatban");
     }
 
     [Fact]
@@ -83,8 +83,10 @@ public class InspectionEndpointsTests
         var response = await host.Client.PostAsync($"/api/qa/inspections/{InspectionGuid}/start", null);
 
         response.StatusCode.Should().Be(HttpStatusCode.Conflict);
+        // ADR-059: the API seam translates the domain's English status tokens
+        // into the wire vocabulary before the message leaves on the 409 body.
         var body = await response.Content.ReadAsStringAsync();
-        body.Should().Contain("Cannot transition from Completed to InProgress");
+        body.Should().Contain("Cannot transition from lezarva to folyamatban");
     }
 
     [Fact]
@@ -105,11 +107,11 @@ public class InspectionEndpointsTests
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-        body.RootElement.GetProperty("status").GetString().Should().Be("Completed");
-        body.RootElement.GetProperty("result").GetString().Should().Be("Pass");
+        body.RootElement.GetProperty("status").GetString().Should().Be("lezarva");
+        body.RootElement.GetProperty("result").GetString().Should().Be("megfelelt");
         // Denormalized checklist criteria (portal MSW contract: inspection.criteria)
         body.RootElement.GetProperty("criteria").GetArrayLength().Should().Be(2);
-        body.RootElement.GetProperty("criteria")[0].GetProperty("type").GetString().Should().Be("Visual");
+        body.RootElement.GetProperty("criteria")[0].GetProperty("type").GetString().Should().Be("vizualis");
     }
 
     [Fact]
@@ -165,12 +167,12 @@ public class InspectionEndpointsTests
             {
                 failureNotes = new[]
                 {
-                    new { failureType = "Scratch", description = "Mély karc a fedlapon", photoUrl = (string?)null }
+                    new { failureType = "karc", description = "Mély karc a fedlapon", photoUrl = (string?)null }
                 }
             });
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-        body.RootElement.GetProperty("result").GetString().Should().Be("Fail");
+        body.RootElement.GetProperty("result").GetString().Should().Be("selejt");
     }
 }

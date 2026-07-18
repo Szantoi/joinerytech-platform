@@ -11,6 +11,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using SpaceOS.Modules.CRM.Api;
 
 namespace SpaceOS.Modules.CRM.Tests.Api;
 
@@ -58,10 +59,8 @@ public sealed class CrmEndpointTestHost : IAsyncDisposable
                     services.AddAuthorization();
                     services.AddSingleton(mediator);
 
-                    // Production host mirror: enums as strings on the wire
-                    services.ConfigureHttpJsonOptions(options =>
-                        options.SerializerOptions.Converters.Add(
-                            new System.Text.Json.Serialization.JsonStringEnumConverter()));
+                    // Production host mirror: Hungarian wire-enum keys (ADR-059)
+                    services.AddCrmApiJsonOptions();
                 })
                 .Configure(app =>
                 {

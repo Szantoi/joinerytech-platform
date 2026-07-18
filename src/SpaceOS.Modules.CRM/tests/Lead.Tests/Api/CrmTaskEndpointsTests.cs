@@ -54,8 +54,8 @@ public class CrmTaskEndpointsTests
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-        body.RootElement[0].GetProperty("sla").GetString().Should().Be("Overdue");
-        body.RootElement[0].GetProperty("refType").GetString().Should().Be("Lead");
+        body.RootElement[0].GetProperty("sla").GetString().Should().Be("overdue");
+        body.RootElement[0].GetProperty("refType").GetString().Should().Be("lead");
     }
 
     [Fact]

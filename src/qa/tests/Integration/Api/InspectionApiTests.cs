@@ -50,8 +50,8 @@ public class InspectionApiTests
         var checkpointResponse = await client.PostAsJsonAsync("/api/qa/checkpoints", new
         {
             name = "Test Checkpoint",
-            checkpointType = "Final",
-            criticalLevel = "Major",
+            checkpointType = "vegso",
+            criticalLevel = "jelentos",
             description = "Test inspection checkpoint"
         });
         checkpointResponse.StatusCode.Should().Be(System.Net.HttpStatusCode.Created);

@@ -1,6 +1,7 @@
 using MediatR;
 using SpaceOS.Modules.Ehs.Application.Contracts;
 using SpaceOS.Modules.Ehs.Application.RiskAssessments.DTOs;
+using SpaceOS.Modules.Ehs.Application.Wire;
 using SpaceOS.Modules.Ehs.Domain.Aggregates.RiskAssessmentAggregate;
 
 namespace SpaceOS.Modules.Ehs.Application.RiskAssessments.Queries.GetRiskMatrixSummary;
@@ -34,13 +35,14 @@ public class GetRiskMatrixSummaryQueryHandler : IRequestHandler<GetRiskMatrixSum
             projections.Select(p => (p.Severity, p.Likelihood)),
             _bands);
 
+        // Breakdown dictionary keys are wire keys (ADR-059), not English member names.
         return new RiskMatrixSummaryDto(
             TotalAssessments: projections.Count,
             ByRiskLevel: projections
-                .GroupBy(p => p.RiskLevel.ToString())
+                .GroupBy(p => EhsWire.RiskLevel.ToWire(p.RiskLevel))
                 .ToDictionary(g => g.Key, g => g.Count()),
             ByStatus: projections
-                .GroupBy(p => p.Status.ToString())
+                .GroupBy(p => EhsWire.RiskStatus.ToWire(p.Status))
                 .ToDictionary(g => g.Key, g => g.Count()),
             MatrixCells: cells
                 .Select(c => new RiskMatrixCellDto(c.Severity, c.Likelihood, c.Count, c.RiskLevel))

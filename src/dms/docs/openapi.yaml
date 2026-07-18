@@ -11,15 +11,19 @@ info:
     ## Approval workflow (portal DOCUMENT_FSM mirror)
 
     ```
-    action    from               to
-    ───────   ────────────────   ───────────
-    submit    draft              underReview
-    approve   underReview        released
-    reject    underReview        draft        (reason MANDATORY)
-    recall    released           underReview
-    archive   draft | released   archived     (not allowed during review)
-    reopen    archived           draft
+    action    from                     to
+    ───────   ──────────────────────   ─────────────
+    submit    piszkozat                ellenorzes
+    approve   ellenorzes               kiadott
+    reject    ellenorzes               piszkozat      (reason MANDATORY)
+    recall    kiadott                  ellenorzes
+    archive   piszkozat | kiadott      archivalt      (not allowed during review)
+    reopen    archivalt                piszkozat
     ```
+
+    (Status wire keys — ADR-059 — piszkozat=Draft, ellenorzes=UnderReview,
+    kiadott=Released, archivalt=Archived; the domain enum stays English, the
+    Hungarian spelling lives at the EnumWireMap seam only.)
 
     - Every transition + version upload returns the FRESH document (the UI
       reconciles optimistic updates from the body).
@@ -28,10 +32,11 @@ info:
       config-driven (`Dms:Expiry:WarnDays`, default 30 — portal
       EXPIRY_WARN_DAYS mirror).
     - Version chain: `POST /{id}/versions` increments the number, PRESERVES
-      earlier entries and starts the new version as a `draft` working copy —
-      the previously released version stays valid until re-approval.
-    - `deleted` is an admin-level soft-delete outside the FSM: such documents
-      are invisible on every read path.
+      earlier entries and starts the new version as a `piszkozat` (draft)
+      working copy — the previously released version stays valid until
+      re-approval.
+    - `torolve` (Deleted) is an admin-level soft-delete outside the FSM: such
+      documents are invisible on every read path.
 
     ## Error contract (portal MSW mirror)
 
@@ -110,7 +115,7 @@ paths:
       operationId: CreateDocument
       summary: Create document (backend extra — the portal mock is seeded)
       description: |
-        Creates a document with its v1 `draft` working-copy version.
+        Creates a document with its v1 `piszkozat` (draft) working-copy version.
         Metadata-only until the blob flow lands (`fileLabel` represents the
         file). Requires the `X-Tenant-Id` header.
       parameters:
@@ -152,7 +157,7 @@ paths:
     post:
       tags: [Documents]
       operationId: SubmitDocument
-      summary: 'FSM: draft → underReview (send for review)'
+      summary: 'FSM: piszkozat → ellenorzes (send for review)'
       parameters:
         - $ref: '#/components/parameters/DocumentId'
       responses:
@@ -167,7 +172,7 @@ paths:
     post:
       tags: [Documents]
       operationId: ApproveDocument
-      summary: 'FSM: underReview → released (optional note → reviewNote)'
+      summary: 'FSM: ellenorzes → kiadott (optional note → reviewNote)'
       parameters:
         - $ref: '#/components/parameters/DocumentId'
       requestBody:
@@ -192,7 +197,7 @@ paths:
     post:
       tags: [Documents]
       operationId: RejectDocument
-      summary: 'FSM: underReview → draft (MANDATORY reason → reviewNote)'
+      summary: 'FSM: ellenorzes → piszkozat (MANDATORY reason → reviewNote)'
       parameters:
         - $ref: '#/components/parameters/DocumentId'
       requestBody:
@@ -220,7 +225,7 @@ paths:
     post:
       tags: [Documents]
       operationId: RecallDocument
-      summary: 'FSM: released → underReview (re-review; shop floor falls back to the previous released version)'
+      summary: 'FSM: kiadott → ellenorzes (re-review; shop floor falls back to the previous released version)'
       parameters:
         - $ref: '#/components/parameters/DocumentId'
       requestBody:
@@ -245,7 +250,7 @@ paths:
     post:
       tags: [Documents]
       operationId: ArchiveDocument
-      summary: 'FSM: draft | released → archived (not allowed during review; the version chain is untouched)'
+      summary: 'FSM: piszkozat | kiadott → archivalt (not allowed during review; the version chain is untouched)'
       parameters:
         - $ref: '#/components/parameters/DocumentId'
       responses:
@@ -260,7 +265,7 @@ paths:
     post:
       tags: [Documents]
       operationId: ReopenDocument
-      summary: 'FSM: archived → draft (reopen as working copy; the version chain is untouched)'
+      summary: 'FSM: archivalt → piszkozat (reopen as working copy; the version chain is untouched)'
       parameters:
         - $ref: '#/components/parameters/DocumentId'
       responses:
@@ -275,9 +280,9 @@ paths:
     post:
       tags: [Documents]
       operationId: UploadDocumentVersion
-      summary: Upload a new version (number +1, chain preserved, draft working copy)
+      summary: Upload a new version (number +1, chain preserved, piszkozat working copy)
       description: |
-        The document falls back to `draft` and must pass the approval gate
+        The document falls back to `piszkozat` (draft) and must pass the approval gate
         again; the previously released version stays the valid one. Archived
         document → 409; missing fileLabel/note → 400 (MSW guard mirrors).
         Real file content is the blob-flow follow-up (`fileLabel` only).
@@ -377,13 +382,13 @@ components:
   schemas:
     DocumentStatus:
       type: string
-      enum: [draft, underReview, released, archived]
+      enum: [piszkozat, ellenorzes, kiadott, archivalt]
       description: |
-        Approval-workflow status (camelCase wire form of the FSM naming).
-        Portal canonical key mapping (wire-language ADR candidate):
-        draft=piszkozat, underReview=ellenorzes, released=kiadott,
-        archived=archivalt. The admin-level `deleted` state never appears on
-        the wire (soft-deleted documents are invisible).
+        Approval-workflow status — the portal's canonical Hungarian wire keys
+        (ADR-059: EnumWireMap seam, domain enum stays English —
+        Draft=piszkozat, UnderReview=ellenorzes, Released=kiadott,
+        Archived=archivalt). The admin-level `torolve` (Deleted) state never
+        appears on the wire (soft-deleted documents are invisible).
 
     DocType:
       type: string

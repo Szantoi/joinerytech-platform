@@ -9,11 +9,9 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// Enums travel as strings on the wire (EHS/QA Program precedent — e.g. AbsenceStatus:
-// "Pending", Department: "Production"); integer values stay accepted on input.
-builder.Services.ConfigureHttpJsonOptions(options =>
-    options.SerializerOptions.Converters.Add(
-        new System.Text.Json.Serialization.JsonStringEnumConverter()));
+// Enums travel as strings in the contract's Hungarian spelling (ADR-059 wire
+// vocabulary — e.g. AbsenceStatus: "kert", Department: "gyartas"); see HrWire.
+builder.Services.AddHrApiJsonOptions();
 
 // Shared module-host auth (ADR-061): the kernel-parity Keycloak wiring from
 // SpaceOS.Modules.Hosting replaces the hand-copied (and already drifted) JWT block —

@@ -40,7 +40,7 @@ public sealed class WorkOrderTransitionEndpointTests : IAsyncLifetime
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var dto = await ReadJson(response);
-        dto.GetProperty("status").GetString().Should().Be("Scheduled"); // enum as string
+        dto.GetProperty("status").GetString().Should().Be("utemezve"); // ADR-059 wire key
         dto.GetProperty("estimatedHours").GetDecimal().Should().Be(3.5m);
         dto.GetProperty("scheduledStart").GetDateTime().Should().BeCloseTo(scheduledAt, TimeSpan.FromSeconds(1));
         dto.GetProperty("assetCode").GetString().Should().Be("CNC-01");
@@ -94,12 +94,12 @@ public sealed class WorkOrderTransitionEndpointTests : IAsyncLifetime
 
         var response = await _host.Client.PutAsJsonAsync(
             $"{BaseUrl}/{wo.Id.Value}/assign",
-            new { assignmentType = "Internal", assignedTo = employeeId });
+            new { assignmentType = "belso", assignedTo = employeeId });
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var dto = await ReadJson(response);
-        dto.GetProperty("status").GetString().Should().Be("Reported"); // assign is NOT an FSM transition
-        dto.GetProperty("assignmentType").GetString().Should().Be("Internal");
+        dto.GetProperty("status").GetString().Should().Be("bejelentve"); // assign is NOT an FSM transition
+        dto.GetProperty("assignmentType").GetString().Should().Be("belso");
         dto.GetProperty("assignedTo").GetGuid().Should().Be(employeeId);
     }
 
@@ -111,7 +111,7 @@ public sealed class WorkOrderTransitionEndpointTests : IAsyncLifetime
 
         var response = await _host.Client.PutAsJsonAsync(
             $"{BaseUrl}/{wo.Id.Value}/assign",
-            new { assignmentType = "External", assignedTo = Guid.NewGuid() });
+            new { assignmentType = "kulso", assignedTo = Guid.NewGuid() });
 
         response.StatusCode.Should().Be(HttpStatusCode.Conflict);
     }
@@ -142,7 +142,7 @@ public sealed class WorkOrderTransitionEndpointTests : IAsyncLifetime
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var dto = await ReadJson(response);
-        dto.GetProperty("status").GetString().Should().Be("InProgress");
+        dto.GetProperty("status").GetString().Should().Be("folyamatban");
         dto.GetProperty("startedAt").ValueKind.Should().Be(JsonValueKind.String);
     }
 
@@ -184,7 +184,7 @@ public sealed class WorkOrderTransitionEndpointTests : IAsyncLifetime
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var dto = await ReadJson(response);
-        dto.GetProperty("status").GetString().Should().Be("Completed");
+        dto.GetProperty("status").GetString().Should().Be("kesz");
         dto.GetProperty("actualHours").GetDecimal().Should().Be(2.5m);
     }
 
@@ -228,7 +228,7 @@ public sealed class WorkOrderTransitionEndpointTests : IAsyncLifetime
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var dto = await ReadJson(response);
-        dto.GetProperty("status").GetString().Should().Be("Postponed");
+        dto.GetProperty("status").GetString().Should().Be("halasztva");
         dto.GetProperty("postponementReason").GetString().Should().Be("Alkatrészre várunk");
     }
 
@@ -269,7 +269,7 @@ public sealed class WorkOrderTransitionEndpointTests : IAsyncLifetime
             new { reason = "Nem indokolt" });
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        (await ReadJson(response)).GetProperty("status").GetString().Should().Be("Rejected");
+        (await ReadJson(response)).GetProperty("status").GetString().Should().Be("elutasitva");
     }
 
     [Fact]
@@ -298,7 +298,7 @@ public sealed class WorkOrderTransitionEndpointTests : IAsyncLifetime
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var dto = await ReadJson(response);
-        dto.GetProperty("status").GetString().Should().Be("Reported");
+        dto.GetProperty("status").GetString().Should().Be("bejelentve");
         dto.GetProperty("assignedTo").ValueKind.Should().Be(JsonValueKind.Null);
         dto.GetProperty("assignmentType").ValueKind.Should().Be(JsonValueKind.Null);
         dto.GetProperty("scheduledStart").ValueKind.Should().Be(JsonValueKind.Null);
@@ -330,16 +330,16 @@ public sealed class WorkOrderTransitionEndpointTests : IAsyncLifetime
         schedule.StatusCode.Should().Be(HttpStatusCode.OK);
 
         var assign = await _host.Client.PutAsJsonAsync(
-            $"{url}/assign", new { assignmentType = "External", assignedTo = Guid.NewGuid() });
+            $"{url}/assign", new { assignmentType = "kulso", assignedTo = Guid.NewGuid() });
         assign.StatusCode.Should().Be(HttpStatusCode.OK);
 
         var start = await _host.Client.PutAsync($"{url}/start", null);
         start.StatusCode.Should().Be(HttpStatusCode.OK);
-        (await ReadJson(start)).GetProperty("status").GetString().Should().Be("InProgress");
+        (await ReadJson(start)).GetProperty("status").GetString().Should().Be("folyamatban");
 
         var complete = await _host.Client.PutAsJsonAsync($"{url}/complete", new { actualHours = 3.5m });
         complete.StatusCode.Should().Be(HttpStatusCode.OK);
-        (await ReadJson(complete)).GetProperty("status").GetString().Should().Be("Completed");
+        (await ReadJson(complete)).GetProperty("status").GetString().Should().Be("kesz");
     }
 
     private static async Task<JsonElement> ReadJson(HttpResponseMessage response)

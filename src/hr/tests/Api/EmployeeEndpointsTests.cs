@@ -58,12 +58,13 @@ public class EmployeeEndpointsTests
         body.RootElement.GetArrayLength().Should().Be(1);
 
         var employee = body.RootElement[0];
-        employee.GetProperty("department").GetString().Should().Be("Production");
+        // ADR-059: the wire vocabulary is the Hungarian portal contract (HrWire).
+        employee.GetProperty("department").GetString().Should().Be("gyartas");
         // ADR-060: the pay grade is a band key, the hourly rate is a separate flat field
         // (tenant config) — mirroring the portal employeeSchema (payGrade + hourlyRate).
-        employee.GetProperty("payGrade").GetString().Should().Be("SkilledWorker");
+        employee.GetProperty("payGrade").GetString().Should().Be("szakmunkas");
         employee.GetProperty("hourlyRate").GetDecimal().Should().Be(3800m);
-        employee.GetProperty("skills")[0].GetProperty("key").GetString().Should().Be("Cnc");
+        employee.GetProperty("skills")[0].GetProperty("key").GetString().Should().Be("cnc");
         // ADR-060 §5: SkillLevel is the ONE enum that travels as a NUMBER (1|2|3).
         employee.GetProperty("skills")[0].GetProperty("level").ValueKind
             .Should().Be(JsonValueKind.Number);
@@ -83,7 +84,7 @@ public class EmployeeEndpointsTests
 
         await using var host = await StartHostAsync(mediator.Object);
         var response = await host.Client.GetAsync(
-            "/api/hr/employees?dept=Production&q=kovács&skill=EdgeBanding");
+            "/api/hr/employees?dept=gyartas&q=kovács&skill=elzaras");
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         captured.Should().NotBeNull();
@@ -94,26 +95,57 @@ public class EmployeeEndpointsTests
         captured.ActiveOnly.Should().BeTrue();
     }
 
-    // NOTE: the Hungarian portal keys (gyartas, szabas, …) become the accepted wire
-    // vocabulary when the ADR-059 EnumWireMap seam lands — these two tests flip then.
+    // ADR-059 landed: the Hungarian portal keys (gyartas, szabas, …) ARE the accepted
+    // wire vocabulary — the former "invalid filter" guards flipped into positive tests.
     [Fact]
-    public async Task ListEmployees_InvalidDeptFilter_Returns400()
+    public async Task ListEmployees_HungarianDeptFilter_IsAccepted()
     {
+        GetEmployeesQuery? captured = null;
         var mediator = new Mock<IMediator>();
-        await using var host = await StartHostAsync(mediator.Object);
+        mediator
+            .Setup(m => m.Send(It.IsAny<GetEmployeesQuery>(), It.IsAny<CancellationToken>()))
+            .Callback((IRequest<Result<IReadOnlyList<EmployeeDto>>> query, CancellationToken _) =>
+                captured = (GetEmployeesQuery)query)
+            .ReturnsAsync(Result<IReadOnlyList<EmployeeDto>>.Success(Array.Empty<EmployeeDto>()));
 
+        await using var host = await StartHostAsync(mediator.Object);
         var response = await host.Client.GetAsync("/api/hr/employees?dept=gyartas");
 
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        captured!.Department.Should().Be(Department.Production);
     }
 
     [Fact]
-    public async Task ListEmployees_InvalidSkillFilter_Returns400()
+    public async Task ListEmployees_HungarianSkillFilter_IsAccepted()
+    {
+        GetEmployeesQuery? captured = null;
+        var mediator = new Mock<IMediator>();
+        mediator
+            .Setup(m => m.Send(It.IsAny<GetEmployeesQuery>(), It.IsAny<CancellationToken>()))
+            .Callback((IRequest<Result<IReadOnlyList<EmployeeDto>>> query, CancellationToken _) =>
+                captured = (GetEmployeesQuery)query)
+            .ReturnsAsync(Result<IReadOnlyList<EmployeeDto>>.Success(Array.Empty<EmployeeDto>()));
+
+        await using var host = await StartHostAsync(mediator.Object);
+        var response = await host.Client.GetAsync("/api/hr/employees?skill=szabas");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        captured!.Skill.Should().Be(SkillKey.Cutting);
+    }
+
+    [Theory] // ADR-059: truly unknown keys AND the English member names are rejected.
+    [InlineData("dept=butorasztalos")]
+    [InlineData("dept=Production")]
+    [InlineData("dept=Office")]
+    [InlineData("skill=politurozas")]
+    [InlineData("skill=Cutting")]
+    [InlineData("skill=EdgeBanding")]
+    public async Task ListEmployees_UnknownOrEnglishFilterKeys_Return400(string filter)
     {
         var mediator = new Mock<IMediator>();
         await using var host = await StartHostAsync(mediator.Object);
 
-        var response = await host.Client.GetAsync("/api/hr/employees?skill=szabas");
+        var response = await host.Client.GetAsync($"/api/hr/employees?{filter}");
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
@@ -181,13 +213,14 @@ public class EmployeeEndpointsTests
             .ReturnsAsync(Result<EmployeeDto>.Success(SampleDto()));
 
         await using var host = await StartHostAsync(mediator.Object);
-        // ADR-060 §5: the level is a NUMBER on the wire (1 = basic .. 3 = master).
+        // ADR-060 §5: the level is a NUMBER on the wire (1 = basic .. 3 = master);
+        // the keys are the ADR-059 Hungarian wire vocabulary.
         var response = await host.Client.PutAsJsonAsync(
             $"/api/hr/employees/{EmployeeGuid}/skills",
             new
             {
-                skills = new[] { new { key = "EdgeBanding", level = 3 } },
-                removeSkills = new[] { "SurfaceFinishing" }
+                skills = new[] { new { key = "elzaras", level = 3 } },
+                removeSkills = new[] { "felulet" }
             });
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -220,7 +253,7 @@ public class EmployeeEndpointsTests
 
         var response = await host.Client.PutAsJsonAsync(
             $"/api/hr/employees/{EmployeeGuid}/skills",
-            new { skills = new[] { new { key = "Cutting", level } } });
+            new { skills = new[] { new { key = "szabas", level } } });
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
@@ -233,7 +266,7 @@ public class EmployeeEndpointsTests
 
         var response = await host.Client.PutAsJsonAsync(
             $"/api/hr/employees/{EmployeeGuid}/skills",
-            new { skills = new[] { new { key = "Cutting", level = "Expert" } } });
+            new { skills = new[] { new { key = "szabas", level = "Expert" } } });
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }

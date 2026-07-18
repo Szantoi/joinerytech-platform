@@ -36,7 +36,7 @@ public class DocumentEndpointsTests
         ExpiryState? expiry = null) => new(
         Id: DocumentGuid,
         Name: "Petőfi u. 12. — konyha kiviteli rajz",
-        Type: DocType.Rajz,
+        Type: DocType.Drawing,
         Status: status,
         Version: version,
         LinkType: DocLinkType.Project,
@@ -67,7 +67,7 @@ public class DocumentEndpointsTests
         var mediator = new Mock<IMediator>();
         mediator
             .Setup(m => m.Send(It.IsAny<ListDocumentsQuery>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new[] { SampleDto(DocumentStatus.UnderReview, expiry: ExpiryState.Lejaro) });
+            .ReturnsAsync(new[] { SampleDto(DocumentStatus.UnderReview, expiry: ExpiryState.Expiring) });
 
         await using var host = await StartHostAsync(mediator.Object);
         var response = await host.Client.GetAsync("/api/dms/documents");
@@ -77,7 +77,7 @@ public class DocumentEndpointsTests
         body.RootElement.GetArrayLength().Should().Be(1);
         var row = body.RootElement[0];
         // Portal zod-schema parity: camelCase enum strings + computed fields
-        row.GetProperty("status").GetString().Should().Be("underReview");
+        row.GetProperty("status").GetString().Should().Be("ellenorzes");
         row.GetProperty("type").GetString().Should().Be("rajz");
         row.GetProperty("linkType").GetString().Should().Be("project");
         row.GetProperty("expiry").GetString().Should().Be("lejaro");
@@ -98,12 +98,12 @@ public class DocumentEndpointsTests
 
         await using var host = await StartHostAsync(mediator.Object);
         var response = await host.Client.GetAsync(
-            "/api/dms/documents?status=underReview&type=rajz&linkType=project&q=konyha&expiring=true");
+            "/api/dms/documents?status=ellenorzes&type=rajz&linkType=project&q=konyha&expiring=true");
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         captured.Should().NotBeNull();
         captured!.Status.Should().Be(DocumentStatus.UnderReview);
-        captured.Type.Should().Be(DocType.Rajz);
+        captured.Type.Should().Be(DocType.Drawing);
         captured.LinkType.Should().Be(DocLinkType.Project);
         captured.Search.Should().Be("konyha");
         captured.ExpiringOnly.Should().BeTrue();
@@ -120,6 +120,19 @@ public class DocumentEndpointsTests
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         body.RootElement.GetProperty("error").GetString().Should().Be("BadRequest");
+    }
+
+    [Fact]
+    public async Task ListDocuments_OldEnglishStatusKey_Returns400()
+    {
+        // ADR-059 contract tightening: the wire vocabulary is now Hungarian —
+        // the legacy camelCase English key no longer parses.
+        var mediator = new Mock<IMediator>();
+        await using var host = await StartHostAsync(mediator.Object);
+
+        var response = await host.Client.GetAsync("/api/dms/documents?status=underReview");
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
     // ========== DETAIL ==========
@@ -186,7 +199,7 @@ public class DocumentEndpointsTests
         response.Headers.Location!.ToString().Should().Be($"/api/dms/documents/{DocumentGuid}");
         captured.Should().NotBeNull();
         captured!.TenantId.Should().Be(DmsEndpointTestHost.TenantId);
-        captured.Type.Should().Be(DocType.Rajz);
+        captured.Type.Should().Be(DocType.Drawing);
         captured.LinkType.Should().Be(DocLinkType.Project);
     }
 
@@ -223,7 +236,7 @@ public class DocumentEndpointsTests
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-        body.RootElement.GetProperty("status").GetString().Should().Be("underReview");
+        body.RootElement.GetProperty("status").GetString().Should().Be("ellenorzes");
     }
 
     [Fact]

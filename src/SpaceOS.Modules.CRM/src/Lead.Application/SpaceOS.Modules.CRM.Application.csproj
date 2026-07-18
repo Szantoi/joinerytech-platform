@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../Lead.Domain/SpaceOS.Modules.CRM.Domain.csproj" />
+    <ProjectReference Include="../../../spaceos-modules-hosting/src/SpaceOS.Modules.Hosting/SpaceOS.Modules.Hosting.csproj" />
   </ItemGroup>
 
   <ItemGroup>

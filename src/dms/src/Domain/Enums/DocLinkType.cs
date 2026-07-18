@@ -2,8 +2,9 @@ namespace SpaceOS.Modules.DMS.Domain.Enums;
 
 /// <summary>
 /// Denormalized display link type — what the document belongs to (portal
-/// docLinkTypeSchema / prototype DOC_LINK_META mirror). CamelCase wire format
-/// matches the portal contract exactly ("project", "order", "catalog",
+/// docLinkTypeSchema / prototype DOC_LINK_META mirror). Wire spellings come
+/// from the EnumWireMap seam (ADR-059, Api/WireEnums.cs — DmsWire.LinkType) and
+/// match the portal contract exactly ("project", "order", "catalog",
 /// "template", "customer", "none").
 ///
 /// NOTE: this is the portal-facing single display link; the rich

@@ -28,7 +28,7 @@ public class DocumentHandlerTests
     private static Document SampleDocument(DateOnly? validUntil = null) => Document.Create(
         new TenantId(Guid.NewGuid()),
         name: "Bognár Bútor Kft. — keretszerződés 2026",
-        type: DocType.Szerzodes,
+        type: DocType.Contract,
         linkType: DocLinkType.Customer,
         linkId: "C-001",
         linkLabel: "Bognár Bútor Kft.",
@@ -151,7 +151,7 @@ public class DocumentHandlerTests
 
         dto.Should().NotBeNull();
         dto!.ReleasedVersion.Should().Be(1, "kiadott → az aktuális verzió az érvényes");
-        dto.Expiry.Should().Be(ExpiryState.Lejaro, "az ablakon belül jár le");
+        dto.Expiry.Should().Be(ExpiryState.Expiring, "az ablakon belül jár le");
     }
 
     [Fact]

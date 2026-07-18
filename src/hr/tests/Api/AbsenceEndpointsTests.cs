@@ -62,8 +62,9 @@ public class AbsenceEndpointsTests
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         body.RootElement.GetArrayLength().Should().Be(1);
-        body.RootElement[0].GetProperty("status").GetString().Should().Be("Pending");
-        body.RootElement[0].GetProperty("type").GetString().Should().Be("Vacation");
+        // ADR-059: the wire vocabulary is the Hungarian portal contract (HrWire).
+        body.RootElement[0].GetProperty("status").GetString().Should().Be("kert");
+        body.RootElement[0].GetProperty("type").GetString().Should().Be("szabadsag");
         body.RootElement[0].GetProperty("employeeName").GetString().Should().Be("Kovács János");
     }
 
@@ -79,7 +80,7 @@ public class AbsenceEndpointsTests
             .ReturnsAsync(Result<IReadOnlyList<AbsenceDto>>.Success(Array.Empty<AbsenceDto>()));
 
         await using var host = await StartHostAsync(mediator.Object);
-        var response = await host.Client.GetAsync($"/api/hr/absences?status=Approved&empId={EmployeeGuid}");
+        var response = await host.Client.GetAsync($"/api/hr/absences?status=jovahagyva&empId={EmployeeGuid}");
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         captured.Should().NotBeNull();
@@ -147,7 +148,7 @@ public class AbsenceEndpointsTests
         var response = await host.Client.PostAsJsonAsync("/api/hr/absences", new
         {
             employeeId = EmployeeGuid,
-            type = "Vacation",
+            type = "szabadsag",
             startDate = "2026-08-03",
             endDate = "2026-08-07",
             reason = "Nyári szabadság"
@@ -195,7 +196,7 @@ public class AbsenceEndpointsTests
         // Portal contract: the transition answers 200 with the FRESH DTO, not 204.
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-        body.RootElement.GetProperty("status").GetString().Should().Be("Approved");
+        body.RootElement.GetProperty("status").GetString().Should().Be("jovahagyva");
 
         captured.Should().NotBeNull();
         captured!.AbsenceId.Value.Should().Be(AbsenceGuid);
@@ -215,8 +216,10 @@ public class AbsenceEndpointsTests
             $"/api/hr/absences/{AbsenceGuid}/approve", new { approvedBy = ApproverGuid });
 
         response.StatusCode.Should().Be(HttpStatusCode.Conflict);
+        // ADR-059: the API seam translates the domain guard's English member names
+        // into the wire vocabulary (HrWire.AbsenceStatus.TranslateNames).
         var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-        body.RootElement.GetProperty("error").GetString().Should().Contain("Approved status");
+        body.RootElement.GetProperty("error").GetString().Should().Contain("jovahagyva status");
     }
 
     [Fact]
@@ -294,7 +297,8 @@ public class AbsenceEndpointsTests
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-        body.RootElement.GetProperty("status").GetString().Should().Be(expected.ToString());
+        body.RootElement.GetProperty("status").GetString()
+            .Should().Be(SpaceOS.Modules.HR.Api.HrWire.AbsenceStatus.ToWire(expected));
     }
 
     [Theory]

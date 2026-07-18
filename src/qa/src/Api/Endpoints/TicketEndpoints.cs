@@ -112,14 +112,24 @@ public static class TicketEndpoints
         [FromHeader(Name = "X-Tenant-Id")] Guid tenantId,
         CancellationToken ct)
     {
-        if (!Enum.TryParse<TicketType>(request.TicketType, ignoreCase: true, out var ticketType))
+        // Wire strings are parsed via the ADR-059 vocabulary (exact, case-sensitive);
+        // an unknown key is a bad request that lists the accepted spellings.
+        if (!QaWire.TicketType.TryParse(request.TicketType, out var ticketType))
         {
-            return Results.BadRequest(new { error = "Invalid ticket type" });
+            return Results.BadRequest(new
+            {
+                error = $"Ismeretlen ticket-típus: '{request.TicketType}'. " +
+                        $"Lehetséges értékek: {string.Join(", ", QaWire.TicketType.Spellings)}."
+            });
         }
 
-        if (!Enum.TryParse<CrmTaskPriority>(request.Priority, ignoreCase: true, out var priority))
+        if (!QaWire.Priority.TryParse(request.Priority, out var priority))
         {
-            return Results.BadRequest(new { error = "Invalid priority" });
+            return Results.BadRequest(new
+            {
+                error = $"Ismeretlen prioritás: '{request.Priority}'. " +
+                        $"Lehetséges értékek: {string.Join(", ", QaWire.Priority.Spellings)}."
+            });
         }
 
         var command = new CreateTicketCommand(
@@ -164,12 +174,19 @@ public static class TicketEndpoints
         [FromQuery(Name = "q")] string? q,
         CancellationToken ct)
     {
+        // Query-string enums bypass the JSON converters, so the wire map is
+        // applied by hand here — an unknown label is a bad request, not an
+        // empty list, which would silently look like "no such tickets".
         TicketStatus? statusFilter = null;
         if (!string.IsNullOrWhiteSpace(status))
         {
-            if (!Enum.TryParse<TicketStatus>(status, ignoreCase: true, out var parsedStatus))
+            if (!QaWire.TicketStatus.TryParse(status, out var parsedStatus))
             {
-                return Results.BadRequest(new { error = "Invalid status filter" });
+                return Results.BadRequest(new
+                {
+                    error = $"Ismeretlen ticket-státusz: '{status}'. " +
+                            $"Lehetséges értékek: {string.Join(", ", QaWire.TicketStatus.Spellings)}."
+                });
             }
             statusFilter = parsedStatus;
         }
@@ -177,9 +194,13 @@ public static class TicketEndpoints
         CrmTaskPriority? priorityFilter = null;
         if (!string.IsNullOrWhiteSpace(priority))
         {
-            if (!Enum.TryParse<CrmTaskPriority>(priority, ignoreCase: true, out var parsedPriority))
+            if (!QaWire.Priority.TryParse(priority, out var parsedPriority))
             {
-                return Results.BadRequest(new { error = "Invalid priority filter" });
+                return Results.BadRequest(new
+                {
+                    error = $"Ismeretlen prioritás: '{priority}'. " +
+                            $"Lehetséges értékek: {string.Join(", ", QaWire.Priority.Spellings)}."
+                });
             }
             priorityFilter = parsedPriority;
         }
@@ -248,13 +269,17 @@ public static class TicketEndpoints
         [FromHeader(Name = "X-Tenant-Id")] Guid tenantId,
         CancellationToken ct)
     {
-        // Validate all action types upfront (module pattern: string enums + TryParse)
+        // Validate all action types upfront via the ADR-059 vocabulary (exact match)
         var actions = new List<ResolutionActionInput>();
         foreach (var action in request.ResolutionActions ?? new())
         {
-            if (!Enum.TryParse<ActionType>(action.ActionType, ignoreCase: true, out var actionType))
+            if (!QaWire.ActionType.TryParse(action.ActionType, out var actionType))
             {
-                return Results.BadRequest(new { error = "Invalid resolution action type" });
+                return Results.BadRequest(new
+                {
+                    error = $"Ismeretlen intézkedés-típus: '{action.ActionType}'. " +
+                            $"Lehetséges értékek: {string.Join(", ", QaWire.ActionType.Spellings)}."
+                });
             }
             actions.Add(new ResolutionActionInput(actionType, action.Description, action.CostAmount));
         }
@@ -297,9 +322,13 @@ public static class TicketEndpoints
         [FromHeader(Name = "X-Tenant-Id")] Guid tenantId,
         CancellationToken ct)
     {
-        if (!Enum.TryParse<CrmTaskPriority>(request.Priority, ignoreCase: true, out var priority))
+        if (!QaWire.Priority.TryParse(request.Priority, out var priority))
         {
-            return Results.BadRequest(new { error = "Invalid priority" });
+            return Results.BadRequest(new
+            {
+                error = $"Ismeretlen prioritás: '{request.Priority}'. " +
+                        $"Lehetséges értékek: {string.Join(", ", QaWire.Priority.Spellings)}."
+            });
         }
 
         var command = new EscalateTicketPriorityCommand(new TicketId(id), priority, tenantId);
@@ -347,8 +376,8 @@ public static class TicketEndpoints
 }
 
 /// <summary>
-/// Request DTOs for Ticket operations (module pattern: enums travel as strings,
-/// parsed with Enum.TryParse — invalid values → 400).
+/// Request DTOs for Ticket operations (module pattern: enums travel as strings
+/// in the ADR-059 wire vocabulary, parsed via QaWire — unknown keys → 400).
 /// </summary>
 public record CreateTicketRequestDto(
     string TicketType,

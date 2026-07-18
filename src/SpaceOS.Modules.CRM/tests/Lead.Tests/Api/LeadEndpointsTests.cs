@@ -8,6 +8,7 @@ using Moq;
 using SpaceOS.Modules.CRM.Api.Endpoints;
 using SpaceOS.Modules.CRM.Application.Commands;
 using SpaceOS.Modules.CRM.Application.Queries;
+using SpaceOS.Modules.CRM.Application.Wire;
 using SpaceOS.Modules.CRM.Domain.Enums;
 using Xunit;
 
@@ -29,12 +30,12 @@ public class LeadEndpointsTests
     {
         Id = LeadId,
         TenantId = CrmEndpointTestHost.TenantId,
-        Status = status.ToString(),
+        Status = CrmWire.LeadStatus.ToWire(status),
         ContactName = "Kovács Béla",
         Email = "kovacs.bela@example.hu",
         Phone = "+36301234567",
         Company = "Faipar Kft.",
-        Source = LeadSource.Referral.ToString(),
+        Source = CrmWire.LeadSource.ToWire(LeadSource.Referral),
         AssignedToUserId = ActorId,
         OpportunityRef = opportunityRef,
         CreatedAt = DateTimeOffset.UtcNow
@@ -63,7 +64,7 @@ public class LeadEndpointsTests
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         body.RootElement.GetArrayLength().Should().Be(1);
-        body.RootElement[0].GetProperty("status").GetString().Should().Be("Nurturing");
+        body.RootElement[0].GetProperty("status").GetString().Should().Be("nurturing");
     }
 
     [Fact]
@@ -78,12 +79,12 @@ public class LeadEndpointsTests
             .ReturnsAsync(Result<PaginatedResponse<LeadDto>>.Success(new PaginatedResponse<LeadDto>()));
 
         await using var host = await StartHostAsync(mediator.Object);
-        var response = await host.Client.GetAsync("/api/crm/leads?status=Nurturing&q=kovács");
+        var response = await host.Client.GetAsync("/api/crm/leads?status=nurturing&q=kovács");
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         captured.Should().NotBeNull();
         captured!.TenantId.Should().Be(CrmEndpointTestHost.TenantId);
-        captured.StatusFilter.Should().Be("Nurturing");
+        captured.StatusFilter.Should().Be("Nurturing"); // internal representation stays English
         captured.SearchText.Should().Be("kovács");
     }
 
@@ -128,7 +129,7 @@ public class LeadEndpointsTests
         // The portal reconciles its optimistic update from this body — 200 + DTO, not 204.
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-        body.RootElement.GetProperty("status").GetString().Should().Be("Nurturing");
+        body.RootElement.GetProperty("status").GetString().Should().Be("nurturing");
     }
 
     [Fact]
@@ -158,7 +159,7 @@ public class LeadEndpointsTests
         var mediator = new Mock<IMediator>();
         mediator
             .Setup(m => m.Send(It.IsAny<NurtureLeadCommand>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<LeadDto>.Conflict("Cannot transition lead from New to Nurturing"));
+            .ReturnsAsync(Result<LeadDto>.Conflict("Cannot transition lead from New to Nurturing")); // translated at the API seam
 
         await using var host = await StartHostAsync(mediator.Object);
         var response = await host.Client.PutAsJsonAsync(
@@ -167,7 +168,7 @@ public class LeadEndpointsTests
         response.StatusCode.Should().Be(HttpStatusCode.Conflict);
         var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         body.RootElement.GetProperty("error").GetString().Should().Be("Conflict");
-        body.RootElement.GetProperty("message").GetString().Should().Contain("Nurturing");
+        body.RootElement.GetProperty("message").GetString().Should().Contain("nurturing");
     }
 
     // ══════════ Other transitions ══════════
@@ -258,7 +259,7 @@ public class LeadEndpointsTests
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         body.RootElement.GetProperty("opportunityId").GetGuid().Should().Be(opportunityId);
-        body.RootElement.GetProperty("lead").GetProperty("status").GetString().Should().Be("Opportunity");
+        body.RootElement.GetProperty("lead").GetProperty("status").GetString().Should().Be("konvertalva");
     }
 
     [Fact]
@@ -315,7 +316,7 @@ public class LeadEndpointsTests
         {
             contactName = "Teszt Elek",
             email = "teszt@example.hu",
-            source = "Referral",
+            source = "ajanlas",
             assignedToUserId = ActorId,
             createdBy = ActorId
         });

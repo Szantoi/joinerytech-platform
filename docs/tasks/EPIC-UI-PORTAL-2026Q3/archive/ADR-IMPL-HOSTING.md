@@ -41,8 +41,8 @@ modulonként: `ehs-api`, `qa-api`, `hr-api`, `maintenance-api`, `dms-api`, `crm-
 | **ehs** | Auth eddig SEMMI + endpointok gate-eletlenek → mind a 9 csoport `RequireAuthorization`; appsettings eddig nem létezett | 9 root (`tenant_id`) / 4 gyerek (⚠️ `incident_id1`, `risk_assessment_id1` shadow-FK oszlopnevek!) | Domain 130 zöld; Infra 50 (2 új filter-teszt; a Testcontainers-készlet gép-terhelés alatt flaky — ld. §4) |
 | **qa** | HOST EDDIG NEM LÉTEZETT → új `host/`; **hiányzó `qa.tickets` migráció pótolva EF-scaffolddal** (`20260718040356_AddTickets` + snapshot — élesítés-blokkoló volt); a 26 SOHA-nem-futott integrációs teszt megjavítva (hiányzó CollectionDefinition + rossz config-kulcs + fantom-HttpClient → valódi TestServer valódi DB-vel); repo-bug: `CheckpointType.ToString()` SQL-re fordíthatatlan → enum-összehasonlítás | qa_checkpoints, inspections, tickets / inspection_defects, qa_checkpoint_criteria, ticket_resolution_actions | **217/217** (baseline: 191 futóképes) |
 | **hr** | Driftelt kernel-másolat auth → közös csomag; `[Migration]`-attribútumok pótolva, DE az ADR-060 utáni modellhez a kézi 001 már nem passzolt (hiányzó `PayGrade` oszlop) + a régi RLS-SQL snake_case oszlopokra hivatkozott PascalCase táblákon → **séma újragenerálva** (`20260718043824_InitialCreate` scaffold + `20260718060000_EnableTenantRls`); **`Hr:PayGrades` options-DI + appsettings bekötve** (2600/3800/5200/6400/8000); fantom-HttpClient fixture → TestServer | employees, absences (`"TenantId"`) / employee_skills (`EmployeeId`→`employees.Id`) | **190/190** |
-| **maintenance** | HOST EDDIG NEM LÉTEZETT → új `host/`; 3 hiányzó domain-service DI-regisztráció pótolva (a host Build()-je elszállt volna); EnableRLS átírva a sablonra | assets, work_orders / asset_maintenance_plans, work_order_parts | **157/157** (volt 154); host élő smoke OK |
-| **dms** | Host auth nélkül futott + endpointok gate-eletlenek → gate + közös auth; mindkét RLS-migráció átírva (kulcs+FORCE); `document_versions`-nek EDDIG SEMMILYEN RLS-e nem volt → gyerek-policy | documents, document_categories, tags / document_versions | **73/73** (volt 70); élő smoke: `relforcerowsecurity=t` + tenant a dev-JWT `tid`-ből |
+| **maintenance** | HOST EDDIG NEM LÉTEZETT → új `host/`; 3 hiányzó domain-service DI-regisztráció pótolva (a host Build()-je elszállt volna); EnableRLS átírva a sablonra | assets, work_orders / asset_maintenance_plans, work_order_parts | **170/170** (saját futtatással ellenőrizve) |
+| **dms** | Host auth nélkül futott + endpointok gate-eletlenek → gate + közös auth; mindkét RLS-migráció átírva (kulcs+FORCE); `document_versions`-nek EDDIG SEMMILYEN RLS-e nem volt → gyerek-policy | documents, document_categories, tags / document_versions | **74/74** (saját futtatással ellenőrizve); élő smoke: `relforcerowsecurity=t` + tenant a dev-JWT `tid`-ből |
 | **crm** | A séma-nélküli `AddAuthentication()` (a host minden kérése elszállt) → közös auth; interceptor eddig NEM VOLT; a `CrmDbContext` hamis „RLS in the deployed database" kommentje javítva; dátum-bomba teszt javítva (a domain valós órával validál — follow-up) | leads, opportunities (`"TenantId"`) / lead_activities, lead_tasks, opportunity_activities, opportunity_tasks (`lead_id`/`opportunity_id`→`Id`) | **103/103** |
 | **kontrolling** | `DevelopmentAuthentication` a csomagba emelve (host-fájl törölve); a 42883-at okozó interceptor → közös; RLS eddig NEM LÉTEZETT → új migráció; 2 látens repo-bug javítva: natív soft-delete NÉMÁN nem perzisztált (AsNoTracking-olvasás mutálása), OverheadConfig Save tracking-ütközés; EF 8.0.0→8.0.7 igazítás | overhead_configs, cost_adjustments / overhead_rules | **186/186** (baseline: 177 zöld + 7 sosem-zöld) |
 
@@ -59,6 +59,19 @@ InMemory izolációs teszt bizonyítja („A tenanttal nem látom B sorát").
   `auth.spaceos.local` → platform-Authority + `ehs-api`) ✔ ·
   `DATABASE_PATTERNS.md` §2-3 (rossz kulcs, érvénytelen SQL, interpolált SET) és
   `snippets/rls-template.md` (`app.tenant_id`) átírva a kanonikus sablonra ✔
+
+## 3b. Megjegyzés a párhuzamos munkáról (nem-hosting)
+
+A munka alatt a MEGOSZTOTT working tree-ben (nem worktree-izolált) párhuzamosan futott egy
+ADR-059 (magyar wire-nyelv) kör is — `WireEnums.cs`/`*ApiJsonOptions.cs` fájlok jelentek meg
+EHS/HR/QA/DMS/Maintenance alatt, enum-értékek angol→magyar cserével (pl. QA `CheckpointType.Final`
+→ `"vegso"`). Ez a hosting-bekötést (auth/tenancy/RLS-regisztráció) NEM érintette — a
+`Program.cs`-ekben csak a JSON-opciók sora cserélődött —, de a saját tesztjeim közül néhány,
+ami angol enum-string payloadot küldött (pl. QA `checkpointType: "Final"`), emiatt 400-at kap
+a wire-váltás után. **Ez nem hosting-regresszió** — a QA-teszt pillanatnyi száma (205/217 a
+kör vége felé) egy másik agent be nem fejezett munkájának mozgó célpontja, nem az én kódom
+hibája. A hosting-specifikus tesztek (tenancy-pipeline, interceptor, RLS-sablon, auth-regisztráció)
+mindvégig zöldek maradtak.
 
 ## 4. Ismert korlátok, follow-upok
 
@@ -96,7 +109,9 @@ InMemory izolációs teszt bizonyítja („A tenanttal nem látom B sorát").
 - Build: hosting + mind a 7 modul host/api + tesztprojektek — **0 warning** (kivéve a
   pre-existing EHS AutoMapper NU1603/NU1903 feed-drift, ami az Application-réteg
    13.0.2-referenciájából jön, nem e kör terméke).
-- Tesztek modulonként: hosting 41 · EHS 130+50 · QA 217 · HR 190 · Maintenance 157 ·
-  DMS 73 · Kontrolling 186 · CRM 103.
+- Tesztek modulonként (a hosting-bekötés lezárásakor, saját futtatással): hosting 41 ·
+  EHS 130 domain + 50 infra (izoláltan) · QA 217 (a hosting-kör lezárásakor; azóta a
+  párhuzamos ADR-059 wire-váltás miatt a szám mozgó cél, ld. §3b) · HR 190 · Maintenance 170 ·
+  DMS 74 · Kontrolling 186 · CRM 103.
 - Élő smoke: Maintenance host (dev-auth → tenancy → endpoint → interceptor lánc),
   DMS host (RLS-katalógus-bizonyíték + tenant-stamp a JWT-ből).

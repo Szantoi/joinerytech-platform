@@ -2,7 +2,7 @@
 
 - **Szerep:** architect/backend
 - **Prioritás:** P0
-- **Státusz:** pending
+- **Státusz:** done
 - **Függőség:** nincs
 - **Mutációs határ:** új architecture dokumentum és ez a task; minden kód read-only
 - **Tiltott scope:** új project modul, migráció, endpoint, kernel-refaktor, portal
@@ -82,9 +82,56 @@ Ha a két kernel projektmodell közül egyik státusza sem bizonyítható, jelö
 
 ## Végrehajtási napló
 
-_Kitöltendő._
+- 2026-07-18, architect (ROOT terminál): teljes read-only ownership-audit elkészült.
+  Elolvasva a kötelező forrásokon felül: `SPACEOS_MODULAR_PRODUCT_ARCHITECTURE_2026-07-18.md`
+  (célarchitektúra, MODARCH-02 kontextus) és `PROJECT_STATE_ASSESSMENT_2026-07-18.md`
+  (P2-ajánlás előzménye).
+- Forráskód-leltár: `SpaceOS.Kernel.Domain.Entities.FlowEpic` (teljes CQRS, migrált,
+  RLS-védett) vs `SpaceOS.Modules.FlowManagement` (`FlowProgram/FlowProject/FlowMilestone/
+  FlowTask`, POCO-k, **nincs Postgres-migráció, nincs API**) — bizonyítva, hogy a
+  `ModulesDbContext`-re a production ág (`Program.cs`) soha nem hív `MigrateAsync`-et,
+  és nincs `ModulesDbContextModelSnapshot.cs` a repóban.
+- B2BHandshake: bizonyítva, hogy csak delegáció-VO (`FlowEpic.DelegateTo`), nincs
+  accept/reject/revoke, nincs allowlist, és a guest tenant az EF query filter +
+  Postgres RLS policy miatt **nem tudja lekérdezni** a neki delegált epicet — ez a
+  design-intent kétirányú láthatósági elvének közvetlen ellentmond.
+- Talált, korábban nem dokumentált lelet: `FlowEpicScope` enum (`DoorOrder`,
+  `CuttingPlan`, `MicroAssembly`) iparág-specifikus értékeket tartalmaz a Kernel
+  Domain rétegben — ez sérti a célarchitektúra tiltott-függőség szabályát.
+- Talált, holt kód: CRM `Opportunity.DelegateToPartner` / `OpportunityDelegatedToPartnerEvent`
+  — nincs hívó, nincs Kernel-integráció, harmadik párhuzamos "delegáció" fogalom.
+- Kontrolling `IProjectPortfolioSource`/`ConfiguredProjectPortfolioSource` mint jó
+  semleges port-minta megerősítve; a valós projekt-adatforrás (customer, contract
+  value, cost lines) ma egyik vizsgált modellben sem létezik.
+- Portál `ProjectsPage.tsx` (`ProjectsWorldPage`) mezőnkénti leltár: 100% mock,
+  0% API-ból tölthető ma.
+- Build/teszt-bizonyíték futtatva (lásd lent) — a domain/application réteg
+  lefordul és a szűrt unit tesztek zöldek, de ez nem bizonyít API-integrációt,
+  Postgres-migrációt vagy cross-tenant viselkedést.
+- Kimenet: `docs/knowledge/architecture/PROJECT_CORE_BOUNDARY_AUDIT_2026-07-18.md`
+  (capability mátrix, ownership-térkép, duplikáció-lista, threat boundary két
+  szekvenciadiagrammal, event/port térkép, reuse/adapt/extend/new döntési tábla,
+  11 konkrét gap fájlhivatkozással, 3 architekturális opció + P2 ajánlás, 8 ADR-kérdés).
+- Egyik kernel projektmodell státusza sem maradt bizonyíthatatlan — mindkettőt
+  forrásból (kód, migráció, DI-regisztráció, teszt) igazoltam, ezért `decision_required`
+  jelölést csak részkérdésekre (pl. `FlowTasks` tábla production-létezése,
+  `WorkflowPhase` vs design-doc FSM egyeztetése) alkalmaztam, nem a teljes
+  modellválasztásra.
 
 ## Átadási bizonyíték
 
-_Kitöltendő: vizsgált HEAD-ek, build/test állapot, output link._
+- **Vizsgált HEAD-ek:** `src/spaceos-kernel` @ `c1f6dd63f786ed76f8ad07d7fa228cc6f4f37c07`
+  (detached HEAD, tiszta munkafa); `src/spaceos-modules/spaceos-modules-kontrolling`,
+  `src/spaceos-modules/spaceos-modules-crm`, `src/joinerytech-portal` — a platform
+  gitlinkjei szerinti pin, csak olvasva, nem módosítva.
+- **Build/teszt-parancs (spaceos-kernel gyökérből):**
+  `dotnet test SpaceOS.Kernel.Tests/SpaceOS.Kernel.Tests.csproj --filter
+  "FullyQualifiedName~FlowEpic|FullyQualifiedName~FlowProject|FullyQualifiedName~FlowTask|
+  FullyQualifiedName~FlowMilestone|FullyQualifiedName~FlowProgram|FullyQualifiedName~DelegateFlowEpic"
+  --no-restore`
+  → **build zöld, 971/971 PASS, 0 FAIL, ~3,7 s**.
+- **Output:** [`docs/knowledge/architecture/PROJECT_CORE_BOUNDARY_AUDIT_2026-07-18.md`](../../knowledge/architecture/PROJECT_CORE_BOUNDARY_AUDIT_2026-07-18.md)
+- **Mutáció:** kizárólag ez a task-fájl és a fenti kimeneti dokumentum jött létre/módosult;
+  alkalmazáskód, migráció, endpoint, `EPICS.yaml` nem változott. Commit nem történt
+  (a root commitol).
 

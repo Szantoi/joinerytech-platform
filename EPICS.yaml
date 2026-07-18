@@ -223,7 +223,7 @@ epics:
       - id: P0-boundary
         status: in_progress
         tasks:
-          - { id: PROJECT-BOUNDARY-AUDIT, role: architect, title: "Kernel/FlowManagement/FlowEpic/B2B capability és ownership audit", status: in_progress, task: docs/tasks/EPIC-PROJECT-CORE-2026Q3/PROJECT-BOUNDARY-AUDIT.md }
+          - { id: PROJECT-BOUNDARY-AUDIT, role: architect, title: "Kernel/FlowManagement/FlowEpic/B2B capability és ownership audit", status: done, task: docs/tasks/EPIC-PROJECT-CORE-2026Q3/PROJECT-BOUNDARY-AUDIT.md, output: docs/knowledge/architecture/PROJECT_CORE_BOUNDARY_AUDIT_2026-07-18.md, note: "2026-07-18: 3+1 párhuzamos projekt-modell bizonyítva (Kernel FlowEpic egyedül hostolt+migrált; FlowManagement POCO-k SOSEM kapnak Postgres-migrációt és endpointot; CRM Opportunity.DelegateToPartner hívó nélküli holt kód; portál ProjectsPage 100% statikus mock). Kritikus lelet: a FlowEpicScope enum (DoorOrder/CuttingPlan/MicroAssembly) MÁR MA fát-domain-specifikus a Kernelben — sérti a célarchitektúra tiltott-függőség szabályát. B2BHandshake csak delegáció-létrehozás, a guest tenant RLS+query-filter miatt NEM tudja lekérdezni a neki delegált epicet (ellentmond a design-intentnek). 971/971 kernel-teszt zöld (FlowEpic/FlowManagement szűrve). Javaslat: P2 opció (Projects mint orchestration bounded context), 2 előfeltétel-ADR: FlowEpicScope kiszervezése + RLS/query-filter guest-láthatóság újratervezése." }
           - { id: PROJECT-CORE-ADR, role: architect, title: "Projekt-orchestration és B2B MVP ADR", status: blocked, depends_on: [PROJECT-BOUNDARY-AUDIT], task: docs/tasks/EPIC-PROJECT-CORE-2026Q3/PROJECT-CORE-ADR.md }
     coordination:
       note: "Az audit read-only. Domain/API/DB/FE implementáció az ADR elfogadása előtt tilos."
@@ -249,7 +249,7 @@ epics:
       - id: E1-boundaries
         status: in_progress
         tasks:
-          - { id: ERPSEP-01, role: architect, title: "ERP / industry / instance capability-boundary audit", status: in_progress, task: docs/tasks/EPIC-ERP-SEPARATION-2026Q3/ERPSEP-01-CAPABILITY-BOUNDARY-AUDIT.md }
+          - { id: ERPSEP-01, role: architect, title: "ERP / industry / instance capability-boundary audit", status: done, task: docs/tasks/EPIC-ERP-SEPARATION-2026Q3/ERPSEP-01-CAPABILITY-BOUNDARY-AUDIT.md, output: docs/knowledge/architecture/ERP_CAPABILITY_BOUNDARY_AUDIT_2026-07-18.md, note: "2026-07-18: 20-soros capability/ownership mátrix (kernel 3, erp 9, industry 6, instance 1, orphan/retire 5); top-violation: SpaceOS.Modules.Hosting csak az ERP-modulokba kötve, iparági modulokba nem; 4 orphan backend-duplikátum (crm/hr/dms/ehs másolatok); Kernel allowlist vs portal enabled_modules diszjunkt; kanonikus CRM-ből hiányzik a B2B-delegáció eseménye (input a Project-Core ADR-hez). Javasolt sorrend: ERPSEP-02 -> ERPSEP-05+03 párhuzamosan -> orphan-tisztítás -> Project-Core ADR -> DSCONV-01." }
           - { id: ERPSEP-02, role: architect, title: "Kanonikus ModuleId és aláírt katalógus ADR", status: blocked, depends_on: [ERPSEP-01], task: docs/tasks/EPIC-ERP-SEPARATION-2026Q3/ERPSEP-02-MODULE-CATALOG-ADR.md }
           - { id: ERPSEP-03, role: architect, title: "ERP cross-module kontraktus és semleges referencia ADR", status: blocked, depends_on: [ERPSEP-01], task: docs/tasks/EPIC-ERP-SEPARATION-2026Q3/ERPSEP-03-CROSS-MODULE-CONTRACT-ADR.md }
       - id: E2-package-boundaries

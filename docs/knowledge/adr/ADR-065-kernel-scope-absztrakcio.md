@@ -90,9 +90,17 @@ névtérben:
 
 ## Végrehajtás
 
-Root hajtja végre, a `src/spaceos-kernel` submodule-ban, **külön branch-en**
-(`feature/adr-065-flowepicscope-abstraction`), NEM közvetlenül a megosztott `develop`-ra —
-a branch-et a VPS-csapat/kernel-fenntartók áttekintése előtt Gábor engedélyezi mergelni.
-Érintett fájlok: `FlowEpicScope.cs` (Enums → ValueObjects, átírva), `FlowEpicRequiredResource.cs`
-(doc-comment), `FlowEpicConfiguration.cs` (EF-konverzió), `FlowEpicScopeTests.cs` (teszt-adaptáció
-+ új iparág-agnosztikus teszt). Teljes Kernel-tesztfutás kötelező bizonyítékként a mergelés előtt.
+Root hajtotta végre, a `src/spaceos-kernel` submodule-ban, előbb **külön branch-en**
+(`feature/adr-065-flowepicscope-abstraction`). Érintett fájlok: `FlowEpicScope.cs`
+(Enums → ValueObjects, átírva), `FlowEpicRequiredResource.cs` (doc-comment),
+`FlowEpicConfiguration.cs` (EF-konverzió), `FlowEpicScopeTests.cs` (teszt-adaptáció + új
+iparág-agnosztikus teszt). Kernel.Tests 976/976 zöld (971 baseline + 5 új teszt).
+
+**Mergelés (2026-07-18, Gábor jóváhagyásával):** kiderült, hogy a kernel `main` ága
+46 commit-tal a `develop` mögött van, és maga a `FlowEpicScope`/`FlowEpicRequiredResource`
+funkció is csak a `develop`-on létezik — a `main`-re cherry-pickelés ütközött (a
+funkció alapja hiányzik onnan). Gábor a `develop`-ba mergelést választotta: a
+feature-branch pontosan a `develop` csúcsára épült, **fast-forward mergelve**
+(`c1f6dd6..6b470ba`), Kernel.Tests újra 976/976 zöld a merge után, pusholva
+`origin/develop`-ra. A feature-branch törölve (helyi + remote). A platform
+gitlink-pin frissítve `6b470ba`-ra (platform commit `dbd9d5d`).

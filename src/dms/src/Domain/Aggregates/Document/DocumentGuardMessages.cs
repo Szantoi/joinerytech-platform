@@ -1,3 +1,4 @@
+using SpaceOS.Modules.DMS.Api;
 using SpaceOS.Modules.DMS.Domain.Enums;
 using SpaceOS.Modules.DMS.Domain.FSM;
 
@@ -11,9 +12,15 @@ namespace SpaceOS.Modules.DMS.Domain.Aggregates.Document;
 /// </summary>
 public static class DocumentGuardMessages
 {
-    /// <summary>MSW guardTransition mirror (409). Status/action rendered with the wire (camelCase) names.</summary>
+    /// <summary>
+    /// MSW guardTransition mirror (409). Statuses render as the Hungarian wire
+    /// keys ("piszkozat", not "draft" — the ADR-059 seam: DMS is a single
+    /// csproj, so the composer reads <see cref="DmsWire"/> directly instead of
+    /// translating at the endpoint); actions keep the camelCase form, because
+    /// submit/approve/reject/recall/archive/reopen ARE the portal's action keys.
+    /// </summary>
     public static string InvalidTransition(DocumentStatus from, DocumentAction action)
-        => $"Érvénytelen FSM-átmenet: „{Wire(from.ToString())}” állapotból nem hajtható végre a(z) „{Wire(action.ToString())}” művelet.";
+        => $"Érvénytelen FSM-átmenet: „{DmsWire.Status.ToWire(from)}” állapotból nem hajtható végre a(z) „{ActionWire(action.ToString())}” művelet.";
 
     /// <summary>fsm.ts uploadVersionBlockReason mirror (409).</summary>
     public const string UploadVersionArchived =
@@ -35,5 +42,6 @@ public static class DocumentGuardMessages
     public const string VersionChangeNoteRequired =
         "Add meg, mi változott az új verzióban (változás-jegyzet).";
 
-    private static string Wire(string pascal) => char.ToLowerInvariant(pascal[0]) + pascal[1..];
+    /// <summary>CamelCases an action member name into its portal action key.</summary>
+    private static string ActionWire(string pascal) => char.ToLowerInvariant(pascal[0]) + pascal[1..];
 }

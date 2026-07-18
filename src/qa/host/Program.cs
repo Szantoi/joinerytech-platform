@@ -1,6 +1,7 @@
 using FluentValidation;
 using SpaceOS.Modules.Hosting.Auth;
 using SpaceOS.Modules.Hosting.Tenancy;
+using SpaceOS.Modules.QA.Api;
 using SpaceOS.Modules.QA.Api.Endpoints;
 using SpaceOS.Modules.QA.Infrastructure;
 
@@ -9,10 +10,9 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// Enums travel as strings on the wire (EHS Program precedent, QA endpoint-test mirror).
-builder.Services.ConfigureHttpJsonOptions(options =>
-    options.SerializerOptions.Converters.Add(
-        new System.Text.Json.Serialization.JsonStringEnumConverter()));
+// Enums travel as strings in the ADR-059 Hungarian wire vocabulary (QaWire);
+// JsonStringEnumConverter stays as the last-resort fallback inside the extension.
+builder.Services.AddQaApiJsonOptions();
 
 // Shared module-host auth + tenancy (ADR-061): Keycloak JWT bearer, fail-fast config;
 // the QA module previously had NO runnable host at all.

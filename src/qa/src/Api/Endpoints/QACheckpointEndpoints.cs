@@ -67,14 +67,24 @@ public static class QACheckpointEndpoints
         [FromHeader(Name = "X-Tenant-Id")] Guid tenantId,
         CancellationToken ct)
     {
-        if (!Enum.TryParse<CheckpointType>(request.CheckpointType, ignoreCase: true, out var checkpointType))
+        // Wire strings are parsed via the ADR-059 vocabulary (exact, case-sensitive);
+        // an unknown key is a bad request that lists the accepted spellings.
+        if (!QaWire.CheckpointType.TryParse(request.CheckpointType, out var checkpointType))
         {
-            return Results.BadRequest(new { error = "Invalid checkpoint type" });
+            return Results.BadRequest(new
+            {
+                error = $"Ismeretlen ellenőrzőpont-típus: '{request.CheckpointType}'. " +
+                        $"Lehetséges értékek: {string.Join(", ", QaWire.CheckpointType.Spellings)}."
+            });
         }
 
-        if (!Enum.TryParse<CriticalLevel>(request.CriticalLevel, ignoreCase: true, out var criticalLevel))
+        if (!QaWire.CriticalLevel.TryParse(request.CriticalLevel, out var criticalLevel))
         {
-            return Results.BadRequest(new { error = "Invalid critical level" });
+            return Results.BadRequest(new
+            {
+                error = $"Ismeretlen kritikussági szint: '{request.CriticalLevel}'. " +
+                        $"Lehetséges értékek: {string.Join(", ", QaWire.CriticalLevel.Spellings)}."
+            });
         }
 
         var command = new CreateQACheckpointCommand(
@@ -130,9 +140,13 @@ public static class QACheckpointEndpoints
         [FromHeader(Name = "X-Tenant-Id")] Guid tenantId,
         CancellationToken ct)
     {
-        if (!Enum.TryParse<CriticalLevel>(request.CriticalLevel, ignoreCase: true, out var criticalLevel))
+        if (!QaWire.CriticalLevel.TryParse(request.CriticalLevel, out var criticalLevel))
         {
-            return Results.BadRequest(new { error = "Invalid critical level" });
+            return Results.BadRequest(new
+            {
+                error = $"Ismeretlen kritikussági szint: '{request.CriticalLevel}'. " +
+                        $"Lehetséges értékek: {string.Join(", ", QaWire.CriticalLevel.Spellings)}."
+            });
         }
 
         var command = new UpdateQACheckpointCommand(

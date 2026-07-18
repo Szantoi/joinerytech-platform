@@ -108,12 +108,19 @@ public static class AbsenceEndpoints
         [FromQuery(Name = "empId")] Guid? empId,
         CancellationToken ct)
     {
+        // Query-string enums bypass the JSON converters, so the ADR-059 wire map is
+        // applied by hand here — an unknown label is a bad request, not an empty list
+        // (kontrolling precedent).
         AbsenceStatus? statusFilter = null;
         if (!string.IsNullOrWhiteSpace(status))
         {
-            if (!Enum.TryParse<AbsenceStatus>(status, ignoreCase: true, out var parsedStatus))
+            if (!HrWire.AbsenceStatus.TryParse(status, out var parsedStatus))
             {
-                return Results.BadRequest(new { error = "Invalid status filter" });
+                return Results.BadRequest(new
+                {
+                    error = $"Ismeretlen státusz-kulcs: '{status}'. " +
+                            $"Lehetséges értékek: {string.Join(", ", HrWire.AbsenceStatus.Spellings)}."
+                });
             }
             statusFilter = parsedStatus;
         }
@@ -153,9 +160,13 @@ public static class AbsenceEndpoints
         [FromHeader(Name = "X-Tenant-Id")] Guid tenantId,
         CancellationToken ct)
     {
-        if (!Enum.TryParse<AbsenceType>(request.Type, ignoreCase: true, out var type))
+        if (!HrWire.AbsenceType.TryParse(request.Type, out var type))
         {
-            return Results.BadRequest(new { error = "Invalid absence type" });
+            return Results.BadRequest(new
+            {
+                error = $"Ismeretlen távollét-típus: '{request.Type}'. " +
+                        $"Lehetséges értékek: {string.Join(", ", HrWire.AbsenceType.Spellings)}."
+            });
         }
 
         var command = new RequestAbsenceCommand
@@ -255,8 +266,8 @@ public static class AbsenceEndpoints
 }
 
 /// <summary>
-/// Request DTOs for the absence operations (module pattern: enums as strings,
-/// parsed with Enum.TryParse — invalid values → 400).
+/// Request DTOs for the absence operations (ADR-059: the type is a Hungarian wire
+/// key parsed via HrWire.AbsenceType — unknown values → 400).
 /// </summary>
 public record RequestAbsenceRequestDto(
     Guid EmployeeId,

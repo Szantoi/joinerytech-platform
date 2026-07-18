@@ -8,6 +8,7 @@ using Moq;
 using SpaceOS.Modules.CRM.Api.Endpoints;
 using SpaceOS.Modules.CRM.Application.Commands;
 using SpaceOS.Modules.CRM.Application.Queries;
+using SpaceOS.Modules.CRM.Application.Wire;
 using SpaceOS.Modules.CRM.Domain.Enums;
 using Xunit;
 
@@ -28,7 +29,7 @@ public class OpportunityEndpointsTests
     {
         Id = OppId,
         TenantId = CrmEndpointTestHost.TenantId,
-        Status = status.ToString(),
+        Status = CrmWire.OpportunityStatus.ToWire(status),
         CustomerId = Guid.NewGuid(),
         ContactName = "Nagy Anna",
         Email = "nagy.anna@example.hu",
@@ -76,7 +77,7 @@ public class OpportunityEndpointsTests
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-        body.RootElement.GetProperty("status").GetString().Should().Be(expected.ToString());
+        body.RootElement.GetProperty("status").GetString().Should().Be(CrmWire.OpportunityStatus.ToWire(expected));
     }
 
     [Fact]
@@ -197,7 +198,7 @@ public class OpportunityEndpointsTests
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         body.RootElement.GetArrayLength().Should().Be(1);
-        body.RootElement[0].GetProperty("status").GetString().Should().Be("Negotiation");
+        body.RootElement[0].GetProperty("status").GetString().Should().Be("targyalas");
     }
 
     [Fact]

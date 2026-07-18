@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Logging;
 using SpaceOS.Modules.CRM.Application.Commands;
 using SpaceOS.Modules.CRM.Application.Queries;
+using SpaceOS.Modules.CRM.Application.Wire;
 using SpaceOS.Modules.CRM.Domain.Enums;
 using SpaceOS.Modules.CRM.Domain.FSM;
 
@@ -118,9 +119,11 @@ public static class OpportunityEndpoints
         OpportunityStatus? statusFilter = null;
         if (!string.IsNullOrWhiteSpace(status))
         {
-            if (!Enum.TryParse<OpportunityStatus>(status, ignoreCase: true, out var parsed))
+            if (!CrmWire.OpportunityStatus.TryParse(status, out var parsed))
             {
-                return CrmEndpointResults.BadRequest($"Invalid status filter '{status}'");
+                return CrmEndpointResults.BadRequest(
+                    $"Invalid status filter '{status}'. Lehetséges értékek: " +
+                    $"{string.Join(", ", CrmWire.OpportunityStatus.Spellings)}.");
             }
             statusFilter = parsed;
         }
@@ -151,7 +154,7 @@ public static class OpportunityEndpoints
 
     /// <summary>True if the DTO's stage is a non-terminal one.</summary>
     private static bool IsOpenStage(OpportunityDto dto)
-        => Enum.TryParse<OpportunityStatus>(dto.Status, out var parsed)
+        => CrmWire.OpportunityStatus.TryParse(dto.Status, out var parsed)
            && OpportunityStatusTransitions.IsOpen(parsed);
 
     private static async Task<Microsoft.AspNetCore.Http.IResult> GetOpportunity(

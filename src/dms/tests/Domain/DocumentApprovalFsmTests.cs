@@ -22,7 +22,7 @@ public class DocumentApprovalFsmTests
     private static Document CreateDraft(DateOnly? validUntil = null) => Document.Create(
         Tenant,
         name: "Petőfi u. 12. — konyha kiviteli rajz",
-        type: DocType.Rajz,
+        type: DocType.Drawing,
         linkType: DocLinkType.Project,
         linkId: "PRJ-2026-014",
         linkLabel: "Petőfi u. 12. — Konyha + nappali",
@@ -332,12 +332,12 @@ public class DocumentApprovalFsmTests
 
     [Theory]
     [InlineData(null, 30, null)]          // nincs érvényességi dátum
-    [InlineData(-1, 30, ExpiryState.Lejart)]   // tegnap lejárt
-    [InlineData(0, 30, ExpiryState.Lejaro)]    // a validUntil napja még érvényes → lejaro
-    [InlineData(30, 30, ExpiryState.Lejaro)]   // ablak-határ
+    [InlineData(-1, 30, ExpiryState.Expired)]   // tegnap lejárt
+    [InlineData(0, 30, ExpiryState.Expiring)]    // a validUntil napja még érvényes → lejaro
+    [InlineData(30, 30, ExpiryState.Expiring)]   // ablak-határ
     [InlineData(31, 30, null)]                 // ablakon kívül
     [InlineData(10, 7, null)]                  // paraméterezhető küszöb (config-tükör)
-    [InlineData(5, 7, ExpiryState.Lejaro)]
+    [InlineData(5, 7, ExpiryState.Expiring)]
     public void GetExpiryState_MirrorsPortalCalc(int? daysFromToday, int warnDays, ExpiryState? expected)
     {
         var today = new DateOnly(2026, 7, 16);

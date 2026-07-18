@@ -31,7 +31,7 @@ public class TenantQueryFilterTests
         Document.Create(
             new SpaceOS.Modules.DMS.Domain.ValueObjects.TenantId(tenantId),
             name: name,
-            type: DocType.Rajz,
+            type: DocType.Drawing,
             linkType: DocLinkType.None,
             linkId: null,
             linkLabel: string.Empty,

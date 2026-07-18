@@ -71,7 +71,8 @@ public class CapacityEndpointsTests
         // Blocking absence: the day carries no capacity and names the absence type as a string.
         var blockedDay = row.GetProperty("days")[1];
         blockedDay.GetProperty("capacity").GetDecimal().Should().Be(0m);
-        blockedDay.GetProperty("absence").GetProperty("type").GetString().Should().Be("Vacation");
+        // ADR-059: absence type in the Hungarian wire spelling (HrWire.AbsenceType).
+        blockedDay.GetProperty("absence").GetProperty("type").GetString().Should().Be("szabadsag");
     }
 
     [Fact]

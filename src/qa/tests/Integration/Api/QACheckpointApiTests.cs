@@ -50,8 +50,8 @@ public class QACheckpointApiTests
         var response = await client.PostAsJsonAsync("/api/qa/checkpoints", new
         {
             name = "Test Checkpoint - " + Guid.NewGuid().ToString().Substring(0, 8),
-            checkpointType = "Final",
-            criticalLevel = "Major",
+            checkpointType = "vegso",
+            criticalLevel = "jelentos",
             description = "Integration test checkpoint"
         });
 
@@ -105,7 +105,7 @@ public class QACheckpointApiTests
         var response = await client.PutAsJsonAsync($"/api/qa/checkpoints/{checkpointId}", new
         {
             name = "Updated Checkpoint - " + Guid.NewGuid().ToString().Substring(0, 8),
-            criticalLevel = "Major",
+            criticalLevel = "jelentos",
             description = "Updated description"
         });
 
@@ -145,7 +145,7 @@ public class QACheckpointApiTests
         var response = await client.PutAsJsonAsync($"/api/qa/checkpoints/{nonExistentId}", new
         {
             name = "Non-existent Checkpoint",
-            criticalLevel = "Major",
+            criticalLevel = "jelentos",
             description = "Should fail"
         });
 
@@ -175,8 +175,8 @@ public class QACheckpointApiTests
         {
             criteria = new[]
             {
-                new { type = "Dimensional", description = "Dimension Check 100-110 mm", acceptanceThreshold = (string?)"110 mm" },
-                new { type = "Visual", description = "Surface Finish Ra 1.6-3.2", acceptanceThreshold = (string?)"Ra 3.2" }
+                new { type = "meretes", description = "Dimension Check 100-110 mm", acceptanceThreshold = (string?)"110 mm" },
+                new { type = "vizualis", description = "Surface Finish Ra 1.6-3.2", acceptanceThreshold = (string?)"Ra 3.2" }
             }
         });
 
@@ -213,8 +213,8 @@ public class QACheckpointApiTests
         var response = await client.PostAsJsonAsync("/api/qa/checkpoints", new
         {
             name = "Tenant-Specific Checkpoint",
-            checkpointType = "Incoming",
-            criticalLevel = "Minor",
+            checkpointType = "beerkezo",
+            criticalLevel = "enyhe",
             description = "Should be stored for the mock tenant"
         });
 
@@ -236,8 +236,8 @@ public class QACheckpointApiTests
         var createResponse = await client.PostAsJsonAsync("/api/qa/checkpoints", new
         {
             name = checkpointName,
-            checkpointType = "InProcess",
-            criticalLevel = "Major",
+            checkpointType = "gyartaskozi",
+            criticalLevel = "jelentos",
             description = "E2E test checkpoint"
         });
 

@@ -57,7 +57,7 @@ public class InspectionReworkEndpointsTests
     {
         failureNotes = new[]
         {
-            new { failureType = "Scratch", description = "Kisebb felületi karc a fedlapon", photoUrl = (string?)null }
+            new { failureType = "karc", description = "Kisebb felületi karc a fedlapon", photoUrl = (string?)null }
         },
         notes = "Javítás után újraellenőrzés"
     };
@@ -86,8 +86,8 @@ public class InspectionReworkEndpointsTests
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-        body.RootElement.GetProperty("status").GetString().Should().Be("Completed");
-        body.RootElement.GetProperty("result").GetString().Should().Be("Conditional");
+        body.RootElement.GetProperty("status").GetString().Should().Be("lezarva");
+        body.RootElement.GetProperty("result").GetString().Should().Be("felteteles");
         // The portal derives "javitasra" from openTicketId (Completed + Conditional + open ticket)
         body.RootElement.GetProperty("openTicketId").GetGuid().Should().Be(TicketGuid);
     }
@@ -170,8 +170,9 @@ public class InspectionReworkEndpointsTests
             $"/api/qa/inspections/{InspectionGuid}/complete/conditional", ConditionalBody());
 
         response.StatusCode.Should().Be(HttpStatusCode.Conflict);
+        // ADR-059: the API seam translates the domain's English status tokens
         var body = await response.Content.ReadAsStringAsync();
-        body.Should().Contain("Cannot transition from Planned to Completed");
+        body.Should().Contain("Cannot transition from nyitott to lezarva");
     }
 
     [Fact]
@@ -210,8 +211,9 @@ public class InspectionReworkEndpointsTests
             });
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        // The 400 body names the offending key and lists the accepted spellings
         var body = await response.Content.ReadAsStringAsync();
-        body.Should().Contain("Invalid failure type");
+        body.Should().Contain("Ismeretlen hibat").And.Contain("NotAFailureType").And.Contain("karc");
     }
 
     [Fact]
@@ -255,7 +257,7 @@ public class InspectionReworkEndpointsTests
         response.Headers.Location!.ToString().Should().Be($"/api/qa/inspections/{ReworkInspectionGuid}");
         var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         body.RootElement.GetProperty("id").GetGuid().Should().Be(ReworkInspectionGuid);
-        body.RootElement.GetProperty("status").GetString().Should().Be("Planned");
+        body.RootElement.GetProperty("status").GetString().Should().Be("nyitott");
         // The new inspection references the conditionally passed original
         body.RootElement.GetProperty("reworkOfInspectionId").GetGuid().Should().Be(InspectionGuid);
     }
@@ -275,8 +277,9 @@ public class InspectionReworkEndpointsTests
             new { inspectorId = Guid.NewGuid(), plannedAt = DateTime.UtcNow.AddHours(4) });
 
         response.StatusCode.Should().Be(HttpStatusCode.Conflict);
+        // ADR-059: "Conditional"/"Completed"/"Pass" leave translated on the wire
         var body = await response.Content.ReadAsStringAsync();
-        body.Should().Contain("Conditional");
+        body.Should().Contain("felteteles").And.Contain("lezarva/megfelelt");
     }
 
     [Fact]

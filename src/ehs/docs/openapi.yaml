@@ -1855,19 +1855,25 @@ components:
     IncidentType:
       type: string
       enum:
-        - Accident
-        - NearMiss
-        - HazardousCondition
+        - baleset
+        - majdnem_baleset
+        - veszelyes_allapot
+      description: |
+        Wire keys (ADR-059): baleset=Accident, majdnem_baleset=NearMiss,
+        veszelyes_allapot=HazardousCondition. Domain enum stays English.
 
     IncidentStatus:
       type: string
       enum:
-        - Reported
-        - Investigated
-        - CorrectiveActionPlanned
-        - Closed
-        - Reopened
+        - bejelentve
+        - kivizsgalva
+        - intezkedes_tervezve
+        - lezarva
+        - ujranyitva
       description: |
+        Wire keys (ADR-059): bejelentve=Reported, kivizsgalva=Investigated,
+        intezkedes_tervezve=CorrectiveActionPlanned, lezarva=Closed,
+        ujranyitva=Reopened.
         FSM states:
         Reported → Investigated → CorrectiveActionPlanned → Closed
         Closed → Reopened (optional)
@@ -2102,13 +2108,18 @@ components:
     # ========================================
     Severity:
       type: string
-      enum: [Negligible, Minor, Moderate, Major, Catastrophic]
-      description: "Consequence rating 1-5 (sulyossag): 1=Negligible … 5=Catastrophic"
+      enum: [elhanyagolhato, enyhe, kozepes, sulyos, katasztrofalis]
+      description: >-
+        Consequence rating 1-5 (ADR-059 wire keys): elhanyagolhato=Negligible,
+        enyhe=Minor, kozepes=Moderate, sulyos=Major, katasztrofalis=Catastrophic.
 
     Likelihood:
       type: string
-      enum: [Rare, Unlikely, Possible, Likely, AlmostCertain]
-      description: "Probability rating 1-5 (valoszinuseg): 1=Rare … 5=AlmostCertain"
+      enum: [ritka, valoszinutlen, lehetseges, valoszinu, szinte_biztos]
+      description: >-
+        Probability rating 1-5 (ADR-059 wire keys): ritka=Rare,
+        valoszinutlen=Unlikely, lehetseges=Possible, valoszinu=Likely,
+        szinte_biztos=AlmostCertain.
 
     RiskAssessmentDto:
       type: object
@@ -2218,22 +2229,26 @@ components:
     RiskLevel:
       type: string
       enum:
-        - Low
-        - Medium
-        - High
-        - Critical
+        - alacsony
+        - kozepes
+        - magas
+        - kritikus
       description: |
         Calculated from RiskScore with CONFIG-DRIVEN band boundaries
         (Ehs:RiskMatrix:Bands — defaults: Low 1-4, Medium 5-9, High 10-16, Critical 17-25).
+        Wire keys (ADR-059): alacsony=Low, kozepes=Medium, magas=High, kritikus=Critical.
 
     RiskAssessmentStatus:
       type: string
       enum:
-        - Draft
-        - UnderReview
-        - Approved
-        - Archived
-      description: "FSM: Draft(vazlat) → UnderReview(felulvizsgalat) → Approved(jovahagyva) → Archived(archivalva), + UnderReview → Draft (return-to-draft)"
+        - piszkozat
+        - ellenorzes
+        - jovahagyva
+        - archivalt
+      description: >-
+        FSM (ADR-059 wire keys): piszkozat(Draft) → ellenorzes(UnderReview) →
+        jovahagyva(Approved) → archivalt(Archived), + ellenorzes → piszkozat
+        (return-to-draft).
 
     RiskControlDto:
       type: object
@@ -2443,10 +2458,11 @@ components:
     TrainingStatus:
       type: string
       enum:
-        - Valid
-        - Expiring
-        - Expired
+        - ervenyes
+        - lejaro
+        - lejart
       description: |
+        Wire keys (ADR-059): ervenyes=Valid, lejaro=Expiring, lejart=Expired.
         Calculated based on ExpiresAt:
         Valid: >30 days until expiration
         Expiring: ≤30 days until expiration
@@ -2528,7 +2544,7 @@ components:
     # ========================================
     LocationKind:
       type: string
-      enum: [Site, Building, Hall, Zone, Outdoor]
+      enum: [telephely, epulet, csarnok, zona, kulteri]
       description: Kind of a node in the hierarchical location registry
 
     EhsLocationDto:
@@ -2580,12 +2596,12 @@ components:
     # ========================================
     MaterialStatus:
       type: string
-      enum: [Active, Archived]
+      enum: [aktiv, archivalt]
       description: Material registry lifecycle (Active → Archived)
 
     SdsValidity:
       type: string
-      enum: [Valid, Expiring, Expired]
+      enum: [ervenyes, lejaro, lejart]
       description: "CALCULATED from sdsExpiresAt: Valid (>30d), Expiring (≤30d), Expired"
 
     HazardousMaterialDto:
@@ -2742,11 +2758,11 @@ components:
     # ========================================
     PpeCategory:
       type: string
-      enum: [Head, Eye, Hearing, Respiratory, Hand, Foot, Body, Fall]
+      enum: [fej, szem, hallas, legzes, kez, lab, test, leeses]
 
     PpeIssuanceStatus:
       type: string
-      enum: [Issued, Acknowledged, Returned, Replaced]
+      enum: [kiadva, atveve, visszaadva, cserelve]
       description: "FSM: Issued(kiadva) → Acknowledged(atvett) → Returned(visszavett) | Replaced(cserelve)"
 
     PpeItemDto:
@@ -2873,13 +2889,17 @@ components:
     # ========================================
     SafetyWalkStatus:
       type: string
-      enum: [Scheduled, InProgress, ActionRequired, Closed, Cancelled]
-      description: "FSM: Scheduled(utemezett) → InProgress(folyamatban) → ActionRequired(intezkedes) → Closed(lezart), +Cancelled(elmaradt)"
+      enum: [utemezve, folyamatban, intezkedes_szukseges, lezarva, torolve]
+      description: >-
+        FSM (ADR-059 wire keys): utemezve(Scheduled) → folyamatban(InProgress) →
+        intezkedes_szukseges(ActionRequired) → lezarva(Closed), +torolve(Cancelled).
 
     CapaSource:
       type: string
-      enum: [Incident, SafetyWalk, RiskAssessment]
-      description: Which mechanism spawned the corrective action
+      enum: [esemeny, bejaras, kockazatertekeles]
+      description: >-
+        Which mechanism spawned the corrective action. Wire keys (ADR-059):
+        esemeny=Incident, bejaras=SafetyWalk, kockazatertekeles=RiskAssessment.
 
     SafetyWalkDto:
       type: object
@@ -2936,7 +2956,7 @@ components:
           type: string
         severity:
           type: string
-          enum: [Negligible, Minor, Moderate, Major, Catastrophic]
+          enum: [elhanyagolhato, enyhe, kozepes, sulyos, katasztrofalis]
         photoS3Key:
           type: ['string', 'null']
           description: Evidence photo (mobile intake integration)
@@ -3002,7 +3022,7 @@ components:
           maxLength: 2000
         severity:
           type: string
-          enum: [Negligible, Minor, Moderate, Major, Catastrophic]
+          enum: [elhanyagolhato, enyhe, kozepes, sulyos, katasztrofalis]
         requiresAction:
           type: boolean
         photoS3Key:

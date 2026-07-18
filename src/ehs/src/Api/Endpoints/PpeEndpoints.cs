@@ -12,6 +12,7 @@ using SpaceOS.Modules.Ehs.Application.Ppe.Queries.GetPpeIssuanceById;
 using SpaceOS.Modules.Ehs.Application.Ppe.Queries.GetPpeItemById;
 using SpaceOS.Modules.Ehs.Application.Ppe.Queries.ListPpeIssuances;
 using SpaceOS.Modules.Ehs.Application.Ppe.Queries.ListPpeItems;
+using SpaceOS.Modules.Ehs.Application.Wire;
 using SpaceOS.Modules.Ehs.Infrastructure.Data;
 
 namespace SpaceOS.Modules.Ehs.Api.Endpoints;
@@ -163,7 +164,12 @@ public static class PpeEndpoints
         [FromServices] ITenantContext tenantContext,
         CancellationToken ct)
     {
-        var filter = new PpeItemFilter(request.ActiveOnly, request.Category);
+        // Query-string enums bypass the JSON converters — parse the Hungarian
+        // wire keys by hand (ADR-059); unknown key → 400, not an empty list.
+        if (!WireQuery.TryParse(EhsWire.PpeCategory, request.Category, "EVE-kategória", out var category, out var categoryError))
+            return categoryError!;
+
+        var filter = new PpeItemFilter(request.ActiveOnly, category);
         var query = new ListPpeItemsQuery(tenantContext.TenantId, filter);
 
         var result = await mediator.Send(query, ct).ConfigureAwait(false);
@@ -281,7 +287,12 @@ public static class PpeEndpoints
         [FromServices] ITenantContext tenantContext,
         CancellationToken ct)
     {
-        var filter = new PpeIssuanceFilter(request.EmployeeId, request.Status, request.ExpiringWithinDays);
+        // Query-string enums bypass the JSON converters — parse the Hungarian
+        // wire keys by hand (ADR-059); unknown key → 400, not an empty list.
+        if (!WireQuery.TryParse(EhsWire.PpeIssuanceStatus, request.Status, "kiadás-státusz", out var status, out var statusError))
+            return statusError!;
+
+        var filter = new PpeIssuanceFilter(request.EmployeeId, status, request.ExpiringWithinDays);
         var query = new ListPpeIssuancesQuery(tenantContext.TenantId, filter);
 
         var result = await mediator.Send(query, ct).ConfigureAwait(false);
@@ -424,9 +435,13 @@ public record UpdatePpeItemRequest(
     int? DefaultLifetimeMonths
 );
 
+/// <summary>
+/// List filter — the category filter travels as a raw string and is parsed
+/// against the EhsWire map in the handler (ADR-059 Hungarian wire keys).
+/// </summary>
 public record ListPpeItemsRequest(
     bool? ActiveOnly = null,
-    Domain.Enums.PpeCategory? Category = null
+    string? Category = null
 );
 
 public record IssuePpeRequest(
@@ -437,9 +452,13 @@ public record IssuePpeRequest(
     DateTimeOffset? ExpiresAt
 );
 
+/// <summary>
+/// List filter — the status filter travels as a raw string and is parsed
+/// against the EhsWire map in the handler (ADR-059 Hungarian wire keys).
+/// </summary>
 public record ListPpeIssuancesRequest(
     Guid? EmployeeId = null,
-    Domain.Enums.PpeIssuanceStatus? Status = null,
+    string? Status = null,
     int? ExpiringWithinDays = null
 );
 

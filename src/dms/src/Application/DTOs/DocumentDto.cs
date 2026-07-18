@@ -16,10 +16,9 @@ public record DocumentVersionDto(
 
 /// <summary>
 /// Document DTO — the portal documentSchema (MSW contract) mirror. Enums travel
-/// as camelCase strings (AddDmsApiJsonOptions), so type/linkType/expiry match
-/// the portal's canonical keys exactly ("rajz", "project", "lejart", …); the
-/// status set is the English FSM naming (draft/underReview/released/archived) —
-/// wire-language ADR candidate shared with QA/Maintenance.
+/// as the portal's canonical Hungarian wire keys via the DmsWire maps
+/// (AddDmsApiJsonOptions, ADR-059): status "piszkozat"/"ellenorzes"/"kiadott"/
+/// "archivalt", type "rajz"/…, linkType "project"/…, expiry "lejart"/"lejaro".
 /// </summary>
 /// <param name="Version">Current (highest) version number — the chain length.</param>
 /// <param name="ReviewNote">Note of the LAST transition (approval note / rejection reason).</param>

@@ -1,4 +1,5 @@
 using SpaceOS.Modules.CRM.Application.Queries;
+using SpaceOS.Modules.CRM.Application.Wire;
 using SpaceOS.Modules.CRM.Domain.Aggregates;
 
 namespace SpaceOS.Modules.CRM.Application.DTOs;
@@ -9,9 +10,9 @@ namespace SpaceOS.Modules.CRM.Application.DTOs;
 /// private copy of this mapping (~20 duplicates, several referencing properties
 /// the aggregates never had) — they all delegate here now.
 ///
-/// Enums travel as strings on the wire; the DTO exposes the domain (English)
-/// names. The portal speaks Hungarian keys — the enum map is a documented
-/// follow-up (CRM-BE-HOST #1), not a mapping this layer invents.
+/// The DTO's string-typed enum fields carry the portal's canonical Hungarian
+/// wire keys via <see cref="CrmWire"/> (ADR-059) — the domain aggregate stays
+/// English, the translation happens here at the mapping seam.
 /// </summary>
 public static class CrmDtoMapper
 {
@@ -20,12 +21,12 @@ public static class CrmDtoMapper
     {
         Id = lead.Id,
         TenantId = lead.TenantId,
-        Status = lead.Status.ToString(),
+        Status = CrmWire.LeadStatus.ToWire(lead.Status),
         ContactName = lead.ContactInfo.Name,
         Email = lead.ContactInfo.Email,
         Phone = lead.ContactInfo.Phone,
         Company = lead.ContactInfo.Company,
-        Source = lead.Source.ToString(),
+        Source = CrmWire.LeadSource.ToWire(lead.Source),
         AssignedToUserId = lead.AssignedTo,
         OpportunityRef = lead.OpportunityRef,
         ActivityCount = lead.Activities.Count,
@@ -40,7 +41,7 @@ public static class CrmDtoMapper
     {
         Id = opportunity.Id,
         TenantId = opportunity.TenantId,
-        Status = opportunity.Status.ToString(),
+        Status = CrmWire.OpportunityStatus.ToWire(opportunity.Status),
         LeadId = opportunity.LeadId,
         CustomerId = opportunity.CustomerId,
         ContactName = opportunity.ContactInfo.Name,

@@ -1,5 +1,11 @@
 # Task-fájlok — EPIC-UI-PORTAL-2026Q3
 
+> **LEZÁRT EPIC — történeti végrehajtási jegyzőkönyv.** A portal v1.0.0 és a
+> platform v0.2.0 release 2026-07-16-án elkészült. Az alábbi modul-státusz tábla
+> a release-kori baseline; azóta az ADR-061/062 hosting-kör mind a hét modult
+> futtatható, közös auth/tenant/RLS csomagra kötötte (`4a58e48`). Aktuális munka:
+> [`docs/tasks/README.md`](../README.md), státusz: [`EPICS.yaml`](../../../EPICS.yaml).
+
 > QUALITY.md 4. pont: „A kivitelezést rögzíteni kell a task-fájlba (mi készült, hogyan, mi az eredmény)."
 > Egy task = egy fájl. A pillanatnyi ÁLLAPOT az `EPICS.yaml`-ban (repo-gyökér) él; itt a kivitelezés RÉSZLETEI.
 > Elnevezés: `<task-id>.md`. Kötelező szakaszok: Feladat / Kivitelezés / Eredmény / Fájlok / Tesztek.

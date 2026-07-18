@@ -8,6 +8,7 @@ using SpaceOS.Modules.Ehs.Application.Incidents.Commands.CreateIncident;
 using SpaceOS.Modules.Ehs.Application.Incidents.Commands.StartInvestigation;
 using SpaceOS.Modules.Ehs.Application.Incidents.Queries.GetIncidentById;
 using SpaceOS.Modules.Ehs.Application.Incidents.Queries.ListIncidents;
+using SpaceOS.Modules.Ehs.Application.Wire;
 using SpaceOS.Modules.Ehs.Infrastructure.Data;
 
 namespace SpaceOS.Modules.Ehs.Api.Endpoints;
@@ -128,12 +129,21 @@ public static class IncidentEndpoints
         [FromServices] ITenantContext tenantContext,
         CancellationToken ct)
     {
+        // Query-string enums bypass the JSON converters — parse the Hungarian
+        // wire keys by hand (ADR-059); unknown key → 400, not an empty list.
+        if (!WireQuery.TryParse(EhsWire.IncidentType, request.IncidentType, "eseménytípus", out var incidentType, out var typeError))
+            return typeError!;
+        if (!WireQuery.TryParse(EhsWire.IncidentStatus, request.Status, "esemény-státusz", out var status, out var statusError))
+            return statusError!;
+        if (!WireQuery.TryParse(EhsWire.Severity, request.MinSeverity, "súlyosság", out var minSeverity, out var severityError))
+            return severityError!;
+
         var filter = new IncidentFilter(
-            request.IncidentType,
-            request.Status,
+            incidentType,
+            status,
             request.DateFrom,
             request.DateTo,
-            request.MinSeverity
+            minSeverity
         );
 
         var query = new ListIncidentsQuery(tenantContext.TenantId, filter);
@@ -263,12 +273,16 @@ public record CreateIncidentRequest(
     Guid ReportedBy
 );
 
+/// <summary>
+/// List filter — enum filters travel as raw strings and are parsed against
+/// the EhsWire maps in the handler (ADR-059 Hungarian wire keys).
+/// </summary>
 public record ListIncidentsRequest(
-    Domain.Enums.IncidentType? IncidentType = null,
-    Domain.Enums.IncidentStatus? Status = null,
+    string? IncidentType = null,
+    string? Status = null,
     DateTimeOffset? DateFrom = null,
     DateTimeOffset? DateTo = null,
-    Domain.Enums.Severity? MinSeverity = null
+    string? MinSeverity = null
 );
 
 public record StartInvestigationRequest(Guid InvestigatedBy);

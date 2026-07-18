@@ -64,13 +64,19 @@ public static class EmployeeEndpoints
         [FromQuery(Name = "active")] bool? active,
         CancellationToken ct)
     {
-        // Module pattern: enums travel as strings, parsed with TryParse — invalid → 400.
+        // Query-string enums bypass the JSON converters, so the ADR-059 wire map is
+        // applied by hand here — an unknown key is a bad request, not an empty list,
+        // which would silently look like "no such employees" (kontrolling precedent).
         Department? departmentFilter = null;
         if (!string.IsNullOrWhiteSpace(dept))
         {
-            if (!Enum.TryParse<Department>(dept, ignoreCase: true, out var parsedDept))
+            if (!HrWire.Department.TryParse(dept, out var parsedDept))
             {
-                return Results.BadRequest(new { error = "Invalid department filter" });
+                return Results.BadRequest(new
+                {
+                    error = $"Ismeretlen részleg-kulcs: '{dept}'. " +
+                            $"Lehetséges értékek: {string.Join(", ", HrWire.Department.Spellings)}."
+                });
             }
             departmentFilter = parsedDept;
         }
@@ -78,9 +84,13 @@ public static class EmployeeEndpoints
         SkillKey? skillFilter = null;
         if (!string.IsNullOrWhiteSpace(skill))
         {
-            if (!Enum.TryParse<SkillKey>(skill, ignoreCase: true, out var parsedSkill))
+            if (!HrWire.SkillKey.TryParse(skill, out var parsedSkill))
             {
-                return Results.BadRequest(new { error = "Invalid skill filter" });
+                return Results.BadRequest(new
+                {
+                    error = $"Ismeretlen készség-kulcs: '{skill}'. " +
+                            $"Lehetséges értékek: {string.Join(", ", HrWire.SkillKey.Spellings)}."
+                });
             }
             skillFilter = parsedSkill;
         }
@@ -123,9 +133,13 @@ public static class EmployeeEndpoints
         var toUpdate = new Dictionary<SkillKey, SkillLevel>();
         foreach (var skill in request.Skills ?? new List<EmployeeSkillRequestDto>())
         {
-            if (!Enum.TryParse<SkillKey>(skill.Key, ignoreCase: true, out var key))
+            if (!HrWire.SkillKey.TryParse(skill.Key, out var key))
             {
-                return Results.BadRequest(new { error = $"Invalid skill key: {skill.Key}" });
+                return Results.BadRequest(new
+                {
+                    error = $"Ismeretlen készség-kulcs: '{skill.Key}'. " +
+                            $"Lehetséges értékek: {string.Join(", ", HrWire.SkillKey.Spellings)}."
+                });
             }
             // Portal contract (ADR-060 §5): the level is a NUMBER, 1 = basic .. 3 = master.
             if (!Enum.IsDefined(typeof(SkillLevel), skill.Level))
@@ -138,9 +152,13 @@ public static class EmployeeEndpoints
         var toRemove = new List<SkillKey>();
         foreach (var key in request.RemoveSkills ?? new List<string>())
         {
-            if (!Enum.TryParse<SkillKey>(key, ignoreCase: true, out var parsed))
+            if (!HrWire.SkillKey.TryParse(key, out var parsed))
             {
-                return Results.BadRequest(new { error = $"Invalid skill key: {key}" });
+                return Results.BadRequest(new
+                {
+                    error = $"Ismeretlen készség-kulcs: '{key}'. " +
+                            $"Lehetséges értékek: {string.Join(", ", HrWire.SkillKey.Spellings)}."
+                });
             }
             toRemove.Add(parsed);
         }
@@ -178,8 +196,9 @@ public static class EmployeeEndpoints
 }
 
 /// <summary>
-/// Request DTO for the skill-matrix update (module pattern: enums as strings —
-/// except the level, which is a NUMBER 1..3 per the portal contract, ADR-060 §5).
+/// Request DTO for the skill-matrix update (ADR-059: the key is a Hungarian wire
+/// string parsed via HrWire.SkillKey — except the level, which is a NUMBER 1..3
+/// per the portal contract, ADR-060 §5).
 /// </summary>
 public record UpdateEmployeeSkillsRequestDto(
     List<EmployeeSkillRequestDto>? Skills,

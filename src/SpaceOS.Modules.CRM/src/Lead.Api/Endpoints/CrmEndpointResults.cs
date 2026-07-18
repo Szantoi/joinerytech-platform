@@ -1,5 +1,6 @@
 using Ardalis.Result;
 using Microsoft.AspNetCore.Http;
+using SpaceOS.Modules.CRM.Application.Wire;
 
 namespace SpaceOS.Modules.CRM.Api.Endpoints;
 
@@ -13,7 +14,11 @@ namespace SpaceOS.Modules.CRM.Api.Endpoints;
 ///   everything else = 400 with the raw errors
 ///
 /// Mirrors the portal MSW guard shape: <c>{ error, message }</c>
-/// (<c>modules/crm/mocks/db.ts</c> — jsonError).
+/// (<c>modules/crm/mocks/db.ts</c> — jsonError). This is also the ADR-059 wire
+/// seam: domain conflict messages interpolate enum values with their English
+/// member names ("Cannot transition lead from Qualified to Nurturing") — the
+/// vocabulary is translated to the wire keys here, so the domain stays
+/// wire-agnostic.
 /// </summary>
 internal static class CrmEndpointResults
 {
@@ -25,7 +30,7 @@ internal static class CrmEndpointResults
                 new { error = "NotFound", message = FirstMessage(result, "Not found") }),
 
             ResultStatus.Conflict => Results.Conflict(
-                new { error = "Conflict", message = FirstMessage(result, "Conflict") }),
+                new { error = "Conflict", message = TranslateWireNames(FirstMessage(result, "Conflict")) }),
 
             ResultStatus.Invalid => Results.BadRequest(
                 new { error = "BadRequest", message = FirstValidationMessage(result) }),
@@ -45,4 +50,14 @@ internal static class CrmEndpointResults
         => result.ValidationErrors.FirstOrDefault()?.ErrorMessage
            ?? result.Errors.FirstOrDefault()
            ?? "Invalid request";
+
+    /// <summary>
+    /// Replaces LeadStatus/OpportunityStatus member names in a domain error
+    /// message with their ADR-059 wire spellings (e.g. "Nurturing" →
+    /// "nurturing", "Negotiation" → "targyalas"). Chained maps: neither
+    /// vocabulary shares a member name with the other, so ordering is not
+    /// contract-relevant.
+    /// </summary>
+    private static string TranslateWireNames(string message)
+        => CrmWire.OpportunityStatus.TranslateNames(CrmWire.LeadStatus.TranslateNames(message));
 }

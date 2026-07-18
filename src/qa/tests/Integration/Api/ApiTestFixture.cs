@@ -12,6 +12,7 @@ using Microsoft.IdentityModel.Tokens;
 using Testcontainers.PostgreSql;
 using Xunit;
 using SpaceOS.Modules.Hosting.Tenancy;
+using SpaceOS.Modules.QA.Api;
 using SpaceOS.Modules.QA.Api.Endpoints;
 using SpaceOS.Modules.QA.Infrastructure;
 using SpaceOS.Modules.QA.Infrastructure.Persistence;
@@ -77,9 +78,8 @@ public class ApiTestFixture : IAsyncLifetime
                         .AddScheme<Microsoft.AspNetCore.Authentication.AuthenticationSchemeOptions,
                             Tests.Api.TestAuthHandler>(Tests.Api.TestAuthHandler.Scheme, _ => { });
                     services.AddAuthorization();
-                    services.ConfigureHttpJsonOptions(options =>
-                        options.SerializerOptions.Converters.Add(
-                            new System.Text.Json.Serialization.JsonStringEnumConverter()));
+                    // Production host mirror: ADR-059 Hungarian wire vocabulary (QaWire)
+                    services.AddQaApiJsonOptions();
                     services.AddQAInfrastructure(context.Configuration);
                     services.AddQAApplication();
                 })

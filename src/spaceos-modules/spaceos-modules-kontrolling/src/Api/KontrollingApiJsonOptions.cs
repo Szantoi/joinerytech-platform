@@ -2,6 +2,7 @@ namespace SpaceOS.Modules.Kontrolling.Api;
 
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.DependencyInjection;
+using SpaceOS.Modules.Hosting.Wire;
 using SpaceOS.Modules.Kontrolling.Domain.Enums;
 
 /// <summary>

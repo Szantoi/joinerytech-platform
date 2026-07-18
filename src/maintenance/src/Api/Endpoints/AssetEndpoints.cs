@@ -67,9 +67,16 @@ public static class AssetEndpoints
         [FromHeader(Name = "X-Tenant-Id")] Guid tenantId,
         CancellationToken ct)
     {
-        if (!Enum.TryParse<AssetKind>(request.Kind, ignoreCase: true, out var assetKind))
+        // Request-body enums arrive as raw strings here, so the wire map is
+        // applied by hand — exact ADR-059 keys, unknown key → 400 with the
+        // accepted spellings (kontrolling precedent).
+        if (!MaintenanceWire.AssetKind.TryParse(request.Kind, out var assetKind))
         {
-            return Results.BadRequest(new { error = "Invalid asset kind" });
+            return Results.BadRequest(new
+            {
+                error = $"Ismeretlen eszköz-típus: '{request.Kind}'. " +
+                        $"Lehetséges értékek: {string.Join(", ", MaintenanceWire.AssetKind.Spellings)}."
+            });
         }
 
         var command = new CreateAssetCommand(
@@ -137,9 +144,13 @@ public static class AssetEndpoints
         [FromHeader(Name = "X-Tenant-Id")] Guid tenantId,
         CancellationToken ct)
     {
-        if (!Enum.TryParse<MaintenanceTrigger>(request.Trigger, ignoreCase: true, out var trigger))
+        if (!MaintenanceWire.MaintenanceTrigger.TryParse(request.Trigger, out var trigger))
         {
-            return Results.BadRequest(new { error = "Invalid maintenance trigger" });
+            return Results.BadRequest(new
+            {
+                error = $"Ismeretlen karbantartás-kiváltó: '{request.Trigger}'. " +
+                        $"Lehetséges értékek: {string.Join(", ", MaintenanceWire.MaintenanceTrigger.Spellings)}."
+            });
         }
 
         var command = new AddMaintenancePlanCommand(

@@ -121,14 +121,25 @@ public static class WorkOrderEndpoints
         [FromHeader(Name = "X-Tenant-Id")] Guid tenantId,
         CancellationToken ct)
     {
-        if (!Enum.TryParse<WorkOrderType>(request.Type, ignoreCase: true, out var type))
+        // Request-body enums arrive as raw strings here, so the wire map is
+        // applied by hand — exact ADR-059 keys, unknown key → 400 with the
+        // accepted spellings (kontrolling precedent).
+        if (!MaintenanceWire.WorkOrderType.TryParse(request.Type, out var type))
         {
-            return Results.BadRequest(new { error = "Invalid work order type" });
+            return Results.BadRequest(new
+            {
+                error = $"Ismeretlen munkalap-típus: '{request.Type}'. " +
+                        $"Lehetséges értékek: {string.Join(", ", MaintenanceWire.WorkOrderType.Spellings)}."
+            });
         }
 
-        if (!Enum.TryParse<WorkOrderPriority>(request.Priority, ignoreCase: true, out var priority))
+        if (!MaintenanceWire.WorkOrderPriority.TryParse(request.Priority, out var priority))
         {
-            return Results.BadRequest(new { error = "Invalid work order priority" });
+            return Results.BadRequest(new
+            {
+                error = $"Ismeretlen munkalap-prioritás: '{request.Priority}'. " +
+                        $"Lehetséges értékek: {string.Join(", ", MaintenanceWire.WorkOrderPriority.Spellings)}."
+            });
         }
 
         var command = new ReportWorkOrderCommand(
@@ -254,9 +265,13 @@ public static class WorkOrderEndpoints
         [FromHeader(Name = "X-Tenant-Id")] Guid tenantId,
         CancellationToken ct)
     {
-        if (!Enum.TryParse<AssignmentType>(request.AssignmentType, ignoreCase: true, out var assignmentType))
+        if (!MaintenanceWire.AssignmentType.TryParse(request.AssignmentType, out var assignmentType))
         {
-            return Results.BadRequest(new { error = "Invalid assignment type" });
+            return Results.BadRequest(new
+            {
+                error = $"Ismeretlen hozzárendelés-típus: '{request.AssignmentType}'. " +
+                        $"Lehetséges értékek: {string.Join(", ", MaintenanceWire.AssignmentType.Spellings)}."
+            });
         }
 
         var command = new AssignWorkOrderCommand(
@@ -357,6 +372,10 @@ public static class WorkOrderEndpoints
     /// <summary>
     /// Shared Result → HTTP mapping for the transition endpoints
     /// (200 fresh DTO / 404 not found / 409 state conflict / 400 invalid input).
+    /// The domain interpolates English enum member names into its FSM guard
+    /// messages ("Cannot start work in Reported status, must be Scheduled
+    /// first"); this seam translates them to the ADR-059 wire keys before the
+    /// message leaves on a 409/400 body — the domain stays wire-agnostic.
     /// </summary>
     private static IResult ToTransitionResult(Result<WorkOrderDto> result)
     {
@@ -364,11 +383,15 @@ public static class WorkOrderEndpoints
         {
             ResultStatus.Ok => Results.Ok(result.Value),
             ResultStatus.NotFound => Results.NotFound(),
-            ResultStatus.Conflict => Results.Conflict(new { Error = result.Errors.FirstOrDefault() ?? "State conflict" }),
-            ResultStatus.Invalid => Results.BadRequest(new { Error = result.ValidationErrors.FirstOrDefault()?.ErrorMessage ?? "Invalid request" }),
-            _ => Results.BadRequest(new { Error = result.Errors.FirstOrDefault() ?? "Request failed" })
+            ResultStatus.Conflict => Results.Conflict(new { Error = ToWireMessage(result.Errors.FirstOrDefault() ?? "State conflict") }),
+            ResultStatus.Invalid => Results.BadRequest(new { Error = ToWireMessage(result.ValidationErrors.FirstOrDefault()?.ErrorMessage ?? "Invalid request") }),
+            _ => Results.BadRequest(new { Error = ToWireMessage(result.Errors.FirstOrDefault() ?? "Request failed") })
         };
     }
+
+    /// <summary>Replaces WorkOrderStatus member names with their wire keys.</summary>
+    private static string ToWireMessage(string message)
+        => MaintenanceWire.WorkOrderStatus.TranslateNames(message);
 }
 
 /// <summary>

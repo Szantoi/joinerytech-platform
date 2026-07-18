@@ -64,7 +64,7 @@ public class TicketEndpointsTests
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         body.RootElement.GetArrayLength().Should().Be(1);
-        body.RootElement[0].GetProperty("status").GetString().Should().Be("Reported");
+        body.RootElement[0].GetProperty("status").GetString().Should().Be("bejelentve");
     }
 
     [Fact]
@@ -81,7 +81,7 @@ public class TicketEndpointsTests
         await using var host = await StartHostAsync(mediator.Object);
         var inspectionId = Guid.NewGuid();
         var response = await host.Client.GetAsync(
-            $"/api/qa/tickets?status=InProgress&priority=High&inspectionId={inspectionId}&open=true&q=zsanér");
+            $"/api/qa/tickets?status=folyamatban&priority=magas&inspectionId={inspectionId}&open=true&q=zsanér");
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         captured.Should().NotBeNull();
@@ -150,8 +150,8 @@ public class TicketEndpointsTests
         await using var host = await StartHostAsync(mediator.Object);
         var response = await host.Client.PostAsJsonAsync("/api/qa/tickets", new
         {
-            ticketType = "Repair",
-            priority = "Medium",
+            ticketType = "javitas",
+            priority = "kozepes",
             title = "Élzárás sérült a nappali szekrényen",
             description = "A jobb oldali ajtó élzárása több helyen levált.",
             reportedBy = Guid.NewGuid()
@@ -161,7 +161,7 @@ public class TicketEndpointsTests
         response.Headers.Location!.ToString().Should().Be($"/api/qa/tickets/{TicketGuid}");
         var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         body.RootElement.GetProperty("id").GetGuid().Should().Be(TicketGuid);
-        body.RootElement.GetProperty("status").GetString().Should().Be("Reported");
+        body.RootElement.GetProperty("status").GetString().Should().Be("bejelentve");
     }
 
     [Fact]
@@ -197,8 +197,8 @@ public class TicketEndpointsTests
         await using var host = await StartHostAsync(mediator.Object);
         var response = await host.Client.PostAsJsonAsync("/api/qa/tickets", new
         {
-            ticketType = "Warranty",
-            priority = "Low",
+            ticketType = "garancia",
+            priority = "alacsony",
             title = "Rvd",
             description = "Leírás legalább tíz karakter.",
             reportedBy = Guid.NewGuid()
@@ -228,7 +228,7 @@ public class TicketEndpointsTests
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-        body.RootElement.GetProperty("status").GetString().Should().Be("Assigned");
+        body.RootElement.GetProperty("status").GetString().Should().Be("kiosztva");
     }
 
     [Fact]
@@ -237,7 +237,7 @@ public class TicketEndpointsTests
         var mediator = new Mock<IMediator>();
         mediator
             .Setup(m => m.Send(It.IsAny<AssignTicketCommand>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Conflict("Cannot transition from Resolved to Assigned"));
+            .ReturnsAsync(Result.Conflict("Cannot transition from Resolved to Assigned")); // translated at the API seam
 
         await using var host = await StartHostAsync(mediator.Object);
         var response = await host.Client.PutAsJsonAsync(
@@ -245,7 +245,7 @@ public class TicketEndpointsTests
 
         response.StatusCode.Should().Be(HttpStatusCode.Conflict);
         var body = await response.Content.ReadAsStringAsync();
-        body.Should().Contain("Cannot transition from Resolved to Assigned");
+        body.Should().Contain("Cannot transition from megoldva to kiosztva");
     }
 
     [Fact]
@@ -320,14 +320,14 @@ public class TicketEndpointsTests
             {
                 resolutionActions = new[]
                 {
-                    new { actionType = "Repair", description = "Élzárás újraragasztva", costAmount = 4500 }
+                    new { actionType = "javitas", description = "Élzárás újraragasztva", costAmount = 4500 }
                 },
                 resolutionNotes = "Helyszíni javítás"
             });
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-        body.RootElement.GetProperty("status").GetString().Should().Be("Resolved");
+        body.RootElement.GetProperty("status").GetString().Should().Be("megoldva");
     }
 
     [Fact]
@@ -374,7 +374,7 @@ public class TicketEndpointsTests
 
         await using var host = await StartHostAsync(mediator.Object);
         var response = await host.Client.PutAsJsonAsync(
-            $"/api/qa/tickets/{TicketGuid}/escalate", new { priority = "Low" });
+            $"/api/qa/tickets/{TicketGuid}/escalate", new { priority = "alacsony" });
 
         response.StatusCode.Should().Be(HttpStatusCode.Conflict);
     }

@@ -1,83 +1,37 @@
-using Microsoft.EntityFrameworkCore;
 using SpaceOS.Modules.Ehs.Infrastructure.Data;
-using Testcontainers.PostgreSql;
 using Xunit;
 
 namespace SpaceOS.Modules.Ehs.Infrastructure.Tests;
 
 /// <summary>
-/// Base class for PostgreSQL integration tests using Testcontainers.
-/// Provides a fresh database for each test class.
+/// Base class for EHS repository integration tests against the single shared
+/// PostgreSQL Testcontainer (<see cref="EhsPostgresFixture"/>, STAB-EHS-INTEGRATION).
+///
+/// Each test method still gets its OWN short-lived <see cref="EhsDbContext"/> (a
+/// new xUnit test-class instance is created per [Fact], so the constructor runs
+/// per test) — only the underlying container is shared. Per-test isolation comes
+/// from every test using its own random tenant id (`_tenantId = Guid.NewGuid()` in
+/// each derived class), which every repository query already filters on, not from
+/// resetting shared tables between tests.
 /// </summary>
+[Collection(EhsInfrastructureCollection.Name)]
 public abstract class PostgresTestBase : IAsyncLifetime
 {
-    private readonly PostgreSqlContainer _container;
-    protected EhsDbContext DbContext { get; private set; } = null!;
+    protected EhsDbContext DbContext { get; }
 
-    protected PostgresTestBase()
+    protected PostgresTestBase(EhsPostgresFixture fixture)
     {
-        _container = new PostgreSqlBuilder()
-            .WithImage("postgres:16-alpine")
-            .WithDatabase("ehs_test")
-            .WithUsername("test")
-            .WithPassword("test")
-            .Build();
+        DbContext = fixture.CreateDbContext();
     }
+
+    public Task InitializeAsync() => Task.CompletedTask;
 
     /// <summary>
-    /// Initializes the test container and applies migrations.
-    /// Called once per test class.
+    /// Closes this test's own DbContext/connection. xUnit calls a test class's
+    /// IAsyncLifetime.DisposeAsync unconditionally after the test runs — including
+    /// on a thrown exception/assertion failure — so this never leaks a connection
+    /// on a failing test. The shared container itself is torn down once by
+    /// <see cref="EhsPostgresFixture.DisposeAsync"/> after the whole collection.
     /// </summary>
-    public async Task InitializeAsync()
-    {
-        await _container.StartAsync().ConfigureAwait(false);
-
-        var options = new DbContextOptionsBuilder<EhsDbContext>()
-            .UseNpgsql(_container.GetConnectionString())
-            .Options;
-
-        DbContext = new EhsDbContext(options);
-
-        // Apply migrations
-        await DbContext.Database.MigrateAsync().ConfigureAwait(false);
-    }
-
-    /// <summary>
-    /// Stops the test container.
-    /// Called once per test class.
-    /// </summary>
-    public async Task DisposeAsync()
-    {
-        await DbContext.DisposeAsync().ConfigureAwait(false);
-        await _container.DisposeAsync().ConfigureAwait(false);
-    }
-
-    /// <summary>
-    /// Creates a new DbContext instance (for multi-context scenarios).
-    /// </summary>
-    protected EhsDbContext CreateDbContext()
-    {
-        var options = new DbContextOptionsBuilder<EhsDbContext>()
-            .UseNpgsql(_container.GetConnectionString())
-            .Options;
-
-        return new EhsDbContext(options);
-    }
-
-    /// <summary>
-    /// Clears all data from the database (for test isolation).
-    /// </summary>
-    protected async Task ClearDatabaseAsync()
-    {
-        DbContext.CorrectiveActions.RemoveRange(DbContext.CorrectiveActions);
-        DbContext.Incidents.RemoveRange(DbContext.Incidents);
-        DbContext.RiskAssessments.RemoveRange(DbContext.RiskAssessments);
-        DbContext.TrainingRecords.RemoveRange(DbContext.TrainingRecords);
-        DbContext.SafetyWalks.RemoveRange(DbContext.SafetyWalks);
-        DbContext.PpeIssuances.RemoveRange(DbContext.PpeIssuances);
-        DbContext.PpeItems.RemoveRange(DbContext.PpeItems);
-        DbContext.HazardousMaterials.RemoveRange(DbContext.HazardousMaterials);
-        DbContext.Locations.RemoveRange(DbContext.Locations);
-        await DbContext.SaveChangesAsync().ConfigureAwait(false);
-    }
+    public async Task DisposeAsync() => await DbContext.DisposeAsync().ConfigureAwait(false);
 }

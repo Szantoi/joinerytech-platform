@@ -10,8 +10,11 @@ namespace SpaceOS.Modules.Ehs.Infrastructure.Tests;
 /// <summary>
 /// Integration tests for IncidentRepository.
 /// </summary>
+[Collection(EhsInfrastructureCollection.Name)]
 public class IncidentRepositoryTests : PostgresTestBase
 {
+    public IncidentRepositoryTests(EhsPostgresFixture fixture) : base(fixture) { }
+
     private IncidentRepository Repository => new(DbContext);
     private readonly Guid _tenantId = Guid.NewGuid();
 

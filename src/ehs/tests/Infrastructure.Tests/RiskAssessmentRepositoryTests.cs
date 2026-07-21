@@ -10,8 +10,11 @@ namespace SpaceOS.Modules.Ehs.Infrastructure.Tests;
 /// <summary>
 /// Integration tests for RiskAssessmentRepository (5×5 matrix, FSM Draft→…→Archived).
 /// </summary>
+[Collection(EhsInfrastructureCollection.Name)]
 public class RiskAssessmentRepositoryTests : PostgresTestBase
 {
+    public RiskAssessmentRepositoryTests(EhsPostgresFixture fixture) : base(fixture) { }
+
     private RiskAssessmentRepository Repository => new(DbContext);
     private readonly Guid _tenantId = Guid.NewGuid();
     private static readonly RiskBandConfiguration Bands = RiskBandConfiguration.Default;

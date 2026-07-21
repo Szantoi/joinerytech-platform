@@ -10,8 +10,11 @@ namespace SpaceOS.Modules.Ehs.Infrastructure.Tests;
 /// <summary>
 /// Integration tests for EhsLocationRepository (hierarchical location registry).
 /// </summary>
+[Collection(EhsInfrastructureCollection.Name)]
 public class EhsLocationRepositoryTests : PostgresTestBase
 {
+    public EhsLocationRepositoryTests(EhsPostgresFixture fixture) : base(fixture) { }
+
     private EhsLocationRepository Repository => new(DbContext);
     private readonly Guid _tenantId = Guid.NewGuid();
 

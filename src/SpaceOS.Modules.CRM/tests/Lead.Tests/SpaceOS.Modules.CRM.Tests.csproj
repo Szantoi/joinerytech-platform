@@ -27,6 +27,9 @@
     <PackageReference Include="Microsoft.AspNetCore.TestHost" Version="8.0.7" />
     <!-- In-memory provider: the repository/DbContext tests run without Docker -->
     <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="8.0.7" />
+    <!-- STAB-RLS-PROOF: real Postgres via Testcontainers for the non-superuser RLS proof
+         (the pre-existing tests in this project are Docker-free InMemory ones). -->
+    <PackageReference Include="Testcontainers.PostgreSql" Version="3.10.0" />
   </ItemGroup>
 
   <ItemGroup>
@@ -34,6 +37,8 @@
     <ProjectReference Include="../../src/Lead.Application/SpaceOS.Modules.CRM.Application.csproj" />
     <ProjectReference Include="../../src/Lead.Infrastructure/SpaceOS.Modules.CRM.Infrastructure.csproj" />
     <ProjectReference Include="../../src/Lead.Api/SpaceOS.Modules.CRM.Api.csproj" />
+    <!-- STAB-RLS-PROOF: shared non-superuser RLS proof fixture. -->
+    <ProjectReference Include="../../../spaceos-modules-hosting/tests/SpaceOS.Modules.Hosting.RlsFixtures/SpaceOS.Modules.Hosting.RlsFixtures.csproj" />
   </ItemGroup>
 
 </Project>

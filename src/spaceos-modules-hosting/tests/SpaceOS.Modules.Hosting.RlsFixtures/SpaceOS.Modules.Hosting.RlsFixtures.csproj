@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <IsPackable>false</IsPackable>
+    <!-- Shared test-support library (STAB-RLS-PROOF), not itself a test project: each of the
+         7 module integration-test projects references this and supplies its own module schema,
+         table names and xunit facts. Kept under spaceos-modules-hosting/tests/ per the task's
+         mutation boundary. -->
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Pinned at the LOWEST version any of the 7 module test projects already reference
+         (DMS: Testcontainers.PostgreSql 3.7.0) so NuGet's nearest-wins resolution never treats
+         a module's own (higher) pin as a downgrade (NU1605). Npgsql likewise floors below every
+         module's Npgsql.EntityFrameworkCore.PostgreSQL-transitive version. -->
+    <PackageReference Include="Npgsql" Version="8.0.3" />
+    <PackageReference Include="Testcontainers.PostgreSql" Version="3.7.0" />
+  </ItemGroup>
+
+</Project>

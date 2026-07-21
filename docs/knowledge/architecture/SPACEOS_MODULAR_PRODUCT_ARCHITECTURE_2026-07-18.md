@@ -8,6 +8,8 @@
 > **Minőségi alap:** [`QUALITY.md`](../../../QUALITY.md)  
 > **Kapcsolódó állapotkép:**
 > [`PROJECT_STATE_ASSESSMENT_2026-07-18.md`](PROJECT_STATE_ASSESSMENT_2026-07-18.md)
+> **Stratégiai platformképesség:**
+> [`SPACEOS_B2B_HANDSHAKE_ARCHITECTURE_2026-07-21.md`](SPACEOS_B2B_HANDSHAKE_ARCHITECTURE_2026-07-21.md)
 
 ---
 
@@ -53,6 +55,12 @@ az üzemeltetési metaadatokat.
 > hogy kezdetben közös moduláris monolith hostban és közös PostgreSQL instance-on
 > fut.
 
+A termékcsalád másik stratégiai összekötő eleme a **SpaceOS B2B kézfogás**:
+két önálló tenant verziózott digitális megállapodás alapján munkacsomagot adhat
+át, közösen kezelheti annak engedélyezett állapotait, és auditált információt vagy
+teljesítési bizonyítékot cserélhet. Ez nem ERP- vagy faipari feature, hanem
+iparágsemleges platformprotokoll.
+
 ---
 
 ## 2. Célok és nem célok
@@ -66,6 +74,8 @@ az üzemeltetési metaadatokat.
 - Egy modul frontendje és backendje együtt, reprodukálhatóan telepíthető,
   frissíthető és visszagörgethető legyen.
 - Az instance pontos modul- és verzióösszetétele géppel ellenőrizhető legyen.
+- Két vállalat digitális kézfogással, résztvevőalapú jogosultság mellett tudjon
+  munkát delegálni, állapotot kezelni és verziózott információt cserélni.
 - A Doorstar demó funkcionalitása megmaradjon, miközben fokozatosan valódi
   SpaceOS-instance-szá válik.
 - Az agentek a tervből külön kutatás nélkül képesek legyenek ADR-t, csomagot,
@@ -180,8 +190,9 @@ Iparágsemleges felelősségek:
 - modul-katalógus, entitlement és feature flag;
 - Instance Context és brand-kiválasztás;
 - általános stage/workflow primitívek;
-- általános projekt- és B2B-delegációs primitívek, ha az ownership-audit ezt
-  igazolja;
+- általános projektprimitívek, valamint külön Collaboration bounded contextben
+  agreement-, participant-, delegált-work- és adatcsere-protokoll, az elfogadott
+  ownership ADR szerint;
 - fájl/blob és platformszintű integrációs primitívek;
 - health, readiness és compatibility protokoll.
 
@@ -308,6 +319,25 @@ JSON Schema vagy AsyncAPI leírást kapnak.
 
 Kapcsolódó minta:
 [`CONTRACT_FIRST_DEVELOPMENT.md`](../patterns/CONTRACT_FIRST_DEVELOPMENT.md).
+
+### 5.5 B2B kézfogás mint platformprotokoll
+
+A kézfogás nem `FlowEpic`-mező és nem Procurement-specifikus alvállalkozói
+állapotgép. Két külön source of truth szükséges:
+
+- **CollaborationAgreement:** immutable, hash-elt terms revision, kétoldalú
+  offer/accept/reject/amend, elfogadási bizonyíték és audit;
+- **DelegatedWorkPackage:** host/guest actor-policyval kezelt
+  offer/accept/in-progress/submit/change-request/complete lifecycle.
+
+A cross-tenant láthatóság explicit participant grantből származik. A partner
+allowlist önmagában nem adat-hozzáférési jog, a guest nem személyesítheti meg a
+host tenantot, és a globális RLS nem lazítható fel. Az üzenetek verziózott
+envelope-ban, outbox/inbox és idempotencia mellett közlekednek; a kapcsolódó ERP,
+Project, DMS és QA modulok csak semleges referenciával és adapterrel vesznek részt.
+
+A részletes domain-, biztonsági, jogi határ- és release-követelmény:
+[`SPACEOS_B2B_HANDSHAKE_ARCHITECTURE_2026-07-21.md`](SPACEOS_B2B_HANDSHAKE_ARCHITECTURE_2026-07-21.md).
 
 ---
 
@@ -685,7 +715,11 @@ reprodukálható.
 - aláírt bundle és integritás-ellenőrzött frontend asset;
 - audit minden modulinstallra, konfiguráció- és workflow-változtatásra;
 - secret nem kerül instance descriptorba vagy bundle-be;
-- cross-tenant referencia nem oldható fel explicit B2B jogosultság nélkül.
+- cross-tenant referencia nem oldható fel explicit B2B participant grant nélkül;
+- elfogadott agreement revision nem módosítható, az elfogadás a pontos
+  canonical hash-re hivatkozik;
+- allowlist nem helyettesítheti a resource/capability-szintű hozzáférést;
+- host, guest és attacker tenant RLS-tesztje nem-superuser DB-szereppel fut.
 
 ### 11.2 Kötelező operációs tulajdonságok
 
@@ -708,6 +742,8 @@ normatív taskfájlok repository-tulajdon szerint különváltak:
   [`EPIC-ERP-SEPARATION-2026Q3`](../../tasks/EPIC-ERP-SEPARATION-2026Q3/README.md);
 - **Project/FlowEpic/StageChain ownership:**
   [`EPIC-PROJECT-CORE-2026Q3`](../../tasks/EPIC-PROJECT-CORE-2026Q3/README.md);
+- **B2B kézfogás és cross-company collaboration:**
+  [`EPIC-B2B-COLLABORATION-2026Q3`](../../tasks/EPIC-B2B-COLLABORATION-2026Q3/README.md);
 - **Doorstar instance és migráció:**
   [`doorstar-spaceos-convergence`](../../../../doorstar-instance/docs/projects/doorstar-spaceos-convergence/README.md).
 
@@ -965,10 +1001,16 @@ MODARCH-02 Ownership Audit ──────────┤
   known/installed/entitled/enabled állapotmodell szükséges.
 - A projekt/workflow/production ownership tisztázása minden Doorstar-összevonás
   előfeltétele.
+- A kézfogás stratégiai platformprotokoll: agreement és delegated work külön
+  lifecycle, immutable terms revision, participant RLS és verziózott adatcsere.
+- A Doorstar a kézfogás első fogyasztói pilotja, nem a platformprotokoll
+  tulajdonosa.
 
 ### Nyitott döntések
 
 - A Project/FlowEpic/FlowTask végleges tulajdonosa.
+- A Collaboration bounded context pontos package/host elhelyezése és a jelenlegi
+  `B2BHandshake`/`SubcontractOrder` migrációs útja.
 - A generikus workflow és a manufacturing execution pontos határa.
 - A `joinerytech.production` általános faipari capability vagy több kisebb modul.
 - Shared-host plugin vagy külön processz mely moduloknál indokolt.
@@ -977,8 +1019,8 @@ MODARCH-02 Ownership Audit ──────────┤
 
 ### Következő átadási pont
 
-A taskok repository-tulajdon szerint kiadásra kerültek. Elsőként párhuzamosan
-indítható a JoineryTech `ERPSEP-01` capability-boundary audit, a meglévő
-`PROJECT-BOUNDARY-AUDIT`, valamint a Doorstar `DSCONV-00` security baseline és
-`DSCONV-01` capability mapping. Kódmutáció csak az érintett ADR-ek és platform
-gate-ek elfogadása után indulhat.
+Az ownership auditok elkészültek. A következő stratégiai feladat a kiadható
+`PROJECT-CORE-ADR`; ennek elfogadása nyitja a `B2B-01` domain contractot, majd a
+participant RLS, agreement evidence és delegated-work FSM párhuzamos sávjait.
+Doorstar kézfogás-pilot csak a `B2B-09` publikált conformance artifactja után
+indulhat.

@@ -224,7 +224,7 @@ epics:
         status: in_progress
         tasks:
           - { id: PROJECT-BOUNDARY-AUDIT, role: architect, title: "Kernel/FlowManagement/FlowEpic/B2B capability és ownership audit", status: done, task: docs/tasks/EPIC-PROJECT-CORE-2026Q3/PROJECT-BOUNDARY-AUDIT.md, output: docs/knowledge/architecture/PROJECT_CORE_BOUNDARY_AUDIT_2026-07-18.md, note: "2026-07-18: 3+1 párhuzamos projekt-modell bizonyítva (Kernel FlowEpic egyedül hostolt+migrált; FlowManagement POCO-k SOSEM kapnak Postgres-migrációt és endpointot; CRM Opportunity.DelegateToPartner hívó nélküli holt kód; portál ProjectsPage 100% statikus mock). Kritikus lelet: a FlowEpicScope enum (DoorOrder/CuttingPlan/MicroAssembly) MÁR MA fát-domain-specifikus a Kernelben — sérti a célarchitektúra tiltott-függőség szabályát. B2BHandshake csak delegáció-létrehozás, a guest tenant RLS+query-filter miatt NEM tudja lekérdezni a neki delegált epicet (ellentmond a design-intentnek). 971/971 kernel-teszt zöld (FlowEpic/FlowManagement szűrve). Javaslat: P2 opció (Projects mint orchestration bounded context), 2 előfeltétel-ADR: FlowEpicScope kiszervezése + RLS/query-filter guest-láthatóság újratervezése." }
-          - { id: PROJECT-CORE-ADR, role: architect, title: "Projekt-orchestration és B2B MVP ADR", status: blocked, depends_on: [PROJECT-BOUNDARY-AUDIT], task: docs/tasks/EPIC-PROJECT-CORE-2026Q3/PROJECT-CORE-ADR.md }
+          - { id: PROJECT-CORE-ADR, role: architect, title: "Projekt-orchestration és B2B együttműködés ownership ADR", status: pending, depends_on: [PROJECT-BOUNDARY-AUDIT], task: docs/tasks/EPIC-PROJECT-CORE-2026Q3/PROJECT-CORE-ADR.md, note: "2026-07-21: az audit done, ezért a task kiadható. Az ADR-nek a kézfogást stratégiai cross-company protokollként kell kezelnie: agreement és delegated-work lifecycle külön; immutable terms revision + acceptance evidence; participant-grant alapú guest RLS; versioned adatcsere; Project/FlowEpic és Procurement SubcontractOrder ownership. Részletes cél: SPACEOS_B2B_HANDSHAKE_ARCHITECTURE_2026-07-21.md." }
     coordination:
       note: "Az audit read-only. Domain/API/DB/FE implementáció az ADR elfogadása előtt tilos."
 
@@ -250,8 +250,8 @@ epics:
         status: in_progress
         tasks:
           - { id: ERPSEP-01, role: architect, title: "ERP / industry / instance capability-boundary audit", status: done, task: docs/tasks/EPIC-ERP-SEPARATION-2026Q3/ERPSEP-01-CAPABILITY-BOUNDARY-AUDIT.md, output: docs/knowledge/architecture/ERP_CAPABILITY_BOUNDARY_AUDIT_2026-07-18.md, note: "2026-07-18: 20-soros capability/ownership mátrix (kernel 3, erp 9, industry 6, instance 1, orphan/retire 5); top-violation: SpaceOS.Modules.Hosting csak az ERP-modulokba kötve, iparági modulokba nem; 4 orphan backend-duplikátum (crm/hr/dms/ehs másolatok); Kernel allowlist vs portal enabled_modules diszjunkt; kanonikus CRM-ből hiányzik a B2B-delegáció eseménye (input a Project-Core ADR-hez). Javasolt sorrend: ERPSEP-02 -> ERPSEP-05+03 párhuzamosan -> orphan-tisztítás -> Project-Core ADR -> DSCONV-01." }
-          - { id: ERPSEP-02, role: architect, title: "Kanonikus ModuleId és aláírt katalógus ADR", status: in_progress, depends_on: [ERPSEP-01], task: docs/tasks/EPIC-ERP-SEPARATION-2026Q3/ERPSEP-02-MODULE-CATALOG-ADR.md, output: docs/knowledge/adr/ADR-067-module-catalog-and-lifecycle.md, note: "2026-07-21: ADR-067 megírva, státusz Proposed (nem Accepted). Kernel-allowlist és portal enabled_modules ma bizonyítottan diszjunkt; javasolt spaceos.*/joinerytech.*/<instance>.* namespace, world!=module elv, öt-állapotú known->installed->entitled->enabled->usable életciklus, fail-closed viselkedés, gépi validált manifest-schema (docs/knowledge/contracts/spaceos-module-v1.schema.json) + legacy->kanonikus migrációs tábla. 3 nyitott döntés vár Gáborra: trust root modell (egykulcsos vs TUF), package registry választás, entitlement-tulajdonos (kereskedelmi rendszer vs Kernel-mező). Amíg nincs Accepted, ERPSEP-05/06/MODULE-PACKAGES implementáció nem indulhat." }
-          - { id: ERPSEP-03, role: architect, title: "ERP cross-module kontraktus és semleges referencia ADR", status: in_progress, depends_on: [ERPSEP-01], task: docs/tasks/EPIC-ERP-SEPARATION-2026Q3/ERPSEP-03-CROSS-MODULE-CONTRACT-ADR.md, output: docs/knowledge/adr/ADR-066-erp-module-contract-boundaries.md, note: "2026-07-21: ADR-066 megírva, státusz Proposed (nem Accepted). 7 semleges referenciatípus döntve (SubjectRef/WorkItemRef/AssetRef/DocumentRef platform-abstraction; OrderRef/PartyRef-külső decision_required, hiányzó CRM Order/Quote/Customer aggregate miatt; ProjectRef blokkolva PROJECT-CORE-ADR-ra) egy új, Kernel-en KÍVÜLI megosztott référencia-csomagba (SpaceOS.Modules.Erp.References). Talált: Maintenance nem publikálja az AssetDowntimeEvent-et amit Production már fogyaszt (félig vezetékelt kontraktus); Kernel Outbox/inbox mechanizmus él, de egyetlen ERP-modul sem használja. 2 nyitott függőség Gábornak: ProjectRef tulajdonos (PROJECT-CORE-ADR-tól függ), épüljön-e Order/Quote/Customer a CRM-ben (termék-döntés). Amíg nincs Accepted, ERPSEP-07 implementáció nem indulhat." }
+          - { id: ERPSEP-02, role: architect, title: "Kanonikus ModuleId és aláírt katalógus ADR", status: in_progress, depends_on: [ERPSEP-01], task: docs/tasks/EPIC-ERP-SEPARATION-2026Q3/ERPSEP-02-MODULE-CATALOG-ADR.md, output: docs/knowledge/adr/ADR-067-module-catalog-and-lifecycle.md, note: "2026-07-21: ADR-067 megírva, státusz Proposed (nem Accepted). Kernel-allowlist és portal enabled_modules ma bizonyítottan diszjunkt; javasolt spaceos.*/joinerytech.*/<instance>.* namespace, world!=module elv, öt-állapotú known->installed->entitled->enabled->usable életciklus, fail-closed viselkedés, gépi validált manifest-schema (docs/knowledge/contracts/spaceos-module-v1.schema.json) + legacy->kanonikus migrációs tábla. Package registry ELDÖNTVE (Gábor, 2026-07-21): GitHub Packages. Még 2 nyitott döntés: trust root modell (egykulcsos vs TUF), entitlement-tulajdonos (kereskedelmi rendszer vs Kernel-mező). Amíg nincs Accepted, ERPSEP-05/06/MODULE-PACKAGES implementáció nem indulhat." }
+          - { id: ERPSEP-03, role: architect, title: "ERP cross-module kontraktus és semleges referencia ADR", status: in_progress, depends_on: [ERPSEP-01], task: docs/tasks/EPIC-ERP-SEPARATION-2026Q3/ERPSEP-03-CROSS-MODULE-CONTRACT-ADR.md, output: docs/knowledge/adr/ADR-066-erp-module-contract-boundaries.md, note: "2026-07-21: ADR-066 megírva, státusz Proposed (nem Accepted). 7 semleges referenciatípus döntve (SubjectRef/WorkItemRef/AssetRef/DocumentRef platform-abstraction; OrderRef/PartyRef-külső decision_required, hiányzó CRM Order/Quote/Customer aggregate miatt) egy új, Kernel-en KÍVÜLI megosztott referencia-csomagba (SpaceOS.Modules.Erp.References). ProjectRef tulajdonos ELDÖNTVE (Gábor, 2026-07-21): Kernel FlowEpic — a másik 3 modell (FlowManagement.FlowProject, ProductionJob, Doorstar Project) konszolidációja továbbra is PROJECT-CORE-ADR hatáskör. Talált: Maintenance nem publikálja az AssetDowntimeEvent-et amit Production már fogyaszt (félig vezetékelt kontraktus); Kernel Outbox/inbox mechanizmus él, de egyetlen ERP-modul sem használja. Még nyitott Gábornak: épüljön-e Order/Quote/Customer a CRM-ben (termék-döntés). Amíg nincs Accepted, ERPSEP-07 implementáció nem indulhat." }
       - id: E2-package-boundaries
         status: pending
         tasks:
@@ -269,3 +269,47 @@ epics:
           - { id: ERPSEP-09, role: infra, title: "Instance composer, lockfile és module conformance suite", status: blocked, depends_on: [ERPSEP-08], task: docs/tasks/EPIC-ERP-SEPARATION-2026Q3/ERPSEP-09-COMPOSER-CONFORMANCE.md }
     coordination:
       note: "A Doorstar-specifikus megvalósítás a doorstar-instance saját convergence projektjében él. Cross-repo átadás csak contract-verzióval és schema-hash-sel; platform task nem mutálhat Doorstar forrást. Gábor döntése (2026-07-18): a döntés-előkészítő auditok — ERPSEP-01 itt + PROJECT-BOUNDARY-AUDIT az EPIC-PROJECT-CORE-2026Q3-ban — indíthatók, párhuzamosan, read-only. ERPSEP-02/03 (ADR) csak ERPSEP-01 lezárása után; E2+ implementáció csak ADR-elfogadás után."
+
+  - id: EPIC-B2B-COLLABORATION-2026Q3
+    title: "SpaceOS vállalatközi kézfogás, delegált munka és digitális megállapodás"
+    owner: root
+    coordinator: conductor
+    started: 2026-07-21
+    status: pending
+    goal: >
+      Iparágsemleges platformprotokoll kialakítása, amellyel két tenant pontosan
+      verziózott feltételek mellett munkát adhat át, kétoldalúan kezelheti az
+      állapotokat, sémaazonosított információt és bizonyítékot cserélhet, miközben
+      az elfogadás és minden state change auditálható és fail-closed tenant-RLS
+      alatt marad.
+    stop_condition: >
+      Egyetlen agreement és delegated-work truth source; participant-grant alapú
+      nem-superuser RLS host/guest/attacker bizonyítékkal; immutable terms hash és
+      acceptance audit; idempotens outbox/inbox; versioned OpenAPI/event schema;
+      kétoldalú Portal E2E; Doorstar pilotnak publikálható conformance artifact.
+    plan_doc: docs/tasks/EPIC-B2B-COLLABORATION-2026Q3/README.md
+    architecture_doc: docs/knowledge/architecture/SPACEOS_B2B_HANDSHAKE_ARCHITECTURE_2026-07-21.md
+    milestones:
+      - id: B1-domain-security
+        status: pending
+        tasks:
+          - { id: B2B-01, role: architect, title: "Kézfogás domén-, ownership- és actor/FSM szerződés", status: blocked, depends_on: [PROJECT-CORE-ADR], task: docs/tasks/EPIC-B2B-COLLABORATION-2026Q3/B2B-01-DOMAIN-CONTRACT.md }
+          - { id: B2B-02, role: backend-security, title: "Participant grant, authorization és cross-tenant RLS", status: blocked, depends_on: [B2B-01, STAB-RLS-PROOF], task: docs/tasks/EPIC-B2B-COLLABORATION-2026Q3/B2B-02-PARTICIPANT-RLS.md }
+          - { id: B2B-03, role: backend-security, title: "Verziózott terms, elfogadás és szerződésbizonyíték", status: blocked, depends_on: [B2B-01], task: docs/tasks/EPIC-B2B-COLLABORATION-2026Q3/B2B-03-AGREEMENT-EVIDENCE.md }
+          - { id: B2B-04, role: backend, title: "Delegált munkacsomag állapot- és actor-protokoll", status: blocked, depends_on: [B2B-01], task: docs/tasks/EPIC-B2B-COLLABORATION-2026Q3/B2B-04-WORK-STATE-PROTOCOL.md }
+      - id: B2-exchange-adapters
+        status: pending
+        tasks:
+          - { id: B2B-05, role: backend, title: "Verziózott vállalatközi információcsere és inbox/outbox", status: blocked, depends_on: [B2B-02, B2B-03, B2B-04], task: docs/tasks/EPIC-B2B-COLLABORATION-2026Q3/B2B-05-DATA-EXCHANGE.md }
+          - { id: B2B-06, role: backend-architect, title: "Project, Procurement, CRM, DMS és QA adapterek", status: blocked, depends_on: [B2B-01, B2B-03, B2B-04, ERPSEP-03], task: docs/tasks/EPIC-B2B-COLLABORATION-2026Q3/B2B-06-MODULE-ADAPTERS.md }
+      - id: B3-api-portal
+        status: pending
+        tasks:
+          - { id: B2B-07, role: backend, title: "Collaboration OpenAPI és actor-szűrt read modellek", status: blocked, depends_on: [B2B-02, B2B-03, B2B-04, B2B-05, B2B-06], task: docs/tasks/EPIC-B2B-COLLABORATION-2026Q3/B2B-07-API-READMODELS.md }
+          - { id: B2B-08, role: frontend-designer, title: "SpaceOS Collaboration portálmodul", status: blocked, depends_on: [B2B-07, MODULE-PACKAGES], task: docs/tasks/EPIC-B2B-COLLABORATION-2026Q3/B2B-08-PORTAL-UI.md }
+      - id: B4-conformance
+        status: pending
+        tasks:
+          - { id: B2B-09, role: qa-security, title: "Cross-tenant security, contract és E2E release-kapu", status: blocked, depends_on: [B2B-07, B2B-08], task: docs/tasks/EPIC-B2B-COLLABORATION-2026Q3/B2B-09-CONFORMANCE.md }
+    coordination:
+      note: "A protocol és platformkód kizárólag ebben a repositoryban készül. Doorstar csak B2B-09 publikált package/OpenAPI/event/terms schema verziója és hash-e után indíthat DSCONV-09 pilotot. Minősített e-aláírás vagy joghatás külön legal/compliance kapu."

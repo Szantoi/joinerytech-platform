@@ -2,7 +2,7 @@
 
 - **Szerep:** architect/root
 - **Prioritás:** P0
-- **Státusz:** blocked (`PROJECT-BOUNDARY-AUDIT` eredményéig)
+- **Státusz:** pending, kiadható (`PROJECT-BOUNDARY-AUDIT = done`)
 - **Függőség:** `PROJECT-BOUNDARY-AUDIT = done`
 - **Mutációs határ:** `docs/knowledge/adr/`, ADR index, task/EPICS státusz
 - **Tiltott scope:** implementáció, adatbázis-migráció, API vagy frontend kód
@@ -10,8 +10,13 @@
 ## Cél
 
 Elfogadott ADR-ben dönteni arról, hogyan áll össze a JoineryTech Projects
-élmény a meglévő Kernel FlowManagement, FlowEpic, StageChain és Handshake
-képességeiből, és mi a B2BHandshake legkisebb biztonságos MVP-je.
+élmény a meglévő Kernel FlowManagement, FlowEpic és StageChain képességeiből,
+valamint hol él az iparágsemleges SpaceOS Collaboration bounded context. A
+kézfogást nem egyszerű delegálási mezőként, hanem két vállalat közötti digitális
+megállapodásként és állapotkezelt munkamegosztásként kell elhelyezni.
+
+Kötelező célforrás:
+[`SPACEOS_B2B_HANDSHAKE_ARCHITECTURE_2026-07-21.md`](../../knowledge/architecture/SPACEOS_B2B_HANDSHAKE_ARCHITECTURE_2026-07-21.md).
 
 ## Kötelező döntési pontok
 
@@ -19,17 +24,25 @@ képességeiből, és mi a B2BHandshake legkisebb biztonságos MVP-je.
    context vagy új bounded context. A duplikált Project aggregate tiltott.
 2. **Hierarchy:** Program/Project/Milestone/FlowEpic/Task ID-k és lifecycle
    tulajdonosa, referenciális szabályok.
-3. **B2B MVP:** invite, accept, reject, revoke, delegated scope, proof/task
-   láthatóság és audit. Minden állapothoz actor és authorization policy.
-4. **Tenant boundary:** host/guest adatszelet, allowlist, RLS, JWT audience,
-   cross-tenant query tilalmak.
-5. **StageChain:** template ownership, tenant-config, versioning, futó FlowEpic
+3. **B2B ownership:** a jelenlegi FlowEpic-owned value object, a nem használt
+   Handshake absztrakciók és a Procurement `SubcontractOrder` kapcsolatából
+   pontosan egy agreement és egy delegated-work source of truth kijelölése.
+4. **Két lifecycle:** a verziózott együttműködési megállapodás és a delegált
+   munkacsomag állapotgépe külön; minden tranzícióhoz actor, guard és event.
+5. **Digitális megállapodás:** immutable terms revision, deterministic hash,
+   accept/reject/amend/revoke, acceptance evidence és jogi/compliance határ.
+6. **Tenant boundary:** host/guest adatszelet, partner-allowlist kontra participant
+   grant, actor-szűrt read model és fail-closed RLS/JWT policy.
+7. **Információcsere:** schema/version envelope, DMS/proof reference,
+   outbox/inbox, sequence, idempotencia, replay és reconciliation.
+8. **StageChain:** template ownership, tenant-config, versioning, futó FlowEpic
    migrációja template-váltáskor.
-6. **Modulkapcsolat:** Sales, Kontrolling, Production, Warehouse, QA és DMS csak
-   ID/port/event referencián; üzleti adat nem duplikálható.
-7. **Read model:** actor-szűrt ugyanazon URL-es nézet, projekció rebuild és
+9. **Modulkapcsolat:** CRM, Procurement, Kontrolling, Production, Warehouse, QA
+   és DMS csak semleges ID/port/event referencián; üzleti adat nem duplikálható.
+10. **Read model:** actor-szűrt ugyanazon URL-es nézet, projekció rebuild és
    eventual consistency viselkedés.
-8. **MVP stop condition:** mi fér az első vertical slice-ba, mi explicit későbbi.
+11. **MVP stop condition:** mi fér az első cross-company vertical slice-ba, mi
+    explicit későbbi; Doorstar pilothoz szükséges platformartifactok.
 
 ## ADR kötelező szerkezete
 
@@ -47,30 +60,33 @@ képességeiből, és mi a B2BHandshake legkisebb biztonságos MVP-je.
 
 ## Elvárt implementációs task-kimenet
 
-Elfogadás után, de nem ebben a taskban, legalább:
-
-1. domain/adapter vertical slice;
-2. B2B lifecycle + authorization;
-3. actor-szűrt read projection;
-4. API contract + OpenAPI;
-5. Kontrolling project source adapter;
-6. portal Projects API-first modul;
-7. cross-tenant security és E2E kapu;
-8. migration/deploy/observability.
+Az implementációs bontás már létrejött a
+[`EPIC-B2B-COLLABORATION-2026Q3`](../EPIC-B2B-COLLABORATION-2026Q3/README.md)
+alatt. Az ADR elfogadásakor ellenőrizni és szükség esetén pontosítani kell a
+`B2B-01..09` package-, fájl- és ownership-határait; új párhuzamos tasklánc nem
+nyitható.
 
 ## Elfogadási kritériumok
 
 - [ ] Az ADR nem hoz létre duplikált Project/FlowEpic truth source-ot.
+- [ ] Az agreement és delegated work source of truth, valamint a
+      `SubcontractOrder` adapter/retire döntése egyértelmű.
 - [ ] B2B minden állapotához actor, guard és audit követelmény tartozik.
 - [ ] Host és guest tenant láthatóság explicit, fail-closed.
+- [ ] Participant grant és allowlist felelőssége szétválasztott.
+- [ ] Immutable terms revision, hash, acceptance evidence és amendment szabály
+      szerepel.
+- [ ] Az adatcsere verziózás, idempotencia és replay viselkedése rögzített.
 - [ ] Moduladat ownership és port/event kapcsolat egyértelmű.
 - [ ] MVP és non-goals mérhető.
-- [ ] Root elfogadás után az implementációs taskok önállóan kiadhatók.
+- [ ] A `B2B-01..09` taskhatárok az ADR-döntéshez igazítva, önállóan kiadhatók.
 
 ## Stop / eszkaláció
 
-Ha az audit nem bizonyítja a meglévő modellek státuszát, az ADR nem fogadható
-el. A bizonytalanságot új audit taskkal kell zárni, nem feltételezéssel.
+Ha az audit egy konkrét ownership-kérdést nem bizonyít, azt célzott kiegészítő
+audittal kell zárni, nem feltételezéssel. A globális tenant-filter fellazítása,
+guest-host megszemélyesítés, implicit cross-tenant read vagy a kézfogás
+Procurement/CRM alá rejtése nem elfogadható opció.
 
 ## Végrehajtási napló
 
@@ -79,4 +95,3 @@ _Kitöltendő._
 ## Átadási bizonyíték
 
 _Kitöltendő: ADR link, verdict, elutasított opciók, létrehozott taskok._
-

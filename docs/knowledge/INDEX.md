@@ -82,6 +82,7 @@ A JoineryTech sziget a **faipari SaaS platform fejlesztési központja**. 7 modu
 - `ADR-048-Datahaven-UI-Planning-Components.md` — Planning UI
 - `PROJECT_STATE_ASSESSMENT_2026-07-18.md` — aktuális program- és projektállapot
 - `SPACEOS_MODULAR_PRODUCT_ARCHITECTURE_2026-07-18.md` — moduláris termékcsalád-célarchitektúra
+- `SPACEOS_B2B_HANDSHAKE_ARCHITECTURE_2026-07-21.md` — vállalatközi kézfogás, delegált munka, digitális megállapodás és participant-RLS
 - `PORTAL_WORLDS_INVENTORY_2026-07-16.md` — portál világ-leltár
 - `WORLDS_API_CONTRACTS_2026-07-18.md` — API-first production/warehouse kontraktusok
 - `VPS_SERVICE_STATE_2026-07-16.md` — VPS service-állapot és helyreállítás
@@ -180,9 +181,10 @@ A JoineryTech sziget a **faipari SaaS platform fejlesztési központja**. 7 modu
 1. **Hosting/Auth/RLS kapu** — ADR-061/062 közös csomag, tenant-izolációs bizonyíték
 2. **API-first világmodernizálás** — production, majd warehouse
 3. **Valós API vertical slice** — MSW/API feature flag + contract drift + E2E
-4. **Projekt-platform ADR** — hierarchy + FlowEpic + actor-nézet + B2BHandshake ownership
-5. **Reprodukálhatóság** — determinisztikus tesztkapu, gitlink-javítás, README-k
+4. **Projekt-platform ADR** — hierarchy + FlowEpic + Collaboration ownership
+5. **B2B kézfogás** — agreement/work lifecycle, participant-RLS, terms hash, adatcsere és Doorstar pilot
+6. **Reprodukálhatóság** — determinisztikus tesztkapu, gitlink-javítás, README-k
 
 ---
 
-_JoineryTech Knowledge Base — aktuális index: 2026-07-18_
+_JoineryTech Knowledge Base — aktuális index: 2026-07-21_

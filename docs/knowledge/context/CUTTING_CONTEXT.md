@@ -9,7 +9,7 @@
 
 ## Aktuális állapot (HOT — utolsó 48 óra)
 
-### 2026-07-21 — auth/tenant hardening review alatt
+### 2026-07-21 — auth/tenant hardening és adapter-stabilizálás
 
 - Az analytics endpointok tenantja a `tid` JWT claimből származik; a
   `tenant_id` csak átmeneti fallback.
@@ -17,9 +17,15 @@
 - A pricing-rules csoport `ManufacturerOnly` policy alatt áll.
 - A publikus quote subdomain resolver EF Core scalar projectionje javítva;
   célzott eredmény 3/10-ről 10/10-re.
+- A pricing breakdown és az OptiCut XML számformátuma `hu-HU` hoston is
+  invariáns; célzott eredmény 34/34.
 - Célzott security kapu: 41/41 zöld; build: 0 hiba.
-- Állapot: implementáció kész a munkafában, független Claude/backend review,
-  submodule commit és platform-pin még szükséges.
+- Az authfix review PASS után `a889109` Cutting commitban és `ff1ff3e`
+  platform-pinben rögzítve. A resolver, kultúrafüggetlenítési és subprocess
+  portability, email boundary és quote tenant-harness diff review-ra vár;
+  aktuális teljes suite **1053/1053, 0 hiba**. Az EmailService unit kapu
+  hálózatmentes; a quote admin út canonical `tid`/legacy fail-closed feloldással
+  és tenant + quote repository predikátummal működik.
 
 Elsődleges dokumentumok:
 
@@ -187,3 +193,25 @@ parallel_with:
 - **Pattern docs:** `docs/knowledge/patterns/FRONTEND_DRAG_DROP_PATTERNS.md`
 - **ADR-038:** `docs/knowledge/architecture/SpaceOS_ADR_038_Offcut_Creation_At_Plan_Freeze.md`
 - **Backend outbox:** `terminals/backend/outbox/2026-06-22_021_cutting-assign-batch-done.md`
+
+---
+
+## Memento — security boundary audit (2026-07-21)
+
+Elsődleges forrás:
+[Cutting biztonsági audit](../architecture/CUTTING_SECURITY_AUDIT_2026-07-21.md).
+
+- Az internal API többé nem fogadja el az `X-SpaceOS-Internal: true` konvenciót;
+  rotált `SpaceOS:InternalSecret` / `SPACEOS_INTERNAL_SECRET` kell, hiányában
+  fail-closed `503`.
+- Az adapter `adapterName` canonical, tenant alatti útvonalra korlátozott; traversal
+  bemenetek tiltottak.
+- A SignalR execution hub a canonical `tid` claimet használja; hibás `tid` mellett
+  nincs legacy fallback.
+- A publikus quote route-ok per-IP limiter alatt állnak; production/staging DB
+  connection string és JWT authority nélkül nem indul.
+- MailKit 4.16.0; Cutting runtime dependency audit tiszta. A test-only xUnit/SQLite
+  advisoryk külön supply-chain taskban maradnak.
+- Bizonyíték: célzott 36/36 + 3/3, teljes suite 1069/1069, clean solution build
+  0 warning/0 error.
+- Stop: commit/pin/deploy csak független review és internal caller secret rollout után.

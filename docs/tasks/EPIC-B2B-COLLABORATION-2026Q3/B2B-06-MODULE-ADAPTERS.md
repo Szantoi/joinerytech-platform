@@ -24,6 +24,20 @@ egyik modul üzleti truth source-a sem duplikálódik.
 | QA | inspection/acceptance evidence ref, completiontől külön QA truth source |
 | Kontrolling | csak projection/ref; költség nem kerül a Collaboration aggregate-be |
 
+**Pontosítás Procurementhez (ADR-068, 2.5/6. fejezet):** a `Supplier` aggregate
+ma **tenant-belső törzsadat** (`Supplier.Create(tenantId, ...)` a megrendelő
+saját tenantjával jön létre; `SubcontractOrder.Accept()/Reject()` a megrendelő
+saját hívásán fut, nincs cross-tenant hitelesítés) — **ma nincs mögötte valódi
+cross-tenant identitás**, tehát a `SubcontractOrder` és a `DelegatedWorkPackage`
+között ma **nincs strukturális átfedés**, csak névbeli hasonlóság az
+állapotnevekben. Ebből következően: a Procurement-adapter **opcionális és az
+első vertical slice-on kívüli**, nem igényel „adatvesztés nélküli
+migrációt" (nincs mit migrálni) — csak akkor válik relevánssá, ha a beszállító
+valaha valódi platform-tenanttá válik saját belépéssel (ADR-068 15.2, nyitva
+Gábornak). Addig a `SubcontractOrder` marad Procurement kizárólagos
+kereskedelmi/pénzügyi source of truth-ja, a Collaboration aggregate-ek közé
+nem lép be.
+
 ## Végrehajtási sorrend
 
 1. Read-only impact audit és ownership tábla.

@@ -90,8 +90,67 @@ Procurement/CRM alá rejtése nem elfogadható opció.
 
 ## Végrehajtási napló
 
-_Kitöltendő._
+- 2026-07-21, architect (agent, PROJECT-CORE-ADR): elolvasta a
+  `PROJECT-BOUNDARY-AUDIT.md` task-fájlt és teljes kimenetét
+  (`PROJECT_CORE_BOUNDARY_AUDIT_2026-07-18.md`), a kötelező célforrást
+  (`SPACEOS_B2B_HANDSHAKE_ARCHITECTURE_2026-07-21.md`), ADR-065, ADR-066,
+  ADR-067 teljes szövegét, és az `EPIC-B2B-COLLABORATION-2026Q3` README +
+  mind a kilenc `B2B-01..09` task-fájlt.
+- Ellenőrizte az ADR-számozást (`docs/knowledge/adr/*.md` listázva):
+  ADR-059..067 foglalt, **ADR-068 szabad** — ez lett a kimeneti fájl száma.
+- Forrásból megerősítette az audit fő állításait: `FlowEpic.cs`,
+  `AppDbContext.cs:145-181`, `init-query-rls.sql`,
+  `FlowManagement/Domain/{FlowProject,FlowTask}.cs`, `B2BHandshake.cs` (VO),
+  `DelegateFlowEpicCommandHandler.cs`, portál `ProjectsPage.tsx`.
+- Célzott kiegészítő kódvizsgálatot végzett három, a bemenetekben nem elég
+  mélyen feltárt területen (a task „Stop / eszkaláció" szabálya szerint):
+  1. `SpaceOS.Modules.Abstractions/Handshake/*.cs` — nulla fogyasztó,
+     iparág-terhelt `HandshakeType` enum (DesignToManufacturer stb.) feltárva.
+  2. `TenantHandshakeAllowlist`/`B2BHandshakeVerifier`/
+     `GetTenantActorQueryHandler` (ADR-039) — egy **második, élő, migrált, de
+     más célú** allowlist-mechanizmus feltárva, amit a `DelegateFlowEpic
+     CommandHandler` sosem hív, és ami maga is iparág-specifikus
+     (`"door"/"cabinet"/"window"`) zárt szótárat tartalmaz a Kernel Domain
+     rétegben — egy korábban nem nevesített, ADR-065-höz hasonló
+     domain-mentesség sérülés.
+  3. Procurement `SubcontractOrder.cs`/`Supplier.cs`/
+     `AcceptSubcontractOrderCommandHandler.cs` — feltárva, hogy a `Supplier`
+     tenant-belső törzsadat, nincs mögötte valódi cross-tenant identitás, tehát
+     a `SubcontractOrder` ma strukturálisan nem versenyez a leendő
+     `DelegatedWorkPackage`-dzsel.
+- Meghozta mind a 11 kötelező döntési pontot az ADR kötelező szerkezete szerint
+  (legalább 3 opció az ownership-kérdésre, döntési erők/nem-célok, domain/port/
+  event ownership táblák, threat model, API/persistence terv, migráció/
+  rollback, tesztstratégia, következmények/elvetett alternatívák).
+- Két ponton pontosította a meglévő `B2B-01..09` task-határokat
+  (`B2B-01-DOMAIN-CONTRACT.md`: a két különböző Kernel-handshake-fogalom
+  explicit szétválasztása; `B2B-06-MODULE-ADAPTERS.md`: a Procurement-adapter
+  opcionális/jövőbeli jellege, mert a `Supplier` ma tenant-belső törzsadat) —
+  a többi hét task-fájl változtatás nélkül helytállónak bizonyult.
+- Nyolc, architektúrán túlmutató (üzleti/jogi/ütemezési) nyitott kérdést
+  különített el Gábornak, és nem fogadta el önmagát az ADR-t — Státusz
+  **PROPOSED**, a projekt ADR-elfogadási konvenciója szerint (Gábor dönt).
+- Alkalmazáskód, migráció, endpoint és `EPICS.yaml` nem módosult.
 
 ## Átadási bizonyíték
 
-_Kitöltendő: ADR link, verdict, elutasított opciók, létrehozott taskok._
+- **ADR:** `docs/knowledge/adr/ADR-068-project-core-and-b2b-collaboration-ownership.md`,
+  **Státusz: PROPOSED** — Gábor jóváhagyására vár, 8 explicit nyitott kérdéssel
+  (ADR 15. fejezet).
+- **Verdict:** minden architektúra-jellegű (a 11 kötelező döntési pont)
+  meghozva; egyik pont sem maradt `decision_required` architektúra-szinten —
+  a nyitva hagyott pontok kizárólag üzleti/jogi/ütemezési jellegűek.
+- **Elutasított opciók:** Kernel FlowManagement/FlowEpic közvetlen
+  kiterjesztése (O1), JoineryTech-tulajdonú adapter/read context mint egyedüli
+  válasz (O2), a kézfogás Procurement/CRM alá rejtése (O4) — mindhárom
+  indoklással elutasítva az ADR 4. fejezetében.
+- **Választott irány:** új, önálló, iparágsemleges SpaceOS Collaboration
+  bounded context (O3), Kernel-lel és a 7 ERP-modullal egyenrangú, a Kernel
+  core-t egyáltalán nem módosítva.
+- **Létrehozott/módosított taskok:** nincs új párhuzamos tasklánc nyitva (a
+  task saját tiltása szerint); a meglévő `B2B-01` és `B2B-06` task-fájl
+  célzottan pontosítva (lásd fent és az ADR 14. fejezete).
+- **Mutáció:** ez a task-fájl, az ADR-068 fájl, és a `B2B-01`/`B2B-06`
+  task-fájl célzott szerkesztése. `EPICS.yaml`, alkalmazáskód, migráció,
+  endpoint nem módosult — a root terminál frissíti az EPICS-státuszt a
+  felülvizsgálat után.

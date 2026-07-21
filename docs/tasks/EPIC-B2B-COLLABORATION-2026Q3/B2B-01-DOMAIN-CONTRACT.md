@@ -17,12 +17,25 @@ rögzíteni az agreement, terms revision, participant grant, delegated work pack
 ## Kötelező bemenet
 
 - `PROJECT_CORE_BOUNDARY_AUDIT_2026-07-18.md`;
-- elfogadott `PROJECT-CORE-ADR`;
+- elfogadott `PROJECT-CORE-ADR` (`ADR-068-project-core-and-b2b-collaboration-ownership.md`);
 - `SPACEOS_B2B_HANDSHAKE_ARCHITECTURE_2026-07-21.md`;
-- jelenlegi Kernel `B2BHandshake`, `FlowEpic.DelegateTo`, allowlist és Handshake
-  abstraction típusok;
+- jelenlegi Kernel `B2BHandshake` (`FlowEpic.DelegateTo`) és
+  `SpaceOS.Modules.Abstractions.Handshake` (`IHandshake` stb.) típusok;
 - Procurement `SubcontractOrder` aggregate és események;
 - ADR-066 semleges referencia döntése.
+
+**Fontos pontosítás (ADR-068, 2.4/6. fejezet):** a Kernelben **két, egymástól
+független** „handshake/allowlist" fogalom él — (a) a `FlowEpic.Handshake` VO
+(`DelegateTo`, csak delegáció-jelzés, deprecated B2B-forrás ezen ADR szerint)
+és (b) a `TenantHandshakeAllowlist`/`B2BHandshakeVerifier`/`GetAllowedHostsQuery`
+(ADR-039, migrált, éles, de egy **másik célú**, ökoszisztéma-aktor bizalmi-
+directory mechanizmus, iparág-specifikus `AllowedTradeTypes` szótárral —
+`"door"/"cabinet"/"window"`). A `TenantHandshakeAllowlist` **nem** a
+`CollaborationParticipantGrant` előzménye vagy helyettesítője, és **nem**
+vonható be automatikusan a participant-grant modellbe — ez a bevonás explicit
+`decision_required` Gábornak (ADR-068 15.3), nem ennek a tasknak a hatásköre
+eldönteni. A domén-szerződésnek explicit külön kell kezelnie a kettőt, hogy
+implementáció közben ne mosódjanak össze.
 
 ## Vizsgálandó eltérések
 

@@ -2,7 +2,8 @@
 
 - **Szerep:** backend/security
 - **Prioritás:** P0
-- **Státusz:** in_progress — implementáció kész, független review szükséges
+- **Státusz:** done — root (Claude subagent) adversarial review PASS, mergelve
+  (`spaceos-modules-cutting@f39d3ea`), platform-pin frissítve
 - **Függőség:** nincs; a Cutting submodule-t jelenleg a Codex authfix-sávja foglalja
 - **Mutációs határ:**
   `src/spaceos-modules-cutting/src/SpaceOS.Modules.Cutting.Infrastructure/Services/TenantResolver.cs`,

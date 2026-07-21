@@ -1,0 +1,208 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://joinerytech.hu/contracts/spaceos-module-v1.schema.json",
+  "title": "SpaceOS Module Manifest v1",
+  "description": "Tervezet (DRAFT) — ADR-067 (docs/knowledge/adr/ADR-067-module-catalog-and-lifecycle.md) melléklete. Nem véglegesített kontraktus; implementáció előtt security reviewer jóváhagyása szükséges. A célarchitektúra SPACEOS_MODULAR_PRODUCT_ARCHITECTURE_2026-07-18.md §7.2 YAML-vázlatának gépi validálható formája, kiegészítve a signature és dependencies[].version mezőkkel.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "id",
+    "displayName",
+    "version",
+    "requiresPlatform",
+    "contracts",
+    "signature"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "spaceos.module/v1",
+      "description": "A manifest-schema saját verziója. Csak pontos egyezés fogadható el — ismeretlen schemaVersion fail-closed elutasítás (ADR-067 7. döntés)."
+    },
+    "id": {
+      "type": "string",
+      "description": "Kanonikus ModuleId. Namespace-prefix: 'spaceos.' (iparág-agnosztikus ERP capability), 'joinerytech.' (faipari/ökoszisztéma-specifikus capability), vagy egyedi instance-slug (pl. 'doorstar.'). Legacy rövid nevek (pl. 'crm', 'door') NEM megengedettek itt — ld. legacy-alias tábla az ADR-ben.",
+      "pattern": "^(spaceos|joinerytech|[a-z][a-z0-9-]{1,30})\\.[a-z][a-z0-9-]{1,60}$",
+      "examples": [
+        "spaceos.crm",
+        "spaceos.controlling",
+        "spaceos.hr",
+        "spaceos.maintenance",
+        "spaceos.qa",
+        "spaceos.ehs",
+        "spaceos.dms",
+        "joinerytech.cutting",
+        "joinerytech.joinery",
+        "joinerytech.inventory",
+        "doorstar.workshop"
+      ]
+    },
+    "displayName": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120,
+      "description": "Ember-olvasható megjelenítendő név (UI-címke). Nem azonosító — a nyelvi/lokalizációs réteg (pl. magyar 'Kontrolling' vs kanonikus id 'spaceos.controlling') ezen a mezőn keresztül él, nem az id-n."
+    },
+    "version": {
+      "type": "string",
+      "description": "Teljes SemVer 2.0.0 verzió (MAJOR.MINOR.PATCH[-prerelease][+build]).",
+      "pattern": "^\\d+\\.\\d+\\.\\d+(-[0-9A-Za-z-.]+)?(\\+[0-9A-Za-z-.]+)?$"
+    },
+    "requiresPlatform": {
+      "type": "string",
+      "description": "Node-semver stílusú komparátor-range a kompatibilis platform (Kernel) verziótartományra. Technológia-független szintaxis — mind a .NET, mind az npm oldali build ebből fordítja le a saját natív range-formátumát.",
+      "examples": [">=0.3.0 <1.0.0"]
+    },
+    "backend": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Opcionális — hiányozhat egy tisztán frontend-only vagy tisztán contract-only modulnál.",
+      "required": ["mode", "apiBase", "health"],
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": ["shared-host", "sidecar", "none"],
+          "description": "Telepítési mód a célarchitektúra §7.3 szerint. 'shared-host' a javasolt első cél; 'sidecar' csak indokolt esetben (terhelés/izoláció/release-cadence)."
+        },
+        "image": {
+          "type": "string",
+          "description": "Container image referencia, kötelezően digest-pin-nel (nem csak tag), pl. 'registry.example/spaceos-maintenance@sha256:...'. Kötelező, ha mode != 'none'.",
+          "pattern": "^.+@sha256:[a-f0-9]{64}$"
+        },
+        "apiBase": {
+          "type": "string",
+          "pattern": "^/api/[a-z0-9-]+$"
+        },
+        "health": {
+          "type": "string",
+          "pattern": "^/health(/.*)?$"
+        }
+      },
+      "if": {
+        "properties": { "mode": { "const": "none" } }
+      },
+      "then": {},
+      "else": {
+        "required": ["mode", "image", "apiBase", "health"]
+      }
+    },
+    "frontend": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Opcionális — hiányozhat egy tisztán backend/API-only modulnál.",
+      "required": ["entry", "routes"],
+      "properties": {
+        "entry": {
+          "type": "string",
+          "description": "Verziózott statikus asset entry-pont, pl. '/ui/spaceos.maintenance/1.0.0/index.js'.",
+          "pattern": "^/ui/.+/index\\.js$"
+        },
+        "routes": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["path", "permission"],
+            "properties": {
+              "path": { "type": "string", "pattern": "^/" },
+              "permission": {
+                "type": "string",
+                "description": "A célmodul saját authz-permission kulcsa (ADR-067 3. döntés — 'usable' állapot, a célmodul felelőssége)."
+              }
+            }
+          }
+        }
+      }
+    },
+    "contracts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["openapi"],
+      "properties": {
+        "openapi": {
+          "type": "string",
+          "description": "Relatív útvonal a bundle-ön belül az OpenAPI 3.1 specifikációhoz (contract-first, célarchitektúra §5.4)."
+        },
+        "events": {
+          "type": "string",
+          "description": "Relatív útvonal a verziózott esemény-kontraktusokhoz (JSON Schema/AsyncAPI)."
+        }
+      }
+    },
+    "dependencies": {
+      "type": "array",
+      "default": [],
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "version"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Csak kanonikus ModuleId — legacy alias tilos manifestben (ADR-067 2. döntés).",
+            "pattern": "^(spaceos|joinerytech|[a-z][a-z0-9-]{1,30})\\.[a-z][a-z0-9-]{1,60}$"
+          },
+          "version": {
+            "type": "string",
+            "description": "Node-semver stílusú komparátor-range a függő modul kompatibilis verziótartományára.",
+            "examples": [">=0.3.0 <1.0.0"]
+          }
+        }
+      }
+    },
+    "configuration": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schema": { "type": "string", "description": "Relatív útvonal a config JSON Schemához." },
+        "defaults": { "type": "string", "description": "Relatív útvonal a default-config JSON-hoz." }
+      }
+    },
+    "migrations": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "provider": {
+          "type": "string",
+          "enum": ["postgresql"],
+          "description": "Ma kizárólag PostgreSQL — a platform egységes DB-választása."
+        },
+        "path": { "type": "string", "description": "Relatív útvonal a migrációs fájlokhoz a bundle-ön belül." }
+      }
+    },
+    "permissions": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "manifest": { "type": "string", "description": "Relatív útvonal a permission-definíciókhoz." }
+      }
+    },
+    "signature": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "ADR-067 5. döntés — a manifest kanonikus reprezentációja ÉS a bundle-tartalom digestjei feletti detached aláírás. Trust root és kulcsrotáció-mechanizmus ezen ADR szerint még nyitott (Proposed).",
+      "required": ["algorithm", "digest", "keyId", "value"],
+      "properties": {
+        "algorithm": {
+          "type": "string",
+          "enum": ["ed25519"],
+          "description": "Aláírási algoritmus. Csak Ed25519 támogatott v1-ben."
+        },
+        "digest": {
+          "type": "string",
+          "description": "A manifest kanonikus (kulcs szerint rendezett, whitespace-mentes) JSON-reprezentációjának SHA-256 hexdigestje, konkatenálva a bundle-tartalom (backend image digest, frontend asset-fa digest) digestjeivel.",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "keyId": {
+          "type": "string",
+          "description": "A trust root által kiadott, a jelenleg érvényes (nem visszavont) signing-kulcs azonosítója. A revocation-lista ez alapján zárja ki a kompromittált kulcsokat."
+        },
+        "value": {
+          "type": "string",
+          "description": "Base64-kódolt Ed25519 aláírás a digest felett."
+        }
+      }
+    }
+  }
+}

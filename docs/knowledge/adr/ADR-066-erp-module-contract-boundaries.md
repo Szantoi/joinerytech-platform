@@ -1,11 +1,11 @@
 # ADR-066: ERP-modulok közötti kontraktus- és semleges-referencia határok
 
-- **Státusz:** PROPOSED — döntésre vár (Gábor). Nem önelfogadva: (a) egy pontja
-  (`ProjectRef`) explicit blokkolva van a még le nem zárt `PROJECT-CORE-ADR`-re
-  (lásd Stop/eszkaláció, ez a task saját szabálya), (b) két másik pontja
-  (`OrderRef`, `PartyRef` külső-actor ága) olyan hiányzó aggregate-ekre mutat,
-  amiket ez a task (read-only ADR-munka) nem építhet meg — ezekhez Gábornak
-  termék-döntést kell hoznia, nem csak architektúra-jóváhagyást.
+- **Státusz:** PROPOSED — döntésre vár (Gábor). **`ProjectRef` tulajdonosa
+  ELDÖNTVE (Gábor, 2026-07-21): Kernel `FlowEpic`** — ez a pont már nem
+  blokkol. Nem önelfogadva, mert két másik pontja (`OrderRef`, `PartyRef`
+  külső-actor ága) olyan hiányzó aggregate-ekre mutat, amiket ez a task
+  (read-only ADR-munka) nem építhet meg — ezekhez Gábornak termék-döntést kell
+  hoznia, nem csak architektúra-jóváhagyást (lásd 9. fejezet).
 - **Dátum:** 2026-07-21
 - **Szerep:** architect/backend · **Epic:** EPIC-ERP-SEPARATION-2026Q3 · **Task:** ERPSEP-03
 - **Függőség:** ERPSEP-01 (`ERP_CAPABILITY_BOUNDARY_AUDIT_2026-07-18.md`, elfogadva bemenetként)
@@ -301,7 +301,7 @@ becsomagolt azonosító-készlet).
 | 4 | `DocumentRef` | `(documentId: Guid)` | **platform abstraction**, egyetlen resolver | **DMS** (`Document`/`DocumentId`, éles) | ma más modul nem tart `DocumentRef`-et; a DMS saját `EntityLink` a fordított irányt (Document → más entitás) modellezi, ez nem ütközik |
 | 5 | `OrderRef` | `(orderId: Guid)` | **platform abstraction (alak)**, de a resolver-modul **még nem létezik kódban** | **CRM lenne a kijelölt tulajdonos** (a platform CLAUDE.md szerint a CRM felelőssége „Lead → Opportunity → Quote → Order"), **de Order/Quote aggregate ma nincs megépítve** a kanonikus CRM-ben | QA `Inspection.OrderId`, CRM `Opportunity.OrderId`/`QuoteId` ma nyers, típusjelző nélküli Guid, forward-referencia egy meg nem épített fogalomra (3.3) — **decision_required Gábornak, termék-döntés, nem építhető meg ebben a taskban** |
 | 6 | `PartyRef` | `(partyId: Guid, partyKind: "Internal" \| "External")` | **kettéválik** — belső actor: **platform abstraction**, egyetlen resolver = **HR**; külső actor (ügyfél/beszállító/partner): **decision_required**, nincs owner | belső: HR (`Employee`/`EmployeeId`, éles); külső: **nincs kódolt tulajdonos** — CRM `CustomerId` és Kontrolling `Customer` (string!) csak ad-hoc, nem aggregate-alapú mezők | QA `Inspection.InspectorId` (feltehetően HR Employee, de nincs rögzítve), CRM `CustomerId`, Kontrolling `ControllingProjectData.Customer` (string) mind ad-hoc |
-| 7 | `ProjectRef` | `(projectId: Guid)` | **decision_required — blokkolva**, nem hozunk létre owner-t | **nyitott** — Kernel `FlowEpic` vs `FlowManagement.FlowProject` vs Production `ProductionJob` vs Doorstar `Project` — négy párhuzamos modell (PROJECT_CORE audit 0., 3., 4. fejezet) | Kontrolling `IProjectPortfolioSource` már ma **feltételezi** egy jövőbeli `ProjectRef`-et (`ControllingProjectData.ProjectId`), de a mögötte lévő tulajdonos nincs lezárva |
+| 7 | `ProjectRef` | `(projectId: Guid)` | **ELDÖNTVE (Gábor, 2026-07-21): platform abstraction, egyetlen resolver** | **Kernel `FlowEpic`** — a négy párhuzamos modell (Kernel `FlowEpic`, `FlowManagement.FlowProject`, Production `ProductionJob`, Doorstar `Project`) közül az egyetlen, ami ma valóban hostolt és migrált (PROJECT_CORE audit 0., 3., 4. fejezet) | Kontrolling `IProjectPortfolioSource` már ma **feltételezi** egy jövőbeli `ProjectRef`-et (`ControllingProjectData.ProjectId`) — ez most a Kernel `FlowEpic.Id`-re fog mutatni. A többi három modell (`FlowManagement.FlowProject`, `ProductionJob`, Doorstar `Project`) konszolidációjának/adapterré alakításának **iránya és üteme továbbra is a `PROJECT-CORE-ADR` hatásköre** — ez a döntés csak a végső tulajdonost rögzíti, a migrációs utat nem |
 
 ### 5.1 Miért `platform abstraction` az 1–4. típus
 
@@ -324,12 +324,16 @@ egyiküknek sem szabad a Maintenance/DMS domain-modelljét importálnia ehhez.
   a fenti `OrderRef`/`PartyRef` alak legyen, nem egy újabb nyers Guid-mező.
   Ezt Gábornak kell jóváhagynia, mert termék-irányt (épüljön-e Order/Quote a
   CRM-ben) érint, nem csak architektúrát.
-- **`ProjectRef`:** ez a task saját „Stop / eszkaláció" szabálya szerint
-  explicit tilos itt eldönteni — a `PROJECT-CORE-ADR` eredményére várunk.
-  Ez az ADR csak azt rögzíti, hogy **amikor** a `PROJECT-CORE-ADR` lezárja az
-  ownershipet, a `ProjectRef` alak (és feltehetően platform-abstraction
-  minősítése) illeszkedni fog ehhez a döntéshez — de **nem hoz létre új
-  `ProjectRef`-tulajdonost saját hatáskörben**.
+- **`ProjectRef`:** **ELDÖNTVE (Gábor, 2026-07-21): a Kernel `FlowEpic` a
+  `ProjectRef` tulajdonosa.** Ez felülírja az eredeti tervezetben szereplő
+  blokkolást (a task saját „Stop / eszkaláció" szabálya ezt eredetileg a
+  `PROJECT-CORE-ADR`-re halasztotta volna) — Gábor közvetlen döntésével a
+  `ProjectRef` mostantól **platform abstraction, egyetlen resolver = Kernel
+  `FlowEpic`**. Ez **nem helyettesíti** a `PROJECT-CORE-ADR`-t: a másik három
+  párhuzamos modell (`FlowManagement.FlowProject`, Production `ProductionJob`,
+  Doorstar `Project`) tényleges konszolidációjának/adapter-mintájának
+  kidolgozása továbbra is annak a feladatnak a hatásköre — ez a döntés csak a
+  végső forrás-igazságot (source of truth) rögzíti előre.
 
 ---
 
@@ -395,10 +399,10 @@ jön, hogy a Kernel B2BHandshake lifecycle-je elkészül.
 
 ## 9. Nyitott kérdések / függőségek Gábornak (nem eldöntve itt)
 
-1. **`ProjectRef` tulajdonosa** — blokkolva a `PROJECT-CORE-ADR`-re, ahogy a
-   task saját Stop-szabálya előírja. Amint az lezárul, ez az ADR egy rövid
-   kiegészítést kap, ami a `ProjectRef` platform/modulcontract minősítését a
-   döntéshez igazítja.
+1. ~~**`ProjectRef` tulajdonosa**~~ — **ELDÖNTVE (Gábor, 2026-07-21): Kernel
+   `FlowEpic`.** A többi három modell (`FlowManagement.FlowProject`,
+   `ProductionJob`, Doorstar `Project`) konszolidációs útja továbbra is a
+   `PROJECT-CORE-ADR` hatásköre — ez a pont már nem blokkolja ezt az ADR-t.
 2. **Épüljön-e Order/Quote/Customer aggregate a CRM-ben?** Ha igen, a CRM
    lesz az `OrderRef` és a külső `PartyRef` kizárólagos tulajdonosa — ez
    termék-döntés, nem architektúra-döntés, ezért nem hozható meg ebben a

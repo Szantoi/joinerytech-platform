@@ -147,7 +147,7 @@ mint az X-Tenant-Id header, ADR-061 T1 sérül):
 
 | Verb | URL | Védelem | Cél |
 |---|---|---|---|
-| POST | `/internal/ingest-order` | `X-SpaceOS-Internal: true` header (különben 403) | order-ingest → cutting jobok; `IngestOrderDto`; 200 `{orderId, jobsCreated}`; ⚠ `grainDirection` itt STRING-tagnév (egyedüli string-enum-parse) |
+| POST | `/internal/ingest-order` | `X-SpaceOS-Internal: <SPACEOS_INTERNAL_SECRET>` konstans idejű ellenőrzéssel; secret hiánya → 503 | order-ingest → cutting jobok; `IngestOrderDto`; 200 `{orderId, jobsCreated}`; ⚠ `grainDirection` itt STRING-tagnév (egyedüli string-enum-parse) |
 | DELETE | `/internal/cutting-sheets/by-tenant/{tenantId}?confirm=true` | ua. + `TEST_TENANT_ALLOWLIST` | teszt-reset; 200 `{tenantId, deletedCounts:{cuttingSheets, dailyCuttingPlans}}` |
 
 Kimenő integráció: `CuttingPlanFrozen` domain-event → `RegisterOffcutsOnPlanFrozenHandler` →
@@ -776,7 +776,7 @@ A 4 modul **egységesen JwtBearer + claim-alapú tenant** — jobb kiindulás, m
 | Tenant-claim | `tid` (+`tenant_id` executions, `tenant_id` quotes) | `tenant_id` | `tid` (adapter: `tenant_id`) | `tid` ÉS `tenant_id` vegyesen |
 | RLS GUC | `app.current_tenant_id` | ⚠ **`app.tenant_id`** | `app.current_tenant_id` | `app.current_tenant_id` (`tid`-ről) |
 | Auth-lyuk | 🔴 pricing-rules csoport policy nélkül · 🔴 analytics tenant=query-param | — | ⚠ offcut approve/use tenant-guard nélkül | ⚠ complaints/subcontracts üres tenantnál nem 401 |
-| Internal-séma | `X-SpaceOS-Internal: true` | loopback + secret + `X-SpaceOS-TenantId` | 3-féle (header / `X-Internal-Service` / Bearer-secret) | Bearer-secret + `X-SpaceOS-Internal` |
+| Internal-séma | `X-SpaceOS-Internal: <secret>` (const-time, fail-closed) | loopback + secret + `X-SpaceOS-TenantId` | 3-féle (header / `X-Internal-Service` / Bearer-secret) | Bearer-secret + `X-SpaceOS-Internal` |
 
 **Hosting-körbe (ADR-061 follow-up) emelendő:** (1) egységes tenant-claim (`tid`, kernel-minta)
 + mindkét claim átmeneti hordozása a tokenben; (2) egységes GUC-név; (3) pricing-rules +
@@ -886,4 +886,3 @@ inventory-publish elmarad a develop-pintől (procurement-receiver hiányzik) —
 _Audit: WORLDS-API-AUDIT · backend terminál · 2026-07-18 · forrás: lokális submodule-checkoutok
 (develop-pinek) + élő VPS-szúrópróba. A doksi a MAI állapotot rögzíti; az ADR-059 wave 2
 (EnumWireMap) és az ADR-061/062 hosting-kör kiterjesztése ezt felül fogja írni._
-

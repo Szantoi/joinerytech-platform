@@ -3,7 +3,7 @@
 **Sziget:** JoineryTech (`/opt/joinerytech/`)
 **Fókusz:** Faipar SaaS Platform
 **Port:** 3458-3459
-**Frissítve:** 2026-07-18
+**Frissítve:** 2026-07-21
 
 ---
 
@@ -22,6 +22,12 @@
   függőségek, fájlhatárok és Definition of Done
 - [`architecture/WORLDS_API_CONTRACTS_2026-07-18.md`](architecture/WORLDS_API_CONTRACTS_2026-07-18.md)
   — production + warehouse API-first kontraktusaudit
+- [`architecture/CUTTING_AUTH_TENANCY_CONTRACT_2026-07-21.md`](architecture/CUTTING_AUTH_TENANCY_CONTRACT_2026-07-21.md)
+  — Cutting JWT/tenant/policy szerződés és ERP-től független SpaceOS-minta
+- [`architecture/CUTTING_SECURITY_AUDIT_2026-07-21.md`](architecture/CUTTING_SECURITY_AUDIT_2026-07-21.md)
+  — internal auth, adapterhatár, rate limit, runtime dependency audit és agent-ready hardening kapuk
+- [`engineering/CUTTING_DEVELOPMENT_TEST_RUNBOOK.md`](engineering/CUTTING_DEVELOPMENT_TEST_RUNBOOK.md)
+  — reprodukálható Cutting build, célzott security gate és teljes-suite triázs
 - [`architecture/PORTAL_WORLDS_INVENTORY_2026-07-16.md`](architecture/PORTAL_WORLDS_INVENTORY_2026-07-16.md)
   — modernizált és legacy világok leltára
 - [`adr/README.md`](adr/README.md) — ADR-059..064 döntések és végrehajtási kapuk
@@ -85,9 +91,13 @@ A JoineryTech sziget a **faipari SaaS platform fejlesztési központja**. 7 modu
 - `SPACEOS_B2B_HANDSHAKE_ARCHITECTURE_2026-07-21.md` — vállalatközi kézfogás, delegált munka, digitális megállapodás és participant-RLS
 - `PORTAL_WORLDS_INVENTORY_2026-07-16.md` — portál világ-leltár
 - `WORLDS_API_CONTRACTS_2026-07-18.md` — API-first production/warehouse kontraktusok
+- `CUTTING_AUTH_TENANCY_CONTRACT_2026-07-21.md` — hitelesített tenant- és
+  Manufacturer policy kontraktus
+- `CUTTING_SECURITY_AUDIT_2026-07-21.md` — Cutting boundary/supply-chain leletek,
+  javítások, maradék kockázatok és review kapu
 - `VPS_SERVICE_STATE_2026-07-16.md` — VPS service-állapot és helyreállítás
 
-### engineering/ (8 dokumentum)
+### engineering/ (9+ dokumentum)
 
 - `backend_dotnet.knowledge.md`
 - `database_efcore.knowledge.md`
@@ -97,6 +107,8 @@ A JoineryTech sziget a **faipari SaaS platform fejlesztési központja**. 7 modu
 - `testing_frontend_react.knowledge.md`
 - `testing_strategy.knowledge.md`
 - `BACKEND_PATTERNS.md`
+- `CUTTING_DEVELOPMENT_TEST_RUNBOOK.md` — Cutting bootstrap, build, security
+  tesztkapu és ismert tesztadósságok
 
 ### domain/ (6+ dokumentum)
 

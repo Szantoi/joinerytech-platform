@@ -108,14 +108,18 @@ dotnet restore SpaceOS.Modules.Cutting.sln --configfile NuGet.Config
 dotnet build SpaceOS.Modules.Cutting.sln --no-restore
 ```
 
-Aktuális ismert warning:
+Aktuális runtime dependency állapot:
 
 ```text
-NU1902 — MailKit 4.9.0 moderate severity vulnerability
+MailKit 4.16.0
+Cutting runtime projektek: 0 ismert vulnerability audit találat
 ```
 
-Ez külön dependency-frissítési feladat. Nem szabad elhallgatni, de az authfix
-scope-jában nem indokol széles csomagfrissítést.
+A tesztprojektekben továbbra is három tranzitív magas advisory maradt: xUnit 2.5.3
+régi NETStandard gráfján `System.Net.Http 4.3.0` és
+`System.Text.RegularExpressions 4.3.0`, valamint EF Core SQLite alatt
+`SQLitePCLRaw.lib.e_sqlite3 2.1.6`. Ezek nem runtime service dependencyk, de a
+CI/supply-chain kapuban külön taskként javítandók; suppresszálni nem szabad.
 
 ## 4. Auth/tenant célzott tesztkapu
 
@@ -158,29 +162,57 @@ dotnet test tests/SpaceOS.Modules.Cutting.Tests/SpaceOS.Modules.Cutting.Tests.cs
   --no-build
 ```
 
-2026-07-21-i Windows baseline a tenant-resolver javítása után:
+2026-07-21-i Windows pre-review állapot az auth-, resolver-, wire-, subprocess-,
+email- és quote-harness stabilitási javítások után:
 
 ```text
-Total: 1047
-Passed: 1028
-Failed: 19
+Total: 1069
+Passed: 1069
+Failed: 0
 Skipped: 0
 ```
 
-A célzott 41 auth/tenant security teszt és a 10 TenantResolver teszt mind zöld.
-Az authfix utáni baseline hét resolver-hibája a
-`STAB-CUTTING-TENANT-RESOLVER` feladatban megszűnt. A fennmaradó hibák:
+A célzott 41 auth/tenant security teszt, a 10 TenantResolver teszt, a 34
+PricingRule/OptiCut teszt, a 7 BoundedSubprocessRunner teszt, a 12 EmailService
+teszt és a 32 quote endpoint filter mind zöld. Az authfix utáni 26 hibás
+baseline 0 hibára csökkent, miközben 3 új quote tenant-security regresszióval a
+suite 1050-ről 1053 tesztre nőtt. A security boundary kör további 16
+regresszióval 1069-re emelte a suite-ot: internal secret, adapter traversal és
+SignalR claim-prioritás. Az EmailService unit suite nem hív valódi SMTP-t.
 
-| Csoport | Darab | Jellemző ok | Javasolt task |
-|---|---:|---|---|
-| `BoundedSubprocessRunnerTests` | 5 | `/bin/bash`, `/bin/echo`, `/bin/sleep`, `/tmp` Windows alatt | `CUTTING-TEST-WIN32-PORTABILITY` |
-| `PricingRuleTests` | 4 | `.` és `,` decimális formátum keverése | `CUTTING-TEST-CULTURE-INVARIANCE` |
-| `OptiCutFormatConverterTests` | 1 | vendor XML számformátum kultúrafüggése | `CUTTING-TEST-CULTURE-INVARIANCE` |
-| `EmailServiceTests` | 2 | MailKit email-validációs kontraktus drift | `CUTTING-EMAIL-VALIDATION-CONTRACT` |
-| `QuoteRequestEndpointTests` | 7 | legacy integration host/auth/fixture elvárás drift | `CUTTING-QUOTE-INTEGRATION-HARNESS` |
+Jelenleg nincs ismert bukó Cutting teszt és a solution clean build 0 warning/0
+error. A subprocess, notification/template, CLI/REST adapter és test-only
+supply-chain hardening ettől még nyitott security adósság; zöld teszt nem
+tekinthető ezek automatikus lezárásának.
 
-Ezeket nem szabad automatikusan regressziónak vagy automatikusan „ismert
-hibának” minősíteni. A helyes triázs:
+## 5.1 Security boundary célkapu
+
+```powershell
+dotnet test tests/SpaceOS.Modules.Cutting.Tests/SpaceOS.Modules.Cutting.Tests.csproj `
+  --filter "FullyQualifiedName~InternalEndpointsTests|FullyQualifiedName~TenantAdapterStorageTests|FullyQualifiedName~ExecutionHubSecurityTests" `
+  -- RunConfiguration.MaxCpuCount=1
+```
+
+Production/staging kötelező konfiguráció:
+
+```text
+JWT_AUTHORITY vagy Jwt__Authority
+ConnectionStrings__Cutting
+SPACEOS_INTERNAL_SECRET vagy SpaceOS__InternalSecret
+```
+
+Opcionális, pozitív egész limiter-konfiguráció:
+
+```text
+RateLimiting__PublicCutting__PermitLimit
+RateLimiting__PublicCutting__WindowMinutes
+```
+
+A reverse proxy mögötti per-IP limit csak trusted proxy allowlisttel tekinthető
+valós kliens-IP bizonyítéknak. Tetszőleges forwarded header elfogadása tilos.
+
+Ha egy későbbi futás bukik, nem szabad automatikusan „ismert hibának” minősíteni.
+A helyes triázs:
 
 1. ellenőrizd, érint-e a diff az adott végrehajtási útvonalat;
 2. futtasd a hibás osztályt külön;

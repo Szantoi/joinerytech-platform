@@ -222,13 +222,22 @@ Reviewer:
 2026-07-21-i munkafa:
 
 - célzott security tesztek: **41/41 zöld**;
-- Cutting solution build: **0 hiba**, 1 ismert `NU1902` MailKit warning;
+- Cutting solution clean build: **0 warning, 0 hiba**; MailKit 4.16.0 után a
+  runtime projektek vulnerability auditja tiszta;
 - teljes suite az authfix után: **1021/1047 zöld**; a kapcsolódó
-  TenantResolver scalar-query javítás után **1028/1047 zöld**, 19 fennmaradó,
-  az érintett security/resolver teszteken kívüli hiba;
-- commit és deploy még nem történt;
-- következő lépés: független Claude/backend review, majd Cutting submodule commit
-  és platform submodule-pin frissítés.
+  TenantResolver scalar-query javítás után **1028/1047 zöld**, az invariáns
+  pricing/OptiCut javítás és három új teszt után **1036/1050 zöld**, majd a
+  hordozható subprocess fixture után **1041/1050 zöld**, végül az email boundary
+  után **1043/1050 zöld**, a canonical quote tenant/harness javítás és három új
+  security teszt után pedig **1053/1053 zöld, 0 hiba**, majd az internal secret,
+  adapter traversal és SignalR claim boundary 16 új regressziója után
+  **1069/1069 zöld, 0 hiba**;
+- az authfix `a889109` Cutting commitban és `ff1ff3e` platform-pinben review
+  PASS eredménnyel rögzítve; deploy nem történt;
+- következő lépés: a resolver, kultúrafüggetlenítési, subprocess portability,
+  email boundary, quote tenant-harness és security-hardening diff független
+  Claude/backend review-ja, az internal caller secret rollout bizonyítása,
+  majd külön Cutting commit és platform-pin.
 
 A részletes futtatási és hibatriázs útmutató:
 [Cutting fejlesztési és tesztelési runbook](../engineering/CUTTING_DEVELOPMENT_TEST_RUNBOOK.md).

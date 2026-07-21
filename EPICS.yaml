@@ -143,9 +143,9 @@ epics:
         status: pending
         done_when: "inventory offcut route egyedi és 200; procurement solution fordul + inbound path helyes; cutting analytics tenant claimből + pricing auth policy tesztelt"
         tasks:
-          - { id: WORLDS-INV-OFFCUT-ROUTEFIX, role: backend, title: "Inventory offcut publikus route-ütközés megszüntetése", status: pending, task: docs/tasks/EPIC-UI-WORLDS-2026Q3/WORLDS-INV-OFFCUT-ROUTEFIX.md }
-          - { id: WORLDS-PROC-BUILDFIX, role: backend, title: "Procurement order-detail query + config-vezérelt inventory inbound path", status: pending, task: docs/tasks/EPIC-UI-WORLDS-2026Q3/WORLDS-PROC-BUILDFIX.md }
-          - { id: WORLDS-CUTTING-AUTHFIX, role: backend, title: "Cutting analytics tenant claimből + pricing policy", status: pending, task: docs/tasks/EPIC-UI-WORLDS-2026Q3/WORLDS-CUTTING-AUTHFIX.md }
+          - { id: WORLDS-INV-OFFCUT-ROUTEFIX, role: backend, title: "Inventory offcut publikus route-ütközés megszüntetése", status: in_progress, task: docs/tasks/EPIC-UI-WORLDS-2026Q3/WORLDS-INV-OFFCUT-ROUTEFIX.md }
+          - { id: WORLDS-PROC-BUILDFIX, role: backend, title: "Procurement order-detail query + config-vezérelt inventory inbound path", status: in_progress, task: docs/tasks/EPIC-UI-WORLDS-2026Q3/WORLDS-PROC-BUILDFIX.md }
+          - { id: WORLDS-CUTTING-AUTHFIX, role: backend, title: "Cutting analytics tenant claimből + pricing policy", status: in_progress, task: docs/tasks/EPIC-UI-WORLDS-2026Q3/WORLDS-CUTTING-AUTHFIX.md, note: "2026-07-21: Codex felvette Claude MODULE-PACKAGES sávjától diszjunkt Cutting submodule-ban; preflight HEAD bf9bd4e, detached és clean. Portal/deploy tiltott." }
       - id: W1-production
         status: pending
         done_when: "production világ a modul-sablonra, API-mode contract gate zöld, designer APPROVED"
@@ -190,13 +190,13 @@ epics:
       - id: S1-security-proof
         status: pending
         tasks:
-          - { id: STAB-RLS-PROOF, role: backend, title: "Nem-superuser RLS és tenant pipeline bizonyíték 7 modulon", status: pending, task: docs/tasks/EPIC-PLATFORM-STABILITY-2026Q3/STAB-RLS-PROOF.md }
+          - { id: STAB-RLS-PROOF, role: backend, title: "Nem-superuser RLS és tenant pipeline bizonyíték 7 modulon", status: pending, task: docs/tasks/EPIC-PLATFORM-STABILITY-2026Q3/STAB-RLS-PROOF.md, note: "2026-07-21: szándékosan sorba állítva STAB-EHS-INTEGRATION mögé -- mindkettő az EHS persistence/integration teszt-fájlokat érintené egyszerre, az epic saját koordinációs szabálya (security-task kizárólagos modul-lock) szerint ez konfliktus. Indítás STAB-EHS-INTEGRATION lezárása után." }
       - id: S2-test-stability
         status: pending
         tasks:
-          - { id: STAB-EHS-INTEGRATION, role: backend, title: "EHS shared PostgreSQL fixture + CAPA flake javítás", status: pending, task: docs/tasks/EPIC-PLATFORM-STABILITY-2026Q3/STAB-EHS-INTEGRATION.md }
+          - { id: STAB-EHS-INTEGRATION, role: backend, title: "EHS shared PostgreSQL fixture + CAPA flake javítás", status: in_progress, task: docs/tasks/EPIC-PLATFORM-STABILITY-2026Q3/STAB-EHS-INTEGRATION.md }
           - { id: STAB-TESTCONTAINERS-HYGIENE, role: infra, title: "Futás-specifikus Testcontainers cleanup wrapper", status: pending, depends_on: [STAB-EHS-INTEGRATION], task: docs/tasks/EPIC-PLATFORM-STABILITY-2026Q3/STAB-TESTCONTAINERS-HYGIENE.md }
-          - { id: STAB-FE-TEST-GATE, role: frontend, title: "Gyors PR és teljes frontend suite worker-budgettel", status: pending, task: docs/tasks/EPIC-PLATFORM-STABILITY-2026Q3/STAB-FE-TEST-GATE.md }
+          - { id: STAB-FE-TEST-GATE, role: frontend, title: "Gyors PR és teljes frontend suite worker-budgettel", status: in_progress, task: docs/tasks/EPIC-PLATFORM-STABILITY-2026Q3/STAB-FE-TEST-GATE.md }
       - id: S3-release-repro
         status: pending
         tasks:

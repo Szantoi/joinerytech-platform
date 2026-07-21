@@ -38,11 +38,12 @@ public class AddSafetyWalkFindingCommandHandler
             request.LinkedRiskAssessmentId);
 
         Guid? correctiveActionId = null;
+        CorrectiveAction? capa = null;
 
         // Optional CAPA generation through the unified mechanism
         if (request.RequiresAction && request.CapaAssignedTo.HasValue && request.CapaDueDate.HasValue)
         {
-            var capa = CorrectiveAction.CreateForSafetyWalk(
+            capa = CorrectiveAction.CreateForSafetyWalk(
                 request.TenantId,
                 walk.SafetyWalkId,
                 finding.FindingId,
@@ -51,12 +52,19 @@ public class AddSafetyWalkFindingCommandHandler
                 request.CapaDueDate.Value);
 
             walk.LinkFindingCorrectiveAction(finding.FindingId, capa.CorrectiveActionId);
-
-            await _capaRepository.AddAsync(capa, ct).ConfigureAwait(false);
             correctiveActionId = capa.CorrectiveActionId;
         }
 
+        // Persist the walk (with its new owned Finding, incl. the CAPA link) BEFORE
+        // the CorrectiveAction insert. Ordering matters here: see
+        // SafetyWalkRepository.UpdateAsync — a shared DbContext's automatic
+        // DetectChanges (triggered by ANY subsequent SaveChangesAsync, including the
+        // CAPA repository's) would otherwise discover the new Finding first and
+        // misclassify it (STAB-EHS-INTEGRATION root-cause fix).
         await _repository.UpdateAsync(walk, ct).ConfigureAwait(false);
+
+        if (capa is not null)
+            await _capaRepository.AddAsync(capa, ct).ConfigureAwait(false);
 
         return new AddSafetyWalkFindingResult(finding.FindingId, correctiveActionId);
     }

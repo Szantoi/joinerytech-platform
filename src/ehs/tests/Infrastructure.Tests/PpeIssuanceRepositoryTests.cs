@@ -10,8 +10,11 @@ namespace SpaceOS.Modules.Ehs.Infrastructure.Tests;
 /// <summary>
 /// Integration tests for PpeIssuanceRepository (PPE FSM persistence).
 /// </summary>
+[Collection(EhsInfrastructureCollection.Name)]
 public class PpeIssuanceRepositoryTests : PostgresTestBase
 {
+    public PpeIssuanceRepositoryTests(EhsPostgresFixture fixture) : base(fixture) { }
+
     private PpeIssuanceRepository Repository => new(DbContext);
     private readonly Guid _tenantId = Guid.NewGuid();
     private readonly Guid _employeeId = Guid.NewGuid();

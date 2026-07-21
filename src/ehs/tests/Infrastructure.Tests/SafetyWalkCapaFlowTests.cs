@@ -19,8 +19,11 @@ namespace SpaceOS.Modules.Ehs.Infrastructure.Tests;
 /// rejected) → CAPA complete → close.
 /// Exercises the real handlers against real repositories on PostgreSQL.
 /// </summary>
+[Collection(EhsInfrastructureCollection.Name)]
 public class SafetyWalkCapaFlowTests : PostgresTestBase
 {
+    public SafetyWalkCapaFlowTests(EhsPostgresFixture fixture) : base(fixture) { }
+
     private readonly Guid _tenantId = Guid.NewGuid();
 
     [Fact]

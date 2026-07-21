@@ -1,9 +1,10 @@
 # ADR-067: Kanonikus ModuleId, aláírt modul-katalógus és modul-életciklus
 
 - **Státusz:** JAVASOLT (Proposed) — **nem elfogadva**. Lásd „Nyitott kérdések Gábornak" —
-  a trust root, a package registry és a kereskedelmi entitlement-tulajdonos döntése
-  hiányzik, a task saját „Stop / eszkaláció" szabálya szerint ez az ADR emiatt marad
-  Proposed, amíg Gábor explicit el nem fogadja.
+  a package registry kérdését Gábor 2026-07-21-én eldöntötte (GitHub Packages), de a
+  trust root modell és a kereskedelmi entitlement-tulajdonos döntése még hiányzik, a
+  task saját „Stop / eszkaláció" szabálya szerint ez az ADR emiatt marad Proposed, amíg
+  Gábor mindet el nem dönti és explicit el nem fogadja.
 - **Dátum:** 2026-07-21
 - **Felvetette:** `ERPSEP-02` (EPIC-ERP-SEPARATION-2026Q3), ERPSEP-01 kimenetére építve
   (`docs/knowledge/architecture/ERP_CAPABILITY_BOUNDARY_AUDIT_2026-07-18.md`, különösen
@@ -165,12 +166,15 @@ fájl). Kulcsdöntések:
   kulcs nincs a revocation listán. A revocation lista maga is aláírt, és a betöltéskor
   a **legfrissebb ismert revocation-generációnál korábbi generációjú lista elutasítva**
   (replay-védelem — ld. threat model, "downgrade").
-- **Package registry (nyitott, `decision_required`):** a repóban ma nincs privát
-  csomag-registry beállítva sem NuGet-re, sem npm-re a modul-bundle-ök tárolására. Három
-  opció (self-hosted OCI/Verdaccio-jellegű regisztry, GitHub Packages, vagy a jelenlegi
-  git-submodule-mintát megőrző fájlrendszer-alapú megoldás) mind életképes technikailag,
-  de a választás VPS-üzemeltetési és költség-döntés, amit **nem lehet architektúra-oldalról
-  eldönteni** — ez a második ok, amiért ez az ADR Proposed marad.
+- **Package registry — ELDÖNTVE (Gábor, 2026-07-21): GitHub Packages.** A repóban ma
+  nincs privát csomag-registry beállítva sem NuGet-re, sem npm-re a modul-bundle-ök
+  tárolására; a három felvázolt opció (self-hosted OCI/Verdaccio, GitHub Packages,
+  git-submodule-mintát megőrző fájlrendszer-alapú megoldás) közül Gábor a **GitHub
+  Packages**-t választotta — ez illeszkedik a platform meglévő GitHub-alapú
+  submodule-workflow-jához (minden repo már GitHub-on van, `git@github.com:Szantoi/...`),
+  nem igényel új üzemeltetett komponenst a VPS-en, és NuGet/npm regisztry-ként egyaránt
+  natívan támogatott. Végrehajtás (regisztry-publikálás bekötése, hitelesítés a
+  CI-pipeline-ban) az ERPSEP-05/ERPSEP-08 implementációs taskok hatásköre, nem ez az ADR.
 
 ### 6. Kernel allowlist és PostgreSQL trigger generálása ugyanabból a forrásból
 
@@ -302,21 +306,25 @@ szükséges (Elfogadási kritérium #6).
 1. **Trust root modell:** A) egykulcsos platform signing key, vagy B) TUF-szerű
    root+intermediate séma? (5. döntés) — üzemeltetési komplexitás vs. kompromittálódási
    kockázat közötti választás, amit nem lehet tisztán architektúra-oldalról eldönteni.
-2. **Package/bundle registry:** self-hosted OCI/Verdaccio-jellegű megoldás, GitHub
-   Packages, vagy a jelenlegi git-submodule-mintát követő fájlrendszer-alapú tárolás?
-   Ez VPS-üzemeltetési és költségdöntés.
+   **Még nyitott.**
+2. ~~**Package/bundle registry:** self-hosted OCI/Verdaccio-jellegű megoldás, GitHub
+   Packages, vagy a jelenlegi git-submodule-mintát követő fájlrendszer-alapú tárolás?~~
+   **ELDÖNTVE (Gábor, 2026-07-21): GitHub Packages.** Ld. az 5. döntés frissített
+   szövege.
 3. **Licenc/entitlement tulajdonos:** lesz-e valódi kereskedelmi entitlement-rendszer
    (billing-integráció), vagy az `entitled` állapot tartósan a Kernel `Tenant`
    aggregate-jén belüli, kézzel/admin-API-val karbantartott mező marad? Ez határozza meg,
    hogy a 3. döntésben vázolt `EntitledModules` mező honnan kapja az adatát.
+   **Még nyitott.**
 4. **Revocation-terjesztési csatorna és SLA:** ha egy modul-verziót vagy signing-kulcsot
    vissza kell vonni, milyen gyorsan és milyen csatornán kell ennek elérnie minden
    futó instance-ot? (Ez különösen releváns, mert a VPS-hozzáférés ma SSH-alapú, nincs
-   automatizált push-csatorna a running instance-ok felé.)
+   automatizált push-csatorna a running instance-ok felé.) **Még nyitott.**
 
-Amíg ezek nyitottak, ez az ADR **Proposed** marad — Gábor jóváhagyása (vagy tételes
-blokkolólistája) szükséges az Accepted státuszhoz és bármilyen implementáció
-elindításához.
+A package registry kérdése (2.) lezárult, de a trust root (1.) és az entitlement-
+tulajdonos (3.) még nyitott, ezért ez az ADR **Proposed** marad — Gábor jóváhagyása
+(vagy tételes blokkolólistája) szükséges az Accepted státuszhoz és bármilyen
+implementáció elindításához.
 
 ## Kapcsolódó ADR-ek és források
 

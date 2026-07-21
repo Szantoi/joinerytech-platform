@@ -36,6 +36,8 @@
     <ProjectReference Include="../../src/Application/SpaceOS.Modules.Ehs.Application.csproj" />
     <ProjectReference Include="../../src/Infrastructure/SpaceOS.Modules.Ehs.Infrastructure.csproj" />
     <ProjectReference Include="../../../spaceos-modules-hosting/src/SpaceOS.Modules.Hosting/SpaceOS.Modules.Hosting.csproj" />
+    <!-- STAB-RLS-PROOF: shared non-superuser RLS proof fixture. -->
+    <ProjectReference Include="../../../spaceos-modules-hosting/tests/SpaceOS.Modules.Hosting.RlsFixtures/SpaceOS.Modules.Hosting.RlsFixtures.csproj" />
   </ItemGroup>
 
 </Project>

@@ -250,8 +250,8 @@ epics:
         status: in_progress
         tasks:
           - { id: ERPSEP-01, role: architect, title: "ERP / industry / instance capability-boundary audit", status: done, task: docs/tasks/EPIC-ERP-SEPARATION-2026Q3/ERPSEP-01-CAPABILITY-BOUNDARY-AUDIT.md, output: docs/knowledge/architecture/ERP_CAPABILITY_BOUNDARY_AUDIT_2026-07-18.md, note: "2026-07-18: 20-soros capability/ownership mátrix (kernel 3, erp 9, industry 6, instance 1, orphan/retire 5); top-violation: SpaceOS.Modules.Hosting csak az ERP-modulokba kötve, iparági modulokba nem; 4 orphan backend-duplikátum (crm/hr/dms/ehs másolatok); Kernel allowlist vs portal enabled_modules diszjunkt; kanonikus CRM-ből hiányzik a B2B-delegáció eseménye (input a Project-Core ADR-hez). Javasolt sorrend: ERPSEP-02 -> ERPSEP-05+03 párhuzamosan -> orphan-tisztítás -> Project-Core ADR -> DSCONV-01." }
-          - { id: ERPSEP-02, role: architect, title: "Kanonikus ModuleId és aláírt katalógus ADR", status: blocked, depends_on: [ERPSEP-01], task: docs/tasks/EPIC-ERP-SEPARATION-2026Q3/ERPSEP-02-MODULE-CATALOG-ADR.md }
-          - { id: ERPSEP-03, role: architect, title: "ERP cross-module kontraktus és semleges referencia ADR", status: blocked, depends_on: [ERPSEP-01], task: docs/tasks/EPIC-ERP-SEPARATION-2026Q3/ERPSEP-03-CROSS-MODULE-CONTRACT-ADR.md }
+          - { id: ERPSEP-02, role: architect, title: "Kanonikus ModuleId és aláírt katalógus ADR", status: in_progress, depends_on: [ERPSEP-01], task: docs/tasks/EPIC-ERP-SEPARATION-2026Q3/ERPSEP-02-MODULE-CATALOG-ADR.md }
+          - { id: ERPSEP-03, role: architect, title: "ERP cross-module kontraktus és semleges referencia ADR", status: in_progress, depends_on: [ERPSEP-01], task: docs/tasks/EPIC-ERP-SEPARATION-2026Q3/ERPSEP-03-CROSS-MODULE-CONTRACT-ADR.md }
       - id: E2-package-boundaries
         status: pending
         tasks:

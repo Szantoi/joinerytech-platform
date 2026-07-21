@@ -145,7 +145,7 @@ epics:
         tasks:
           - { id: WORLDS-INV-OFFCUT-ROUTEFIX, role: backend, title: "Inventory offcut publikus route-ütközés megszüntetése", status: in_progress, task: docs/tasks/EPIC-UI-WORLDS-2026Q3/WORLDS-INV-OFFCUT-ROUTEFIX.md }
           - { id: WORLDS-PROC-BUILDFIX, role: backend, title: "Procurement order-detail query + config-vezérelt inventory inbound path", status: in_progress, task: docs/tasks/EPIC-UI-WORLDS-2026Q3/WORLDS-PROC-BUILDFIX.md }
-          - { id: WORLDS-CUTTING-AUTHFIX, role: backend, title: "Cutting analytics tenant claimből + pricing policy", status: in_progress, task: docs/tasks/EPIC-UI-WORLDS-2026Q3/WORLDS-CUTTING-AUTHFIX.md, note: "2026-07-21 Codex: implementáció kész, Claude/backend review kért. Analytics tenant kizárólag tid/legacy claim accessor-ból; query override kizárt; pricing ManufacturerOnly policy aktív. Célzott 41/41, build 0 hiba/1 ismert NU1902; teljes suite 1021/1047, 26 taskon kívüli Windows/kultúra/legacy integration hiba. Detached Cutting commit + platform pin csak review után; portal/deploy érintetlen." }
+          - { id: WORLDS-CUTTING-AUTHFIX, role: backend, title: "Cutting analytics tenant claimből + pricing policy", status: done, task: docs/tasks/EPIC-UI-WORLDS-2026Q3/WORLDS-CUTTING-AUTHFIX.md, note: "2026-07-21: Codex implementálta, root (Claude subagent) adversarial review-val PASS-t adott (kód-szintű ellenőrzés, nem önjelentés: 7 analytics handler override-mentes, fail-closed tid, ManufacturerOnly route-csoport-szinten, MediatR HTTP-független, tesztek a valós tulajdonságot assertálják). Mergelve spaceos-modules-cutting@a889109 (HTTPS push -- az SSH github_key erre a repóra nincs regisztrálva, follow-up Gábornak), platform-pin frissítve. Teljes suite 1021/1047, a 26 hiba pre-existing (stash-összevetéssel megerősítve), STAB-CUTTING-TENANT-RESOLVER néven külön taskba emelve." }
       - id: W1-production
         status: pending
         done_when: "production világ a modul-sablonra, API-mode contract gate zöld, designer APPROVED"
@@ -191,6 +191,7 @@ epics:
         status: pending
         tasks:
           - { id: STAB-RLS-PROOF, role: backend, title: "Nem-superuser RLS és tenant pipeline bizonyíték 7 modulon", status: pending, task: docs/tasks/EPIC-PLATFORM-STABILITY-2026Q3/STAB-RLS-PROOF.md, note: "2026-07-21: szándékosan sorba állítva STAB-EHS-INTEGRATION mögé -- mindkettő az EHS persistence/integration teszt-fájlokat érintené egyszerre, az epic saját koordinációs szabálya (security-task kizárólagos modul-lock) szerint ez konfliktus. Indítás STAB-EHS-INTEGRATION lezárása után." }
+          - { id: STAB-CUTTING-TENANT-RESOLVER, role: backend-security, title: "Cutting publikus subdomain tenantfeloldás EF scalar query javítása", status: in_progress, task: docs/tasks/EPIC-PLATFORM-STABILITY-2026Q3/STAB-CUTTING-TENANT-RESOLVER.md, note: "2026-07-21 Codex: implementáció kész, backend review kért. EF Core scalar projection Id AS Value; paraméterezés/fail-closed viselkedés változatlan. Resolver 3/10 -> 10/10; teljes Cutting 1021/1047 -> 1028/1047; build 0 hiba/1 meglévő NU1902. Egyetlen production diff az a889109 authfix commit fölött; commit/pin/deploy review után." }
       - id: S2-test-stability
         status: pending
         tasks:

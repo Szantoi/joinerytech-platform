@@ -3,11 +3,29 @@
 **Project:** `spaceos/cutting`
 **Epic:** EPIC-CUTTING-Q3
 **Status:** ACTIVE (target: 2026-09-30)
-**Last Updated:** 2026-06-24
+**Last Updated:** 2026-07-21
 
 ---
 
 ## Aktuális állapot (HOT — utolsó 48 óra)
+
+### 2026-07-21 — auth/tenant hardening review alatt
+
+- Az analytics endpointok tenantja a `tid` JWT claimből származik; a
+  `tenant_id` csak átmeneti fallback.
+- A publikus `tenantId` query nem írhatja felül a hitelesített identitást.
+- A pricing-rules csoport `ManufacturerOnly` policy alatt áll.
+- A publikus quote subdomain resolver EF Core scalar projectionje javítva;
+  célzott eredmény 3/10-ről 10/10-re.
+- Célzott security kapu: 41/41 zöld; build: 0 hiba.
+- Állapot: implementáció kész a munkafában, független Claude/backend review,
+  submodule commit és platform-pin még szükséges.
+
+Elsődleges dokumentumok:
+
+- [Cutting auth- és tenant-kontraktus](../architecture/CUTTING_AUTH_TENANCY_CONTRACT_2026-07-21.md)
+- [Cutting fejlesztési és tesztelési runbook](../engineering/CUTTING_DEVELOPMENT_TEST_RUNBOOK.md)
+- [WORLDS-CUTTING-AUTHFIX task](../../tasks/EPIC-UI-WORLDS-2026Q3/WORLDS-CUTTING-AUTHFIX.md)
 
 ### Sprint eredmények (2026-06-22/23)
 
@@ -118,7 +136,7 @@ parallel_with:
 |-----|------------|------|
 | [FRONTEND_DRAG_DROP_PATTERNS.md](../patterns/FRONTEND_DRAG_DROP_PATTERNS.md) | ⭐ CRITICAL | hot |
 | [DATABASE_PATTERNS.md](../patterns/DATABASE_PATTERNS.md) | High | warm |
-| [TEST_COVERAGE_PATTERNS.md](../patterns/TEST_COVERAGE_PATTERNS.md) | High | hot |
+| [TESTING_STRATEGIES.md](../patterns/TESTING_STRATEGIES.md) | High | hot |
 | [DOTNET_8_CLEAN_ARCHITECTURE_2026.md](../architecture/DOTNET_8_CLEAN_ARCHITECTURE_2026.md) | High | warm |
 
 ### API Endpoints (Cutting Module)

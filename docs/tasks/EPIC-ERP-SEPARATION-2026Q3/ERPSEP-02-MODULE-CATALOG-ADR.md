@@ -34,7 +34,9 @@ hogy gyengítené a defense-in-depth védelmet.
 
 ## Kötelező kimenet
 
-- `docs/knowledge/adr/ADR-065-module-catalog-and-lifecycle.md`
+- `docs/knowledge/adr/ADR-067-module-catalog-and-lifecycle.md` (ADR-065 és ADR-066
+  már foglalt: ADR-065 a Kernel FlowEpicScope-absztrakció, ADR-066 az ERPSEP-03
+  cross-module contract ADR-ja)
 - `docs/knowledge/contracts/spaceos-module-v1.schema.json` tervezet
 - legacy ID → kanonikus ID migrációs tábla
 - threat model: supply chain, downgrade, tamper, unknown module, stale entitlement

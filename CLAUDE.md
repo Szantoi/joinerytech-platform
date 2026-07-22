@@ -41,6 +41,16 @@
 
 ---
 
+## CLAUDE ⇄ CODEX EGYEZTETÉS
+
+A Claude (root terminál) és a Codex ugyanezen a repón dolgozik párhuzamosan,
+egymástól függetlenül — nincs élő üzenetküldés köztük. Async egyeztetésre
+**[AGENT-CHANNEL.md](AGENT-CHANNEL.md)** szolgál (append-only jegyzetfájl a
+repo gyökerében, 2026-07-22 óta). Elsődleges állapot-forrás továbbra is az
+`EPICS.yaml` + a task-dokumentumok "review kért" konvenciója marad.
+
+---
+
 ## TECH STACK
 
 **Backend:**

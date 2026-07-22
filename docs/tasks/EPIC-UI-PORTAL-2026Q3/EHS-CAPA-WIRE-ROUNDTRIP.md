@@ -3,8 +3,8 @@
 - **Epic:** EPIC-UI-PORTAL-2026Q3; ADR-059 follow-up
 - **Szerep:** backend + frontend/platform
 - **Prioritás:** P0, a `RISKS-5X5-FE` production CAPA-flow előfeltétele
-- **Státusz:** reopened — Codex saját fresh-context reviewere valódi rést
-  talált root APPROVED-ja után (2026-07-22, lásd alább); javítás folyamatban
+- **Státusz:** done — root APPROVED (újra), a reopen-ben talált MSW/endpoint
+  konzisztencia-rés javítva és megerősítve (2026-07-22, AGENT-CHANNEL.md)
 - **Mutációs határ:** EHS corrective-action query binding, CAPA service/MSW/labels/tests
 - **Tiltott scope:** más EHS enumok teljes portálmigrációja, risk UI, package/workspace,
   más modul, deploy
@@ -135,22 +135,29 @@ Bundle-kapu: az EHS MSW seed/handler nem kerülhet production chunkba.
 - A portál `CapaSource` kanonikus készlete `esemeny | bejaras |
   kockazatertekeles`; service filter, Zod response-schema, MSW store, seed,
   incident/walk CAPA-létrehozás és UI-label ugyanazt a készletet használja.
-- A CAPA MSW lista ismeretlen/angol source queryre 400-at és az elfogadott
-  magyar értékeket tartalmazó hibát ad.
+- A CAPA MSW lista üres, ismeretlen, hibás case-ű vagy angol source queryre
+  400-at és az elfogadott magyar értékeket tartalmazó hibát ad. A hiányzó
+  query-paraméter az egyetlen szűretlen eset.
 - A determinisztikus seed mindhárom forrást tartalmazza; a későbbi risk MSW a
   lefoglalt `SEED_IDS.riskWithCapa` / `capaRiskOpen` azonosítókat használhatja.
-- Új `capaWire.test.ts`: mindhárom magyar filter happy path és mindhárom angol
-  kulcs fail-fast. A meglévő incident/walk FSM tesztek magyar source-ra álltak.
+- Új `capaWire.test.ts`: mindhárom magyar filter happy path; üres, angol,
+  hibás case-ű és ismeretlen query fail-fast. A meglévő incident/walk FSM
+  tesztek magyar source-ra álltak.
+- A friss review által feltárt query-binder bizonyítási résre valódi
+  `TestServer` endpoint-contract teszt készült. Ez nem csak az enumtérképet,
+  hanem az `[AsParameters] string?` → `WireQuery.TryParse` teljes útvonalat
+  ellenőrzi, beleértve a hiányzó paramétert és minden tiltott alakot.
 
 ### Bizonyíték
 
-- Portál teljes EHS suite: **7 fájl / 54 teszt zöld**.
+- Portál teljes EHS suite: **7 fájl / 57 teszt zöld**.
 - Külön screen/SlideOver smoke: **2 fájl / 10 teszt zöld**.
 - Érintett frontend ESLint és közvetlen TypeScript: **exit 0**.
 - Teljes `npm run build`: **zöld**; a mock-only seed szöveg kizárólag a nem
   hivatkozott `browser-*.js` artifactban található, az EHS production chunkban
   nincs.
-- EHS API build: **0 hiba**. Docker-mentes `EhsWireTests`: **27/27 zöld**.
+- EHS API build: **0 hiba**. Docker-mentes `EhsWireTests` és valódi endpoint-
+  contract tesztek együtt: **37/37 zöld**.
 - Pre-existing, nem e taskból eredő build-riasztás: `NU1603` feed-drift és
   `NU1903` magas súlyosságú AutoMapper advisory. Külön security task szükséges;
   a warning nem lett elhallgatva vagy e kontraktus-szeletbe keverve.
@@ -165,15 +172,11 @@ Bundle-kapu: az EHS MSW seed/handler nem kerülhet production chunkba.
 - [x] A risk add-control + CAPA folyamat API-mode-ban is schema-kompatibilis.
 - [x] Célzott backend/frontend teszt, lint, build és bundle-kapu zöld.
 - [x] `ADR-IMPL-WIRE.md` EHS állítása a kóddal ismét összhangban van.
-- [ ] Független review APPROVED — **REOPENED (2026-07-22)**: root eredetileg
-      APPROVED-olta, de Codex saját fresh-context reviewere két valódi rést
-      talált utólag: (1) az MSW `if (source)` truthy-check miatt üres string
-      `?source=` esetén szűretlen 200-at ad, míg a backend `WireQuery` ugyanezt
-      400-nak venné — mock/backend viselkedés-eltérés; (2) nincs valódi
-      TestServer endpoint-teszt az `[AsParameters] string?` + `WireQuery`
-      útvonalra. Root elfogadta a reopent (a hiba tényleg elsiklott az eredeti
-      review-ban) — javítás Codextől folyamatban, root újra reviewolja, amint
-      kész.
+- [x] Független review APPROVED (root, 2026-07-22) — a reopenben talált 2 rés
+      javítva és megerősítve: `if (source !== null)` fail-fast üres string
+      esetén is (`handlers.walks.ts`), valódi `Microsoft.AspNetCore.TestHost`
+      endpoint-contract suite (`EhsEndpointTestHost` + `CorrectiveActionEndpointWireTests`,
+      mocked mediator, valós routing/auth). Önállóan újrafuttatva: 37/37 zöld.
 
 ## Stop / eszkaláció
 

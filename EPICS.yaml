@@ -214,7 +214,7 @@ epics:
       - id: S3-release-repro
         status: pending
         tasks:
-          - { id: STAB-RELEASE-REPRO, role: infra, title: "Tiszta clone/submodule + health/MainPID release smoke", status: pending, depends_on: [STAB-RLS-PROOF, STAB-EHS-INTEGRATION, STAB-TESTCONTAINERS-HYGIENE, STAB-FE-TEST-GATE], task: docs/tasks/EPIC-PLATFORM-STABILITY-2026Q3/STAB-RELEASE-REPRO.md }
+          - { id: STAB-RELEASE-REPRO, role: infra, title: "Tiszta clone/submodule + health/MainPID release smoke", status: done, depends_on: [STAB-RLS-PROOF, STAB-EHS-INTEGRATION, STAB-TESTCONTAINERS-HYGIENE, STAB-FE-TEST-GATE], task: docs/tasks/EPIC-PLATFORM-STABILITY-2026Q3/STAB-RELEASE-REPRO.md, note: "2026-07-22: 3 mapping nélküli gitlink leltározva (keycloak-theme/identity VPS-forrásból SHA-pontosan visszaállítható, sales teljesen elveszett git-történet). Tiszta clone valóban lefuttatva: abstractions 81/81, portal 634/634 zöld, spaceos-modules-contracts build ROOT ÁLTAL IS MEGERŐSÍTVE elbukik (AssetDowntimeEvent.cs INotification-t használ, csproj-ban nincs MediatR referencia -- CS0246). Health-contract felmérve mind a 14 hoston, 3 host + orchestrator nyíltan dokumentált rés. Uj scripts/Invoke-VpsHealthSmoke.ps1 read-only script, root forráskódban is megerősítette hogy nincs mutáló parancs, önállóan újrafuttatva azonos eredménnyel. ÉLŐ LELET, GÁBORNAK JELENTVE: spaceos-modules-sales VPS-service tovább futott ürült publish/ könyvtárból, root ellenőrzésekor a könyvtár már teljesen el is tűnt -- /health=500, restart TILOS jóváhagyás nélkül." }
     coordination:
       note: "Security task modul-lockot kér; frontend portal-lockkal külön sáv; task-index: docs/tasks/EPIC-PLATFORM-STABILITY-2026Q3/README.md"
 

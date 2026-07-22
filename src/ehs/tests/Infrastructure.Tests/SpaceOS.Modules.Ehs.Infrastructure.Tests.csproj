@@ -28,6 +28,8 @@
 
     <!-- EF Core InMemory (for unit tests if needed) -->
     <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="8.0.*" />
+    <!-- Lightweight in-memory endpoint contract tests (no Docker/database). -->
+    <PackageReference Include="Microsoft.AspNetCore.TestHost" Version="8.0.*" />
   </ItemGroup>
 
   <ItemGroup>
@@ -35,6 +37,7 @@
     <ProjectReference Include="../../src/Domain/SpaceOS.Modules.Ehs.Domain.csproj" />
     <ProjectReference Include="../../src/Application/SpaceOS.Modules.Ehs.Application.csproj" />
     <ProjectReference Include="../../src/Infrastructure/SpaceOS.Modules.Ehs.Infrastructure.csproj" />
+    <ProjectReference Include="../../src/Api/SpaceOS.Modules.Ehs.Api.csproj" />
     <ProjectReference Include="../../../spaceos-modules-hosting/src/SpaceOS.Modules.Hosting/SpaceOS.Modules.Hosting.csproj" />
     <!-- STAB-RLS-PROOF: shared non-superuser RLS proof fixture. -->
     <ProjectReference Include="../../../spaceos-modules-hosting/tests/SpaceOS.Modules.Hosting.RlsFixtures/SpaceOS.Modules.Hosting.RlsFixtures.csproj" />

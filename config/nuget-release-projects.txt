@@ -1,0 +1,18 @@
+# Release/runtime entry graphs audited by Invoke-DotNetPackageAudit.ps1.
+# Keep one repo-relative .csproj per line. Tests and standalone libraries use
+# separate targeted runs; this list answers what can be deployed as a host.
+src/dms/host/SpaceOS.Modules.DMS.Api.csproj
+src/ehs/src/Api/SpaceOS.Modules.Ehs.Api.csproj
+src/hr/src/Api/SpaceOS.Modules.HR.Api.csproj
+src/maintenance/host/SpaceOS.Modules.Maintenance.Host.csproj
+src/qa/host/SpaceOS.Modules.QA.Host.csproj
+src/SpaceOS.Modules.CRM/src/Lead.Api/SpaceOS.Modules.CRM.Api.csproj
+src/spaceos-kernel/SpaceOS.Kernel.Api/SpaceOS.Kernel.Api.csproj
+src/spaceos-modules/spaceos-modules-kontrolling/host/SpaceOS.Modules.Kontrolling.Host.csproj
+src/spaceos-modules-cutting/src/SpaceOS.Modules.Cutting.Api/SpaceOS.Modules.Cutting.Api.csproj
+src/spaceos-modules-ehs/Ehs.Api/Ehs.Api.csproj
+src/spaceos-modules-inventory/src/SpaceOS.Modules.Inventory.Api/SpaceOS.Modules.Inventory.Api.csproj
+src/spaceos-modules-joinery/SpaceOS.Modules.Joinery.Api/SpaceOS.Modules.Joinery.Api.csproj
+src/spaceos-modules-joinerytech/SpaceOS.Modules.JoineryTech.Api/SpaceOS.Modules.JoineryTech.Api.csproj
+src/spaceos-modules-procurement/src/SpaceOS.Modules.Procurement.Api/SpaceOS.Modules.Procurement.Api.csproj
+src/spaceos-modules-production/Production.Api/Production.Api.csproj

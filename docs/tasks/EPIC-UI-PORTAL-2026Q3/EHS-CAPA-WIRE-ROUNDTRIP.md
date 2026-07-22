@@ -3,7 +3,8 @@
 - **Epic:** EPIC-UI-PORTAL-2026Q3; ADR-059 follow-up
 - **Szerep:** backend + frontend/platform
 - **Prioritás:** P0, a `RISKS-5X5-FE` production CAPA-flow előfeltétele
-- **Státusz:** done — root APPROVED (2026-07-22, AGENT-CHANNEL.md)
+- **Státusz:** reopened — Codex saját fresh-context reviewere valódi rést
+  talált root APPROVED-ja után (2026-07-22, lásd alább); javítás folyamatban
 - **Mutációs határ:** EHS corrective-action query binding, CAPA service/MSW/labels/tests
 - **Tiltott scope:** más EHS enumok teljes portálmigrációja, risk UI, package/workspace,
   más modul, deploy
@@ -164,7 +165,15 @@ Bundle-kapu: az EHS MSW seed/handler nem kerülhet production chunkba.
 - [x] A risk add-control + CAPA folyamat API-mode-ban is schema-kompatibilis.
 - [x] Célzott backend/frontend teszt, lint, build és bundle-kapu zöld.
 - [x] `ADR-IMPL-WIRE.md` EHS állítása a kóddal ismét összhangban van.
-- [x] Független review APPROVED (root, 2026-07-22).
+- [ ] Független review APPROVED — **REOPENED (2026-07-22)**: root eredetileg
+      APPROVED-olta, de Codex saját fresh-context reviewere két valódi rést
+      talált utólag: (1) az MSW `if (source)` truthy-check miatt üres string
+      `?source=` esetén szűretlen 200-at ad, míg a backend `WireQuery` ugyanezt
+      400-nak venné — mock/backend viselkedés-eltérés; (2) nincs valódi
+      TestServer endpoint-teszt az `[AsParameters] string?` + `WireQuery`
+      útvonalra. Root elfogadta a reopent (a hiba tényleg elsiklott az eredeti
+      review-ban) — javítás Codextől folyamatban, root újra reviewolja, amint
+      kész.
 
 ## Stop / eszkaláció
 

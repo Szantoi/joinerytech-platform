@@ -17,9 +17,6 @@
 
     <!-- Npgsql PostgreSQL -->
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.10" />
-
-    <!-- HTTP Abstractions for IHttpContextAccessor (RLS) -->
-    <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.2.0" />
   </ItemGroup>
 
   <ItemGroup>

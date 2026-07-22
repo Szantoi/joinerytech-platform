@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using SpaceOS.Modules.Ehs.Application.Contracts;
 using SpaceOS.Modules.Ehs.Application.CorrectiveActions.Commands.CompleteCorrectiveAction;
 using SpaceOS.Modules.Ehs.Application.CorrectiveActions.Queries.ListCorrectiveActions;
+using SpaceOS.Modules.Ehs.Application.Wire;
 using SpaceOS.Modules.Ehs.Infrastructure.Data;
 
 namespace SpaceOS.Modules.Ehs.Api.Endpoints;
@@ -42,7 +43,17 @@ public static class CorrectiveActionEndpoints
         [FromServices] ITenantContext tenantContext,
         CancellationToken ct)
     {
-        var filter = new CapaFilter(request.Completed, request.AssignedTo, request.Source, request.SourceId);
+        if (!WireQuery.TryParse(
+                EhsWire.CapaSource,
+                request.Source,
+                "CAPA-forrás",
+                out var source,
+                out var sourceError))
+        {
+            return sourceError!;
+        }
+
+        var filter = new CapaFilter(request.Completed, request.AssignedTo, source, request.SourceId);
         var query = new ListCorrectiveActionsQuery(tenantContext.TenantId, filter);
 
         var result = await mediator.Send(query, ct).ConfigureAwait(false);
@@ -76,6 +87,6 @@ public static class CorrectiveActionEndpoints
 public record ListCorrectiveActionsRequest(
     bool? Completed = null,
     Guid? AssignedTo = null,
-    Domain.Enums.CapaSource? Source = null,
+    string? Source = null,
     Guid? SourceId = null
 );

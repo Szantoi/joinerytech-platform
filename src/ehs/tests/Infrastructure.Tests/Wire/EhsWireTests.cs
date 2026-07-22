@@ -106,6 +106,15 @@ public sealed class EhsWireTests
     public void RiskStatus_EnglishOrMiscasedKey_DoesNotParse(string wire)
         => EhsWire.RiskStatus.TryParse(wire, out _).Should().BeFalse();
 
+    [Theory]
+    [InlineData("Incident")]
+    [InlineData("SafetyWalk")]
+    [InlineData("RiskAssessment")]
+    [InlineData("Kockazatertekeles")]
+    [InlineData("")]
+    public void CapaSource_EnglishOrMiscasedKey_DoesNotParse(string wire)
+        => EhsWire.CapaSource.TryParse(wire, out _).Should().BeFalse();
+
     [Fact]
     public void JsonRoundTrip_EveryEnum_SerialisesAndParsesTheHungarianKey()
     {

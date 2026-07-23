@@ -4,7 +4,9 @@
 - **Szerep:** frontend/platform
 - **Prioritás:** P0
 - **Státusz:** in_progress — frontend service/MSW/UI függetlenül APPROVED;
-  production rollout a backend validációs kapun blokkolt
+  a backend validációs P1 kapu 2026-07-23-án ZÁRVA (lásd végrehajtási napló);
+  hátra: portál-szelet commit (EHS-WIZARD-HU entanglement) + végső integrált
+  ellenőrzés
 - **Függőség:** `RISKS-5X5-BE` kész; `ERPSEP-FE-MOCK-SEED-OWNERSHIP`
   review + integrált build-kapu
 - **Mutációs határ:** EHS risk service/FSM/MSW/UI/test, a root `mocks/ehs.ts`
@@ -62,8 +64,9 @@ akkor zárható, ha külön atomikus backend-fix:
 4. build + teljes EHS regresszió + OpenAPI diff review zöld.
 
 Root 2026-07-23-án megadta a fájlzár-ACK-ot az EHS API/behavior/test
-fájlokra. Az atomikus backend-fix még nem indult; annak reviewjáig
-production-ready státusz nem adható.
+fájlokra. Az atomikus backend-fix a Codex leállása után root-végrehajtásban
+elkészült és independent review után ZÁRVA — részletek a végrehajtási napló
+„2026-07-23 — backend validációs pipeline P1 KÉSZ" bejegyzésében.
 
 ## Üzleti cél
 
@@ -390,6 +393,57 @@ regressziója elfedésére.
   risk szelet sem commitolható biztonságosan vak path-staginggel, amíg a wizard
   nincs lezárva vagy a két diff nincs bizonyítottan atomikus egységekre bontva.
 - EHS portál commit, push vagy deploy nem történt.
+
+### 2026-07-23 — backend validációs pipeline P1 KÉSZ (root)
+
+- Codex leállása után a root átvette a fájlzárat (AGENT-CHANNEL.md-ben
+  bejelentve) és többagentes workflow-ban végrehajtotta az atomikus fixet:
+  3 párhuzamos recon → implementáció → 3-lencsés adverzariális review →
+  javító kör → újra-review.
+- **ValidationBehavior:** új
+  `src/ehs/src/Application/Common/Behaviors/ValidationBehavior.cs` a repo
+  kanonikus (maintenance/CRM) mintája szerint; egyetlen regisztráció az
+  `AddEhsModule` `AddMediatR` configjában (`cfg.AddBehavior`). A korábban
+  inert FluentValidation validatorok mostantól minden EHS command előtt
+  futnak.
+- **500-leak megelőzés modul-szinten:** a recon 13 endpointot azonosított,
+  ahol a ValidationException 500-ként szivárgott volna (risk FSM ×4,
+  safety-walk ×4, CAPA complete, PPE ×3, hazmat archive, location
+  deactivate). Mind a 11 érintett catch-hely explicit
+  `catch (ValidationException) → 404` mappinget kapott — az id-only route-ok
+  dokumentált (MSW-vel egyező) 204/404/409 kontraktusa szerint, mert üres id
+  sosem találhat erőforrást. Body-hordozó route-okon a meglévő generikus
+  catch adja a 400-at.
+- **Create metadata fix:** `.Produces<Guid>` →
+  `.Produces<CreateRiskAssessmentResponse>`; új typed record, a wire-alak
+  byte-azonos (`{"riskAssessmentId": uuid}`). Az openapi.yaml már eddig is
+  helyesen dokumentálta; csak 2 leíró sor került bele (future-date + CAPA-pár).
+- **Tesztek:** új `EhsValidationPipelineTestHost` (VALÓDI MediatR pipeline az
+  Application assembly-ből + validatorok + behavior, spy-repository-kkal) és
+  `RiskAssessmentValidationEndpointTests` — 28 teszt: blank/max-hossz
+  (1000 határ: max átmegy, max+1 400)/múltbeli dátum → 400 create-en és
+  update-en; féloldalas CAPA-pár mindkét irányban → 400 és a spy bizonyítja,
+  hogy semmi nem perzisztálódott; minden 400-esetnél a handler-rövidzár
+  spy-hívásszámmal bizonyítva; FSM ismeretlen id → 404, nem 500.
+- **Review-kör lelete és javítása:** az 1. mutációs review P0-t talált — a
+  pipeline-teszthost inline wiringje miatt a tesztek a production regisztráció
+  eltávolítása után is zöldek maradtak (vakteszt a DI-re nézve). Javítás: új
+  `EhsModuleRegistrationTests` — a VALÓDI `AddEhsModule` composition rootot
+  hívja és a ServiceDescriptorokat ellenőrzi (behavior pontosan egyszer +
+  validatorok regisztrálva). Mutációs újrafuttatás igazolta: a regisztráció
+  kivétele buktatja a pin-tesztet; a behavior-throw kilövése 17/28
+  pipeline-tesztet buktat.
+- **Kapuk (root által függetlenül újrafuttatva):** Api build 0 hiba;
+  Domain 130/130; Infrastructure 121/121 (baseline 91 + 28 pipeline + 2 pin),
+  Testcontainers Dockerrel futott. Scope-ellenőrzés: pontosan a lockolt
+  fájlok változtak (8 módosított + 4 új), semmi más.
+- **Elfogadott maradvány-P3-ak (nem blokkolók):** PUT/add-control
+  `Guid.Empty` + valid body → 400 (MSW: 404) — portálból elérhetetlen
+  degenerált input, a 400 mindkét route-on dokumentált; MSW `.strict()` vs
+  System.Text.Json unknown-key tolerancia — pre-existing; hibatest-alak
+  (`{error}` vs `{error,message}`) — pre-existing, a portal parser mindkettőt
+  kezeli; incident id-only route-ok 400-a (más aggregate-eknél 404) —
+  pre-existing generikus catch, degenerált inputra.
 
 ## Elfogadási kritériumok
 

@@ -1,3 +1,4 @@
+using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using SpaceOS.Modules.Ehs.Application.Contracts;
@@ -35,7 +36,7 @@ public static class RiskAssessmentEndpoints
         group.MapPost("/", CreateRiskAssessment)
             .WithName("CreateRiskAssessment")
             .WithSummary("Create a risk assessment (FSM entry: Draft / vazlat)")
-            .Produces<Guid>(StatusCodes.Status201Created)
+            .Produces<CreateRiskAssessmentResponse>(StatusCodes.Status201Created)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status409Conflict);
 
@@ -127,7 +128,9 @@ public static class RiskAssessmentEndpoints
                 request.LocationId);
 
             var id = await mediator.Send(command, ct).ConfigureAwait(false);
-            return Results.Created($"/api/ehs/risk-assessments/{id}", new { RiskAssessmentId = id });
+            return Results.Created(
+                $"/api/ehs/risk-assessments/{id}",
+                new CreateRiskAssessmentResponse(id));
         }
         catch (InvalidOperationException ex)
         {
@@ -303,6 +306,13 @@ public static class RiskAssessmentEndpoints
         {
             return Results.NotFound();
         }
+        catch (ValidationException)
+        {
+            // Pipeline guard (id/tenant NotEmpty) failed — an empty id can never
+            // match a resource. These routes document 204/404/409 only, and the
+            // portal mock also answers 404 for such ids, so no new 400 contract.
+            return Results.NotFound();
+        }
         catch (InvalidOperationException ex)
         {
             return Results.Conflict(new { Error = ex.Message });
@@ -346,3 +356,9 @@ public record AddControlRequest(
     Guid? CapaAssignedTo,
     DateTimeOffset? CapaDueDate
 );
+
+/// <summary>
+/// Create response — wire shape {"riskAssessmentId": uuid} (docs/openapi.yaml, portal
+/// zod contract). Typed so the OpenAPI metadata matches the runtime body.
+/// </summary>
+public record CreateRiskAssessmentResponse(Guid RiskAssessmentId);

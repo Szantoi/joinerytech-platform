@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "hosts": [
+    {
+      "service": "spaceos-abstractions",
+      "sourceState": "A VPS-en fut, de a checkoutban nincs auditálható hostforrás.",
+      "recoveryTask": "STAB-RELEASE-REPRO",
+      "evidence": "docs/knowledge/architecture/VPS_SERVICE_STATE_2026-07-16.md"
+    },
+    {
+      "service": "spaceos-modules-identity",
+      "sourceState": "A VPS-en fut, a kapcsolódó gitlink jelenleg üres/hiányos.",
+      "recoveryTask": "STAB-RELEASE-REPRO",
+      "evidence": "docs/tasks/EPIC-PLATFORM-STABILITY-2026Q3/STAB-RELEASE-REPRO.md"
+    },
+    {
+      "service": "spaceos-modules-sales",
+      "sourceState": "A VPS-en fut, de a hivatkozott forrásrepo nem áll rendelkezésre a checkoutban.",
+      "recoveryTask": "STAB-RELEASE-REPRO",
+      "evidence": "docs/tasks/EPIC-PLATFORM-STABILITY-2026Q3/STAB-RELEASE-REPRO.md"
+    }
+  ]
+}

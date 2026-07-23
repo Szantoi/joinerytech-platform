@@ -67,7 +67,7 @@
 ## Backlog
 
 FIX-PREEXISTING-TESTS (19 örökölt tesztbukás) · DS-RECONCILE (Gábor
-styleguide-ja ↔ spec) · ~~[`EHS-CAPA-WIRE-ROUNDTRIP`](EHS-CAPA-WIRE-ROUNDTRIP.md)~~
+styleguide-ja ↔ spec) · ~~[`EHS-CAPA-WIRE-ROUNDTRIP`](archive/EHS-CAPA-WIRE-ROUNDTRIP.md)~~
 **done, reopen utáni TestServer reviewval** ·
 [`RISKS-5X5-FE`](RISKS-5X5-FE.md) **in_progress: frontend APPROVED, backend
 ValidationBehavior/TestServer P1 blokkolja** ·

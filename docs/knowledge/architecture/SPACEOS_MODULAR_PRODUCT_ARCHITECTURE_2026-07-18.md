@@ -130,7 +130,7 @@ hozza létre a fix lépéseket.
 
 **Következmény:** Production- vagy Doorstar-migráció előtt kötelező az ownership
 lezárása. A már kiadott
-[`PROJECT-BOUNDARY-AUDIT`](../../tasks/EPIC-PROJECT-CORE-2026Q3/PROJECT-BOUNDARY-AUDIT.md)
+[`PROJECT-BOUNDARY-AUDIT`](../../tasks/EPIC-PROJECT-CORE-2026Q3/archive/PROJECT-BOUNDARY-AUDIT.md)
 feladatot ki kell terjeszteni a Production és Doorstar modellekre is.
 
 ### 3.3 Két eltérő modulazonosító-világ

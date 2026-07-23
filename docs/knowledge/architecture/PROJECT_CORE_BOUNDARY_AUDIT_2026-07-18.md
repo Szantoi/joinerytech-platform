@@ -3,7 +3,7 @@
 > **Dátum:** 2026-07-18 (Europe/Budapest)
 > **Jelleg:** bizonyíték-alapú, READ-ONLY ownership-audit — nem ADR és nem release-engedély
 > **Szerep:** architect (JoineryTech ROOT terminál)
-> **Forrás-task:** [`docs/tasks/EPIC-PROJECT-CORE-2026Q3/PROJECT-BOUNDARY-AUDIT.md`](../../tasks/EPIC-PROJECT-CORE-2026Q3/PROJECT-BOUNDARY-AUDIT.md)
+> **Forrás-task:** [`docs/tasks/EPIC-PROJECT-CORE-2026Q3/archive/PROJECT-BOUNDARY-AUDIT.md`](../../tasks/EPIC-PROJECT-CORE-2026Q3/archive/PROJECT-BOUNDARY-AUDIT.md)
 > **Kapcsolódó dokumentumok:**
 > [`SPACEOS_MODULAR_PRODUCT_ARCHITECTURE_2026-07-18.md`](SPACEOS_MODULAR_PRODUCT_ARCHITECTURE_2026-07-18.md) (célarchitektúra, MODARCH-02 = ez az audit kiterjesztve),
 > [`PROJECT_STATE_ASSESSMENT_2026-07-18.md`](PROJECT_STATE_ASSESSMENT_2026-07-18.md) (program-pillanatkép, P2 ajánlás)

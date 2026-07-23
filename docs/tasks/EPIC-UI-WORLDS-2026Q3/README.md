@@ -10,19 +10,19 @@ API tükre; a nem létező funkció disabled/gap állapotot kap.
 
 | Task | Modul | Prioritás | Feloldott blokkoló |
 |---|---|---:|---|
-| [`WORLDS-INV-OFFCUT-ROUTEFIX`](WORLDS-INV-OFFCUT-ROUTEFIX.md) | inventory | P0 | élő `/offcuts` 500 |
-| [`WORLDS-PROC-BUILDFIX`](WORLDS-PROC-BUILDFIX.md) | procurement | P0 | hiányzó query + rossz inbound path |
-| [`WORLDS-CUTTING-AUTHFIX`](WORLDS-CUTTING-AUTHFIX.md) | cutting | P0 | tenant query-param/policy gap |
-| [`WORLDS-INV-READ-API`](WORLDS-INV-READ-API.md) | inventory | P1 | stock/movements/KPI read model |
-| [`WORLDS-PROC-PO-FSM`](WORLDS-PROC-PO-FSM.md) | procurement | P1 | hiányzó PO átmenet-végpontok |
+| [`WORLDS-INV-OFFCUT-ROUTEFIX`](archive/WORLDS-INV-OFFCUT-ROUTEFIX.md) | inventory | P0 | ✅ done — élő `/offcuts` 500 |
+| [`WORLDS-PROC-BUILDFIX`](archive/WORLDS-PROC-BUILDFIX.md) | procurement | P0 | ✅ done — hiányzó query + rossz inbound path |
+| [`WORLDS-CUTTING-AUTHFIX`](archive/WORLDS-CUTTING-AUTHFIX.md) | cutting | P0 | ✅ done — tenant query-param/policy gap |
+| [`WORLDS-INV-READ-API`](archive/WORLDS-INV-READ-API.md) | inventory | P1 | ✅ done — stock/movements/KPI read model |
+| [`WORLDS-PROC-PO-FSM`](archive/WORLDS-PROC-PO-FSM.md) | procurement | P1 | ✅ done — hiányzó PO átmenet-végpontok |
 
 Az első három külön submodule-agenttel párhuzamosítható. A két P1 task csak saját
 submodule-jában futhat; közös kontraktusdoksit csak a root frissít.
 
 ## Production lánc
 
-1. [`WORLDS-PRODUCTION-FE`](WORLDS-PRODUCTION-FE.md)
-2. [`WORLDS-PRODUCTION-API-GATE`](WORLDS-PRODUCTION-API-GATE.md)
+1. [`WORLDS-PRODUCTION-FE`](archive/WORLDS-PRODUCTION-FE.md) — ✅ done
+2. [`WORLDS-PRODUCTION-API-GATE`](archive/WORLDS-PRODUCTION-API-GATE.md) — ✅ done
 3. [`WORLDS-PRODUCTION-REVIEW`](WORLDS-PRODUCTION-REVIEW.md)
 
 ## Warehouse lánc

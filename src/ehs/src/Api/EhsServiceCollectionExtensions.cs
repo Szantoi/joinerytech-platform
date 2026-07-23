@@ -1,6 +1,8 @@
 using System.Reflection;
 using FluentValidation;
+using MediatR;
 using Microsoft.EntityFrameworkCore;
+using SpaceOS.Modules.Ehs.Application.Common.Behaviors;
 using SpaceOS.Modules.Ehs.Application.Contracts;
 using SpaceOS.Modules.Ehs.Domain.Aggregates.RiskAssessmentAggregate;
 using SpaceOS.Modules.Ehs.Infrastructure.Data;
@@ -62,11 +64,14 @@ public static class EhsServiceCollectionExtensions
             bandsSection.GetValue("MediumMax", RiskBandConfiguration.Default.MediumMax),
             bandsSection.GetValue("HighMax", RiskBandConfiguration.Default.HighMax)));
 
-        // 6. MediatR (CQRS handlers)
+        // 6. MediatR (CQRS handlers) + the single shared validation pipeline: the
+        // step 8 validators run BEFORE every handler and fail as ValidationException.
+        // This AddBehavior call is the ONLY registration point for the behavior.
         services.AddMediatR(cfg =>
         {
             cfg.RegisterServicesFromAssembly(
                 Assembly.Load("SpaceOS.Modules.Ehs.Application"));
+            cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
         });
 
         // 7. AutoMapper (Domain → DTO mapping)

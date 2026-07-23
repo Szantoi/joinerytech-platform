@@ -2327,6 +2327,7 @@ components:
         reviewDueDate:
           type: string
           format: date-time
+          description: Must be in the future
         locationId:
           type: ['string', 'null']
           format: uuid
@@ -2354,6 +2355,7 @@ components:
         capaDueDate:
           type: ['string', 'null']
           format: date-time
+          description: Must be in the future; provide together with capaAssignedTo
 
     AddControlMeasureResult:
       type: object

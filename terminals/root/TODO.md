@@ -22,8 +22,9 @@
 - [ ] Wizard célzott tesztek, teljes EHS suite, ESLint, TypeScript/build.
 - [ ] Mobil + desktop + dark vizuális QA, fókuszcsapda/Escape/fókusz-visszaadás.
 - [ ] Fresh independent review; csak `APPROVED` után zárható vagy commitolható.
-- [ ] A már megadott Root fájlzár alapján a risk backend `ValidationBehavior` +
-      create/update/add-control TestServer 400 contract + response metadata fix.
+- [x] A már megadott Root fájlzár alapján a risk backend `ValidationBehavior` +
+      create/update/add-control TestServer 400 contract + response metadata fix
+      (2026-07-23 root, adversarial review APPROVED, kapuk zöldek).
 - [ ] EHS risk backend kapu után `RISKS-5X5-FE` végső integrált ellenőrzése.
 
 ## P0 — biztonság

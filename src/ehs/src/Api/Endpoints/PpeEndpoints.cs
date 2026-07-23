@@ -1,3 +1,4 @@
+using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using SpaceOS.Modules.Ehs.Application.Contracts;
@@ -244,6 +245,12 @@ public static class PpeEndpoints
         {
             return Results.NotFound();
         }
+        catch (ValidationException)
+        {
+            // Pipeline guard (id/tenant NotEmpty): an empty id can never match a
+            // resource — 404 per the documented 204/404/409 contract (no 400 here).
+            return Results.NotFound();
+        }
         catch (InvalidOperationException ex)
         {
             return Results.Conflict(new { Error = ex.Message });
@@ -359,6 +366,11 @@ public static class PpeEndpoints
         {
             return Results.NotFound();
         }
+        catch (ValidationException)
+        {
+            // Pipeline guard (empty id/tenant) → 404, same contract as DeactivateItem.
+            return Results.NotFound();
+        }
         catch (InvalidOperationException ex)
         {
             return Results.Conflict(new { Error = ex.Message });
@@ -379,6 +391,11 @@ public static class PpeEndpoints
         }
         catch (KeyNotFoundException)
         {
+            return Results.NotFound();
+        }
+        catch (ValidationException)
+        {
+            // Pipeline guard (empty id/tenant) → 404, same contract as DeactivateItem.
             return Results.NotFound();
         }
         catch (InvalidOperationException ex)

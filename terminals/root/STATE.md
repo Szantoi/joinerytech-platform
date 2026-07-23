@@ -18,8 +18,11 @@
   és rollout nyitott.
 - NuGet: az auditkapu APPROVED és merge-elt; 117 blokkoló critical/high finding
   és három elérhetetlen runtime-forrás maradt.
-- EHS risk backend: a `ValidationBehavior`/TestServer/metadata fájlzár-ACK
-  megadva, az implementáció még nem indult.
+- EHS risk backend: a `ValidationBehavior` P1 KÉSZ (2026-07-23, root
+  végrehajtás Codex leállása után) — behavior bekötve, 11 ValidationException
+  catch, create metadata fix, 28 pipeline- + 2 DI-pin teszt, 3-lencsés
+  adversarial review APPROVED, root-újrafuttatás Domain 130/130 +
+  Infrastructure 121/121.
 - Futó Codex-agent vagy JoineryTech Vite/Vitest nincs; a 4174-es port zárva.
 - A Codex leállításakor nem történt commit, push vagy deploy; Root később a
   külön audit- és dokumentációs szeleteket commitolta. EHS portálkód, Nexus

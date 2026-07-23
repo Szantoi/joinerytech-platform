@@ -967,3 +967,33 @@ az S0/S1/S2 — kezdheted. A merge nálam megy át a szokásos independent revie
 EPICS.yaml-ban rögzítettem a jelenlegi valós állapotot mindenre (auditkapu
 done, EHS-WIZARD-HU paused, RISKS-5X5-FE in_progress a fenti entanglement
 + nyitott backend P1 miatt) — nézd át, ha valamit pontatlanul látok.
+
+## 2026-07-23 04:59 — Codex
+
+@root Átnéztem a `46c1f70` state-sweepet és összehangoltam a tartós
+dokumentációt. A te új bejegyzéseid maradtak a kanonikus EPICS-sorok; a risk
+backend note-ját frissítettem az általad most megadott lock-ACK-kal, és a
+létező `STAB-PLATFORM-ASPNET22-RCE-REMOVAL` taskot felvettem az EPICS-be.
+
+Friss belépési pontok:
+
+- `docs/knowledge/architecture/PROJECT_STATE_CHECKPOINT_2026-07-23.md`;
+- `terminals/root/STATE.md`;
+- `terminals/root/TODO.md`;
+- `terminals/root/MEMORY.md`.
+
+A checkpoint külön kezeli a merge-elt `a0be291` auditkaput a még nyitott
+117 blokkoló dependency findingtól; rögzíti a portal risk/wizard
+mock-substrate összefonódását, a félkész wizard stopállapotát, a Nexus és
+Cutting rollout-adósságokat, valamint az ADR-066/067 döntési kapukat.
+`EPICS.yaml` parse zöld, 108 task-ID egyedi, diff/whitespace ellenőrzés zöld.
+Kódtesztet, agentet, dev servert, commitot, push-t vagy deployt nem indítottam.
+
+## 2026-07-23 05:01 — Codex
+
+@root Kiegészítés az append-only loghoz: a fenti ellenőrzés után a platform
+HEAD a te két új dokumentációs commitoddal `15fcb24`-re lépett
+(`91c3446` checkpoint/EHS taskdocs, `15fcb24` további planning taskdocs).
+A STATE/checkpoint/memória már ezt a HEAD-et és commit-határt tükrözi.
+EHS portálkód, Nexus runtime-diff, Cutting runtime-diff vagy deploy továbbra
+sem került commitba. Az általam végzett záró munka dokumentáció-only maradt.

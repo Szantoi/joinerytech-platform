@@ -1,8 +1,8 @@
 # JoineryTech projektállapot-checkpoint — 2026-07-23
 
-> **Pillanatkép:** 2026-07-23 04:41–05:30, Europe/Budapest  
-> **Kanonikus élő státusz:** [`EPICS.yaml`](../../../EPICS.yaml)  
-> **Következő feladatok:** [`terminals/root/TODO.md`](../../../terminals/root/TODO.md)  
+> **Pillanatkép:** 2026-07-23 04:41–04:59, Europe/Budapest
+> **Kanonikus élő státusz:** [`EPICS.yaml`](../../../EPICS.yaml)
+> **Következő feladatok:** [`terminals/root/TODO.md`](../../../terminals/root/TODO.md)
 > **Előző teljes felmérés:**
 > [`PROJECT_STATE_ASSESSMENT_2026-07-18.md`](PROJECT_STATE_ASSESSMENT_2026-07-18.md)
 
@@ -14,16 +14,20 @@ a még nyitott kapuk szétválasztásával tudjon biztonságosan folytatódni.
 
 | Terület | Pillanatkép | Következmény |
 |---|---|---|
-| Platform root | `main@903f2ed`, dirty working tree | `git add -A`, tömeges commit és formázás tilos |
+| Platform root | `main@15fcb24`, dirty working tree | `git add -A`, tömeges commit és formázás tilos |
 | Portal | `main@1787e0b`, dirty | Két külön munkaszelet keveredik: APPROVED risk UI és félkész EHS wizard |
 | Cutting | `4341390`, dirty | Csak a trusted-proxy/tenant-host rész-szelet APPROVED; a teljes dirty fa nem az |
 | Nexus | a root repository része, lokális dirty diff | Auth/RBAC rész-szelet tesztelt; rotáció és rollout nem történt |
 | Gitlinkek | a teljes `git submodule status` nem fut le | A mapping nélküli `joinerytech-keycloak-theme` továbbra is release-adósság |
 | Fejlesztői futás | 4174 zárva; nincs JoineryTech Vite/Vitest háttérfolyamat | A munka szándékosan leállított állapotban van |
 
-Sem commit, push vagy deploy nem történt a 2026-07-23-i Codex munkakör végén.
-Minden lokális diff megőrzendő; idegen változtatást tilos resetelni vagy
-„tisztítás” címén törölni.
+A 2026-07-23-i Codex munkakör végén nem történt commit, push vagy deploy. Ezt
+követően Root önállóan ellenőrizte és `a0be291` alatt commitolta a NuGet
+auditkaput, `46c1f70` alatt az EPICS state-sweepet, `91c3446` alatt a checkpoint
+és EHS taskdokumentációkat, majd `15fcb24` alatt a fennmaradó tervezési
+taskdokumentumokat. EHS portálkódot, Nexus runtime-diffet vagy Cutting
+runtime-diffet Root sem commitolt. Minden lokális diff megőrzendő; idegen
+változtatást tilos resetelni vagy „tisztítás” címén törölni.
 
 ## 2. Bizonyított, merge-elt alap
 
@@ -55,7 +59,8 @@ finding és 0 regresszió. A részletes napló:
 **Nyitott P1:** az EHS backend regisztrál validatorokat, de a MediatR
 `ValidationBehavior` production bekötése nincs bizonyítva. Valós TestServer
 create/update/add-control 400-as kontraktusteszt és a create response metadata
-javítása kell. Backend fájlzár-ACK nélkül nem módosítható.
+javítása kell. Root 2026-07-23-án megadta a szűk backend fájlzár-ACK-ját; a
+feladat végrehajtható, de még nem indult el.
 
 ### 3.2 EHS-WIZARD-HU
 
@@ -102,7 +107,8 @@ kezelni.
 
 ### 3.5 Platform NuGet és runtime-lefedettség
 
-**Állapot:** az auditkapu APPROVED; a sérülékenységek nincsenek kijavítva.
+**Állapot:** az auditkapu APPROVED és `a0be291` alatt merge-elt; a
+sérülékenységek nincsenek kijavítva.
 
 - Pester 22/22 és adversarial process-tree/parser/fail-closed review zöld.
 - Checkout baseline: 15 host, 25 finding, 3 elérhetetlen runtime-forrás.
@@ -117,8 +123,8 @@ külön build/teszt/security review-val kell végrehajtani.
 
 ## 4. Döntési és rollout-blokkolók
 
-1. **EHS risk backend:** explicit root fájlzár az API DI/behavior/TestServer/
-   response metadata szeletre.
+1. **EHS risk backend:** a root fájlzár megadva; az API
+   DI/behavior/TestServer/response metadata szelet végrehajtása és reviewja vár.
 2. **Nexus:** emberi jóváhagyás a tokenrotációhoz, route/tool policy owner és
    production rollout.
 3. **Cutting:** production proxy/host config és Nginx rollout; public quote
@@ -138,8 +144,8 @@ külön build/teszt/security review-val kell végrehajtani.
    elkülöníteni; tömeges stage tilos.
 3. A wizard célzott tesztjei → teljes EHS suite → ESLint → TypeScript/build →
    mobil/dark vizuális QA → fresh independent review.
-4. Root ACK után az EHS risk backend P1 atomikus javítása és TestServer/OpenAPI
-   kapuja; csak ezután zárható a `RISKS-5X5-FE`.
+4. A már megadott Root ACK alapján az EHS risk backend P1 atomikus javítása és
+   TestServer/OpenAPI kapuja; csak ezután zárható a `RISKS-5X5-FE`.
 5. Biztonsági sorrend: Nexus rotáció/policy → Cutting proxy rollout és
    capability/ownership → platform dependency-szeletek.
 6. ERP csomagolás csak az ADR-066/067 döntések elfogadása után.

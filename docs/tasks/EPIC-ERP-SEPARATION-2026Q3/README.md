@@ -43,12 +43,12 @@ explicit átadási kapu használható.
 
 | Szakasz | Task | Szerep | Belépési feltétel | Eredmény |
 |---|---|---|---|---|
-| E1 | [`ERPSEP-01`](ERPSEP-01-CAPABILITY-BOUNDARY-AUDIT.md) | architect | nincs | ERP/kernel/industry/instance ownership-audit |
+| E1 | [`ERPSEP-01`](archive/ERPSEP-01-CAPABILITY-BOUNDARY-AUDIT.md) | architect | nincs | ✅ done — ERP/kernel/industry/instance ownership-audit |
 | E1 | [`ERPSEP-02`](ERPSEP-02-MODULE-CATALOG-ADR.md) | architect/security | ERPSEP-01 | kanonikus ModuleId és aláírt katalógus ADR |
 | E1 | [`ERPSEP-03`](ERPSEP-03-CROSS-MODULE-CONTRACT-ADR.md) | architect/backend | ERPSEP-01 | semleges referenciák, event/API port ADR |
-| E1 | [`ERPSEP-PACKAGE-BOUNDARY-PREFLIGHT`](ERPSEP-PACKAGE-BOUNDARY-PREFLIGHT.md) | platform-tooling | ERPSEP-01 | konfigurációvezérelt frontend/backend függőségi regressziókapu |
-| E1 | [`ERPSEP-FE-CROSS-MODULE-DEBT-01`](ERPSEP-FE-CROSS-MODULE-DEBT-01.md) | frontend/platform | boundary preflight | Controlling→EHS mély import megszüntetése, shared UI ownership |
-| E1 | [`ERPSEP-FE-MOCK-SEED-OWNERSHIP`](ERPSEP-FE-MOCK-SEED-OWNERSHIP.md) | frontend/platform | cross-module debt review | CRM/HR/Kontrolling seed leválasztása a legacy shell-mockokról |
+| E1 | [`ERPSEP-PACKAGE-BOUNDARY-PREFLIGHT`](archive/ERPSEP-PACKAGE-BOUNDARY-PREFLIGHT.md) | platform-tooling | ERPSEP-01 | ✅ done — konfigurációvezérelt frontend/backend függőségi regressziókapu |
+| E1 | [`ERPSEP-FE-CROSS-MODULE-DEBT-01`](archive/ERPSEP-FE-CROSS-MODULE-DEBT-01.md) | frontend/platform | boundary preflight | ✅ done — Controlling→EHS mély import megszüntetése, shared UI ownership |
+| E1 | [`ERPSEP-FE-MOCK-SEED-OWNERSHIP`](archive/ERPSEP-FE-MOCK-SEED-OWNERSHIP.md) | frontend/platform | cross-module debt review | ✅ done — CRM/HR/Kontrolling seed leválasztása a legacy shell-mockokról |
 | E2 | [`MODULE-PACKAGES`](MODULE-PACKAGES.md) | frontend | ERPSEP-02, MODULE-FOLDERS | workspace és publikus modulcsomagok |
 | E2 | [`ERPSEP-05`](ERPSEP-05-BACKEND-PACKAGING-CONTRACT.md) | backend | ERPSEP-02, STAB-RLS-PROOF | backend package/hosting szerződés |
 | E2 | [`ERPSEP-06`](ERPSEP-06-INSTANCE-CONTEXT.md) | backend/frontend/security | ERPSEP-02, MODULE-PACKAGES | hitelesített runtime composition context |

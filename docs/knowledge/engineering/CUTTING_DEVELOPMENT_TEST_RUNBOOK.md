@@ -288,7 +288,7 @@ QUALITY.md szerinti kritikus security taskot.
 - [ ] commit/pin/deploy következő lépése.
 
 Jelenlegi átadás:
-[WORLDS-CUTTING-AUTHFIX task](../../tasks/EPIC-UI-WORLDS-2026Q3/WORLDS-CUTTING-AUTHFIX.md).
+[WORLDS-CUTTING-AUTHFIX task](../../tasks/EPIC-UI-WORLDS-2026Q3/archive/WORLDS-CUTTING-AUTHFIX.md).
 
 ## 9. Release kapu
 

@@ -8,7 +8,7 @@ ADR-ben.
 
 | Task | Szerep | Státusz | Eredmény |
 |---|---|---|---|
-| [`PROJECT-BOUNDARY-AUDIT`](PROJECT-BOUNDARY-AUDIT.md) | architect/backend | done | [`PROJECT_CORE_BOUNDARY_AUDIT_2026-07-18.md`](../../knowledge/architecture/PROJECT_CORE_BOUNDARY_AUDIT_2026-07-18.md) |
+| [`PROJECT-BOUNDARY-AUDIT`](archive/PROJECT-BOUNDARY-AUDIT.md) | architect/backend | done | [`PROJECT_CORE_BOUNDARY_AUDIT_2026-07-18.md`](../../knowledge/architecture/PROJECT_CORE_BOUNDARY_AUDIT_2026-07-18.md) |
 | [`PROJECT-CORE-ADR`](PROJECT-CORE-ADR.md) | architect/root | pending, kiadható | döntés a Projects ownershipról és a Collaboration bounded contextről |
 
 ## Nem implementálható még

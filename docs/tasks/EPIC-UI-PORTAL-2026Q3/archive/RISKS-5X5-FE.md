@@ -3,10 +3,10 @@
 - **Epic:** EPIC-UI-PORTAL-2026Q3; ERP-szétválasztási follow-up
 - **Szerep:** frontend/platform
 - **Prioritás:** P0
-- **Státusz:** in_progress — frontend service/MSW/UI függetlenül APPROVED;
-  a backend validációs P1 kapu 2026-07-23-án ZÁRVA (lásd végrehajtási napló);
-  hátra: portál-szelet commit (EHS-WIZARD-HU entanglement) + végső integrált
-  ellenőrzés
+- **Státusz:** done (2026-07-23) — frontend APPROVED, backend validációs P1
+  ZÁRVA, portál-szelet mergelve `joinerytech-portal@1f3ca31` (az EHS-WIZARD-HU
+  szelettel atomikusan, az entanglement feloldása után), végső integrált
+  ellenőrzés zöld (lásd végrehajtási napló)
 - **Függőség:** `RISKS-5X5-BE` kész; `ERPSEP-FE-MOCK-SEED-OWNERSHIP`
   review + integrált build-kapu
 - **Mutációs határ:** EHS risk service/FSM/MSW/UI/test, a root `mocks/ehs.ts`
@@ -444,6 +444,20 @@ regressziója elfedésére.
   (`{error}` vs `{error,message}`) — pre-existing, a portal parser mindkettőt
   kezeli; incident id-only route-ok 400-a (más aggregate-eknél 404) —
   pre-existing generikus catch, degenerált inputra.
+
+### 2026-07-23 — lezárás: entanglement feloldva, atomikus merge
+
+- A root átvette és befejezte a szüneteltetett `EHS-WIZARD-HU` szeletet
+  (külön 3-lencsés adverzariális review APPROVED), így a megosztott
+  mock-substrate entanglement feloldódott.
+- Mindkét szelet atomikusan mergelve: `joinerytech-portal@1f3ca31`
+  (45 fájl, 3788+/478-), platform-pin frissítve.
+- Végső integrált ellenőrzés (root által futtatva): portál EHS suite
+  **141/141**, wizard/store/utils **30/30**, `npm run build` PASS
+  (csak az ismert >500 kB warning), boundary **15/15, 0 új**; backend
+  Domain **130/130** + Infrastructure **121/121**.
+- A slice-A őrző reviewer diff-szinten igazolta, hogy az APPROVED risk
+  funkcionalitás érintetlen maradt a wizard-befejezés alatt.
 
 ## Elfogadási kritériumok
 

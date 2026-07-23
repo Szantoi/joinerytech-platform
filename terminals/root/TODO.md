@@ -16,16 +16,20 @@
 
 ## P0 — félkész EHS munka
 
-- [ ] `EHS-WIZARD-HU`: az ingest-agent félbehagyott változtatásainak diff-reviewja.
-- [ ] Reporter/eventId retry szerződés és „hiányzó reporter” véges, fail-closed
-      működésének ellenőrzése.
-- [ ] Wizard célzott tesztek, teljes EHS suite, ESLint, TypeScript/build.
-- [ ] Mobil + desktop + dark vizuális QA, fókuszcsapda/Escape/fókusz-visszaadás.
-- [ ] Fresh independent review; csak `APPROVED` után zárható vagy commitolható.
+- [x] `EHS-WIZARD-HU`: diff-review + befejezés + fresh review (2026-07-23 root,
+      3-lencsés adversarial review APPROVED; mergelve portal@1f3ca31).
+- [x] Reporter/eventId retry szerződés és „hiányzó reporter” fail-closed
+      működés ellenőrizve (ingest-contract lencse, edge-inputokkal).
+- [x] Wizard célzott tesztek (30/30), teljes EHS suite (141/141), ESLint,
+      TypeScript/build zöld.
+- [ ] Mobil + desktop + dark vizuális QA böngészőben (Gábor) — az egyetlen
+      nyitott acceptance-tétel az `EHS-WIZARD-HU` done-jához; a
+      fókuszcsapda/Escape/fókusz-visszaadás teszt-szinten bizonyított.
 - [x] A már megadott Root fájlzár alapján a risk backend `ValidationBehavior` +
       create/update/add-control TestServer 400 contract + response metadata fix
       (2026-07-23 root, adversarial review APPROVED, kapuk zöldek).
-- [ ] EHS risk backend kapu után `RISKS-5X5-FE` végső integrált ellenőrzése.
+- [x] `RISKS-5X5-FE` végső integrált ellenőrzés: portál 141/141 + 30/30,
+      backend 130/130 + 121/121, boundary 15/15 — task done, archiválva.
 
 ## P0 — biztonság
 

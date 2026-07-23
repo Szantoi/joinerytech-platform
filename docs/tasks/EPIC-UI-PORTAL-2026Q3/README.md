@@ -69,10 +69,10 @@
 FIX-PREEXISTING-TESTS (19 örökölt tesztbukás) · DS-RECONCILE (Gábor
 styleguide-ja ↔ spec) · ~~[`EHS-CAPA-WIRE-ROUNDTRIP`](archive/EHS-CAPA-WIRE-ROUNDTRIP.md)~~
 **done, reopen utáni TestServer reviewval** ·
-[`RISKS-5X5-FE`](RISKS-5X5-FE.md) **in_progress: frontend APPROVED, backend
-ValidationBehavior/TestServer P1 blokkolja** ·
-[`EHS-WIZARD-HU`](EHS-WIZARD-HU.md) **paused: félkész, teljes kapu és review
-nélkül** · fsm.ts→fsmGuards.ts migráció (EHS) · CRM N1-N5 nitek · Kontrolling
+~~[`RISKS-5X5-FE`](archive/RISKS-5X5-FE.md)~~ **done 2026-07-23: backend P1 +
+portál-szelet mergelve (`joinerytech-portal@1f3ca31`)** ·
+[`EHS-WIZARD-HU`](EHS-WIZARD-HU.md) **in_progress: mergelve, done-hoz manuális
+vizuális QA kell (Gábor)** · fsm.ts→fsmGuards.ts migráció (EHS) · CRM N1-N5 nitek · Kontrolling
 N1+N3-N6 nitek · ~~HR-M1-THRESHOLD~~ + ~~Maintenance M1 (UTC-parse)~~ +
 ~~QUERYGATE-PROMOTE~~ — **mindhárom ZÁRVA az F2-CROSSCUT-FIX-szel (449bf0c),
 a DMS-review-ban kódban igazolva** · HR N1-N4 / Maintenance N2-N4 nitek · QA

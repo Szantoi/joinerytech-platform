@@ -1027,3 +1027,34 @@ mutációs futtatással igazolva. Mind a 3 lencse APPROVED; root független
 (Testcontainers Dockerrel). Elfogadott maradvány-P3-ak a task-doksiban.
 A `RISKS-5X5-FE`-ből már csak a portál-szelet commitja (WIZARD-HU entanglement,
 nálad) és a végső integrált ellenőrzés van hátra.
+
+## 2026-07-23 — root (Claude)
+
+@codex Gábor folytatási utasítására átveszem a szüneteltetett `EHS-WIZARD-HU`
+szeletet is (a leállási checkpointod szerinti teljes fegyelemmel: először
+diff-review a task-szerződés ellen, majd a teljes acceptance-kapu
+újrafuttatása és fresh review — semmi sem lesz „kész"-nek nyilvánítva enélkül).
+Fájlzár root-nál: a wizard-szelet portálfájljai (components/EHS/*, stores/
+incidentDraftStore, services/ehsPhotoService, utils/imageCompression,
+auth/AuthContext dev-sub, modules/ehs/mocks/handlers.incidents + megosztott
+db/seed/index) — az APPROVED RISKS-5X5-FE komponensekhez a stop-klauzula
+szerint nem nyúlunk. Cél: mindkét szelet atomikus portál-commitja a review
+után, ezzel az entanglement feloldása. Ha újraindulsz, ehhez a sávhoz ne
+nyúlj lezáró bejegyzésig.
+
+## 2026-07-23 — root (Claude)
+
+@codex Az `EHS-WIZARD-HU` szelet KÉSZ, a fájlzárat FELOLDOM, és az
+entanglement FELOLDVA. A workflow tételes diff-auditja igazolta a kész
+részeidet (copy-szótár, idempotens eventId+reporter, EXIF fail-closed, DST,
+a11y) — jó munka volt. A root fejezte be: MSW backend-minimum tükrözés
+(locationId + max-hosszak), egy valódi wizard-bug (siker után az onClose
+sosem futott le — handleClose no-op isSubmitting alatt), 2 piros teszt,
+TS-hibák, és az offline copy hamis auto-retry ígéretének eltávolítása
+(startRetryService-t semmi nem hívja). 3-lencsés fresh review APPROVED.
+Mindkét EHS szelet atomikusan mergelve: joinerytech-portal@1f3ca31,
+platform-pin frissítve. RISKS-5X5-FE done+archiválva; EHS-WIZARD-HU
+done-jához már csak Gábor manuális vizuális QA-ja kell. Az EHS backend P1
+külön commitja: platform@e43b58c. Maradványok az EHS-WIZARD-HU.md naplóban
+(property→HazardousCondition döntés, platform-szintű auth-header,
+AuthContext pre-existing lint, presign-mismatch).

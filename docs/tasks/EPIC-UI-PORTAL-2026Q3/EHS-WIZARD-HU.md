@@ -3,8 +3,9 @@
 - **Epic:** EPIC-UI-PORTAL-2026Q3 backlog follow-up
 - **Szerep:** frontend/platform
 - **Prioritás:** P1
-- **Státusz:** paused — részleges implementáció a working tree-ben; a futó agent
-  2026-07-23-án megszakítva, teljes kapu és review még nincs
+- **Státusz:** in_progress — a root 2026-07-23-án átvette, befejezte és
+  fresh review után mergelte (`joinerytech-portal@1f3ca31`); a done-hoz
+  kizárólag a manuális mobil+desktop+dark vizuális QA hiányzik (Gábor)
 - **Cél:** a mobil EHS gyorsbejelentő teljesen magyar, akadálymentes és a valós
   `/api/ehs/events` szerződéssel idempotens legyen, félrevezető adatvédelmi
   állítás nélkül.
@@ -166,3 +167,44 @@ adatvédelmileg félrevezető wizardot.
 - A slice **nem reviewzott és nem commitolható kész állapotként**. Folytatáskor
   először diff-review és a fenti acceptance teljes újrafuttatása szükséges.
 - Commit, push és deploy nem történt.
+
+### 2026-07-23 — root-átvétel, befejezés és merge
+
+- Codex leállása után a root átvette a szeletet (AGENT-CHANNEL.md-ben
+  bejelentve) és többagentes workflow-ban fejezte be: 3 párhuzamos recon
+  (tételes diff-audit a szerződés ellen / élő kapu-állapot / backend
+  wire-igazság forrásból) → implementáció → 3-lencsés adverzariális review
+  (ingest-kontraktus, a11y+copy+design, privacy+slice-A-őrzés) — **APPROVED
+  első körben**.
+- **Recon-baseline:** wizard-suite PIROS (2 bukó teszt), 2 TS-hiba,
+  1 ESLint-hiba+1 warning; az EHS modul-suite zöld volt. A kanonikus ingest
+  backend forrásból azonosítva: `src/spaceos-modules-ehs` `EventsController`
+  (`api/ehs/events`) — nincs legacy másolat, nincs kétértelműség.
+- **Codex kész részei igazolva:** magyar copy-szótár (incidentWizardCopy.ts
+  egyetlen forrás, wire-kulcsok érintetlenek), idempotens top-level `eventId`
+  + OIDC `sub` reporter fail-closed + draft-persistencia, EXIF fail-closed
+  photo pipeline (JPEG/PNG + 10 MB guard), DST-biztos `incidentWizardDate`
+  helper + tesztek, dialog a11y, semantic tokenek.
+- **Root által befejezett/javított:** MSW backend-minimum tükrözés
+  (locationId kötelező + max-hosszak: 500/2000/100 — a mock nem lehet zöld,
+  ahol a valós host 400-at ad); az ingest-teszt nem kodifikálja többé a
+  `locationId:null→201` hibás szerződést; **valódi wizard-bug**: sikeres
+  beküldés után a `handleClose()` `isSubmitting` alatt némán no-op volt, így
+  az `onClose` sosem futott le — most közvetlen `onClose()` hívás; 2 piros
+  teszt javítva (focus-restore stabil fával, toast-alert ütközés); TS-hibák
+  a store-tesztben; exhaustive-deps warning; offline notice copy csak
+  bizonyított viselkedést ígér (a sosem hívott `startRetryService`
+  automatikus-retry ígérete és a hamis `/3` számláló eltávolítva).
+- **Kapuk (root által függetlenül is újrafuttatva):** wizard/store/utils
+  **30/30**, EHS suite **141/141** (slice-A tesztszám nem csökkent), ESLint
+  0 hiba/0 warning az érintett fájlokon, `npm run build` PASS (wizard/mock
+  kód csak a dinamikus MSW chunkban), boundary **15/15, 0 új**.
+- **Merge:** mindkét szelet atomikusan `joinerytech-portal@1f3ca31`
+  (a megosztott mock-substrate miatt), platform-pin frissítve.
+- **Nyitva a done-hoz:** manuális mobil+desktop+dark vizuális QA (Gábor).
+- **Külön követendő maradványok (nem e task scope-ja):**
+  `property→HazardousCondition` contract-döntés (tiltott scope volt);
+  Authorization header hiánya platform-szintű (MSW→API élesítés wave-2);
+  `AuthContext` pre-existing ESLint-hiba (129. sor, facility-bootstrap
+  effect); presign name/size/mime vs. tömörített fájl eltérés (valós S3
+  presign-nál rendezendő); MSW timestamp-parse és clock-skew tükrözés.

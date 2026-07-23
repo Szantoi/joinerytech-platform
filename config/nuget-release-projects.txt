@@ -1,6 +1,8 @@
-# Release/runtime entry graphs audited by Invoke-DotNetPackageAudit.ps1.
+# Checked-out release/runtime entry graphs audited by Invoke-DotNetPackageAudit.ps1.
 # Keep one repo-relative .csproj per line. Tests and standalone libraries use
-# separate targeted runs; this list answers what can be deployed as a host.
+# separate targeted runs. This is not a full platform inventory while
+# config/nuget-unavailable-runtime-hosts.json contains entries; use the
+# script's -ReleaseInventory gate so missing VPS host sources block release.
 src/dms/host/SpaceOS.Modules.DMS.Api.csproj
 src/ehs/src/Api/SpaceOS.Modules.Ehs.Api.csproj
 src/hr/src/Api/SpaceOS.Modules.HR.Api.csproj

@@ -7,9 +7,89 @@ Repo-level automation scripts. Currently:
 - `Invoke-DotNetTestSafe.Tests.ps1` — Pester tests for the above.
 - `Invoke-VpsHealthSmoke.ps1` — read-only VPS service/health smoke check
   (STAB-RELEASE-REPRO). See below.
+- `Invoke-DotNetPackageAudit.ps1` — sequential, read-only NuGet vulnerability
+  gate with machine-readable JSON output; explicit project list or `-Discover`
+  opt-in is required. See below.
 - `federation-watcher.sh` — federation inbox/outbox watcher (unrelated, pre-existing).
 - `check-erp-module-boundaries.mjs` (+ `tests/`) — ERP module-boundary lint check
   (unrelated, pre-existing).
+
+## Invoke-DotNetPackageAudit.ps1 — deterministic NuGet advisory gate
+
+The script runs `dotnet list package --vulnerable --include-transitive`
+sequentially and emits one stable JSON document. It defaults to `--no-restore`
+so a normal audit does not change the package graph. A fresh restore requires
+the explicit `-Restore` switch. To avoid accidental CPU/load spikes, a full
+workspace scan never happens implicitly: pass `-Project`, a newline-delimited
+`-ProjectListPath`, or opt in with `-Discover`. Every target and project-list
+file must resolve under `-RootPath`; every target must be an existing `.csproj`.
+Paths containing a junction/symlink below the trusted root are rejected, and
+discovery skips dependency/generated trees such as `node_modules`, `bin`,
+`obj`, `artifacts`, `dist`, `coverage` and `TestResults`.
+
+```powershell
+# One or more explicit projects; exits 1 for High/Critical findings
+powershell -File scripts/Invoke-DotNetPackageAudit.ps1 `
+  -Project src/ehs/src/Api/SpaceOS.Modules.Ehs.Api.csproj
+
+# Full repository discovery, serial execution, optional CI artifact
+powershell -File scripts/Invoke-DotNetPackageAudit.ps1 `
+  -Discover -ProjectTimeoutSeconds 180 `
+  -SummaryPath artifacts/nuget-audit.json
+
+# Stable release-host inventory (15 deployable entry graphs)
+powershell -File scripts/Invoke-DotNetPackageAudit.ps1 `
+  -ProjectListPath config/nuget-release-projects.txt
+
+# Full runtime release gate: the 15 checkout hosts plus machine-readable
+# blockers for VPS services whose source is currently unavailable
+powershell -File scripts/Invoke-DotNetPackageAudit.ps1 -ReleaseInventory
+
+# Report-only run; findings remain in JSON but do not fail the gate
+powershell -File scripts/Invoke-DotNetPackageAudit.ps1 `
+  -Project <project.csproj> -FailOnSeverity None
+```
+
+Exit codes:
+
+- `0`: audit completed and no finding met `-FailOnSeverity`;
+- `1`: at least one finding met the configured threshold;
+- `2`: invalid usage, timeout, missing project/assets, unavailable runtime-host
+  source, or `dotnet` audit error.
+
+The JSON includes per-project duration/status/findings, advisory URLs,
+severity totals, blocking count, unavailable runtime-host details, restore mode
+and overall status. `-ReleaseInventory` also asserts that every checked-out,
+non-script `Program.cs` entrypoint is present in the release-host list; a new
+unregistered host fails before audit. Raw command
+output is retained only as a short diagnostic tail for failed/timeout runs, so
+successful CI artifacts remain compact. Parser/threshold/quoting tests live in
+`Invoke-DotNetPackageAudit.Tests.ps1` and run with Pester 5.x.
+
+The timeout is fail-closed: on Windows PowerShell 5.1 every audit process is
+assigned immediately after start to a `KILL_ON_JOB_CLOSE` Job Object; assignment
+failure aborts the audit and kills the process. A child that outlives an exit-0
+parent is therefore still owned and removable. Job
+termination, the `taskkill /T` fallback and redirected-stream draining all have
+bounded grace periods; faulted/cancelled stream tasks are capture errors.
+`NU1900`
+(unavailable vulnerability data), an unparsed vulnerability-shaped output row,
+or incomplete redirected output is an `AuditError`, never a clean result.
+Stdout always contains exactly one JSON document, including when writing the
+optional summary artifact fails.
+
+`config/nuget-release-projects.txt` is intentionally only the checked-out host
+set. `config/nuget-unavailable-runtime-hosts.json` records live VPS services
+whose source cannot currently be audited. The `-ReleaseInventory` convenience
+gate loads both atomically and returns `Blocked`/exit 2 until that second list is
+empty; running only `-ProjectListPath` must not be presented as a full-platform
+release approval.
+
+Windows PowerShell's `powershell -File` boundary does not reliably bind multiple
+CLI tokens to a `string[]` parameter. Use `-ProjectListPath` for a multi-project
+CI run. From an existing PowerShell session, invoke the script path directly
+with an array (`& ./scripts/Invoke-DotNetPackageAudit.ps1 -Project $projects`);
+the internal audit function intentionally uses a different parameter name.
 
 ## Invoke-VpsHealthSmoke.ps1 — read-only VPS smoke check
 

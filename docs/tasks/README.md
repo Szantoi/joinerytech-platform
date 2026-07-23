@@ -2,7 +2,9 @@
 
 > **Állapotforrás:** [`EPICS.yaml`](../../EPICS.yaml)  
 > **Minőségi szerződés:** [`QUALITY.md`](../../QUALITY.md)  
-> **Aktuális baseline:**
+> **Aktuális checkpoint:**
+> [`PROJECT_STATE_CHECKPOINT_2026-07-23.md`](../knowledge/architecture/PROJECT_STATE_CHECKPOINT_2026-07-23.md)
+> **Előző teljes felmérés:**
 > [`PROJECT_STATE_ASSESSMENT_2026-07-18.md`](../knowledge/architecture/PROJECT_STATE_ASSESSMENT_2026-07-18.md)
 
 Ez az index azt rögzíti, hogy egy fejlesztő agent **melyik feladatot, milyen

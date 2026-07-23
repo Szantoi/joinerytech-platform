@@ -3,18 +3,21 @@
 **Sziget:** JoineryTech (`/opt/joinerytech/`)
 **Fókusz:** Faipar SaaS Platform
 **Port:** 3458-3459
-**Frissítve:** 2026-07-21
+**Frissítve:** 2026-07-23
 
 ---
 
-## Aktuális belépési pontok — 2026-07-18
+## Aktuális belépési pontok — 2026-07-23
 
 > Az alábbi dokumentumok az aktuális állapot elsődleges tudástári forrásai. A
 > `docs/joinerytech/` történeti design- és prototípus-korpusz; az élő cél- és
 > státuszforrás az `EPICS.yaml`.
 
+- [`architecture/PROJECT_STATE_CHECKPOINT_2026-07-23.md`](architecture/PROJECT_STATE_CHECKPOINT_2026-07-23.md)
+  — aktuális working-tree állapot, kész/félkész/blokkolt szeletek, biztonságos
+  folytatási sorrend és rollout-kapuk
 - [`architecture/PROJECT_STATE_ASSESSMENT_2026-07-18.md`](architecture/PROJECT_STATE_ASSESSMENT_2026-07-18.md)
-  — teljes programállapot, QUALITY-megfelelés, kockázatok, lehetőségek és kapuk
+  — előző teljes programfelmérés, QUALITY-megfelelés, kockázatok és lehetőségek
 - [`architecture/SPACEOS_MODULAR_PRODUCT_ARCHITECTURE_2026-07-18.md`](architecture/SPACEOS_MODULAR_PRODUCT_ARCHITECTURE_2026-07-18.md)
   — ERP/domain szétválasztás, modul-bundle, instance pack és agent-végrehajtási terv
 - [`../../EPICS.yaml`](../../EPICS.yaml) — élő program/epic goal-config
@@ -190,13 +193,14 @@ A JoineryTech sziget a **faipari SaaS platform fejlesztési központja**. 7 modu
 
 ## Következő Lépések
 
-1. **Hosting/Auth/RLS kapu** — ADR-061/062 közös csomag, tenant-izolációs bizonyíték
-2. **API-first világmodernizálás** — production, majd warehouse
-3. **Valós API vertical slice** — MSW/API feature flag + contract drift + E2E
-4. **Projekt-platform ADR** — hierarchy + FlowEpic + Collaboration ownership
-5. **B2B kézfogás** — agreement/work lifecycle, participant-RLS, terms hash, adatcsere és Doorstar pilot
-6. **Reprodukálhatóság** — determinisztikus tesztkapu, gitlink-javítás, README-k
+1. **Félkész EHS szeletek atomikus lezárása** — wizard teljes kapu + review,
+   majd a risk backend validation/TestServer kapu
+2. **Security rollout** — Nexus rotáció/policy, Cutting proxy/capability/ownership
+3. **Dependency-remediation** — platform NuGet/RCE szeletek és runtime-források
+4. **ERP ADR-k** — ADR-066/067 nyitott tulajdonosi és trust-döntések
+5. **Modulcsomagolás és Doorstar kapu** — csak elfogadott ADR-ek után
+6. **B2B kézfogás** — agreement/work lifecycle, participant-RLS, evidence és pilot
 
 ---
 
-_JoineryTech Knowledge Base — aktuális index: 2026-07-21_
+_JoineryTech Knowledge Base — aktuális index: 2026-07-23_

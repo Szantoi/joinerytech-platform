@@ -65,4 +65,20 @@
 **Fázis 2 modul-sora TELJES: 7/7 APPROVED → jöhet az F3 minőségkapu.**
 
 ## Backlog
-FIX-PREEXISTING-TESTS (19 örökölt tesztbukás) · DS-RECONCILE (Gábor styleguide-ja ↔ spec) · RISKS-5X5-FE (EHS mátrix portal-bekötés — a backend RISKS-5X5-BE kész) · EHS-WIZARD-HU · fsm.ts→fsmGuards.ts migráció (EHS) · CRM N1-N5 nitek · Kontrolling N1+N3-N6 nitek · ~~HR-M1-THRESHOLD~~ + ~~Maintenance M1 (UTC-parse)~~ + ~~QUERYGATE-PROMOTE~~ — **mindhárom ZÁRVA az F2-CROSSCUT-FIX-szel (449bf0c), a DMS-review-ban kódban igazolva** · HR N1-N4 / Maintenance N2-N4 nitek · QA N1-N4 nitek (pass-rate nevező kanonizálás, trend rose dark-pár, formFields, eszkaláció elutasítotton — backend-tisztázás; + QA labels dateUtils-átállás) · DMS N1-N5 nitek (formFields 4. ismétlődés + Chip-promótálás `components/ui`-ba — F3 crosscut-jelöltek; expiring-guard kiemelés, MAIN_PATH-származtatás) · qaHibajegy tónuskészlet a spec 1.5-be (designer) · Forecast+MarginTrend dark-chart-hexek (közös token-epic)
+
+FIX-PREEXISTING-TESTS (19 örökölt tesztbukás) · DS-RECONCILE (Gábor
+styleguide-ja ↔ spec) · ~~[`EHS-CAPA-WIRE-ROUNDTRIP`](EHS-CAPA-WIRE-ROUNDTRIP.md)~~
+**done, reopen utáni TestServer reviewval** ·
+[`RISKS-5X5-FE`](RISKS-5X5-FE.md) **in_progress: frontend APPROVED, backend
+ValidationBehavior/TestServer P1 blokkolja** ·
+[`EHS-WIZARD-HU`](EHS-WIZARD-HU.md) **paused: félkész, teljes kapu és review
+nélkül** · fsm.ts→fsmGuards.ts migráció (EHS) · CRM N1-N5 nitek · Kontrolling
+N1+N3-N6 nitek · ~~HR-M1-THRESHOLD~~ + ~~Maintenance M1 (UTC-parse)~~ +
+~~QUERYGATE-PROMOTE~~ — **mindhárom ZÁRVA az F2-CROSSCUT-FIX-szel (449bf0c),
+a DMS-review-ban kódban igazolva** · HR N1-N4 / Maintenance N2-N4 nitek · QA
+N1-N4 nitek (pass-rate nevező kanonizálás, trend rose dark-pár, formFields,
+eszkaláció elutasítotton — backend-tisztázás; + QA labels dateUtils-átállás) ·
+DMS N1-N5 nitek (formFields 4. ismétlődés + Chip-promótálás `components/ui`-ba
+— F3 crosscut-jelöltek; expiring-guard kiemelés, MAIN_PATH-származtatás) ·
+qaHibajegy tónuskészlet a spec 1.5-be (designer) ·
+Forecast+MarginTrend dark-chart-hexek (közös token-epic)

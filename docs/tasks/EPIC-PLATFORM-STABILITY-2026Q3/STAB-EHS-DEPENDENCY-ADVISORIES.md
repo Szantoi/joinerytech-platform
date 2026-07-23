@@ -3,7 +3,8 @@
 - **Epic:** EPIC-PLATFORM-STABILITY-2026Q3
 - **Szerep:** backend/security + platform
 - **Prioritás:** P0 security
-- **Státusz:** in_progress — S0 kész; S1/S2 külön fájlzárra vár
+- **Státusz:** in_progress — S0 kész; S1/S2 root fájlzár-ACK megadva
+  2026-07-22 23:05-kor, de a leállításig implementáció nem indult
 - **Függőség:** a futó CAPA-review-tól fájlszinten független
 - **Mutációs határ:** EHS Application/Infrastructure/Api + shared Hosting package,
   mapping query handlerek és célzott tesztek

@@ -61,8 +61,9 @@ akkor zárható, ha külön atomikus backend-fix:
    `{ riskAssessmentId }` válaszra;
 4. build + teljes EHS regresszió + OpenAPI diff review zöld.
 
-Root fájlzár-ACK szükséges az EHS API/behavior/test fájlokra. Addig az MSW/store
-és pure matrix szerződés fejleszthető, de production-ready státusz nem adható.
+Root 2026-07-23-án megadta a fájlzár-ACK-ot az EHS API/behavior/test
+fájlokra. Az atomikus backend-fix még nem indult; annak reviewjáig
+production-ready státusz nem adható.
 
 ## Üzleti cél
 
@@ -376,8 +377,19 @@ regressziója elfedésére.
   nélkül**. A reviewer a konkurens error+pending állapotot és a promise/timer
   teszthigiéniát is külön újrafuttatta (**2 fájl / 15 teszt PASS**, ESLint PASS).
 - A frontend szelet re-review-ja nem oldja fel automatikusan a külön backend
-  `ValidationBehavior` P1 rollout-blokkot; backend fájl Root lock-ACK nélkül
-  továbbra sem módosítható.
+  `ValidationBehavior` P1 rollout-blokkot. Root a lock-ACK-ot később megadta,
+  de az implementáció és a független backend review továbbra is nyitott.
+
+### 2026-07-23 — leállítás és backend lock
+
+- Root megadta a szűk fájlzár-ACK-ot a MediatR `ValidationBehavior`, valós
+  TestServer create/update/add-control 400 contract és create response metadata
+  backend szeletre. Az implementáció a leállításig nem indult.
+- Root bizonyította, hogy az APPROVED risk szelet és a félkész
+  `EHS-WIZARD-HU` ugyanazokat a mock substrate fájlokat is érinti. Emiatt a
+  risk szelet sem commitolható biztonságosan vak path-staginggel, amíg a wizard
+  nincs lezárva vagy a két diff nincs bizonyítottan atomikus egységekre bontva.
+- EHS portál commit, push vagy deploy nem történt.
 
 ## Elfogadási kritériumok
 

@@ -1,9 +1,9 @@
 # ROOT Terminal TODO
 
-> **Frissítve:** 2026-07-23 05:30 Europe/Budapest  
+> **Frissítve:** 2026-07-23 04:59 Europe/Budapest
 > **Részletes állapot:**
 > [`STATE.md`](STATE.md) és
-> [`PROJECT_STATE_CHECKPOINT_2026-07-23.md`](../../docs/knowledge/architecture/PROJECT_STATE_CHECKPOINT_2026-07-23.md)  
+> [`PROJECT_STATE_CHECKPOINT_2026-07-23.md`](../../docs/knowledge/architecture/PROJECT_STATE_CHECKPOINT_2026-07-23.md)
 > **Kanonikus task-státusz:** [`EPICS.yaml`](../../EPICS.yaml)
 
 ## P0 — folytatás előtt
@@ -22,7 +22,7 @@
 - [ ] Wizard célzott tesztek, teljes EHS suite, ESLint, TypeScript/build.
 - [ ] Mobil + desktop + dark vizuális QA, fókuszcsapda/Escape/fókusz-visszaadás.
 - [ ] Fresh independent review; csak `APPROVED` után zárható vagy commitolható.
-- [ ] Root fájlzár után a risk backend `ValidationBehavior` +
+- [ ] A már megadott Root fájlzár alapján a risk backend `ValidationBehavior` +
       create/update/add-control TestServer 400 contract + response metadata fix.
 - [ ] EHS risk backend kapu után `RISKS-5X5-FE` végső integrált ellenőrzése.
 
@@ -36,7 +36,9 @@
 - [ ] Cutting public capability, quote ownership/PII, adapter activation és
       notification outbox külön taskok szerint.
 - [ ] Legacy ASP.NET Core 2.2 RCE-lánc eltávolítása az öt fennmaradó modulból.
-- [ ] Platform NuGet szeletek végrehajtása; cél: 0 critical/high release-hoston.
+- [x] A fail-closed NuGet auditkapu merge-elve (`a0be291`, Pester 22/22).
+- [ ] Platform NuGet remediation-szeletek végrehajtása; cél: 0 critical/high
+      release-hoston.
 
 ## P0 — release reprodukálhatóság
 

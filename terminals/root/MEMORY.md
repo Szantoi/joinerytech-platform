@@ -64,15 +64,20 @@ A kanonikus élő státusz továbbra is `EPICS.yaml`; a rövid operátori állap
 Legfontosabb folytatási védelem: a portal `1787e0b` dirty munkafája két eltérő
 érettségű szeletet kever. A `RISKS-5X5-FE` frontend APPROVED (15 fájl /
 145 teszt, build/lint/boundary zöld), de a backend `ValidationBehavior`
-P1 miatt nem zárható. Az `EHS-WIZARD-HU` félkész és szüneteltetett; az ingest
+P1 miatt nem zárható; Root a szűk backend fájlzár-ACK-ot később megadta, a
+végrehajtás még nem indult. Az `EHS-WIZARD-HU` félkész és szüneteltetett; az ingest
 agent megszakadt, a legutóbbi tesztátírás óta nincs teljes kapu vagy review.
 Tömeges stage/commit tilos.
 
 Biztonsági állapot: Nexus auth/RBAC lokálisan 22/22 + build APPROVED, de token-
 rotáció/policy/rollout nyitott. Cutting trusted-proxy/tenant-host lokálisan
 76/76 + 9/9 és clean build APPROVED, de nincs deploy, a teljes dirty fa nem
-approved. A platform NuGet auditkapu APPROVED, de a teljes discoverben
-117 blokkoló finding és három hiányzó runtime-forrás maradt.
+approved. A platform NuGet auditkapu APPROVED és `a0be291` alatt merge-elt, de
+a teljes discoverben 117 blokkoló finding és három hiányzó runtime-forrás
+maradt.
 
 Minden Codex-agent és JoineryTech Vite/Vitest folyamat leállt, a 4174-es port
-zárva. Nem történt commit, push vagy deploy.
+zárva. A Codex leállításakor nem történt commit, push vagy deploy; Root később
+csak a külön NuGet audit- és dokumentációs szeleteket commitolta (`a0be291`,
+`46c1f70`, `91c3446`, `15fcb24`). EHS portálkód, Nexus/Cutting runtime-diff
+vagy deploy nem került commitba.

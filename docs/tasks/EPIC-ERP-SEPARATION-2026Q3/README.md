@@ -2,7 +2,7 @@
 
 - **Tulajdonos:** root
 - **Koordinátor:** conductor
-- **Státusz:** pending
+- **Státusz:** in_progress
 - **Célarchitektúra:**
   [`SPACEOS_MODULAR_PRODUCT_ARCHITECTURE_2026-07-18.md`](../../knowledge/architecture/SPACEOS_MODULAR_PRODUCT_ARCHITECTURE_2026-07-18.md)
 - **Minőségi szerződés:** [`QUALITY.md`](../../../QUALITY.md)
@@ -46,6 +46,9 @@ explicit átadási kapu használható.
 | E1 | [`ERPSEP-01`](ERPSEP-01-CAPABILITY-BOUNDARY-AUDIT.md) | architect | nincs | ERP/kernel/industry/instance ownership-audit |
 | E1 | [`ERPSEP-02`](ERPSEP-02-MODULE-CATALOG-ADR.md) | architect/security | ERPSEP-01 | kanonikus ModuleId és aláírt katalógus ADR |
 | E1 | [`ERPSEP-03`](ERPSEP-03-CROSS-MODULE-CONTRACT-ADR.md) | architect/backend | ERPSEP-01 | semleges referenciák, event/API port ADR |
+| E1 | [`ERPSEP-PACKAGE-BOUNDARY-PREFLIGHT`](ERPSEP-PACKAGE-BOUNDARY-PREFLIGHT.md) | platform-tooling | ERPSEP-01 | konfigurációvezérelt frontend/backend függőségi regressziókapu |
+| E1 | [`ERPSEP-FE-CROSS-MODULE-DEBT-01`](ERPSEP-FE-CROSS-MODULE-DEBT-01.md) | frontend/platform | boundary preflight | Controlling→EHS mély import megszüntetése, shared UI ownership |
+| E1 | [`ERPSEP-FE-MOCK-SEED-OWNERSHIP`](ERPSEP-FE-MOCK-SEED-OWNERSHIP.md) | frontend/platform | cross-module debt review | CRM/HR/Kontrolling seed leválasztása a legacy shell-mockokról |
 | E2 | [`MODULE-PACKAGES`](MODULE-PACKAGES.md) | frontend | ERPSEP-02, MODULE-FOLDERS | workspace és publikus modulcsomagok |
 | E2 | [`ERPSEP-05`](ERPSEP-05-BACKEND-PACKAGING-CONTRACT.md) | backend | ERPSEP-02, STAB-RLS-PROOF | backend package/hosting szerződés |
 | E2 | [`ERPSEP-06`](ERPSEP-06-INSTANCE-CONTEXT.md) | backend/frontend/security | ERPSEP-02, MODULE-PACKAGES | hitelesített runtime composition context |
@@ -59,7 +62,8 @@ explicit átadási kapu használható.
 ERPSEP-01 ──┬──> ERPSEP-02 ──┬──> MODULE-PACKAGES ──┐
             │                ├──> ERPSEP-05 ────────┼──> ERPSEP-08 ──> ERPSEP-09
             │                └──> ERPSEP-06 ────────┤
-            └──> ERPSEP-03 ─────> ERPSEP-07 ────────┘
+            ├──> ERPSEP-03 ─────> ERPSEP-07 ────────┘
+            └──> PACKAGE-BOUNDARY-PREFLIGHT (mérési kapu; ADR-független)
 
 PROJECT-CORE-ADR ──> ERPSEP-07 production/workflow extension pontjai
 STAB-RLS-PROOF  ───> ERPSEP-05 és minden backend bundle
@@ -98,5 +102,7 @@ Doorstar repository nem hivatkozhat JoineryTech munkafa relatív fájlútvonalá
 - A portált egyszerre csak egy frontend agent mutálhatja.
 - A shared hosting/RLS fákat egyszerre csak egy backend/security agent mutálhatja.
 - ADR elfogadás előtt nincs csomag- vagy domainimplementáció.
+- ADR elfogadás előtt megengedett a package-boundary preflight tooling, ha nem
+  választ végleges ModuleId-t, package-nevet, trust rootot, entitlementet vagy
+  runtime composition modellt.
 - Éles deploy, registry-publikálás és migráció csak root jóváhagyással végezhető.
-

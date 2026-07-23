@@ -101,3 +101,22 @@ tesztek. TANULSÁG: valódi-pipeline teszthost önmagában nem elég, a producti
 composition rootot külön kell pinelni. Kapuk (root-újrafuttatás): build 0
 hiba, Domain 130/130, Infrastructure 121/121. Hátra a taskból: portál-szelet
 commit (WIZARD-HU entanglement) + végső integrált ellenőrzés.
+
+---
+
+_Updated: 2026-07-23_
+
+## EHS-WIZARD-HU átvétel + entanglement-feloldás — mindkét szelet mergelve
+
+A szüneteltetett wizard-szeletet a root vette át és fejezte be (workflow:
+diff-audit szerződés ellen → implementáció → 3-lencsés fresh review, első
+körben APPROVED). Kulcsleletek: valódi wizard-bug (siker után onClose sosem
+futott — handleClose no-op isSubmitting alatt); a mock nem tükrözte a backend
+kötelező locationId/max-hossz minimumát (mock-only zöld veszély); a félkész
+teszt a hibás locationId:null→201 szerződést kodifikálta. A kanonikus ingest
+backend a src/spaceos-modules-ehs EventsController (api/ehs/events) — NEM a
+src/ehs (ott a risk-assessments él). Mindkét EHS szelet atomikusan mergelve:
+joinerytech-portal@1f3ca31 (45 fájl), pin-bump kész. RISKS-5X5-FE done +
+archiválva. TANULSÁG (entanglement-feloldás mintája): a blokkolt APPROVED
+szelet leggyorsabb feloldása a másik félkész szelet TELJES befejezése volt,
+nem a diff-szétvágás. EHS-WIZARD-HU done-hoz: Gábor vizuális QA.

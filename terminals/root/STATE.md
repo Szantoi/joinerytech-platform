@@ -10,8 +10,10 @@
 - Platform root: `main@15fcb24`, dirty. A NuGet auditkapu `a0be291`, az EPICS
   state-sweep `46c1f70`, a checkpoint/taskdokumentáció `91c3446`, a fennmaradó
   tervezési taskok `15fcb24` alatt merge-eltek.
-- Portal: `main@1787e0b`, dirty; APPROVED `RISKS-5X5-FE` és félkész,
-  szüneteltetett `EHS-WIZARD-HU` egy working tree-ben.
+- Portal: `main@1f3ca31`, CLEAN — az entanglement feloldva: a root befejezte
+  az `EHS-WIZARD-HU` szeletet (3-lencsés review APPROVED), mindkét EHS szelet
+  atomikusan mergelve és pusholva; platform-pin frissítve. `RISKS-5X5-FE`
+  done; `EHS-WIZARD-HU` done-jához manuális vizuális QA kell.
 - Cutting: `4341390`, dirty; a trusted-proxy/tenant-host rész-szelet APPROVED,
   de nem deployolt, a teljes diff nem approved.
 - Nexus: lokális auth/RBAC hardening tesztelt; tokenrotáció, policy-lefedettség

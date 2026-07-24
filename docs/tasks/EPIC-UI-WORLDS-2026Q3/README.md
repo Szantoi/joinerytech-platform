@@ -23,7 +23,13 @@ submodule-jában futhat; közös kontraktusdoksit csak a root frissít.
 
 1. [`WORLDS-PRODUCTION-FE`](archive/WORLDS-PRODUCTION-FE.md) — ✅ done
 2. [`WORLDS-PRODUCTION-API-GATE`](archive/WORLDS-PRODUCTION-API-GATE.md) — ✅ done
-3. [`WORLDS-PRODUCTION-REVIEW`](WORLDS-PRODUCTION-REVIEW.md)
+3. [`WORLDS-PRODUCTION-REVIEW`](WORLDS-PRODUCTION-REVIEW.md) — ❌ **CHANGES
+   REQUESTED** (2026-07-24, [riport](../../knowledge/qa/WORLDS_PRODUCTION_DESIGN_REVIEW_2026-07-24.md):
+   1 S + 15 M + 17 N; a review-task done, a W1 „designer APPROVED" kapu NEM)
+4. [`WORLDS-SHELL-FIX`](WORLDS-SHELL-FIX.md) — P0, közös shell (S-holtpont +
+   3 M; mind a 7 APPROVED világot érinti, teljes regresszió-kör kötelező)
+5. [`WORLDS-PRODUCTION-FIX`](WORLDS-PRODUCTION-FIX.md) — P1, a 12 modul-M;
+   utána re-review a riport feltétele szerint
 
 ## Warehouse lánc
 

@@ -1,6 +1,6 @@
 # ROOT Terminal TODO
 
-> **Frissítve:** 2026-07-23 04:59 Europe/Budapest
+> **Frissítve:** 2026-07-24 21:10 Europe/Budapest
 > **Részletes állapot:**
 > [`STATE.md`](STATE.md) és
 > [`PROJECT_STATE_CHECKPOINT_2026-07-23.md`](../../docs/knowledge/architecture/PROJECT_STATE_CHECKPOINT_2026-07-23.md)
@@ -10,9 +10,21 @@
 
 - [ ] Friss `AGENT-CHANNEL.md` és `git status` ellenőrzés; másik agent
       fájlzárainak tiszteletben tartása.
-- [ ] A portal vegyes dirty fáját path-scope szerint kettéválasztani:
-      `RISKS-5X5-FE` APPROVED szelet és `EHS-WIZARD-HU` félkész szelet.
+- [x] A portal vegyes dirty fája feloldva (2026-07-23: mindkét EHS szelet
+      mergelve `1f3ca31`-ben; a portal azóta CLEAN).
 - [ ] Semmilyen tömeges stage/commit; csak bizonyított, taskonkénti fájllista.
+
+## P0/P1 — EPIC-UI-WORLDS (production kapu)
+
+- [x] `WORLDS-PRODUCTION-REVIEW` végrehajtva (2026-07-24 root, designer szerep,
+      5 lencse + 17/17 adversarial verify): verdikt **CHANGES REQUESTED** —
+      riport: `docs/knowledge/qa/WORLDS_PRODUCTION_DESIGN_REVIEW_2026-07-24.md`.
+- [ ] `WORLDS-SHELL-FIX` (P0): S-holtpont a SlideOver fókuszcsapdában (minden
+      világ!) + tablet-túlcsordulás + toast-inert + apiClient hibatest-parse;
+      Playwright keyboard-smoke + teljes 7-világos regresszió-kör kötelező.
+- [ ] `WORLDS-PRODUCTION-FIX` (P1): 12 modul-M a riport szerint; utána
+      re-review (friss screenshot + fókusz-probe), csak APPROVED után nyílik
+      a W2 (WORLDS-WAREHOUSE-FE).
 
 ## P0 — félkész EHS munka
 

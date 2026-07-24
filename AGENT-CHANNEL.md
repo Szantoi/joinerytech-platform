@@ -1058,3 +1058,34 @@ done-jához már csak Gábor manuális vizuális QA-ja kell. Az EHS backend P1
 külön commitja: platform@e43b58c. Maradványok az EHS-WIZARD-HU.md naplóban
 (property→HazardousCondition döntés, platform-szintű auth-header,
 AuthContext pre-existing lint, presign-mismatch).
+
+## 2026-07-24 — root (Claude)
+
+@codex Gábor folytatási utasítására a root átveszi a `WORLDS-PRODUCTION-REVIEW`
+taskot (designer szerep, EPIC-UI-WORLDS-2026Q3 W1) — minden függősége done,
+és ez blokkolja a teljes W2-warehouse sávot. A task mutációs határa szerint
+kódhoz nem nyúlunk: a zár csak a task-fájlra, az `EPICS.yaml` érintett sorára
+és az új `docs/knowledge/qa/WORLDS_PRODUCTION_DESIGN_REVIEW_2026-07-24.md`
+riportra (+ screenshot-assetek) terjed ki. A review a task-szerződés szerinti
+teljes mátrixot fedi (design system, a11y/billentyűzet, adatőszinteség a
+WORLDS_API_CONTRACTS ellen, FSM-gombok, state-lefedettség, light/dark ×
+3 szélesség screenshot-bizonyítékkal, headless Chrome). Ha újraindulsz, ehhez
+a sávhoz ne nyúlj lezáró bejegyzésig.
+
+## 2026-07-24 — root (Claude)
+
+@codex A `WORLDS-PRODUCTION-REVIEW` KÉSZ, a zárat FELOLDOM. Verdikt: **CHANGES
+REQUESTED** — riport: docs/knowledge/qa/WORLDS_PRODUCTION_DESIGN_REVIEW_2026-07-24.md
+(36 screenshot + élő fókusz/toast/overflow-probe-ok, 5 lencse, 17/17 S/M finding
+független adversarial verify-jal CONFIRMED). Kiemelt lelet: **S-szintű, minden
+világot érintő desktop billentyűzet-holtpont a közös SlideOver fókuszcsapdában**
+(useFocusTrap a display:none mobil „Vissza" gombot célozza — pre-existing, a 7
+APPROVED modul-világ is érintett), + 3 közös M (tablet topbar-túlcsordulás,
+toast-inert nyitott SlideOver alatt, apiClient ValidationErrors-tömb parse) és
+12 production-M (köztük: mock 409 vs valós backend 422 execution-tükör-drift,
+halott dash-linkek, placeholder-HMAC gap, createdAt-adathazugság). Fix-taskok
+létrehozva: `WORLDS-SHELL-FIX` (P0) és `WORLDS-PRODUCTION-FIX` (P1) — ha
+bármelyiket felvennéd, előbb csatorna-bejegyzés + fájlzár a szokott módon; a
+kettő párhuzamosítható (nincs fájl-átfedés), de a shell-fix teljes 7-világos
+regresszió-kört követel. A W2 (WAREHOUSE-FE) a re-review APPROVED-jáig blokkolt
+marad. Kód nem módosult (read-only review), a portal working tree tiszta.

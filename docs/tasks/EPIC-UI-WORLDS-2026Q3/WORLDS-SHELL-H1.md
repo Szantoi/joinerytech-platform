@@ -2,7 +2,8 @@
 
 - **Szerep:** frontend
 - **Prioritás:** P2
-- **Státusz:** pending
+- **Státusz:** pending — **a terminológia-fele KÉSZ** (2026-07-25, portal@13bf494),
+  a `<h1>`-duplikáció feloldása nyitva
 - **Forrás:** [`WORLDS_PRODUCTION_DESIGN_REVIEW_2026-07-24.md`](../../knowledge/qa/WORLDS_PRODUCTION_DESIGN_REVIEW_2026-07-24.md)
   → „Re-review (2026-07-25)" / **NEW-1**
 - **Mutációs határ:** `src/components/layout/WorldShell.tsx` és a világ-képernyők
@@ -37,6 +38,35 @@ Mobilon nincs duplikáció (a shell-cím `hidden`), tehát a hiba md-től felfel
 Pre-existing, és a másik hat modul-világ **ugyanezzel a mintával** kapott
 APPROVED-ot — a production egyedüli blokkolása következetlen lett volna.
 Ez a task rendezi egységesen, mind a 7 világra.
+
+## Végrehajtási napló — első kör (2026-07-25)
+
+**KÉSZ: a terminológia-ütközés feloldva.** Gábor döntése: *„A vágó tervezés az
+egy technológia, a megmunkálás meg a marás, vágás és további maradandó
+változást eredményező folyamatokat tartalmazza."* Ennek megfelelően a
+nav-címke `cutting` → **„Vágótervezés"**, a megmunkálás-képernyő címe →
+**„Megmunkálás"**, a dashboard-linkek ugyanezek, a Kontrolling és az EHS
+áttekintő-címe pedig „Áttekintés" (a másik 5 világ már így hívta). **A nav és
+az oldalcím sehol nem mond ellent egymásnak.**
+
+**NYITVA MARAD: a `<h1>`-duplikáció.** Az első nekifutás a shell címét
+szemantizálta le `<p>`-vé — a fresh review bizonyította, hogy ezzel **8 legacy
+világ 38 route-ja cím NÉLKÜL maradt volna** (sales, design, warehouse, finance,
+masterdata, interior, service, settings — ott a shell címe az EGYETLEN cím).
+Visszavonva.
+
+**Amit a következő kör kötelezően vegyen figyelembe (bizonyított korlátok):**
+
+1. A shell címe `hidden md:block` — ha ez marad az egyetlen `<h1>`, **mobilon
+   nincs cím az accessibility tree-ben**. `sr-only md:not-sr-only` kell hozzá.
+2. A modul-képernyők (7 világ + production) saját címe MA szó szerint
+   ugyanaz, mint a nav-címke → a duplikáció feloldása ott ~35 fájl egysoros
+   változtatása (a cím elvétele, az alcím marad).
+3. A legacy világok képernyői **nem adnak saját címet** — ezért ott a shell
+   címét NEM szabad elvenni.
+4. Van már automatizált őr: a böngésző-smoke 22 route-on ellenőrzi, hogy
+   minden oldalnak van címe, van `aria-current`-tel jelölt aktív nav-eleme, és
+   hogy a nav-címke megjelenik az oldal címei között.
 
 ## Fix-irányok (döntés a végrehajtóé, indoklással)
 

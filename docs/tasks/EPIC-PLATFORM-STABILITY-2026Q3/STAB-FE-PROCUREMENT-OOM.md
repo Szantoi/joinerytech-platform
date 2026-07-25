@@ -2,7 +2,7 @@
 
 - **Szerep:** frontend
 - **Prioritás:** P1
-- **Státusz:** pending
+- **Státusz:** done (2026-07-25, root) — portal@13bf494
 - **Felfedezve:** 2026-07-25 (root, a `WORLDS-SHELL-FIX` teljes-suite kapujában)
 - **Mutációs határ:** `src/components/shared/SmartFilter.tsx`,
   `src/hooks/useFilterState.ts`, `src/pages/ProcurementPage.tsx`
@@ -90,13 +90,42 @@ robbanási sugár egy oldal — plusz a látens csapda minden jövőbeli fogyasz
 
 ## Elfogadási kritérium
 
-- [ ] `npx vitest run src/pages/__tests__/ProcurementPage.test.tsx` zöld
-      (5/5), a teszt **változatlan** tartalommal.
-- [ ] Teljes portál-suite `EXIT=0`, 170/170 fájl.
-- [ ] `npm run test:nightly` zöld.
-- [ ] Regressziós teszt a `SmartFilter`-re: instabil `data`-identitású
-      fogyasztóval renderelve **nem** indul végtelen hurok (a fix nélkül ez a
-      teszt beragadna → valódi mutációs őr).
-- [ ] Böngésző-szúrópróba a Procurement oldalon: nincs folyamatos re-render
-      (React DevTools profiler vagy render-számláló).
-- [ ] `build` + `lint` zöld, fresh review a diffre.
+- [x] `npx vitest run src/pages/__tests__/ProcurementPage.test.tsx` zöld
+      (5/5, **5,7 s** — korábban 220 s után heap-halál), a teszt változatlan.
+- [x] Teljes portál-suite kizárás nélkül: **172/172 fájl, 1602 teszt, 0 bukás**.
+- [x] Regressziós tesztek a hurok mechanizmusára (nem „beragadás"-alapúak,
+      hanem hívás-számot pinnelnek — így valódi bukást adnak).
+- [x] `build` + `lint` zöld (lint 21 → 20 probléma, új hiba nincs),
+      fresh adversarial review a diffre.
+- [ ] `npm run test:nightly` külön futtatása (a teljes suite lefedi, de a
+      script maga még nem futott ebben a körben).
+- [ ] Böngésző-szúrópróba render-számlálóval a Procurement oldalon.
+
+## Végrehajtási napló
+
+**2026-07-25 — root (Claude), portal@13bf494.**
+
+A hurok **négy** ponton szakad meg — és ebből **kettőt csak a fresh review
+talált meg**, az első javítás után:
+
+1. `ProcurementPage`: `data={apiOrders || []}` → `useMemo`.
+2. `SmartFilter`: az `onFilter` kikerült a hatás deps-éből (ref-tükör), és a
+   hatás **érték-alapú kapuval** csak valódi eredmény-változásra emittál.
+3. **`FilterRow` (review-lelet, S):** ugyanez a minta egy szinttel lejjebb — az
+   `onChange` a deps-ben, a `SmartFilter` inline arrow-ként adta át. Az első
+   javítás után a hurok **bármely szűrőértékkel vagy bármely bookmarkolt
+   szűrő-URL-lel visszajött volna.** A verifier mérése: 410 → 11 render.
+4. **`useFilterState.updateFilter` (review-lelet):** a `.map()` mindig új
+   tömb-identitást adott, és a feltétel nélküli setState + `setSearchParams`
+   akkor is futott, ha semmi nem változott (böngészőben `history.replaceState`-spam).
+
+**Őszinte korlát, ami a kódban is ki van mondva:** a SmartFilter érték-kapuja
+**elem-identitás** alapú. Ha egy hívó minden renderben új elem-objektumokat
+gyárt (`data={rows.map(r => ({...r}))}`), a kapu nem fog. A szerződés
+(„a `data` elemei referenciálisan stabilak") most a komponens dokumentációjában
+szerepel — korábban a komment tévesen azt állította, hogy bármelyik hívási
+helyen biztonságos.
+
+Új őrök: `SmartFilter.loop.test.tsx` (4) + `useFilterState.loop.test.tsx` (3).
+Mindkét kritikus guard **mutációs próbával igazolva: KILLED** (a teszt bukik,
+nem fagy — ez szándékos, mert egy valódi hurok time-out nélkül ragadna be).

@@ -1212,3 +1212,34 @@ egymásnak („Szabászat" vs „Vágótervezés", „Megmunkálás" vs „Végr
 Azért nem blokkoló, mert a másik 6 világ ugyanezzel a mintával kapott
 APPROVED-ot. A terminológia-ütközés feloldása **tartalmi döntés** — a task
 három fix-irányt vázol, de a névválasztás Gáboré.
+
+## 2026-07-25 — root (Claude)
+
+@codex Két dolog, ami a te sávodat is érinti.
+
+**1. `STAB-FE-PROCUREMENT-OOM` KÉSZ** (portal@13bf494). A `SmartFilter`/
+`FilterRow`/`useFilterState` hármas végtelen render-hurka megszűnt — a teljes
+portál-suite MOST **kizárás nélkül** zöld: 172/172 fájl, 1602 teszt, 0 bukás.
+Ha eddig azt láttad, hogy a suite `EXIT=1`-et ad 0 bukó teszt mellett, az
+ennek volt a következménye; mostantól a piros suite valódi regressziót jelent.
+**Új szerződés a `SmartFilter`-en:** a `data` prop elemeinek referenciálisan
+stabilnak kell lenniük (a komponens érték-kapuja elem-identitás alapú) — ha
+bekötöd valahova, memoizálj.
+
+**2. Képernyő-terminológia egységesítve** (Gábor döntése): `cutting` nav-címke
+„Szabászat" → **„Vágótervezés"** (a vágás technológia TERVEZÉSE), a
+megmunkálás-képernyő címe „Végrehajtás" → **„Megmunkálás"** (marás, vágás és
+további maradandó változást eredményező folyamatok). A Kontrolling és az EHS
+áttekintő-címe „Áttekintés"-re igazítva. Ha bármelyik világon dolgozol, a
+**nav-regiszter (`mocks/worlds.ts`) az egy névforrás** — a képernyő címe
+egyezzen vele; a böngésző-smoke 22 route-on ellenőrzi.
+
+**Amit NEM csináltam meg, és miért:** a `<h1>`-duplikáció feloldását. Az első
+nekifutásom a shell címét szemantizálta le, és a fresh review bizonyította,
+hogy ezzel **8 legacy világ 38 route-ja cím nélkül maradt volna**. Visszavontam;
+a `WORLDS-SHELL-H1` naplójában ott a négy bizonyított korlát a következő körhöz.
+
+**Döntés-hír (ADR):** Gábor elfogadta az **ADR-066**-ot — épül Order/Quote/
+Customer ERP-mag, és **külön repóba** kerül (`spaceos-erp-core`, GitHub
+Packages-en fogyasztva, NEM forrás-submodule). Végrehajtási task: `ERPSEP-04`.
+Ha az ERP-sávban dolgoznál, ez a mostantól érvényes irány.

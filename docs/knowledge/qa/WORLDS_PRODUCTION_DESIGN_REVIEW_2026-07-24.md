@@ -24,7 +24,20 @@
 
 ---
 
-## Összesített verdikt: ❌ CHANGES REQUESTED
+> ## ✅ FRISSÍTETT VERDIKT (2026-07-25 re-review): **APPROVED**
+>
+> Mind az **1 S + 15 M** finding javítva és **bizonyítékkal visszaellenőrizve**
+> (`WORLDS-SHELL-FIX` → portal@b9ad407, `WORLDS-PRODUCTION-FIX` → portal@cafca79).
+> A részletes visszaellenőrzés a [Re-review (2026-07-25)](#re-review-2026-07-25)
+> szekcióban; a lenti eredeti verdikt és findingleírások **történeti rekordként**
+> maradnak, hogy az előtte/utána összevethető legyen.
+>
+> A re-review **egy ÚJ, M-szintű leletet** talált (duplikált `<h1>` a
+> WorldShellben — mind a 7 világot érinti, pre-existing): külön task
+> (`WORLDS-SHELL-H1`), nem blokkolja ezt az APPROVED-ot, mert a másik 6 világ
+> ugyanezzel a mintával kapott APPROVED-ot.
+
+## Eredeti verdikt (2026-07-24): ❌ CHANGES REQUESTED
 
 **1 db S-szintű** (billentyűzet-holtpont a közös SlideOver fókuszcsapdában — minden
 production FSM-akció billentyűzetről használhatatlan desktopon) és **15 db verifikált
@@ -274,3 +287,90 @@ desktopon: S-1 holtpont.**
    backlog-tétellel dokumentálva; célzott production-suite + build + lint zöld.
 3. Friss screenshot-kör (light/dark × 3 szélesség) + fókusz/overflow-probe
    újrafuttatás; a riport verdikt-szakasza frissítve.
+
+---
+
+## Re-review (2026-07-25)
+
+> **Kiadta:** root terminál (designer szerep) — 2026-07-25
+> **Vizsgált kód:** `joinerytech-portal main@cafca79` (a két fix-kör után),
+> platform `main@84fc047`
+> **Módszer:** friss, az eredetivel AZONOS mátrixú screenshot-kör (36 kép:
+> 6 route × light/dark × 1440/768/360, headless Chrome, MSW mock) + célzott
+> findingonkénti élő probe-ok + a repóba bekötött böngésző-smoke újrafuttatása.
+> **Assetek:** [`assets/worlds-production-rereview-2026-07-25/`](assets/worlds-production-rereview-2026-07-25/) (mind a 36 kép)
+> **Mutáció:** kód NEM módosult (read-only kör).
+
+### Objektív mérés: a túlcsordulás eltűnt
+
+A `fullPage` screenshot vászonszélessége **azonos a dokumentum `scrollWidth`-jével**,
+ezért az előtte/utána képméret önmagában is méri a vízszintes túlcsordulást:
+
+| Kép | ELŐTTE (2026-07-24) | UTÁNA (2026-07-25) | Különbség |
+|---|---|---|---|
+| `quotes-light-desktop` | **1538 px** | **1440 px** | −98 px — pontosan a jelentett M-8 h-scroll |
+| `quotes-dark-desktop` | 1538 px | 1440 px | −98 px |
+| `quotes-light-mobile` | 478 px | 360 px | −118 px |
+| `quotes-dark-mobile` | 478 px | 360 px | −118 px |
+| `dash-dark-tablet` | 927 px | 768 px | −159 px — az M-S1 topbar-túlcsordulás |
+
+A friss körben **mind a 36 kombinációra mért `scrollWidth − clientWidth = 0 px`**,
+konzol-hiba **0**, page-error **0**.
+
+### Findingonkénti visszaellenőrzés (1 S + 15 M)
+
+| # | Állapot | Bizonyíték |
+|---|---|---|
+| **S-1** fókuszcsapda-holtpont | ✅ javítva | `npm run test:smoke:keyboard` élő Chrome-ban: fókusz a dialógusban nyitáskor, 25 lépéses Tab-séta bent marad, „Bezárás" elérhető, Escape után a fókusz a trigger-soron; mobil kontroll ép |
+| **M-S1** tablet topbar-túlcsordulás | ✅ javítva | `dash-dark-tablet` 927 → 768 px; mind a 12 tablet-felvételen 0 px |
+| **M-S2** toast inert dialógus alatt | ✅ javítva | smoke: `[data-inert-exempt]` konténer jelen, nyitott SlideOver mellett NEM inert |
+| **M-S3** hibatest-parse | ✅ javítva | apiClient kontraktus-tesztek (10) + az élő 422-tükör: a guard-üzenet ténylegesen a toastba kerül |
+| **M-1** halott dash-linkek | ✅ javítva | élő probe: mind a 4 link valós route-ra visz (`/cutting` → „Vágótervezés", `/machining` → „Végrehajtás", `/orders`, `/analytics`) |
+| **M-2** 409 vs 422 tükör-drift | ✅ javítva | mock + tesztek + README + élő contract-gate + kontraktus-doksi együtt 422 + csupasz ValidationErrors-tömbre állt; élő hoszt-ellenőrzés csak az API-GATE fázisban lehetséges (nyíltan jelölve) |
+| **M-3** placeholder-HMAC gap | ✅ javítva | G9 gap-sor a FE-task táblájában; `api` módban a 3 aláírás-függő akció letiltott (komponens-tesztek); mock módban a demó járható — élő probe: nincs téves gap-tiltás |
+| **M-4** createdAt adathazugság | ✅ javítva | élő probe: `0001-…` sentinel SEHOL nem jelenik meg, a magyarázó lábjegyzet jelen van; `orders-light-desktop` felvételen látható |
+| **M-5** totalItemCount félrecímkézés | ✅ javítva | **élő toast** a generált szabásjegyzék-úton: „Kalkuláció kész — 24 szabásjegyzék-sor (8 ajtótétel)" — a két szám immár láthatóan különbözik |
+| **M-6** lap-szűkített KPI | ✅ javítva | 7 rendelésnél (nincs csonkítás) a tömör alcím marad; a csonkított eset („N vizsgált rendelésből") teszttel bizonyított |
+| **M-7** quotes mobil összenyomás | ✅ javítva | ügyfél/meta oszlop **40 → 294 px**; a `quotes-light-mobile` előtte/utána páron az azonosító, dátum és összeg most olvasható |
+| **M-8** tooltip-h-scroll | ✅ javítva | 1538 → 1440 px; a smoke ezen felül azt is méri, hogy **mind a 6 tooltip-doboz a viewporton belül** van (1440 és 360 px-en) — a fix nem néma levágás árán született |
+| **M-9** nyers wire-kulcs | ✅ javítva | élő dialógus-probe: `PanelCompletion` és társai SEHOL, magyar címkék jelen |
+| **M-10** 17px érintési zóna | ✅ javítva | `elementFromPoint` mind a 4 linkre: a szövegdobozon ±10 px-re is a link a találat (44px effektív zóna) |
+| **M-11** detail-SlideOver hibaág | ✅ javítva | 4 jsdom-teszt (terv/rendelés/végrehajtás-részlet 500 → `role="alert"` + Újra; profil-lekérés hibája kimondva). **Böngésző-szintű probe itt NEM végezhető:** mock módban az MSW service worker a hálózati réteg ELŐTT válaszol, így a Playwright route-interception nem tud 500-at injektálni — ezt nyíltan jelöljük, a bizonyíték a teszt |
+| **M-12** idővonal pending=error=üres | ✅ javítva | 2 jsdom-teszt (idővonal + mérföldkövek külön); élő dialógusban mindkét blokk fejléce jelen, tartalommal |
+
+### ÚJ lelet a friss körben
+
+**NEW-1 (M, pre-existing, SHELL-szintű, mind a 7 világot érinti) — duplikált `<h1>`
+minden képernyőn, két route-on egymásnak ELLENTMONDÓ szöveggel.**
+A `WorldShell.tsx:244` (`hidden md:block`) kiír egy `<h1>{screenLabel}</h1>`-et a
+nav-regiszter címkéjével, a képernyő pedig a SAJÁT `<h1>`-ét. Mért állapot (desktop):
+
+| Route | shell `<h1>` | képernyő `<h1>` |
+|---|---|---|
+| dash / orders / quotes / analytics | „Áttekintés" / „Ajtórendelések" / „Árajánlatok" / „Elemzések" | ugyanaz — **redundáns duplikáció** |
+| cutting | **„Szabászat"** | **„Vágótervezés"** |
+| machining | **„Megmunkálás"** | **„Végrehajtás"** |
+
+Hatás: (a) két `<h1>` oldalanként — heading-hierarchia szemantikai hiba,
+képernyőolvasón kettős dokumentum-cím; (b) két route-on a nav és az oldal MÁS
+nevet ad ugyanannak a képernyőnek (terminológia-inkonzisztencia a felhasználó
+szemében); (c) ~60 px függőleges hely megy el redundáns címre minden md+ nézeten.
+Mobilon nincs duplikáció (a shell-cím `hidden`).
+**Miért nem blokkolja az APPROVED-ot:** pre-existing, és a másik 6 modul-világ
+UGYANEZZEL a mintával kapott APPROVED-ot — a production egyedüli blokkolása
+következetlen lenne. Külön, világfüggetlen task: **`WORLDS-SHELL-H1`**.
+
+**NEW-2 (N, pre-existing):** mobilon a lebegő akciógomb (FAB) rálóg az utolsó
+látható lista-sor akciógombjára (a 2026-07-24-i felvételen ugyanígy) — a lista
+görgethető, tehát nem elérhetetlen, de a fedés zavaró. Backlog-tétel.
+
+### Verdikt
+
+**APPROVED** — a `W1-production` `done_when` teljesül. A modul PASS-magja
+(dark mode, token-fegyelem, séma-kontraktus egyezés, egy FSM-igazságforrás,
+őszinte analytics-gap) változatlanul erős, és a 16 kifogásolt tétel mind
+bizonyítottan javítva van, két esetben (M-8, M-5) a javítás MÁSODIK körben
+került helyre, mert a fix-kör saját adversarial review-ja hibát talált benne.
+
+**Nyitott, nem blokkoló:** `WORLDS-SHELL-H1` (NEW-1), a 17 N-follow-up a fenti
+listából, és a `STAB-FE-PROCUREMENT-OOM` (a teljes suite egyetlen nem futó fájlja).

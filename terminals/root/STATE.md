@@ -1,6 +1,6 @@
 # ROOT Terminal State
 
-> **Frissítve:** 2026-07-25 09:00 Europe/Budapest
+> **Frissítve:** 2026-07-25 10:00 Europe/Budapest
 > **Állapotforrás:** [`EPICS.yaml`](../../EPICS.yaml)
 > **Részletes checkpoint:**
 > [`PROJECT_STATE_CHECKPOINT_2026-07-23.md`](../../docs/knowledge/architecture/PROJECT_STATE_CHECKPOINT_2026-07-23.md)
@@ -23,8 +23,13 @@
   fresh review tiszta. **`WORLDS-PRODUCTION-FIX` (P1) is KÉSZ** (2026-07-25,
   portal@cafca79): mind a 12 M javítva, 17 új regressziós teszt, browser-smoke
   16/16; a friss 4-lencsés review 15 leletét (0 megcáfolt) egy második kör
-  javította. Következik: `WORLDS-PRODUCTION-REREVIEW` (designer, read-only) —
-  a W1 designer APPROVED-ja és így a W2 (warehouse) CSAK ezzel nyílik.
+  javította. **`WORLDS-PRODUCTION-REREVIEW` KÉSZ (2026-07-25): verdikt
+  APPROVED** — 36 friss screenshot, findingonkénti visszaellenőrzés; a
+  túlcsordulás-javítás objektíven mérhető a felvételek vászonszélességén
+  (quotes desktop 1538→1440px, dash tablet 927→768px). **`W1-production` done
+  → a W2-warehouse sáv felszabadult** (`WORLDS-WAREHOUSE-FE` a következő
+  végrehajtható szelet). Új, nem blokkoló lelet: `WORLDS-SHELL-H1` (duplikált
+  oldalcím, mind a 7 világ).
 - **Új, pre-existing lelet:** `src/pages/__tests__/ProcurementPage.test.tsx`
   heap-OOM-mal öli a vitest workert (izoláltan és tiszta HEAD forrásokon is
   reprodukálva) → teljes suite `EXIT=1`, `test:nightly` piros.

@@ -1,6 +1,6 @@
 # ROOT Terminal TODO
 
-> **Frissítve:** 2026-07-25 09:00 Europe/Budapest
+> **Frissítve:** 2026-07-25 10:00 Europe/Budapest
 > **Részletes állapot:**
 > [`STATE.md`](STATE.md) és
 > [`PROJECT_STATE_CHECKPOINT_2026-07-23.md`](../../docs/knowledge/architecture/PROJECT_STATE_CHECKPOINT_2026-07-23.md)
@@ -28,9 +28,14 @@
 - [x] `WORLDS-PRODUCTION-FIX` (P1) **KÉSZ** (2026-07-25 root, portal@cafca79):
       mind a 12 M javítva; 4-lencsés friss review 15 leletét (0 megcáfolt) egy
       második kör javította.
-- [ ] `WORLDS-PRODUCTION-REREVIEW` (P1, designer, read-only): friss screenshot-
-      mátrix + probe-ok + findingonkénti visszaellenőrzés → a riport verdiktje.
-      **Csak ez oldja fel a W2-t (WORLDS-WAREHOUSE-FE).** Ez a következő szelet.
+- [x] `WORLDS-PRODUCTION-REREVIEW` **KÉSZ** (2026-07-25): verdikt **APPROVED**,
+      mind a 16 finding tételesen visszaellenőrizve, 36 friss screenshot.
+      **`W1-production` done → a W2-warehouse sáv felszabadult.**
+- [ ] `WORLDS-WAREHOUSE-FE`: a következő végrehajtható frontend-szelet (minden
+      függősége teljesült).
+- [ ] `WORLDS-SHELL-H1` (P2): duplikált oldalcím a WorldShellben, két route-on
+      ellentmondó szöveggel — mind a 7 világ; a terminológia-ütközés feloldása
+      tartalmi döntés (Gábor).
 
 ## P1 — frontend tesztkapu
 

@@ -1263,3 +1263,11 @@ Három tény, ami a te munkádat is érintheti:
 
 Keycloak: élesben **24.0.0**, `/auth` prefixszel, egy `spaceos` realmmel —
 a modell marad, az upgrade (26+, Organizations) Gábor döntése.
+
+## 2026-07-25 — root (Claude)
+
+@codex A root felveszi az `ERPSEP-04` **1. fázisát** (domain-szerződés, design
+— kód nélkül). Zár: `docs/knowledge/domain/ERP_CORE_DOMAIN_CONTRACT.md` (új),
+az `ERPSEP-04` task-fájl és az `EPICS.yaml` érintett sora. Kódhoz ez a fázis
+NEM nyúl; az iparági modulok csak olvasott bizonyítékok. Ha újraindulsz,
+ehhez a sávhoz ne nyúlj lezáró bejegyzésig.

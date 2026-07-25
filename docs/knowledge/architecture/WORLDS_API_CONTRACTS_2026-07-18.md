@@ -53,6 +53,25 @@ CORS `PublicCutting`: localhost:3000/5173 + datahaven.joinerytech.hu.
 Ardalis.Result→HTTP: Ok→200/201 · Invalid→400 vagy **422** (végpontonként eltér!) ·
 NotFound→404 · Conflict→409.
 
+> **Javítás 2026-07-25 (WORLDS-PRODUCTION-FIX / M-2):** a korábbi 1.1 sor az
+> executions-végpontokra 409-et is felsorolt. A forráskód-ellenőrzés szerint az
+> **Execution Application+Domain szeletben 0 db `Result.Conflict` producer van**,
+> tehát állapot-sértésre is `Result.Invalid` keletkezik, amit a `MapResult`
+> **422 `UnprocessableEntity(result.ValidationErrors)`**-re képez — a törzs
+> CSUPASZ `[{identifier, errorMessage}]` tömb. **Az EXECUTIONS csoportban tehát
+> 409 nem fordulhat elő**; a cutting hoszt máshol viszont ad 409-et:
+> `POST /api/cutting/plans` (duplikált dátum), `POST /cutting/api/plans/{date}/assign-batch`
+> (már hozzárendelt batch), `POST /api/cutting/analytics/rebuild` (futó job) és az
+> adapter-config verzió-ütközés. A portál MSW-tükre és tesztjei ehhez igazodnak.
+>
+> **Joinery DoorOrder-végpontok (2.1):** a hibatest **csupasz `string[]`**
+> (`DoorOrderEndpoints.cs`: `Results.BadRequest(result.Errors)` — az Ardalis
+> `Result.Errors` `IEnumerable<string>`), NEM `[{identifier, errorMessage}]`. Az
+> utóbbi alakot ebben a modulban a **products** (`ProductEndpoints.cs:41,80` —
+> `result.ValidationErrors.Select(e => new { e.Identifier, e.ErrorMessage })`) és a
+> **gyartasilap** csoport adja, a DoorOrder-csoport nem. A DoorOrder 404
+> `Results.NotFound()` — **üres törzs**.
+
 ### 1.1 Route-térkép — portál-felület
 
 **`/api/cutting` mag** (`Endpoints/CuttingEndpoints.cs`, ManufacturerOnly, tenant=`tid`):
@@ -94,10 +113,10 @@ tenant=`tid` VAGY `tenant_id`; Invalid→**422**):
 | Verb | URL | Request | Válasz |
 |---|---|---|---|
 | POST | `/executions/` | `ScheduleExecutionRequest` | 201 `{id}` · 422/401/500 |
-| POST | `/executions/{id}/start` | `StartExecutionRequest` | 200 · 404/422/409/401 |
-| POST | `/executions/{id}/progress` | `RecordProgressRequest` | 200 · 404/422/409/401 |
+| POST | `/executions/{id}/start` | `StartExecutionRequest` | 200 · 404/**422**/401 |
+| POST | `/executions/{id}/progress` | `RecordProgressRequest` | 200 · 404/**422**/401 |
 | POST | `/executions/{id}/offcut` | `{materialId: Guid, widthMm, heightMm: decimal}` | 200 |
-| POST | `/executions/{id}/complete` | `CompleteExecutionRequest` | 200 · 404/422/409 |
+| POST | `/executions/{id}/complete` | `CompleteExecutionRequest` | 200 · 404/**422** |
 | POST | `/executions/{id}/cancel` | `{reason: int}` (CancelReason SZÁM!) | 200 |
 | POST | `/executions/{id}/milestones/evaluate` | — | 200 |
 | POST | `/executions/{id}/consent/withdraw` | `{workerId: Guid, scope: int}` | 200 `{withdrawalId}` |
@@ -350,7 +369,7 @@ Válaszok:
 
 | DTO | Mezők |
 |---|---|
-| `DoorOrderDto` | `id, tenantId, flowEpicId: Guid` · `projectId, projectName: string` · `status: string` (**DoorOrderStatus tagnév-string**) · `itemCount: int` · `deliveryDate?: DateOnly` (⚠ ma mindig null) · `createdAt: DateTime` (⚠ ma `UtcNow`, nem perzisztált!) |
+| `DoorOrderDto` | `id, tenantId, flowEpicId: Guid` · `projectId, projectName: string` · `status: string` (**DoorOrderStatus tagnév-string**) · `itemCount: int` · `deliveryDate?: DateOnly` (⚠ ma mindig null) · `createdAt: DateTime` (⚠ **nem perzisztált** — a LISTA-route `default(DateTime)`-ot ad (`DoorOrderRepository.cs:65` → `0001-01-01`), a DETAIL-route minden lekérésnél `UtcNow`-t (`GetDoorOrderQueryHandler.cs:32`); egyik sem valós adat, a portál ezért „—"-t mutat — M-4, 2026-07-25) |
 | `PagedList<T>` | `items: T[]` · `totalCount, page, pageSize: int` |
 | `CuttingListResponse` | `orderId: Guid` · `items: CuttingListItem[]` · `totalItemCount: int` — item: `itemSorszam, componentName, material, componentType: string` · `thickness, width, length: decimal` · `quantity: int` |
 | `ProcessPlanResponse` | `orderId` · `tasks: [{taskId, shortName: string, description?, department?: string, unitTime: "hh:mm:ss", headcount: int, parentTaskId?: string}]` |

@@ -1,6 +1,6 @@
 # ROOT Terminal State
 
-> **Frissítve:** 2026-07-25 07:30 Europe/Budapest
+> **Frissítve:** 2026-07-25 09:00 Europe/Budapest
 > **Állapotforrás:** [`EPICS.yaml`](../../EPICS.yaml)
 > **Részletes checkpoint:**
 > [`PROJECT_STATE_CHECKPOINT_2026-07-23.md`](../../docs/knowledge/architecture/PROJECT_STATE_CHECKPOINT_2026-07-23.md)
@@ -11,7 +11,7 @@
   WORLDS-SHELL-FIX pin/doksi commitja alatt; a working tree ezen felül a
   szándékosan kihagyott tételeket tartalmazza (Cutting-doksik, Nexus hardening,
   dirty submodule-ok).
-- Portal: `main@b9ad407`. `RISKS-5X5-FE` done; `EHS-WIZARD-HU` done-jához
+- Portal: `main@cafca79`. `RISKS-5X5-FE` done; `EHS-WIZARD-HU` done-jához
   manuális vizuális QA kell (Gábor).
 - **EPIC-UI-WORLDS:** `WORLDS-PRODUCTION-REVIEW` done (2026-07-24, root):
   verdikt **CHANGES REQUESTED** — 1 S (közös SlideOver fókuszcsapda desktop
@@ -20,8 +20,11 @@
   **`WORLDS-SHELL-FIX` (P0) KÉSZ** (2026-07-25, portal@b9ad407): mind a 4
   finding javítva, új browser-szintű a11y-őr (`npm run test:smoke:keyboard`,
   9/9 PASS), teljes suite 1573/1578 zöld 0 bukással, build/lint zöld, 3-lencsés
-  fresh review tiszta. Következik: `WORLDS-PRODUCTION-FIX` (P1, 12 modul-M),
-  utána re-review; W2 (warehouse) a re-review APPROVED-jáig blokkolt.
+  fresh review tiszta. **`WORLDS-PRODUCTION-FIX` (P1) is KÉSZ** (2026-07-25,
+  portal@cafca79): mind a 12 M javítva, 17 új regressziós teszt, browser-smoke
+  16/16; a friss 4-lencsés review 15 leletét (0 megcáfolt) egy második kör
+  javította. Következik: `WORLDS-PRODUCTION-REREVIEW` (designer, read-only) —
+  a W1 designer APPROVED-ja és így a W2 (warehouse) CSAK ezzel nyílik.
 - **Új, pre-existing lelet:** `src/pages/__tests__/ProcurementPage.test.tsx`
   heap-OOM-mal öli a vitest workert (izoláltan és tiszta HEAD forrásokon is
   reprodukálva) → teljes suite `EXIT=1`, `test:nightly` piros.

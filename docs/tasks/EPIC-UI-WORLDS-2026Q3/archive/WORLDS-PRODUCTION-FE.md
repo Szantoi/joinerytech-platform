@@ -296,6 +296,7 @@ kereszthivatkozásra — nincs más fogyasztójuk).
 | G6 | `apiFetch` (közös `services/apiClient.ts`) NEM küld `Authorization` headert | Minden modul közös gapje (nem csak production) — a valós hosztok elleni éles híváshoz szükséges, a WORLDS-PRODUCTION-API-GATE előfeltétele |
 | G7 | Priority-profil LÉTREHOZÁS (`POST /api/cutting/priority-profiles/`) nincs UI-ban | A publikáláshoz a UI csak a MEGLÉVŐ profilokból választat, újat nem hoz létre |
 | G8 | SignalR `/hubs/execution` élő-frissítés | Szándékosan nem épült be (task-elv: opcionális follow-up) |
+| **G9** *(2026-07-25, WORLDS-PRODUCTION-FIX / M-3)* | **Gyártásidő eszköz-integráció (kártyaolvasó / esemény-aláírás) nincs bekötve** — a `start`/`progress`/`complete` badge-HMAC, esemény-HMAC és bizonyíték-hash mezőinek valós forrása hiányzik. Élesben: `start` → 400 (a `workerId` Guid-típusú), `progress` → 422 (nem Base64 HMAC), **`complete` viszont ÁTMENNE** a Null proof-policy miatt, és konstans hash rögzülne HAMIS bizonyítékként | `api` módban a három akció letiltott, magyarázó tooltippel (`deviceSignatureBlockReason`); mock módban a demó-folyamat változatlan. A backend Null-proof-policy stubjai külön backend follow-up |
 
 ### Follow-up javaslatok (prioritás-sorrendben)
 

@@ -1,6 +1,6 @@
 # ROOT Terminal TODO
 
-> **Frissítve:** 2026-07-25 07:30 Europe/Budapest
+> **Frissítve:** 2026-07-25 09:00 Europe/Budapest
 > **Részletes állapot:**
 > [`STATE.md`](STATE.md) és
 > [`PROJECT_STATE_CHECKPOINT_2026-07-23.md`](../../docs/knowledge/architecture/PROJECT_STATE_CHECKPOINT_2026-07-23.md)
@@ -25,9 +25,12 @@
       (`data-inert-exempt`), M-S3 apiClient hibatest-parse. Új böngésző-szintű
       őr: `scripts/keyboard-smoke.mjs` (9/9 PASS élő Chrome-ban) — jsdom-ban ez
       a hibaosztály elvileg sem fogható.
-- [ ] `WORLDS-PRODUCTION-FIX` (P1): 12 modul-M a riport szerint; utána
-      re-review (friss screenshot + fókusz-probe), csak APPROVED után nyílik
-      a W2 (WORLDS-WAREHOUSE-FE). **Ez a következő végrehajtandó szelet.**
+- [x] `WORLDS-PRODUCTION-FIX` (P1) **KÉSZ** (2026-07-25 root, portal@cafca79):
+      mind a 12 M javítva; 4-lencsés friss review 15 leletét (0 megcáfolt) egy
+      második kör javította.
+- [ ] `WORLDS-PRODUCTION-REREVIEW` (P1, designer, read-only): friss screenshot-
+      mátrix + probe-ok + findingonkénti visszaellenőrzés → a riport verdiktje.
+      **Csak ez oldja fel a W2-t (WORLDS-WAREHOUSE-FE).** Ez a következő szelet.
 
 ## P1 — frontend tesztkapu
 

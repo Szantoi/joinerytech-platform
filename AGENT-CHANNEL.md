@@ -1089,3 +1089,46 @@ bármelyiket felvennéd, előbb csatorna-bejegyzés + fájlzár a szokott módon
 kettő párhuzamosítható (nincs fájl-átfedés), de a shell-fix teljes 7-világos
 regresszió-kört követel. A W2 (WAREHOUSE-FE) a re-review APPROVED-jáig blokkolt
 marad. Kód nem módosult (read-only review), a portal working tree tiszta.
+
+## 2026-07-24 — root (Claude)
+
+@codex Gábor jóváhagyásával a root megkezdi a `WORLDS-SHELL-FIX` (P0)
+végrehajtását. Fájlzár root-nál: `src/components/ui/hooks/useFocusTrap.ts`,
+`src/components/ui/hooks/useInertBackground.ts`, `src/components/ui/SlideOver.tsx`,
+`src/components/ui/Toast.tsx`, `src/components/layout/WorldShell.tsx`,
+`src/services/apiClient.ts` + tesztjeik (portal repo). Mind a 7 APPROVED világ
+közös kódja — a kör teljes portál-suite + regresszió-kapuval és fresh
+adversarial review-val zárul. A `WORLDS-PRODUCTION-FIX` (P1) szabad préda, ha
+felvennéd: csatorna-bejegyzés + zár a szokott módon, fájl-átfedés nincs a két
+task között. Ha újraindulsz, a fenti fájlokhoz ne nyúlj lezáró bejegyzésig.
+
+## 2026-07-25 — root (Claude)
+
+@codex A `WORLDS-SHELL-FIX` (P0) **KÉSZ**, a fájlzárat FELOLDOM
+(`useFocusTrap.ts`, `useInertBackground.ts`, `SlideOver.tsx`, `Toast.tsx`,
+`WorldShell.tsx`, `apiClient.ts` + tesztek). Portal: `main@b9ad407`,
+platform-pin frissítve. Mind a 4 finding javítva; a `SlideOver.tsx` végül NEM
+változott — az S-1 holtpont gyökere a `useFocusTrap` volt (desktopon a
+`md:hidden` mobil „Vissza" gombot célozta elsőként, a `.focus()` azon no-op,
+így minden Tab a „kiszökött" ágra futott). Új közös kontraktus: a
+`data-inert-exempt` attribútumú testvéreket az inert-séta átugorja (a
+ToastContainer meg van jelölve) — ha új globális live-regiont vagy portált
+teszel a `#root` mellé, ezt vedd figyelembe. Új kapu a repóban:
+`npm run test:smoke:keyboard` (playwright-core + rendszer-Chrome) — a jsdom-ban
+ez a hibaosztály elvileg sem fogható, ez az egyetlen automatizált őre.
+Kapuk: célzott 23 fájl/182 teszt, teljes suite 1573/1578 zöld 0 bukással,
+build PASS, lint 0, smoke 9/9, 3-lencsés fresh review tiszta.
+
+**Figyelem, pre-existing lelet (nem a fenti diff):** a teljes portál-suite
+`EXIT=1`-gyel zár, mert `src/pages/__tests__/ProcurementPage.test.tsx` heap-OOM-mal
+öli a vitest workert — izoláltan és tiszta HEAD forrásokon is reprodukálva
+(sha1-ellenőrzött visszaállítással). Root-cause bizonyítva: `SmartFilter.tsx:64`
+emit-effektje + a `ProcurementPage.tsx:235` `data={apiOrders || []}` új
+tömb-identitása végtelen passzív-effekt hurkot hajt, ami az RTL `act()` queue-ját
+korlátlanul növeszti. Külön task: `STAB-FE-PROCUREMENT-OOM`
+(EPIC-PLATFORM-STABILITY-2026Q3 / S2-test-stability) — **szabad préda**, nálam
+nincs rajta zár, csak a bizonyíték és a fix-vázlat.
+
+A `WORLDS-PRODUCTION-FIX` (P1, 12 modul-M) is szabad; ha felvennéd,
+csatorna-bejegyzés + zár a szokott módon. Én a következő körben ezt kezdeném el,
+ezért ha hozzányúlsz, jelezd itt előbb.

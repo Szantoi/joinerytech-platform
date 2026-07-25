@@ -1,23 +1,31 @@
 # ROOT Terminal State
 
-> **Frissítve:** 2026-07-24 21:10 Europe/Budapest
+> **Frissítve:** 2026-07-25 07:30 Europe/Budapest
 > **Állapotforrás:** [`EPICS.yaml`](../../EPICS.yaml)
 > **Részletes checkpoint:**
 > [`PROJECT_STATE_CHECKPOINT_2026-07-23.md`](../../docs/knowledge/architecture/PROJECT_STATE_CHECKPOINT_2026-07-23.md)
 
 ## Jelenlegi állapot
 
-- Platform root: `main@b123146` + a WORLDS-PRODUCTION-REVIEW doksi-kör
-  commitja alatt; a working tree ezen felül a szándékosan kihagyott tételeket
-  tartalmazza (Cutting-doksik, Nexus hardening, dirty submodule-ok).
-- Portal: `main@1f3ca31`, CLEAN. `RISKS-5X5-FE` done; `EHS-WIZARD-HU`
-  done-jához manuális vizuális QA kell (Gábor).
+- Platform root: `main@62dc190` (WORLDS-PRODUCTION-REVIEW doksi-kör) + a
+  WORLDS-SHELL-FIX pin/doksi commitja alatt; a working tree ezen felül a
+  szándékosan kihagyott tételeket tartalmazza (Cutting-doksik, Nexus hardening,
+  dirty submodule-ok).
+- Portal: `main@b9ad407`. `RISKS-5X5-FE` done; `EHS-WIZARD-HU` done-jához
+  manuális vizuális QA kell (Gábor).
 - **EPIC-UI-WORLDS:** `WORLDS-PRODUCTION-REVIEW` done (2026-07-24, root):
   verdikt **CHANGES REQUESTED** — 1 S (közös SlideOver fókuszcsapda desktop
   billentyűzet-holtpont, pre-existing, mind a 7 APPROVED világ érintett!) +
   15 M + 17 N. Riport + 16 screenshot-asset a docs/knowledge/qa/ alatt.
-  Fix-taskok: `WORLDS-SHELL-FIX` (P0) és `WORLDS-PRODUCTION-FIX` (P1),
-  párhuzamosíthatók; W2 (warehouse) a re-review APPROVED-jáig blokkolt.
+  **`WORLDS-SHELL-FIX` (P0) KÉSZ** (2026-07-25, portal@b9ad407): mind a 4
+  finding javítva, új browser-szintű a11y-őr (`npm run test:smoke:keyboard`,
+  9/9 PASS), teljes suite 1573/1578 zöld 0 bukással, build/lint zöld, 3-lencsés
+  fresh review tiszta. Következik: `WORLDS-PRODUCTION-FIX` (P1, 12 modul-M),
+  utána re-review; W2 (warehouse) a re-review APPROVED-jáig blokkolt.
+- **Új, pre-existing lelet:** `src/pages/__tests__/ProcurementPage.test.tsx`
+  heap-OOM-mal öli a vitest workert (izoláltan és tiszta HEAD forrásokon is
+  reprodukálva) → teljes suite `EXIT=1`, `test:nightly` piros.
+  Task: `STAB-FE-PROCUREMENT-OOM`.
 - Cutting: `4341390`, dirty; a trusted-proxy/tenant-host rész-szelet APPROVED,
   de nem deployolt, a teljes diff nem approved.
 - Nexus: lokális auth/RBAC hardening tesztelt; tokenrotáció, policy-lefedettség

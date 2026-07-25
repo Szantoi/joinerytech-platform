@@ -1,6 +1,6 @@
 # ROOT Terminal TODO
 
-> **Frissítve:** 2026-07-24 21:10 Europe/Budapest
+> **Frissítve:** 2026-07-25 07:30 Europe/Budapest
 > **Részletes állapot:**
 > [`STATE.md`](STATE.md) és
 > [`PROJECT_STATE_CHECKPOINT_2026-07-23.md`](../../docs/knowledge/architecture/PROJECT_STATE_CHECKPOINT_2026-07-23.md)
@@ -19,12 +19,22 @@
 - [x] `WORLDS-PRODUCTION-REVIEW` végrehajtva (2026-07-24 root, designer szerep,
       5 lencse + 17/17 adversarial verify): verdikt **CHANGES REQUESTED** —
       riport: `docs/knowledge/qa/WORLDS_PRODUCTION_DESIGN_REVIEW_2026-07-24.md`.
-- [ ] `WORLDS-SHELL-FIX` (P0): S-holtpont a SlideOver fókuszcsapdában (minden
-      világ!) + tablet-túlcsordulás + toast-inert + apiClient hibatest-parse;
-      Playwright keyboard-smoke + teljes 7-világos regresszió-kör kötelező.
+- [x] `WORLDS-SHELL-FIX` (P0) **KÉSZ** (2026-07-25 root, portal@b9ad407): S-1
+      fókuszcsapda-holtpont (a gyökér a hookban volt, `SlideOver.tsx`
+      változatlan), M-S1 tablet-túlcsordulás, M-S2 toast-inert
+      (`data-inert-exempt`), M-S3 apiClient hibatest-parse. Új böngésző-szintű
+      őr: `scripts/keyboard-smoke.mjs` (9/9 PASS élő Chrome-ban) — jsdom-ban ez
+      a hibaosztály elvileg sem fogható.
 - [ ] `WORLDS-PRODUCTION-FIX` (P1): 12 modul-M a riport szerint; utána
       re-review (friss screenshot + fókusz-probe), csak APPROVED után nyílik
-      a W2 (WORLDS-WAREHOUSE-FE).
+      a W2 (WORLDS-WAREHOUSE-FE). **Ez a következő végrehajtandó szelet.**
+
+## P1 — frontend tesztkapu
+
+- [ ] `STAB-FE-PROCUREMENT-OOM`: `src/pages/__tests__/ProcurementPage.test.tsx`
+      heap-OOM-mal öli a vitest workert (izoláltan és tiszta HEAD forrásokon is
+      reprodukálva 2026-07-25-én) → a teljes suite `EXIT=1`, a `test:nightly`
+      kapu piros. 5 teszt sosem fut le. Nem a WORLDS-SHELL-FIX okozta.
 
 ## P0 — félkész EHS munka
 

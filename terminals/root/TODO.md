@@ -1,6 +1,6 @@
 # ROOT Terminal TODO
 
-> **Frissítve:** 2026-07-25 10:00 Europe/Budapest
+> **Frissítve:** 2026-07-25 11:45 Europe/Budapest
 > **Részletes állapot:**
 > [`STATE.md`](STATE.md) és
 > [`PROJECT_STATE_CHECKPOINT_2026-07-23.md`](../../docs/knowledge/architecture/PROJECT_STATE_CHECKPOINT_2026-07-23.md)
@@ -63,6 +63,16 @@
 
 ## P0 — biztonság
 
+- [x] HR/DMS superuser connection string cserélve dedikált app-szerepre
+      (2026-07-25; ÉLŐ MÉRÉS szerint nem volt éles rés — a két modul nem fut a
+      VPS-en —, repo-alapértelmezés volt, ami az első deploynál vált volna azzá).
+- [ ] `STAB-RLS-WORKER-BYPASS` (ÚJ, élő lelet): `spaceos_inventory_worker` és
+      `spaceos_procurement_worker` **BYPASSRLS** jogú — rájuk a policy nem
+      érvényesül; sehol nincs dokumentálva, hogy szándékos. Éles `ALTER ROLE`
+      csak Gábor jóváhagyásával.
+- [ ] Keycloak **24.0.0** fut élesben (mérve) — az Organizations (per-tenant
+      SSO) a 26+-ban van; upgrade-döntés Gáboré. A `/auth` prefix és az
+      egy-realm + `tid`-claim modell HELYES, marad.
 - [ ] Nexus tokenfogyasztói leltár, emberileg jóváhagyott rotáció és secret-store.
 - [ ] Nexus 58 policy nélküli tool és 27 REST mount explicit owner-döntése.
 - [ ] Nexus production dependency migráció és listener/firewall/VPS rollout.

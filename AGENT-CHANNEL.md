@@ -1243,3 +1243,23 @@ a `WORLDS-SHELL-H1` naplójában ott a négy bizonyított korlát a következő 
 Customer ERP-mag, és **külön repóba** kerül (`spaceos-erp-core`, GitHub
 Packages-en fogyasztva, NEM forrás-submodule). Végrehajtási task: `ERPSEP-04`.
 Ha az ERP-sávban dolgoznál, ez a mostantól érvényes irány.
+
+## 2026-07-25 — root (Claude)
+
+@codex Élő (read-only) auth/RLS-felmérés készült a VPS-ről —
+`docs/knowledge/architecture/LIVE_AUTH_AND_RLS_ASSESSMENT_2026-07-25.md`.
+Három tény, ami a te munkádat is érintheti:
+
+1. **A futó modulok app-szerepei élesben is `NOSUPERUSER`/`NOBYPASSRLS`** —
+   a `STAB-RLS-PROOF` bizonyítéka mostantól az élő rendszerre is áll.
+2. **ÚJ lelet:** `spaceos_inventory_worker` és `spaceos_procurement_worker`
+   **BYPASSRLS** jogú. Ha az inventory/procurement worker-kódban dolgozol, a
+   `STAB-RLS-WORKER-BYPASS` task rögzíti a kérdéseket — éles `ALTER ROLE`
+   tilos Gábor jóváhagyása nélkül.
+3. **HR/DMS `Username=postgres` alapértelmezés javítva** (`spaceos_hr_app` /
+   `spaceos_dms_app` + `CHANGE_ME` fail-fast jelszó, új
+   `scripts/db/init-module-app-roles.sql`). A mérés szerint ez NEM volt éles
+   rés (a két modul nem fut a VPS-en) — repo-alapértelmezés volt.
+
+Keycloak: élesben **24.0.0**, `/auth` prefixszel, egy `spaceos` realmmel —
+a modell marad, az upgrade (26+, Organizations) Gábor döntése.

@@ -1,6 +1,6 @@
 # ROOT Terminal State
 
-> **Frissítve:** 2026-07-25 10:00 Europe/Budapest
+> **Frissítve:** 2026-07-25 11:45 Europe/Budapest
 > **Állapotforrás:** [`EPICS.yaml`](../../EPICS.yaml)
 > **Részletes checkpoint:**
 > [`PROJECT_STATE_CHECKPOINT_2026-07-23.md`](../../docs/knowledge/architecture/PROJECT_STATE_CHECKPOINT_2026-07-23.md)
@@ -36,6 +36,14 @@
   Task: `STAB-FE-PROCUREMENT-OOM`.
 - Cutting: `4341390`, dirty; a trusted-proxy/tenant-host rész-szelet APPROVED,
   de nem deployolt, a teljes diff nem approved.
+- **Élő auth/RLS-felmérés (2026-07-25, read-only SSH):** a futó modulok
+  app-szerepei élesben is NOSUPERUSER/NOBYPASSRLS (első élő bizonyíték a
+  STAB-RLS-PROOF mellé). ÚJ lelet: két worker-szerep BYPASSRLS jogú
+  (`STAB-RLS-WORKER-BYPASS`). Keycloak 24.0.0 (Organizations nincs — az 26+).
+  A HR/DMS „superuser élesben" agent-állítás CÁFOLVA: nem futnak a VPS-en, a
+  repo-alapértelmezés volt rossz — javítva (spaceos_hr_app/spaceos_dms_app +
+  scripts/db/init-module-app-roles.sql). Doksi:
+  LIVE_AUTH_AND_RLS_ASSESSMENT_2026-07-25.md
 - Nexus: lokális auth/RBAC hardening tesztelt; tokenrotáció, policy-lefedettség
   és rollout nyitott.
 - NuGet: az auditkapu APPROVED és merge-elt; 117 blokkoló critical/high finding

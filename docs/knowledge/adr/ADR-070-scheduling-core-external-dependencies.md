@@ -1,6 +1,14 @@
 # ADR-070: A `spaceos.scheduling` mag külső függőségei (solver és időkezelés)
 
-- **Státusz:** **Proposed** — root-review-ra beadva (backend terminál, 2026-07-28)
+- **Státusz:** **ELFOGADVA (Accepted) — 2026-07-28.** A D1/D2 döntések + a
+  root-review két kötelező kiegészítése (determinizmus, supply-chain pin —
+  a backend végre is hajtotta) érvényesek. A két nyitott kérdés Gábor
+  ismételt „folytasd a termékesítést" felhatalmazása alapján a root
+  ajánlásával zárult (Gábor bármikor felülbírálhatja, a változtatás olcsó):
+  **Q1 RID-mátrix: linux-x64 (deploy) + win-x64 (fejlesztői) — arm64 később
+  additív**; **Q2 bundle-plafon: nincs kemény plafon, de a manifest kötelezően
+  kimondja a bundle-méretet, és 100 MB felett a solver külön-artefaktum
+  kérdését újra kell nyitni.** Az M4 solver-munka ezzel feloldva.
 - **Felvetette:** PLAN-03 M2 zárása; a root kérésére készült
   (`terminals/backend/inbox/2026-07-28_008_root-m2-valaszok.md`)
 - **Szerep:** backend
@@ -93,10 +101,67 @@ szavakat tiltja a magban.
 
 ---
 
+---
+
+## D3 — Determinizmus (a root-review 1. kötelező kiegészítése)
+
+**A probléma:** a CP-SAT több worker-szállal **nem determinisztikus** — ugyanarra a
+bemenetre eltérő, de azonos költségű ütemtervet adhat, mert a szálak versenye dönti el,
+melyik megoldást találja meg előbb. Ez nem elméleti kockázat nálunk: a
+`ScheduleRevision.ContentHash` **a tartalomból** számolódik, tehát két azonos bemenetű
+futás **eltérő hash-t** adna, a shadow↔published diff pedig zajt mutatna változás nélkül.
+A Doorstar visszaidézi ezt a hash-t — egy „megváltozott" terv, ami valójában ugyanaz,
+fölösleges jóváhagyási kört indítana.
+
+**Döntés — alap-profil:**
+
+- `random_seed` **rögzített** (konfigból, alapértéke fix), és
+- `num_search_workers = 1`.
+
+A párhuzamos keresés **opt-in**, és az azt használó futás eredménye a válaszban
+**kimondottan „nem reprodukálható" jelölést kap** — nem szabad úgy tenni, mintha a
+hash-e stabil identitás lenne.
+
+**Kötelező teszt (a kompatibilitási kapu mintájára):** ugyanaz a bemenet kétszer
+lefuttatva **ugyanazt a revision-hash-t** adja. A hash-oldali determinizmus (rendezés,
+kultúrafüggetlenség, skála-normalizálás) ma már tesztelt; a solver-oldali determinizmus
+az M4 kapujának része lesz.
+
+**Miért nem elég a rendezés utólag:** két azonos költségű, de más művelet-kiosztású terv
+tartalmilag különbözik — nincs olyan kanonikus rendezés, ami ezt eltüntetné. A
+determinizmust a keresésnél kell kikényszeríteni, nem a hash-elésnél.
+
+---
+
+## D4 — Supply-chain rögzítés (a root-review 2. kötelező kiegészítése)
+
+**Döntés — mindkét függőségre:**
+
+| Elem | Rögzítés |
+|---|---|
+| `Google.OrTools` | pontos verzió-pin: **9.15.6755** (a runtime-alcsomagok ugyanerre) |
+| `NodaTime` | pontos verzió-pin: **3.1.11** |
+| Tranzitív gráf | **committed lockfile** minden projektben (`RestorePackagesWithLockFile`) |
+| CI | `dotnet restore --locked-mode` — eltérés = build-bukás, nem csendes verzióváltás |
+| Manifest | a bundle digestje a **natív runtime-binárisokra is** kiterjed (ADR-067 5. döntés: az aláírás a tartalmat fedi, nem csak a metaadatot) |
+
+**Végrehajtva (2026-07-28):** a `spaceos-modules-scheduling` repóban a lockfile-ok
+generálva és commitolva (Domain / Infrastructure / 3 teszt-projekt), a CI restore
+`--locked-mode`-ban fut.
+
+**Miért lockfile és nem csak verzió-pin:** a közvetlen hivatkozás pinelése a *tranzitív*
+gráfot nem rögzíti. Egy natív binárisokat szállító modulnál egy elmozduló tranzitív
+csomag a bundle digestjét is elmozdítja — vagyis az aláírt tartalom változna meg úgy,
+hogy egyetlen commit sem utal rá.
+
+---
+
 ## Következmények
 
 - **Pozitív:** az M4 nem saját solver-fejlesztéssel indul; a naptár-helyesség (DST) egy
   bizonyítottan karbantartott könyvtárra épül, nem házi zóna-logikára.
+- **Pozitív:** a determinizmus-klauzulával a revision-hash megmarad stabil identitásnak,
+  és a shadow-diff valódi különbséget jelez, nem solver-zajt.
 - **Semleges:** a Domain réteg mindkét döntés után **külső függőség nélkül** marad; a
   solver és a NodaTime az Application/Infrastructure rétegben él.
 - **Negatív / kockázat:** a bundle-méret ugrik (natív binárisok), és az Alpine/musl kérdés

@@ -2,7 +2,7 @@
 
 - **Szerep:** frontend
 - **Prioritás:** P1 (az M3 read-only scheduling-nézet UI-alapja)
-- **Státusz:** **F1-F3 DONE** (root-review APPROVED-ok; F3: portal-repo, 2026-07-28) — hátra: F3+ mini-szelet (ConfirmProvider App-bekötés + CatalogPanel window.confirm→useConfirm csere + P2-1 DST-tesztadat), utána a task DONE. EditableDataTable az M4 revízió-szerkesztés döntéséig parkolva (szándékos hiány).
+- **Státusz:** **DONE** (root-review, 2026-07-28) — F1 0b0dbce · F2 794b2c4 · F3 ed0a786 · F3+ b6f81e4+83b6f4b. EditableDataTable az M4 revízió-szerkesztés döntéséig parkolva (szándékos hiány, nem elmaradás). Nyitott átadott lelet: CatalogPanel handleDuplicate előzetes lint-hibái (külön szelet, kiadásra vár).
   **F3 review_requested** (2026-07-28, mind a 4 F2-es P2 rendezve). Ezzel a
   PLAN-05 teljes hatóköre leszállítva, az `EditableDataTable` kivételével, ami a
   task-doksi szerint az M4 revízió-szerkesztés döntéséig várakozik.
@@ -237,6 +237,42 @@ gráf-elrendezés, külön lépésben.
   a jelölés eltűnik; a dialógus kezdő fókusza a Mégsén, **4px-es látható
   fókuszgyűrűvel**, 8 Tab után sem szökik ki, Escape után a fókusz a triggeren,
   a promise elvetéssel oldódik fel; gombok 44px; nincs vízszintes túlcsordulás
+
+#### F3+ mini-szelet (2026-07-28, frontend terminál — review_requested)
+
+Root-jóváhagyással, KÉT tiszta commitra bontva (a sorrend kötött: a provider
+nélkül a `CatalogPanel` élesben dobna):
+
+**1. commit — provider bekötése:** `src/App.tsx` — `ConfirmProvider` a
+`ToastProvider` ALATT. A sorrend szándékos: a dialógus bezárása után érkező
+toast így nem esik inert háttérbe.
+
+**2. commit — az első fogyasztó:** `src/components/catalog/CatalogPanel.tsx:129`
+`window.confirm` → `await ask({...})` (lokalizált szövegek, `tone: 'danger'`),
++ ÚJ `__tests__/CatalogPanelDelete.test.tsx` (3 teszt): a portál dialógusa
+nyílik és a natív `window.confirm` NEM hívódik; mégsénél a termék marad;
+megerősítésnél eltűnik.
+
+**A három P2 ebben a szeletben:**
+
+1. **DST-tesztadat javítva** — a panel-teszt `weekStart`-ja `2026-10-19` →
+   `2026-10-20`. A review észrevétele helyes volt: a 10-19-i héttel a teszt a
+   RÉGI, ms-összeadós kóddal is zöld lett volna (az átállás 10-25 03:00-kor van,
+   a hetedik nap 10-25 00:00 még előtte). 10-20-tól indulva az ablak átlépi a
+   váltást — ellenőrizve: ms-léptetéssel a sorozat `… 10-24, 10-25, 10-25`
+   (duplikált nap, 10-26 kimarad), naptári léptetéssel `… 10-25, 10-26`.
+2. **Teszt-komment** pontosítva (az átállás 10-25, a 10-19-i hét vasárnapja).
+3. **`usePrintScope` komment**: kimondva, hogy a takarítás a `window.print()`
+   **blokkoló** viselkedésére épül, és mi történik, ha egy környezetben mégsem az.
+
+**Kapuk:** célzott vitest **66/66 PASS** (11 fájl); lint 0 az általam írt
+fájlokon; `npm run build` PASS; `src/__tests__/App.test.tsx` a változás
+ELŐTTI állapotában maradt (5 failed | 3 passed — a világ-gating sáv miatt).
+
+**Előzetes lint-adósság a szeletben** (bizonyítva: a `git show HEAD:` verzió
+ugyanezt adja): `CatalogPanel.tsx` — `handleDuplicate` a deklarációja előtt
+használt (1 error) + egy `exhaustive-deps` warning. Nem az én diffem; a javítás
+(deklaráció-mozgatás + deps rendezése) külön, tiszta commitot érdemel.
 
 ## Kemény szabályok
 

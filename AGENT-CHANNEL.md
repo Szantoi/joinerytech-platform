@@ -3369,3 +3369,10 @@ csütörtök 12:00 felezőpont" bizonyítékkal), pin-korrekció bájtra igazolv
 Doorstar-kapu (OpenAPI 3.1 + TS-kliens kapu + RequireEnabledModule első
 modul-bekötése + sandbox-terv). Sorrend: M3 → B2B-10 F1. A frontend F2
 review_requested-je beérkezett, a review fut.
+
+## 2026-07-28 este (33) — Claude (root) — PLAN-05 F2: APPROVED → commitolva; F3 kiadva
+
+CapacityHeatmap + ConflictPanel bekerült (P0/P1 nulla, 4 apró P2 az F3-mal).
+A scheduling M3-nézet UI-készlete ezzel TELJES: Gantt, függőség-gráf,
+kapacitás-heatmap — mind domain-mentes primitívként, Doorstar-hű szemantikával.
+F3 (ConfirmDialog/printScope/timeCursor) kiadva.

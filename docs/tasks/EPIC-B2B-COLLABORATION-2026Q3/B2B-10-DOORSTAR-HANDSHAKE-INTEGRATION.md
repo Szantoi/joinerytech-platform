@@ -20,7 +20,19 @@ acceptance evidence). Ugyanaz a fogyasztási modell, mint a schedulingnél: a
 platform PUBLIKÁLT kontraktust ad, a Doorstar generált klienssel + saját
 adapterrel csatlakozik — forrás-másolás nélkül.
 
-## Fázisok (a re-audit pontosítja)
+## F0 KÉSZ — a re-audit eredménye (2026-07-28)
+
+A B2B-RE-AUDIT lefutott: **1 igaz / 3 részben / 3 hamis** done; a normatív
+állapot- és fázisterv mostantól a
+`docs/knowledge/architecture/B2B_COLLABORATION_REAUDIT_2026-07-28.md` —
+annak F0-F8 táblája VÁLTJA az alábbi vázlatos fázisokat. Kritikus út a
+Doorstar-pilotig: **F0(döntések) → F1(application-réteg, L) → F2(RLS-javítás,
+M) → F3(API-host, M) → F5(ProjectRef-horgony, M) → F7(proof-suite, M)**.
+F0 három döntése: URL-prefix (javaslat: /api/collaboration/v1 — egyes szám,
+a portál-konvencióval), dispute ki az MVP-ből (ADR-068 non-goal; a portálból
+kivezetendő), B2B-01 doksi host/guest javítás.
+
+## Eredeti fázis-vázlat (történeti)
 
 1. **F0 — B2B-RE-AUDIT (fut):** ground truth a B2B-01..07 valós állapotáról;
    a hiány-lista a publikálható API-ig.

@@ -2896,3 +2896,19 @@ fogyasztási modellje a minta (publikált spec + generált kliens + federation).
 @backend: az F1 várhatóan a te sávod lesz az M2/M3 után — a hosting-policyd
 első Collaboration-fogyasztása. @doorstar-root: külön levélben kéritek majd
 az integrációs bemeneteket (vektorok + reviewer), a re-audit után.
+
+## 2026-07-28 délután (12) — Claude (root) — B2B-RE-AUDIT KÉSZ: 1 igaz / 3 részben / 3 hamis; a B2B-10 terve normatív
+
+A teljes jelentés: docs/knowledge/architecture/B2B_COLLABORATION_REAUDIT_2026-07-28.md.
+Lényeg: a Collaboration egy jól megírt, zöld DOMAIN-MAG (B2B-03 evidence
+kifogástalan, B2B-04 FSM szolid), de application-réteg, API, host és valós
+integráció NÉLKÜL. Legsúlyosabb: a B2B-02 „non-superuser 3-tenant RLS suite"
+állítás EF InMemory-n futott (RLS-t mérni képtelen), a policy a grant-táblát
+figyelmen kívül hagyja (visszavont grant után a guest DB-szinten továbbra is
+lát), és SEMMI nem állítja be az app.current_tenant_id-t. A DelegatedWorkPackage-en
+nincs ProjectRef — az ADR-068 MVP a mai modellel strukturálisan nem megy.
+EPICS igazítva: B2B-02/06 done VISSZAVONVA (hamis), B2B-01/04/05
+changes_requested (részben), B2B-03 marad done; a doksik vissza az archívból.
+A B2B-10 kritikus útja: F0(3 döntés) → F1(application, L) → F2(RLS-fix, M) →
+F3(API-host, M) → F5(ProjectRef, M) → F7(proof, M). Kiosztás: Gábor/root
+döntés a backend-terhelés függvényében (az M2/M3 után a backend a jelölt).

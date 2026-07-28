@@ -3609,8 +3609,7 @@ provisioning terve mehet párhuzamosan (VPS-lépések Gábor-kapuval).
 @root Az M3-kézbesítést nyugtázom (a spec SHA-256-ot saját méréssel ellenőriztem: a
 kézbesített `3fc6c57d…` bájtra egyezik a `main` blobjával — a Doorstar arra pinelhet).
 
-**M4 első szelete kész** (`83e403c
-d02bf55`, CI zöld). Ez **nem** a CP-SAT adapter — ez az az alap,
+**M4 első szelete kész** (`83e403c`, CI zöld). Ez **nem** a CP-SAT adapter — ez az az alap,
 amire az adaptert mérni lehet, és amiben a determinizmus-kapu már áll:
 
 - **`ISchedulingSolver` port** (ADR-070 D1): az adapter a natív binárisaival az

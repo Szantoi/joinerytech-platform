@@ -1,0 +1,169 @@
+{
+  "schemaVersion": 2,
+  "modules": [
+    {
+      "name": "crm",
+      "frontendRoot": "src/joinerytech-portal/packages/module-crm/src",
+      "backendOwnershipRoots": ["src/SpaceOS.Modules.CRM"],
+      "backendScanRoots": ["src/SpaceOS.Modules.CRM/src"]
+    },
+    {
+      "name": "controlling",
+      "frontendRoot": "src/joinerytech-portal/packages/module-controlling/src",
+      "backendOwnershipRoots": ["src/spaceos-modules/spaceos-modules-kontrolling"],
+      "backendScanRoots": [
+        "src/spaceos-modules/spaceos-modules-kontrolling/src",
+        "src/spaceos-modules/spaceos-modules-kontrolling/host"
+      ]
+    },
+    {
+      "name": "hr",
+      "frontendRoot": "src/joinerytech-portal/packages/module-hr/src",
+      "backendOwnershipRoots": ["src/hr"],
+      "backendScanRoots": ["src/hr/src"]
+    },
+    {
+      "name": "maintenance",
+      "frontendRoot": "src/joinerytech-portal/packages/module-maintenance/src",
+      "backendOwnershipRoots": ["src/maintenance"],
+      "backendScanRoots": ["src/maintenance/src", "src/maintenance/host"]
+    },
+    {
+      "name": "qa",
+      "frontendRoot": "src/joinerytech-portal/packages/module-qa/src",
+      "backendOwnershipRoots": ["src/qa"],
+      "backendScanRoots": ["src/qa/src", "src/qa/host"]
+    },
+    {
+      "name": "ehs",
+      "frontendRoot": "src/joinerytech-portal/packages/module-ehs/src",
+      "backendOwnershipRoots": ["src/ehs"],
+      "backendScanRoots": ["src/ehs/src"]
+    },
+    {
+      "name": "dms",
+      "frontendRoot": "src/joinerytech-portal/packages/module-dms/src",
+      "backendOwnershipRoots": ["src/dms"],
+      "backendScanRoots": ["src/dms/src", "src/dms/host"]
+    }
+  ],
+  "frontend": {
+    "entrypoint": "index.ts",
+    "sourceExtensions": [".ts", ".tsx"],
+    "sharedRoots": [
+      "src/joinerytech-portal/packages/portal-ui/src",
+      "src/joinerytech-portal/packages/portal-core/src"
+    ],
+    "legacyShellRoots": ["src/joinerytech-portal/src/mocks"]
+  },
+  "blockingCategories": [
+    "missingFrontendEntrypoints",
+    "frontendParseErrors",
+    "frontendNonLiteralDynamicImports",
+    "frontendNonLiteralGlobImports",
+    "frontendUnsafeLiteralGlobImports"
+  ],
+  "baseline": {
+    "missingFrontendEntrypoints": [],
+    "frontendParseErrors": [],
+    "frontendCrossModuleImports": [],
+    "frontendLegacyShellImports": [],
+    "frontendExternalRelativeImports": [],
+    "frontendNonLiteralDynamicImports": [],
+    "frontendNonLiteralGlobImports": [],
+    "frontendUnsafeLiteralGlobImports": [],
+    "backendCrossModuleProjectReferences": [],
+    "backendRepoRelativeProjectReferences": [
+      {
+        "module": "controlling",
+        "source": "src/spaceos-modules/spaceos-modules-kontrolling/src/SpaceOS.Modules.Kontrolling.csproj",
+        "include": "../../../spaceos-kernel/SpaceOS.Kernel.Domain/SpaceOS.Kernel.Domain.csproj",
+        "target": "src/spaceos-kernel/SpaceOS.Kernel.Domain/SpaceOS.Kernel.Domain.csproj"
+      },
+      {
+        "module": "controlling",
+        "source": "src/spaceos-modules/spaceos-modules-kontrolling/src/SpaceOS.Modules.Kontrolling.csproj",
+        "include": "../../../spaceos-modules-hosting/src/SpaceOS.Modules.Hosting/SpaceOS.Modules.Hosting.csproj",
+        "target": "src/spaceos-modules-hosting/src/SpaceOS.Modules.Hosting/SpaceOS.Modules.Hosting.csproj"
+      },
+      {
+        "module": "crm",
+        "source": "src/SpaceOS.Modules.CRM/src/Lead.Application/SpaceOS.Modules.CRM.Application.csproj",
+        "include": "../../../spaceos-modules-hosting/src/SpaceOS.Modules.Hosting/SpaceOS.Modules.Hosting.csproj",
+        "target": "src/spaceos-modules-hosting/src/SpaceOS.Modules.Hosting/SpaceOS.Modules.Hosting.csproj"
+      },
+      {
+        "module": "crm",
+        "source": "src/SpaceOS.Modules.CRM/src/Lead.Infrastructure/SpaceOS.Modules.CRM.Infrastructure.csproj",
+        "include": "../../../spaceos-modules-hosting/src/SpaceOS.Modules.Hosting/SpaceOS.Modules.Hosting.csproj",
+        "target": "src/spaceos-modules-hosting/src/SpaceOS.Modules.Hosting/SpaceOS.Modules.Hosting.csproj"
+      },
+      {
+        "module": "dms",
+        "source": "src/dms/src/SpaceOS.Modules.DMS.csproj",
+        "include": "../../spaceos-kernel/SpaceOS.Kernel.Domain/SpaceOS.Kernel.Domain.csproj",
+        "target": "src/spaceos-kernel/SpaceOS.Kernel.Domain/SpaceOS.Kernel.Domain.csproj"
+      },
+      {
+        "module": "dms",
+        "source": "src/dms/src/SpaceOS.Modules.DMS.csproj",
+        "include": "../../spaceos-modules-hosting/src/SpaceOS.Modules.Hosting/SpaceOS.Modules.Hosting.csproj",
+        "target": "src/spaceos-modules-hosting/src/SpaceOS.Modules.Hosting/SpaceOS.Modules.Hosting.csproj"
+      },
+      {
+        "module": "ehs",
+        "source": "src/ehs/src/Application/SpaceOS.Modules.Ehs.Application.csproj",
+        "include": "../../../spaceos-modules-hosting/src/SpaceOS.Modules.Hosting/SpaceOS.Modules.Hosting.csproj",
+        "target": "src/spaceos-modules-hosting/src/SpaceOS.Modules.Hosting/SpaceOS.Modules.Hosting.csproj"
+      },
+      {
+        "module": "ehs",
+        "source": "src/ehs/src/Domain/SpaceOS.Modules.Ehs.Domain.csproj",
+        "include": "../../../spaceos-kernel/SpaceOS.Kernel.Domain/SpaceOS.Kernel.Domain.csproj",
+        "target": "src/spaceos-kernel/SpaceOS.Kernel.Domain/SpaceOS.Kernel.Domain.csproj"
+      },
+      {
+        "module": "ehs",
+        "source": "src/ehs/src/Infrastructure/SpaceOS.Modules.Ehs.Infrastructure.csproj",
+        "include": "../../../spaceos-modules-hosting/src/SpaceOS.Modules.Hosting/SpaceOS.Modules.Hosting.csproj",
+        "target": "src/spaceos-modules-hosting/src/SpaceOS.Modules.Hosting/SpaceOS.Modules.Hosting.csproj"
+      },
+      {
+        "module": "hr",
+        "source": "src/hr/src/SpaceOS.Modules.HR.csproj",
+        "include": "../../spaceos-kernel/SpaceOS.Kernel.Domain/SpaceOS.Kernel.Domain.csproj",
+        "target": "src/spaceos-kernel/SpaceOS.Kernel.Domain/SpaceOS.Kernel.Domain.csproj"
+      },
+      {
+        "module": "hr",
+        "source": "src/hr/src/SpaceOS.Modules.HR.csproj",
+        "include": "../../spaceos-modules-hosting/src/SpaceOS.Modules.Hosting/SpaceOS.Modules.Hosting.csproj",
+        "target": "src/spaceos-modules-hosting/src/SpaceOS.Modules.Hosting/SpaceOS.Modules.Hosting.csproj"
+      },
+      {
+        "module": "maintenance",
+        "source": "src/maintenance/src/SpaceOS.Modules.Maintenance.csproj",
+        "include": "../../spaceos-kernel/SpaceOS.Kernel.Domain/SpaceOS.Kernel.Domain.csproj",
+        "target": "src/spaceos-kernel/SpaceOS.Kernel.Domain/SpaceOS.Kernel.Domain.csproj"
+      },
+      {
+        "module": "maintenance",
+        "source": "src/maintenance/src/SpaceOS.Modules.Maintenance.csproj",
+        "include": "../../spaceos-modules-hosting/src/SpaceOS.Modules.Hosting/SpaceOS.Modules.Hosting.csproj",
+        "target": "src/spaceos-modules-hosting/src/SpaceOS.Modules.Hosting/SpaceOS.Modules.Hosting.csproj"
+      },
+      {
+        "module": "qa",
+        "source": "src/qa/src/SpaceOS.Modules.QA.csproj",
+        "include": "../../spaceos-kernel/SpaceOS.Kernel.Domain/SpaceOS.Kernel.Domain.csproj",
+        "target": "src/spaceos-kernel/SpaceOS.Kernel.Domain/SpaceOS.Kernel.Domain.csproj"
+      },
+      {
+        "module": "qa",
+        "source": "src/qa/src/SpaceOS.Modules.QA.csproj",
+        "include": "../../spaceos-modules-hosting/src/SpaceOS.Modules.Hosting/SpaceOS.Modules.Hosting.csproj",
+        "target": "src/spaceos-modules-hosting/src/SpaceOS.Modules.Hosting/SpaceOS.Modules.Hosting.csproj"
+      }
+    ]
+  }
+}

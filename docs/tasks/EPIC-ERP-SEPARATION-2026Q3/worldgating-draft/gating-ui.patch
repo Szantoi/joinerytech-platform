@@ -1,0 +1,99 @@
+diff --git a/src/auth/RequireAuth.tsx b/src/auth/RequireAuth.tsx
+index 79f6d84..92230de 100644
+--- a/src/auth/RequireAuth.tsx
++++ b/src/auth/RequireAuth.tsx
+@@ -1,8 +1,10 @@
+ import { useAuth } from './AuthContext'
+-import { Navigate } from 'react-router-dom'
++import { Navigate, useLocation } from 'react-router-dom'
++import { isWorldEnabled } from '../config/worldAccess'
+ 
+ export function RequireAuth({ children }: { children: React.ReactNode }) {
+-  const { isAuthenticated, isLoading } = useAuth()
++  const { isAuthenticated, isLoading, enabledModules } = useAuth()
++  const location = useLocation()
+ 
+   if (isLoading) {
+     return (
+@@ -16,5 +18,12 @@ export function RequireAuth({ children }: { children: React.ReactNode }) {
+     return <Navigate to="/login" replace />
+   }
+ 
++  const match = /^\/w\/([^/]+)/.exec(location.pathname)
++  if (match && !isWorldEnabled(match[1], enabledModules)) {
++    return <div role="alert" className="min-h-screen grid place-items-center bg-surface-0 p-6 text-center">
++      <div><h1 className="text-xl font-semibold text-ink">Ez a modul nincs engedélyezve</h1><p className="mt-2 text-sm text-ink-soft">A bérlő jelenlegi előfizetése nem ad hozzáférést ehhez a munkavilághoz.</p></div>
++    </div>
++  }
++
+   return <>{children}</>
+ }
+diff --git a/src/components/layout/HomeScreen.tsx b/src/components/layout/HomeScreen.tsx
+index d25a62d..7d04a7f 100644
+--- a/src/components/layout/HomeScreen.tsx
++++ b/src/components/layout/HomeScreen.tsx
+@@ -1,18 +1,12 @@
+-import { Icon, Card } from '../ui'
++import { Icon, Card } from '@spaceos/portal-ui'
+ import { ThemeQuickToggle } from './ThemeToggle'
+ import { WorldIcon } from './WorldIcon'
+ import { ACCENT_MAP } from './WorldShell'
+ import { WORLDS, WORLD_ORDER } from '../../mocks/worlds'
+-import { WORLD_DATA_ATTR } from '../../theme/worldAccents'
++import { WORLD_DATA_ATTR } from '@spaceos/portal-ui'
+ import { useAuth } from '../../hooks/useAuth'
+ import type { WorldKey } from '../../types'
+-
+-// Worlds accessible per Keycloak role
+-const ROLE_WORLDS: Record<string, WorldKey[]> = {
+-  Admin:    ['production', 'sales', 'design', 'warehouse', 'shopfloor', 'crm', 'finance', 'projects', 'logistics', 'mfgprep', 'supervisor', 'masterdata', 'trade', 'interior', 'maintenance', 'quality', 'ehs', 'attendance', 'hr', 'kontrolling', 'service', 'tasks', 'docs', 'ai', 'execbi', 'shop', 'settings'],
+-  Designer: ['production', 'sales', 'design', 'warehouse', 'crm', 'finance', 'projects', 'logistics', 'masterdata', 'trade', 'interior', 'maintenance', 'quality', 'ehs', 'tasks', 'docs', 'ai', 'settings'],
+-  Joiner:   ['shopfloor'],
+-}
++import { visibleWorlds } from '../../config/worldAccess'
+ 
+ const ROLE_LABELS: Record<string, string> = {
+   Admin:    'Adminisztrátor',
+@@ -20,15 +14,6 @@ const ROLE_LABELS: Record<string, string> = {
+   Joiner:   'Asztalos',
+ }
+ 
+-function getVisibleWorlds(roles: string[]): WorldKey[] {
+-  // Highest privilege wins
+-  if (roles.includes('Admin')) return ROLE_WORLDS['Admin']
+-  if (roles.includes('Designer')) return ROLE_WORLDS['Designer']
+-  if (roles.includes('Joiner')) return ROLE_WORLDS['Joiner']
+-  // Fallback: unauthenticated / unknown role → nothing
+-  return []
+-}
+-
+ function getRoleLabel(roles: string[]): string {
+   if (roles.includes('Admin')) return ROLE_LABELS['Admin']
+   if (roles.includes('Designer')) return ROLE_LABELS['Designer']
+@@ -79,7 +64,7 @@ interface HomeScreenProps {
+ }
+ 
+ export function HomeScreen({ onEnter, lang = 'hu' }: HomeScreenProps) {
+-  const { user, isAuthenticated, login, logout, roles } = useAuth()
++  const { user, isAuthenticated, login, logout, roles, enabledModules } = useAuth()
+ 
+   // Derive display name from OIDC profile or demo fallback
+   const displayName = user?.profile?.name ?? user?.profile?.preferred_username ?? DEMO_USER.name
+@@ -92,7 +77,7 @@ export function HomeScreen({ onEnter, lang = 'hu' }: HomeScreenProps) {
+   const subtitle = lang === 'en' ? 'Choose a workspace' : 'Válassz egy munkavil\u00e1got'
+   const recent = lang === 'en' ? 'Recent activity' : 'Legutóbbi tevékenység'
+   const roleLabel = isAuthenticated ? getRoleLabel(roles) : 'Admin'
+-  const visibleWorlds = isAuthenticated ? getVisibleWorlds(roles) : WORLD_ORDER
++  const allowedWorlds = isAuthenticated ? visibleWorlds(WORLD_ORDER, enabledModules) : WORLD_ORDER
+ 
+   return (
+     <div className="min-h-screen bg-gradient-to-br from-stone-50 via-white to-teal-50/30 dark:bg-none dark:bg-surface-0">
+@@ -164,7 +149,7 @@ export function HomeScreen({ onEnter, lang = 'hu' }: HomeScreenProps) {
+ 
+       <div className="max-w-[1200px] mx-auto px-4 md:px-8 pb-10">
+         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+-          {visibleWorlds.filter((k): k is WorldKey => k in WORLDS).map((key) => {
++          {allowedWorlds.filter((k): k is WorldKey => k in WORLDS).map((key) => {
+             const w = WORLDS[key]
+             const accent = ACCENT_MAP[w.accent] ?? ACCENT_MAP.teal
+             return (

@@ -2092,3 +2092,62 @@ nem enged ki ilyen kérést, ezért P2.
    instance-adaptert, import-előkészítést, fixture-öket és kontraktus-review-t.
    A Doorstar Planning UI a publikált kontraktusig SZERZŐDÉSVÁRÓ, mock
    ütemezés nélkül. Rögzítve: PLAN-02-SCHEDULING-ADR.md.
+
+## 2026-07-28 — Codex — ERPSEP-06 security alapszelet kész
+
+- A shared `SpaceOS.Modules.Hosting` TenantResolver már a valós Keycloak
+  `spaceos_tenants` snake_case (`tenant_id`, `enabled_modules`) bejegyzéseit
+  olvassa, a régi camelCase teszt/dev kompatibilitást megtartva. Több tenantnál
+  csak a feloldott tenant modul-listája érvényes.
+- Új shared szerződés: `IModuleEntitlementContext`, valamint
+  `AddRequiredEnabledModulePolicy("spaceos.<module>")` +
+  `RequireEnabledModule("spaceos.<module>")`. A szerveroldali policy hiányos,
+  hibás, legacy rövid vagy más tenant modul-claimjére fail-closed 403-at ad.
+  A policy a tenant header allowlistjét is újraellenőrzi, ezért a middleware
+  sorrendtől nem függ.
+- A 401/403 `application/problem+json` most `correlationId` mezőt is hordoz.
+  Alias-input hozzáadva: `docs/knowledge/contracts/module-id-legacy-aliases.json`
+  v1.0.0. Ellenőrzés: Hosting 62/62 zöld.
+- Fontos határ: ez a JWT-alapú átmeneti gate. A végleges, stale-entitlement
+  ellen is védő út továbbra a Kernel `EntitledModules` + ERPSEP-06 Instance
+  Context endpoint; meglévő hostra policyt csak a Keycloak kanonikus claimre
+  állítása után szabad rátenni, különben a régi rövid claim tudatosan 403.
+
+## 2026-07-28 — Codex — ERPSEP-06 Instance Context OpenAPI draft
+
+- Elkészült a publikálható, generátorbarát OpenAPI 3.1 draft:
+  `docs/knowledge/contracts/spaceos-instance-context-v1.openapi.yaml`
+  (`1.0.0-draft.1`, SHA-256:
+  `942f5b39cbf564df470a45d14dfe1eab1e18a6939fa841a1368b32398d23b29c`).
+- A `GET /api/platform/instance-context` szerződés rögzíti: JWT-ből feloldott
+  tenant (sem tenant/modul/role/station/brand header nem input), strong ETag +
+  `private, no-cache, max-age=0` revalidáció, `known→installed→entitled→enabled
+  →usable` modulállapot, kanonikus ModuleId, signed-brand vagy
+  `platform.default` fallback, `correlationId`-s ProblemDetails.
+- Biztonsági fail-closed: nem ellenőrizhető catalog/entitlement/brand = 503 és
+  nincs kompozíció; `usable` az egyetlen portál-láthatósági döntés. YAML parse
+  + path/operationId assertek zöldek.
+- Kernel `EntitledModules` implementációt NEM érintettem: a kernel worktree-ben
+  párhuzamos, idegen handshake/migrációs változások élnek. Ez a task Stop-szabálya
+  szerint engedett draft, a futó endpoint és Orval-generálás a Kernel-forrás után
+  következik.
+
+## 2026-07-28 délután — Claude (root) — ADR-069 (Planning) TERVEZET KÉSZ, Gábor döntésére vár
+
+**ADR-069: Planning ütemezés-domain + termékcsomag + API-kontraktus** —
+`docs/knowledge/adr/ADR-069-planning-domain-and-product-package.md` (Proposed).
+Kulcs-ajánlások: O-A (új `src/spaceos-modules-planning`), namespace-hármas
+(spaceos.planning / joinerytech.planning-standards / doorstar.planning-import),
+CapacityReservation név, P-A production-retire + taxonómia-mentés, C-B
+cutting-viszony, sandbox: planning-sandbox.joinerytech.hu.
+
+- **@codex:** a 7. fejezet (biztonsági szerződés) a te ERPSEP-05/06 sávoddal
+  közös: a hosting TenantClaimEntry enabled_modules-bővítése + snake_case
+  parse-fix a Planning fail-closed gate-jének előfeltétele — a Planning az
+  első szerver-oldali fogyasztó. Kérlek, az ERPSEP-05 tervedben erre a
+  határfelületre reflektálj a csatornán.
+- **@backend:** a fő sávod (PLAN-03, M1-M5 fázisolás az ADR 11. fejezetében)
+  az ADR elfogadása után nyílik; addig a STAB-TENANT-ONBOARDING-RUNBOOK a
+  feladatod (inbox-kickoff szerint).
+- Doorstar felé (Gábor útján) a nyitott kérések változatlanok: reviewer-
+  nominálás, standard verzióváltás-példa, overload-példa, naptár-jóváhagyás.

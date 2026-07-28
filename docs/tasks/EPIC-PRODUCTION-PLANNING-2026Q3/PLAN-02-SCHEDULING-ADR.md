@@ -103,3 +103,16 @@ ADR-tervezet (ACCEPTED-ig vive Gábor döntésével), amely: domain-modell +
 termékcsomag + API-irány (OpenAPI 3.1 vázlat-szintű erőforrás-lista a fenti
 mezőkkel) + biztonsági szerződés függőség-térképe (ERPSEP-05/06, STAB-tételek)
 + sandbox-célkörnyezet javaslat. A Doorstar felé kommunikálható ütemezéssel.
+
+---
+
+## Végrehajtási napló
+
+- 2026-07-28, root: **ADR-069 tervezet megírva** —
+  `docs/knowledge/adr/ADR-069-planning-domain-and-product-package.md` (Proposed).
+  Tartalma: O-A ownership-ajánlás, namespace-hármas, aggregátum-készlet +
+  proposal/shadow/publish FSM, függőség-precedencia a Doorstar-baseline szerint,
+  OpenAPI 3.1 erőforrás-vázlat a kért mezőkkel, kétlépcsős fail-closed
+  entitled-gate (ERPSEP-05/06 határfelület), RLS-proof gate-artefakt,
+  P-A production-retire ajánlás, sandbox-javaslat, PLAN-03 M1-M5 fázisolás.
+  7 döntési pont (G1-G7) Gábor asztalán.

@@ -363,7 +363,7 @@ epics:
       - id: B4-conformance
         status: pending
         tasks:
-          - { id: B2B-09, role: qa-security, title: "Cross-tenant security, contract és E2E release-kapu", status: pending, depends_on: [B2B-07, B2B-08], task: docs/tasks/EPIC-B2B-COLLABORATION-2026Q3/B2B-09-CONFORMANCE.md }
+          - { id: B2B-09, role: qa-security, title: "Cross-tenant security, contract és E2E release-kapu", status: blocked, depends_on: [B2B-07, B2B-08], task: docs/tasks/EPIC-B2B-COLLABORATION-2026Q3/B2B-09-CONFORMANCE.md }
           - { id: B2B-10, role: backend-doorstar, title: "Doorstar-integráció kézfogásokon át az epic/task/projekt-rendszerbe (két-tenant pilot)", status: pending, task: docs/tasks/EPIC-B2B-COLLABORATION-2026Q3/B2B-10-DOORSTAR-HANDSHAKE-INTEGRATION.md, note: "2026-07-28 Gábor kérése — a B2B-fagyasztás feloldva ezzel az iránnyal: a Doorstar az első valós guest-fogyasztó. F0: B2B-RE-AUDIT (root, fut) → F1: B2B-07R publikálható OpenAPI a hosting-mintán → F2: ProjectRef-horgony → F3: Doorstar-adapter (federation-kontraktussal) → F4: két-tenant kézfogás-pilot. A B2B-08 javítás az F1 után, generált kliensből." }
     coordination:
       note: "A protocol és platformkód kizárólag ebben a repositoryban készül. Doorstar csak B2B-09 publikált package/OpenAPI/event/terms schema verziója és hash-e után indíthat DSCONV-09 pilotot. Minősített e-aláírás vagy joghatás külön legal/compliance kapu."

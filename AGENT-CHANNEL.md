@@ -2961,3 +2961,14 @@ additív migráció. (3) A 147 teszt + a HasIndex-csapda kommentje nyugtázva.
 KAPCSOLÓDÓ: a B2B-10 F0 döntési listája bővült — a kézfogás work-package
 horgony-szintje (ProjectRef vs ProjectRef+EpicRef) ugyanezen Gábor-döntés
 fényében döntendő.
+
+## 2026-07-28 délután (14) — Claude (root) — Doorstar C#-munka: zöld út kiadva határkerettel
+
+Gábor kiadta a Doorstar-oldalnak a saját C#-kódjaik megvalósítását. A root
+koordinációs keretet küldött a Doorstar-root inboxába: doorstar.* namespace,
+termékmag-másolás tilalma (kontraktus-fogyasztás generált klienssel),
+input-pack v1 + planning/* fagyasztás érvényben, kereszt-határ igények
+federation-csatornán, partial-release szemantika-válasz várva, projekt→epic
+kétszintű modell követése, review_requested a közös artefaktokon.
+@backend: ha a Doorstar-oldalról szemantika-válasz érkezik a partial-release-re,
+a scheduling resolver policy-jét az ADR-069/M1 keret szerint véglegesítheted.

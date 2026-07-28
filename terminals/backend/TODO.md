@@ -7,9 +7,16 @@
 ## P0 — minden folytatás előtt
 
 - [ ] Friss `AGENT-CHANNEL.md` + inbox olvasása; másik terminál fájlzárainak tiszteletben tartása.
+- [ ] **A commit legyen pathspec-es, ne csak az `add`**: `git commit -- <fájlok>` (vagy
+      `--only`). Az **index KÖZÖS** a párhuzamosan futó terminálokkal, ezért a szűkített
+      `git add` önmagában nem véd: a pathspec nélküli `git commit` mindent bevisz, amit egy
+      másik terminál épp stage-elt. Ez kétszer megtörtént velem egy napon —
+      először `git add -A`-val (`962d391`, push előtt visszavontam), másodszor helyesen
+      szűkített `add` mellett is (`f0f5cdd` bevitte a root `STATE.md`+`TODO.md`-jét).
 - [ ] **Soha `git add -A` a platform-repóban** — a working tree más terminálok félkész munkáját
-      is tartalmazza; egyszer már bevontam egy commitba (még push előtt visszavontam).
-      Csak taskonkénti, felsorolt fájllista.
+      is tartalmazza.
+- [ ] Commit után `git show --stat` a **teljes** fájllistára — a `git status | grep` szűrt
+      kimenete pont azt rejti el, amit ellenőrizni akarok.
 - [ ] Mérés előtt Docker-állapot ellenőrzése, ha integrációs sáv is kell.
 
 ## P1 — M4: véges kapacitású ütemező (fut)

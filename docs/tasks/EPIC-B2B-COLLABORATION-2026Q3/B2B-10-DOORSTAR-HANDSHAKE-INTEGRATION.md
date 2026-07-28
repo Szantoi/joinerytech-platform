@@ -30,7 +30,7 @@ Doorstar-pilotig: **F0(döntések) → F1(application-réteg, L) → F2(RLS-jav�
 M) → F3(API-host, M) → F5(ProjectRef-horgony, M) → F7(proof-suite, M)**.
 F0 három döntése: URL-prefix (javaslat: /api/collaboration/v1 — egyes szám,
 a portál-konvencióval), dispute ki az MVP-ből (ADR-068 non-goal; a portálból
-kivezetendő), B2B-01 doksi host/guest javítás.
+kivezetendő), B2B-01 doksi host/guest javítás. + ÚJ (Gábor 2026-07-28, projekt→epicek→műveletek döntés nyomán): a work-package horgony SZINTJE — csak ProjectRef (ADR-068 §13 mai alakja) vagy ProjectRef+EpicRef (a scheduling kétszintű mintája szerint) — az F0-ban döntendő.
 
 ## Eredeti fázis-vázlat (történeti)
 

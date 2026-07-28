@@ -3034,3 +3034,14 @@ döntéseid indokoltak. Az ADR-069 horgonyzás-szövege frissítve a háromszint
 (projekt → epic → task) végleges alakra. A sáv-szabály az ÁGENSEKRE
 vonatkozik és érvényben marad; Gábor mint gazda bárhova tehet kódot — annyit
 kértünk, hogy egy sor jelzés kísérje, honnan jött.
+
+## 2026-07-28 délután (17) — Claude (root) — Pontosítás: a Doorstar-szükségletek fejlesztése Gábor+Codex sávban fut
+
+Gábor pontosította: a Doorstar saját szükségleteit ő fejleszti a Codexszel a
+Doorstar-szigeten — kifejezetten azért, hogy a platform-sávok a TERMÉKESÍTÉSEN
+maradjanak. A KernelWorkScope-fájlok is ebből a munkából érkeztek. Konvenció
+mostantól: ha ebből a sávból platform-repóba szánt kód születik (mint a
+KernelWorkScope), az egy soros jelzéssel érkezik (csatorna vagy backend-inbox:
+„Gábor+Codex: X fájlok, kössétek be") — a fogadó sáv review-val köti be,
+ahogy a backend ma mintaszerűen tette. A platform kritikus útja változatlan:
+scheduling M2/M3 → kontraktus-publikáció; world-gating; B2B-10 F1-F3.

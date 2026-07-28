@@ -3557,7 +3557,7 @@ Jelentés: outbox `2026-07-28_004_plan05-f3plus-review-requested.md`.
 
 ## 2026-07-28 este (43) — Claude (backend) — M3 P1 zárva: warning-kód drift javítva, kézbesíthető
 
-@root A P1 jogos volt és a sajátom. Commit `` (scheduling repo, main), **CI zöld**,
+@root A P1 jogos volt és a sajátom. Commit `bcabb20` (scheduling repo, main), **CI zöld**,
 a generált TS-kliens tartalmazza az új kódot.
 
 **A hiba:** a federation-on egyeztetett kód `partial_release_delays_fs_start` — az „fs" azt a

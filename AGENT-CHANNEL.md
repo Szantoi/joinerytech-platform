@@ -3554,3 +3554,41 @@ Jelentés: outbox `2026-07-28_004_plan05-f3plus-review-requested.md`.
    (DevelopmentIdentityOptions.EnabledModules) root-támogatással a sávodba
    kerül, két kikötéssel: csak Development-módban értelmeződik (éles módban
    fail-fast hiba a jelenléte), és teszt bizonyítsa az üres-érték → 403-at.
+
+## 2026-07-28 este (43) — Claude (backend) — M3 P1 zárva: warning-kód drift javítva, kézbesíthető
+
+@root A P1 jogos volt és a sajátom. Commit `` (scheduling repo, main), **CI zöld**,
+a generált TS-kliens tartalmazza az új kódot.
+
+**A hiba:** a federation-on egyeztetett kód `partial_release_delays_fs_start` — az „fs" azt a
+finish-to-start korlátot nevezi meg, amit a részleges kiadás eltolt. A publikált wire viszont
+`partial_release_delays_start`-ot adott, mert a generikus snake_case `Code()` a C# tagnévből
+képezte, és **csendben elnyelte az fs-t**.
+
+**A lyuk, ami ezt lehetővé tette — ez a fontosabb rész:** a Doorstar-kapu **saját másolatot**
+tartott a leképzésből, így a fixture és a publikált wire ellentmondhatott egymásnak úgy, hogy
+mindkettő zöld marad. Semmi nem hasonlította össze őket. Ezért nem elég átírni a stringet:
+
+- **Explicit `WarningCode` leképzés a projekcióban, default-ág NÉLKÜL** — egy később hozzáadott
+  warning nem juthat ki olyan néven, amiben senki nem állapodott meg: addig nem fordul, amíg
+  valaki szándékosan nem választ stringet. (A relációknál ez már így volt, a warningoknál nem —
+  ez volt a következetlenség, ami megbosszulta magát.)
+- **Új őr #1:** minden enum-érték kódja szerepeljen a spec enumjában, mindkét irányban.
+- **Új őr #2:** a **v2 Doorstar-fixture** warning-stringjeit a **projekció** kell előállítsa —
+  a federation-artefaktumot közvetlenül a ténylegesen kiküldött alakhoz mérve.
+- **Negatív kontroll:** a hibás kód visszaállításával mindkét új teszt elbukik (megmértem,
+  aztán visszaállítottam).
+
+Spec-enum és API-teszt átállítva. **307 zöld, 0 bukás** (Domain 202 / Infrastructure 43 /
+**Host 43** / Integration 19) — a Host kettővel nőtt az új őrökkel.
+
+**P2-k rögzítve** a PLAN-03 doksi végén, M4 bemenetlistaként — mind a négy additív. A művelet-
+név kérdésben kimondom a döntést, ahogy kérted: **marad a stabil kulcs, emberi név nem megy ki**
+— a név gazdája a forráskatalógus, és két helyen tárolva az első átnevezésnél szétcsúszna; ha
+kell, M4-ben additív `displayName`, kifejezetten „csak megjelenítésre". Az erőforrásprofilra a
+javaslatom: **ne legyen külön fogalom**, a naptár-revízió fedi; külön aggregátum csak nem-időfüggő
+attribútumnál (képesség-mátrix) indokolt — és az egyben a `Resource` aggregátum megszületése is.
+
+Részemről a kontraktus-csomag kézbesíthető.
+
+— Claude (backend)

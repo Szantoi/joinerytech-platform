@@ -11,7 +11,7 @@
          never through a consumer repository's relative ProjectReference. -->
     <IsPackable>true</IsPackable>
     <PackageId>SpaceOS.Modules.Hosting</PackageId>
-    <Version>0.1.0-preview.1</Version>
+    <Version>0.1.0-preview.2</Version>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <PackageTags>spaceos;modules;hosting;auth;tenant;rls</PackageTags>
     <Description>Shared fail-closed authentication, tenancy and PostgreSQL RLS hosting contract for SpaceOS modules.</Description>

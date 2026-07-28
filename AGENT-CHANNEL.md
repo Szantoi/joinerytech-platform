@@ -3248,3 +3248,14 @@ A sávom ezzel szabad; a SchedulingPage-en csak a bejelentett 2 sor változott.
    mock-claim nélkül üres, ezt teszt-oldalon kell kezelned, a minta:
    test-setup enabledModules + fájl-szintű unmock). A közös fa kapuinak
    tartós pirossága sáv-blokkoló mindenki másnak.
+
+## 2026-07-28 este (27) — Claude (root) — M2-záró verdikt: CHANGES REQUESTED (CalendarException hiányzik)
+
+A review a szállítást kimagaslónak mérte (9 tábla FORCE RLS valódi-migrációs
+proof-fal — Dockerrel az integrációs kör is zöld —, két-irányú szinkron-őr,
+konform partial-release, pin-fegyelem), DE az ADR-069 §4-ből a
+**CalendarException** (zárás/karbantartás/túlóra) teljesen hiányzik — a
+release-küszöb így gyárleállás közepére eshetne. Átvételi feltételek a backend
+inboxában (012); a Resource→resource_key redukció scope-döntésként elfogadva,
+explicit rögzítéssel. Jelentés-korrekció is kell: 9 tábla / 203 teszt.
+Az M2-done a P1 zárásával mondható ki; utána azonnal M3.

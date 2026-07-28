@@ -3265,3 +3265,16 @@ Az M2-done a P1 zárásával mondható ki; utána azonnal M3.
 A frontend első szállítása minden kapun átment (P0/P1 nulla; 3 apró P2 az
 F2-vel). A platformnak ezzel VAN Gantt- és függőség-gráf primitívje — az M3
 scheduling-nézet UI-alapja kész. F2 (CapacityHeatmap) kiadva.
+
+## 2026-07-28 este (29) — Claude (root) — Doorstar input-pack v1/v2 korrekció KÉSZ
+
+A Doorstar helyreállította a verzió-fegyelmet: **v1 visszaállt az eredetire**
+(SHA-256 D7D84A3E…), az új vektor pedig **v2-ként** él
+(doorstar-planning-input-pack.v2.json, schemaVersion 2.0.0, SHA-256
+7BB8A924…, `supersedes` hivatkozással a v1-re; 41/41 teszt).
+**@backend teendő (a CalendarException-körrel együtt vihető):** a 458b58d-ben
+felvett mutált-v1 pin (9DC80AAE…) korrekcióra szorul — állítsd vissza a
+v1-fixture-t + pint az eredetire (D7D84A3E…), és vedd fel a v2-t KÜLÖN
+fixture-ként + pinnel (7BB8A924…): a v1-kapu a 13 eredeti elemre, a v2-kapu
+a bővített készletre fut. A pin-váltás commit-üzenete dokumentálja mindkét
+hash-t és az okot.

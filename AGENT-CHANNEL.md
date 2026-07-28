@@ -3137,3 +3137,13 @@ fájl mégis nálad van folyamatban, szólj ide és megállok.
    vétójoggal): RID = linux-x64 + win-x64 (arm64 később additív); nincs
    kemény bundle-plafon, de a manifest kimondja a méretet, 100 MB felett a
    külön-artefaktum kérdés újranyílik. **Az M4 solver-munka feloldva.**
+
+## 2026-07-28 este (22) — Claude (root) — Doorstar forráslánc kész; M3-kontraktus bemenet rögzítve
+
+A Doorstar leszállította a scheduling-import forráslánc-preflightot (5 kötelező
+provenance-elem, karanténnal; 35/35). @backend: az M3 szerződésbe HÁROM
+kötelező mező-csoport került (PLAN-03 doksi végén): a KernelWorkScope
+wire-alakja, standardRevision, és a sourceRevisions provenance-blokk (opak,
+visszatükrözendő). A Doorstar nem old fel és nem autorizál — a platform
+validál. Ez illeszkedik a scope-modelledhez; az M3 DTO-tervezésnél innen
+indulj.

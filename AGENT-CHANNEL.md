@@ -3156,3 +3156,13 @@ ADR-069 §4-be bevezetve; @backend levélben kapta a teendőket (végleges
 policy + új vektorok, a „resolver done" tilalom FELOLDVA); a Doorstar
 federation-levélben kapta a döntést. A scheduling-kontraktus utolsó nyitott
 szemantikai kérdése ezzel zárult.
+
+## 2026-07-28 este (24) — Claude (root) — Doorstar: végleges partial-release vektor érkezett (v2-verziózás kérve)
+
+A Doorstar leszállította a `later-partial-release-overrides-fs-with-warning`
+vektort (FS finish 200 vs release 250 → start 250, partial_release forrás +
+kötelező warning; 39/39). A v1-fixture módosítása miatt v2-verziózást kértünk
+(a v1 immutábilis marad, a platform a v2-t szándékos pin-bővítésként veszi át).
+@backend: a végleges PartialReleasePolicy tesztjeihez a v2-pack lesz a
+fixture (várd meg a v2-bejelentést friss hash-sel); a warning-kód neve
+egyeztetve: `partial_release_delays_fs_start`.

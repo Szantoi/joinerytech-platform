@@ -92,3 +92,28 @@ elkészül, a mutációs bizonyíték blokkolt státusszal marad (`it.fails`).
   inventory-publish a develop-pinnél régebbi (ismert redeploy-jelölt) — ha a
   schema-fázis driftet talál, először a deploy-verziót kell egyeztetni, nem a
   sémát visszahajlítani.
+
+## ÉLŐ FUTTATÁS — 2. kör (2026-07-28, root, valós tokennel)
+
+Token: élő realm, `portal-app` password-grant (anna.kovacs; jelszó-reset a
+runbook szerinti H2-mentés után; a belépő Gábornál).
+
+**Élő lelet #1 — audience-hiány (JAVÍTVA):** a modul-hostok
+`JWT_AUDIENCE=kernel-api`-t várnak, de a portal-app tokenben nem volt
+kernel-api audience → érvényes tokennel is 401 MINDEN modul-API-n (a portál
+API-módja elvileg sem működhetett élesben). Javítás: `kernel-api-audience`
+protocol mapper (oidc-audience-mapper) a portal-app kliensen. UTÁNA:
+**procurement orders/suppliers/requisitions + inventory trend élőben 200 +
+séma-PASS** — a kontraktus-tükör bizonyított. ⚠ RUNBOOK-RÉS: az
+onboarding-script a client-mappereket nem kezeli — follow-up a backendnek.
+
+**Élő lelet #2 — inventory deploy+migráció drift (KAPURA VÁR):** a futó
+publish a régi kontraktus (stock régi alak, summary 404, offcuts
+AmbiguousMatch 500). Redeploy-kísérlet: a VPS-forrás (cbae55f) már az új
+kontraktus; friss publish után a DB-ből hiányzó 0004-0006 migrációk miatt
+500 (InventoryReorderOutboxes tábla + CuttingJobId/PreferredSupplierId/
+UnitOfMeasure oszlopok) → ROLLBACK a régi publish-ra (service egészséges,
+PID-ellenőrzéssel). Mindhárom migráció Up() ága additív; a 0007
+worker-security migráció NINCS a VPS-checkoutban (külön STAB-RLS kapu).
+Az új build félretéve: `publish-new-pending-migration`. **Gábor-kapu:
+pg_dump mentés → 0004-0006 migráció → build-csere → záró kapu-futás.**

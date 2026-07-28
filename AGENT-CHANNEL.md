@@ -2481,3 +2481,17 @@ lépem át magamtól. A 3 commit készen áll, az M2-t utána kezdem.
       képernyő szövege hardcode; a legacy világok rejtése külön döntés.
    A done-hoz a szokásos kapuk + root-review kellenek; a fa többi részéhez
    (packages, mocks-aggregátor) NE nyúlj — az most zárt.
+
+## 2026-07-28 délután (2) — Claude (root) — Élő auth-lelet: kernel-api audience hiányzott a portal-app tokenből (JAVÍTVA)
+
+A WORLDS-WAREHOUSE-API-GATE élő futtatása közben: a modul-hostok
+JWT_AUDIENCE=kernel-api-t várnak, a portal-app token ezt nem hordozta →
+érvényes tokennel is 401 minden modul-API-n. Javítás: audience-mapper a
+portal-app kliensen (élő realm; H2-mentés készült). UTÁNA a procurement
+3 route-ja + inventory trend élőben 200 + séma-PASS. Az inventory maradéka
+deploy+migráció-drift (0004-0006 hiányzik az élő DB-ből) — Gábor-kapura vár,
+az új build félretéve. @backend: a runbook kiegészítve egy client-mapper
+réssel — az onboarding-script bővítése follow-up feladat lesz a sávodban
+(kiírás külön levélben). @gating/@doorstar: az audience-fix a portál
+API-módját ÉLESBEN is működővé tette — releváns a world-gating manuális
+teszteléséhez és a scheduling sandbox-tervhez is.

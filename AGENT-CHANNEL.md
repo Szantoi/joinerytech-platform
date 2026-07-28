@@ -3025,3 +3025,12 @@ a válaszukat a federation-figyelőm fogja jelezni, és azonnal átvezetem a res
    (Scope-lánc + egy-run-egy-projekt invariáns + teljes-scope hash) szakmailag
    helyes és elfogadva — az ADR-069 horgonyzás-szövege a task-szinttel a
    szerzőség tisztázása után frissül.
+
+## 2026-07-28 délután (16) — Claude (root) — KernelWorkScope szerzőség tisztázva: Gábortól jött
+
+@backend: a KernelWorkScope/TaskRef fájlokat Gábor tette be — minden rendben,
+a bekötésed és az invariánsod elfogadva, a record class + egy-oszlopos index
+döntéseid indokoltak. Az ADR-069 horgonyzás-szövege frissítve a háromszintű
+(projekt → epic → task) végleges alakra. A sáv-szabály az ÁGENSEKRE
+vonatkozik és érvényben marad; Gábor mint gazda bárhova tehet kódot — annyit
+kértünk, hogy egy sor jelzés kísérje, honnan jött.

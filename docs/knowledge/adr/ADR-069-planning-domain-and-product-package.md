@@ -75,12 +75,14 @@ rétegben normalizálódnak; a mag csak a kulcs-érték mechanizmust adja.
   revízió-lánca (revision-hash az ADR-068 §8 terms-revision mintájára).
 - `OperationPlan` — ütemezett művelet: művelet-azonosító, név, állomás/erőforrás,
   tervezett kezdés/befejezés, státusz, figyelmeztetések, kapacitás-ütközések.
-  **Horgonyzás (Gábor-döntés, 2026-07-28): kétszintű — projekt → epicek →
-  műveletek.** A `ProjectRef` mellett minden művelet KÖTELEZŐ opak `EpicRef`-et
-  hordoz (a modul csak az azonosítót rögzíti; a Kernel `FlowEpicScope`-ját nem
-  olvassa — ADR-065); az `EpicRef` a revision-hash része (ugyanaz az időpont
-  más epic alatt más terv). Az epic szerinti lekérdezés az M3 read-only nézet
-  elsődleges olvasási mintája.
+  **Horgonyzás (Gábor-döntés, 2026-07-28, két lépésben véglegesítve):
+  háromszintű — projekt → epic → task.** Minden művelet kötelező
+  `KernelWorkScope`-ot hordoz (ProjectRef + EpicRef + TaskRef opak
+  azonosítók — a scope AZONOSSÁG, nem jogosultság-bizonyíték; a Kernel
+  `FlowEpicScope`-ját a modul nem olvassa — ADR-065). A teljes scope a
+  revision-hash része. Invariáns: egy ScheduleRun EGY projektet tervez —
+  idegen projektre scope-olt művelet elutasítva. Az epic szerinti lekérdezés
+  az M3 read-only nézet elsődleges olvasási mintája.
 - `DependencyEdge` — előd/utód + típus (FS/SS/FF/SF) + lag (perc) + partial
   release küszöb + fix-dátum override forrás-attribúcióval.
 - `Resource` + `ResourceCalendar` + `CalendarException` — heti műszak-minta +

@@ -7,6 +7,17 @@
     <LangVersion>latest</LangVersion>
     <RootNamespace>SpaceOS.Modules.Hosting</RootNamespace>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <!-- ERPSEP-05: the shared host is consumed by versioned module packages,
+         never through a consumer repository's relative ProjectReference. -->
+    <IsPackable>true</IsPackable>
+    <PackageId>SpaceOS.Modules.Hosting</PackageId>
+    <Version>0.1.0-preview.1</Version>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <PackageTags>spaceos;modules;hosting;auth;tenant;rls</PackageTags>
+    <Description>Shared fail-closed authentication, tenancy and PostgreSQL RLS hosting contract for SpaceOS modules.</Description>
+    <RepositoryType>git</RepositoryType>
+    <RepositoryUrl>https://github.com/joinerytech/joinerytech-platform</RepositoryUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
   <ItemGroup>
@@ -19,6 +30,10 @@
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.*" />
     <!-- DbConnectionInterceptor base type for the shared RLS session interceptor (ADR-062). -->
     <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="8.0.7" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 
 </Project>

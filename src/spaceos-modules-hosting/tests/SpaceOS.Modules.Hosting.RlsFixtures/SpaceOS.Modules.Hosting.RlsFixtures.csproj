@@ -5,11 +5,22 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>latest</LangVersion>
-    <IsPackable>false</IsPackable>
     <!-- Shared test-support library (STAB-RLS-PROOF), not itself a test project: each of the
          7 module integration-test projects references this and supplies its own module schema,
          table names and xunit facts. Kept under spaceos-modules-hosting/tests/ per the task's
          mutation boundary. -->
+    <!-- ERPSEP-05: packable since 2026-07-28. A module living in its OWN repository
+         (spaceos-modules-scheduling, PLAN-03) cannot reach this through a relative
+         ProjectReference, and without it that module cannot run the mandatory
+         NonSuperuserRlsFixture proof at all. Version tracks SpaceOS.Modules.Hosting. -->
+    <IsPackable>true</IsPackable>
+    <PackageId>SpaceOS.Modules.Hosting.RlsFixtures</PackageId>
+    <Version>0.1.0-preview.1</Version>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <PackageTags>spaceos;modules;rls;testing;postgres;testcontainers</PackageTags>
+    <Description>Shared non-superuser PostgreSQL RLS proof fixture for SpaceOS module integration tests.</Description>
+    <RepositoryType>git</RepositoryType>
+    <RepositoryUrl>https://github.com/Szantoi/joinerytech-platform</RepositoryUrl>
   </PropertyGroup>
 
   <ItemGroup>

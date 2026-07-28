@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using SpaceOS.Modules.Hosting.Authorization;
 using SpaceOS.Modules.Hosting.Persistence;
 
 namespace SpaceOS.Modules.Hosting.Tenancy;
@@ -30,6 +31,7 @@ public static class SpaceOsModuleTenancyExtensions
         // is idempotent and adds no providers on its own (plain ServiceCollection fixtures).
         services.AddLogging();
         services.TryAddScoped<ITenantContext, ClaimsTenantContext>();
+        services.TryAddScoped<IModuleEntitlementContext, ClaimsModuleEntitlementContext>();
         services.TryAddScoped<SpaceOsTenantSessionInterceptor>();
         return services;
     }

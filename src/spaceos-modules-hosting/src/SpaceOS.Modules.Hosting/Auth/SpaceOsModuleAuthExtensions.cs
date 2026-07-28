@@ -122,6 +122,7 @@ public static class SpaceOsModuleAuthExtensions
                     title = "Unauthorized",
                     status = 401,
                     detail = "A valid JWT Bearer token is required.",
+                    correlationId = context.HttpContext.TraceIdentifier,
                 };
                 // Explicit content type: WriteAsJsonAsync would otherwise stamp application/json
                 // (latent kernel bug — noted in the ADR-IMPL-HOSTING task doc).
@@ -136,6 +137,7 @@ public static class SpaceOsModuleAuthExtensions
                     title = "Forbidden",
                     status = 403,
                     detail = "Insufficient permissions for this operation.",
+                    correlationId = context.HttpContext.TraceIdentifier,
                 };
                 return context.Response.WriteAsJsonAsync(problem, options: null, contentType: "application/problem+json");
             },

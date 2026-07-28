@@ -86,6 +86,7 @@ public sealed class TenancyPipelineTests : IAsyncLifetime
         Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
         var body = await response.Content.ReadAsStringAsync();
         Assert.Contains("not in the caller's authorized tenant list", body);
+        Assert.Contains("correlationId", body);
     }
 
     [Fact]
@@ -147,5 +148,25 @@ public sealed class TenancyPipelineTests : IAsyncLifetime
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var body = await response.Content.ReadAsStringAsync();
         Assert.Contains("\"hasTenant\":false", body);
+    }
+
+    [Fact]
+    public async Task Enabled_module_policy_allows_only_the_canonical_claimed_module()
+    {
+        using var allowed = new HttpRequestMessage(HttpMethod.Get, "/maintenance/protected");
+        allowed.Headers.Add("X-Test-Tid", TenantA.ToString());
+        allowed.Headers.Add("X-Test-Enabled-Modules", "spaceos.maintenance");
+
+        var allowedResponse = await _client.SendAsync(allowed);
+
+        Assert.Equal(HttpStatusCode.OK, allowedResponse.StatusCode);
+
+        using var denied = new HttpRequestMessage(HttpMethod.Get, "/maintenance/protected");
+        denied.Headers.Add("X-Test-Tid", TenantA.ToString());
+        denied.Headers.Add("X-Test-Enabled-Modules", "maintenance");
+
+        var deniedResponse = await _client.SendAsync(denied);
+
+        Assert.Equal(HttpStatusCode.Forbidden, deniedResponse.StatusCode);
     }
 }

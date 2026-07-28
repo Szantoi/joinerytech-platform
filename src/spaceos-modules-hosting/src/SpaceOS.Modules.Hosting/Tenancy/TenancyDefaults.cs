@@ -22,6 +22,13 @@ public static class TenancyDefaults
     /// </summary>
     public const string TenantListClaim = "spaceos_tenants";
 
+    /// <summary>
+    /// JWT claim carrying the caller's enabled canonical module identifiers. This is a
+    /// temporary authorization input until the Kernel-backed entitled/enabled lookup in
+    /// ERPSEP-06 is available; a missing or malformed value must never grant access.
+    /// </summary>
+    public const string EnabledModulesClaim = "enabled_modules";
+
     /// <summary>Legacy flat claim kept for backward compatibility (kernel priority 3).</summary>
     public const string LegacyTenantIdClaim = "tenant_id";
 

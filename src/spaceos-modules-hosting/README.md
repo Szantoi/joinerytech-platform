@@ -29,6 +29,21 @@ app.UseSpaceOsModuleTenancy();   // ⚠️ mindig az UseAuthentication() UTÁN
 app.MapMyEndpoints();            // minden üzleti endpoint RequireAuthorization()-nel
 ```
 
+ERPSEP-06 interim modul-gate egy modul saját route-csoportján:
+
+```csharp
+builder.Services.AddRequiredEnabledModulePolicy("spaceos.maintenance");
+
+app.MapGroup("/api/maintenance")
+    .RequireAuthorization()
+    .RequireEnabledModule("spaceos.maintenance");
+```
+
+A gate a `spaceos_tenants[].enabled_modules` claimet a feloldott tenanttal egyezteti;
+lapos `enabled_modules` csak Keycloak-migrációs fallback. Kizárólag ADR-067 szerinti
+kanonikus ModuleId fogadható el, bármely hiányos vagy hibás input 403-at eredményez.
+Ez átmeneti JWT-alapú védelem a Kernel `EntitledModules` + Instance Context elkészültéig.
+
 `appsettings.json` (éles alap):
 
 ```json
@@ -51,6 +66,8 @@ app.MapMyEndpoints();            // minden üzleti endpoint RequireAuthorization
   a deploy-szerep nem lehet superuser, különben a policy dísz (ADR-062).
 - Második védelmi réteg: minden modul-DbContext tenant-`HasQueryFilter`-t hord az
   aggregátum-gyökereken (kernel-minta) — az RLS és a query-filter együtt izolál.
+- A 401/403 `application/problem+json` válasz `correlationId` mezőt is ad; ezt a kliens
+  hibajelentésnél meg kell őrizni.
 
 ## Tesztek
 

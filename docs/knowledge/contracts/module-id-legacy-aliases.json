@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "version": "1.0.0",
+  "direction": "legacy-to-canonical-only",
+  "description": "ADR-067 legacy module identifier migration input. New APIs, JWT claims and manifests emit canonical IDs only.",
+  "aliases": {
+    "door": "joinerytech.door",
+    "cabinet": "joinerytech.cabinet",
+    "window": "joinerytech.window",
+    "cutting": "joinerytech.cutting",
+    "spatial": "joinerytech.spatial",
+    "trading": "joinerytech.trading",
+    "delivery": "joinerytech.delivery",
+    "installation": "joinerytech.installation",
+    "orders": "joinerytech.orders",
+    "crm": "spaceos.crm",
+    "kontrolling": "spaceos.controlling",
+    "hr": "spaceos.hr",
+    "maintenance": "spaceos.maintenance",
+    "qa": "spaceos.qa",
+    "ehs": "spaceos.ehs",
+    "dms": "spaceos.dms",
+    "joinery": "joinerytech.joinery",
+    "inventory": "joinerytech.inventory",
+    "procurement": "joinerytech.procurement",
+    "production": "joinerytech.production"
+  }
+}

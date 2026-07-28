@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using SpaceOS.Modules.Hosting.Authorization;
 using SpaceOS.Modules.Hosting.Tenancy;
 
 namespace SpaceOS.Modules.Hosting.Tests.Tenancy;
@@ -31,6 +32,7 @@ internal static class TenancyTestHost
                 {
                     services.AddRouting();
                     services.AddSpaceOsModuleTenancy();
+                    services.AddRequiredEnabledModulePolicy("spaceos.maintenance");
                     configureServices(services);
                 })
                 .Configure(app =>
@@ -51,6 +53,10 @@ internal static class TenancyTestHost
                         {
                             hasTenant = tenant.HasTenant,
                         }));
+
+                        endpoints.MapGroup("/maintenance")
+                            .RequireEnabledModule("spaceos.maintenance")
+                            .MapGet("/protected", () => Results.Ok(new { ok = true }));
                     });
                 }))
             .StartAsync();

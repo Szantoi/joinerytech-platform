@@ -16,6 +16,7 @@ namespace SpaceOS.Modules.Hosting.Tests.Tenancy;
 /// <list type="bullet">
 /// <item><description><c>X-Test-Tid: guid</c> → flat <c>tid</c> claim.</description></item>
 /// <item><description><c>X-Test-Tenants: a,b</c> → <c>spaceos_tenants</c> JSON array claim.</description></item>
+/// <item><description><c>X-Test-Enabled-Modules: spaceos.maintenance,...</c> → flat <c>enabled_modules</c> claim.</description></item>
 /// <item><description><c>X-Test-Authenticated: 1</c> → authenticated principal without any tenant claim.</description></item>
 /// <item><description>No test header → unauthenticated (NoResult).</description></item>
 /// </list>
@@ -45,6 +46,14 @@ internal sealed class TestAuthHandler(
                 .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
                 .Select(static id => new { tenantId = id });
             claims.Add(new Claim(TenancyDefaults.TenantListClaim, JsonSerializer.Serialize(entries)));
+            declared = true;
+        }
+
+        if (Request.Headers.TryGetValue("X-Test-Enabled-Modules", out var enabledModules))
+        {
+            var modules = enabledModules.ToString()
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            claims.Add(new Claim(TenancyDefaults.EnabledModulesClaim, JsonSerializer.Serialize(modules)));
             declared = true;
         }
 

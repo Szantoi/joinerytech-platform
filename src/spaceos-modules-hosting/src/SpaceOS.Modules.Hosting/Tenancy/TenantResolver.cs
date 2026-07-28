@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Microsoft.Extensions.Logging;
 
 namespace SpaceOS.Modules.Hosting.Tenancy;
@@ -44,7 +45,28 @@ public static class TenantResolver
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
     /// <summary>Entry shape of the <c>spaceos_tenants</c> claim (kernel <c>TenantClaimDto</c> subset).</summary>
-    private sealed record TenantClaimEntry(string? TenantId);
+    private sealed record TenantClaimEntry
+    {
+        // Keycloak's production Script Mapper emits snake_case. The camelCase aliases
+        // preserve pre-ERPSEP test/dev tokens during the migration, without changing the
+        // public wire contract.
+        [JsonPropertyName("tenant_id")]
+        public string? TenantId { get; init; }
+
+        [JsonPropertyName("tenantId")]
+        public string? LegacyTenantId { get; init; }
+
+        [JsonPropertyName("enabled_modules")]
+        public string[]? EnabledModules { get; init; }
+
+        [JsonPropertyName("enabledModules")]
+        public string[]? LegacyEnabledModules { get; init; }
+
+        public string? ResolvedTenantId => TenantId ?? LegacyTenantId;
+
+        public IEnumerable<string> ResolvedEnabledModules =>
+            EnabledModules ?? LegacyEnabledModules ?? [];
+    }
 
     /// <summary>
     /// Resolves the effective tenant for <paramref name="user"/>, optionally honouring a
@@ -76,6 +98,47 @@ public static class TenantResolver
     }
 
     /// <summary>
+    /// Gets the enabled module identifiers for the tenant already resolved by the tenancy
+    /// middleware. Only canonical module IDs are retained. A missing, malformed or
+    /// tenant-mismatched claim yields an empty set (fail closed).
+    /// </summary>
+    /// <remarks>
+    /// The flat claim is kept as a migration fallback for the current Keycloak mapper.
+    /// When a <c>spaceos_tenants</c> claim is present, its entry for <paramref name="tenantId"/>
+    /// is authoritative so a multi-tenant token cannot borrow another tenant's modules.
+    /// This JWT-derived result is an interim gate only; the final ERPSEP-06 Instance Context
+    /// endpoint must revalidate Kernel <c>entitled</c> and <c>enabled</c> state.
+    /// </remarks>
+    public static IReadOnlySet<string> GetEnabledModules(
+        ClaimsPrincipal user,
+        Guid tenantId,
+        ILogger? logger = null)
+    {
+        ArgumentNullException.ThrowIfNull(user);
+        if (tenantId == Guid.Empty)
+            return new HashSet<string>(StringComparer.Ordinal);
+
+        var tenantListClaims = user.FindAll(TenancyDefaults.TenantListClaim).ToArray();
+        var entries = tenantListClaims
+            .SelectMany(claim => ParseTenantListClaim(claim.Value, user, logger));
+
+        var matchedEntries = entries
+            .Where(entry => TryParseGuid(entry.ResolvedTenantId, out var entryTenant) && entryTenant == tenantId)
+            .ToArray();
+
+        if (matchedEntries.Length > 0)
+            return CanonicalizeModules(matchedEntries.SelectMany(static entry => entry.ResolvedEnabledModules));
+
+        // A non-empty tenant list without a matching entry is not eligible for a global
+        // fallback: it is malformed for the resolved tenant and therefore denied.
+        if (tenantListClaims.Length > 0)
+            return new HashSet<string>(StringComparer.Ordinal);
+
+        return CanonicalizeModules(user.FindAll(TenancyDefaults.EnabledModulesClaim)
+            .SelectMany(claim => ParseModuleClaim(claim.Value, user, logger)));
+    }
+
+    /// <summary>
     /// Collects every tenant id present in the token, in kernel claim priority order.
     /// The first entry is the default tenant when no header is sent.
     /// </summary>
@@ -94,12 +157,11 @@ public static class TenantResolver
             Add(tid);
 
         // Priority 2: "spaceos_tenants" JSON array claim (KC-T2).
-        var tenantsClaim = user.FindFirst(TenancyDefaults.TenantListClaim)?.Value;
-        if (!string.IsNullOrWhiteSpace(tenantsClaim))
+        foreach (var tenantsClaim in user.FindAll(TenancyDefaults.TenantListClaim))
         {
-            foreach (var entry in ParseTenantListClaim(tenantsClaim, user, logger))
+            foreach (var entry in ParseTenantListClaim(tenantsClaim.Value, user, logger))
             {
-                if (TryParseGuid(entry.TenantId, out var listTenant))
+                if (TryParseGuid(entry.ResolvedTenantId, out var listTenant))
                     Add(listTenant);
             }
         }
@@ -133,6 +195,81 @@ public static class TenantResolver
                 TenancyDefaults.TenantListClaim, user.FindFirst("sub")?.Value);
             return [];
         }
+    }
+
+    private static IEnumerable<string> ParseModuleClaim(
+        string claimValue,
+        ClaimsPrincipal user,
+        ILogger? logger)
+    {
+        if (string.IsNullOrWhiteSpace(claimValue))
+            return [];
+
+        try
+        {
+            var value = claimValue.Trim();
+            if (value.StartsWith('['))
+                return JsonSerializer.Deserialize<string[]>(value, JsonOptions) ?? [];
+
+            // Keycloak mappers may stringify an array. A quoted scalar is accepted too,
+            // but only after canonical-ID validation below.
+            if (value.StartsWith('"'))
+            {
+                var unwrapped = JsonSerializer.Deserialize<string>(value, JsonOptions);
+                return unwrapped is null
+                    ? []
+                    : ParseModuleClaim(unwrapped, user, logger);
+            }
+
+            return [value];
+        }
+        catch (JsonException ex)
+        {
+            logger?.LogWarning(ex,
+                "Failed to deserialize the {Claim} claim for subject {Sub}; treating it as empty.",
+                TenancyDefaults.EnabledModulesClaim, user.FindFirst("sub")?.Value);
+            return [];
+        }
+    }
+
+    private static IReadOnlySet<string> CanonicalizeModules(IEnumerable<string> modules)
+    {
+        var result = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var module in modules)
+        {
+            var value = module?.Trim();
+            if (IsCanonicalModuleId(value))
+                result.Add(value!);
+        }
+
+        return result;
+    }
+
+    internal static bool IsCanonicalModuleId(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return false;
+
+        var separator = value.IndexOf('.');
+        if (separator <= 0 || separator == value.Length - 1 || value.IndexOf('.', separator + 1) >= 0)
+            return false;
+
+        return IsModuleIdPart(value.AsSpan(0, separator), allowLeadingDigit: false)
+            && IsModuleIdPart(value.AsSpan(separator + 1), allowLeadingDigit: false);
+    }
+
+    private static bool IsModuleIdPart(ReadOnlySpan<char> value, bool allowLeadingDigit)
+    {
+        if (value.IsEmpty || (!allowLeadingDigit && !char.IsAsciiLetterLower(value[0])))
+            return false;
+
+        foreach (var character in value)
+        {
+            if (!(char.IsAsciiLetterLower(character) || char.IsAsciiDigit(character) || character == '-'))
+                return false;
+        }
+
+        return true;
     }
 
     private static bool TryParseGuid(string? value, out Guid guid)

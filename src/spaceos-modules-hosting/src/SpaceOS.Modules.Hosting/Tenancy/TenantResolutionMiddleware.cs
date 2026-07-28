@@ -97,6 +97,7 @@ public sealed class TenantResolutionMiddleware
             title = "Forbidden",
             status = 403,
             detail,
+            correlationId = context.TraceIdentifier,
         };
         // Explicit content type: WriteAsJsonAsync would otherwise stamp application/json.
         return context.Response.WriteAsJsonAsync(problem, options: null, contentType: "application/problem+json");

@@ -83,6 +83,60 @@ public sealed class TenantResolverTests
     }
 
     [Fact]
+    public void Snake_case_tenant_list_claim_resolves_the_tenant()
+    {
+        var listJson = $$"""[{"tenant_id":"{{TenantA}}","enabled_modules":["spaceos.maintenance"]}]""";
+
+        var result = TenantResolver.Resolve(
+            PrincipalWith(new Claim(TenancyDefaults.TenantListClaim, listJson)), null);
+
+        Assert.Equal(TenantResolutionStatus.Resolved, result.Status);
+        Assert.Equal(TenantA, result.TenantId);
+    }
+
+    [Fact]
+    public void Enabled_modules_are_read_only_from_the_resolved_tenant_entry()
+    {
+        var listJson = "[{\"tenant_id\":\"" + TenantA +
+                       "\",\"enabled_modules\":[\"spaceos.maintenance\",\"maintenance\"]}," +
+                       "{\"tenant_id\":\"" + TenantB +
+                       "\",\"enabled_modules\":[\"spaceos.qa\"]}]";
+        var principal = PrincipalWith(new Claim(TenancyDefaults.TenantListClaim, listJson));
+
+        var modules = TenantResolver.GetEnabledModules(principal, TenantA);
+
+        Assert.Contains("spaceos.maintenance", modules);
+        Assert.DoesNotContain("maintenance", modules);
+        Assert.DoesNotContain("spaceos.qa", modules);
+    }
+
+    [Fact]
+    public void Missing_or_malformed_module_claim_never_grants_access()
+    {
+        var noClaim = TenantResolver.GetEnabledModules(
+            PrincipalWith(new Claim(TenancyDefaults.TenantIdClaim, TenantA.ToString())), TenantA);
+        var malformedClaim = TenantResolver.GetEnabledModules(
+            PrincipalWith(
+                new Claim(TenancyDefaults.TenantIdClaim, TenantA.ToString()),
+                new Claim(TenancyDefaults.EnabledModulesClaim, "{not json[")), TenantA);
+
+        Assert.Empty(noClaim);
+        Assert.Empty(malformedClaim);
+    }
+
+    [Fact]
+    public void Flat_enabled_modules_claim_is_a_migration_fallback_and_canonicalized()
+    {
+        var modules = TenantResolver.GetEnabledModules(
+            PrincipalWith(
+                new Claim(TenancyDefaults.TenantIdClaim, TenantA.ToString()),
+                new Claim(TenancyDefaults.EnabledModulesClaim, "[\"spaceos.maintenance\",\"maintenance\"]")),
+            TenantA);
+
+        Assert.Equal(new[] { "spaceos.maintenance" }, modules);
+    }
+
+    [Fact]
     public void String_wrapped_tenant_list_is_unwrapped_before_parsing()
     {
         // Keycloak Script Mapper JSON.stringify() guard (kernel BE-01).

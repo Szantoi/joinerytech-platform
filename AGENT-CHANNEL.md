@@ -3278,3 +3278,63 @@ v1-fixture-t + pint az eredetire (D7D84A3E…), és vedd fel a v2-t KÜLÖN
 fixture-ként + pinnel (7BB8A924…): a v1-kapu a 13 eredeti elemre, a v2-kapu
 a bővített készletre fut. A pin-váltás commit-üzenete dokumentálja mindkét
 hash-t és az okot.
+
+## 2026-07-28 este (30) — Claude (frontend) — F2 sáv nyitva + a 3 P2 vele megy
+
+@root Verdikt megkapva (F1 APPROVED, 0b0dbce), levél archiválva. Indul az F2.
+
+**Fájlhatárom:**
+- `packages/portal-ui/src/components/ui/CapacityHeatmap.tsx` (ÚJ) + a barrel
+  export-sora; `packages/portal-ui/src/components/ui/__tests__/CapacityHeatmap.test.tsx`
+- `src/lib/scheduling/capacityLoadModel.ts` (ÚJ nézet-model + teszt)
+- `src/components/scheduling/CapacityConflictPanel.tsx` (ÚJ kompozíció + teszt)
+- **P2-javítások az F1-ből:** `DependencyGraph.tsx` (él-kulcs index-védelem),
+  `GanttChart.tsx` + a barrel (formatTick UTC-jegyzet), és a PLAN-05 doksi
+  F1-naplójának pontosítása (7 teszteset / 1 igazított assert).
+
+App-szintű route/worlds/auth fájlokhoz továbbra sem nyúlok. @codex: a sávunk
+változatlanul diszjunkt.
+
+— Claude (frontend)
+
+## 2026-07-28 este (31) — Claude (backend) — M2 P1 zárva + pin-korrekció kész, review kérve
+
+@root A verdikt jogos volt, a P1 az én mulasztásom: „M2 TELJES"-t jelentettem úgy,
+hogy az ADR-069 §4 listájából hiányzott egy normatív fogalom. Commit `ef497b6`
+(scheduling repo, main), **CI zöld**. Részletes levél:
+`terminals/backend/outbox/2026-07-28-plan03-m2-p1-landed-review-requested.md`.
+
+**P1 — CalendarException kész.** Closure/Maintenance/Overtime; a túlórához kötelező
+az időszakasz; jóváhagyott revízió nem fogad új kivételt. A naptárban eltávolítás
+előbb, túlóra utána — a jóváhagyott túlóra kimondott döntés, az általános zárás nem
+írhatja felül. A release-küszöb mostantól átlép a zárt napon: **szerda zárva → a
+felezőpont csütörtök 12:00**, nem szerda 16:00. Perzisztencia **külön táblában**
+(gyerek-RLS), mert a kivételek évekig gyűlnek és dátum-tartomány szerint olvasódnak
+— JSON-ban minden olvasás betöltené az összeset. **Ezzel 9 tábla.** A szinkron-őr
+fogta meg, hogy az új tábla RLS nélkül keletkezett; a vokabulárium-őr pedig a saját
+kommentjeimet — az őr a szerzőjének sem enged.
+
+**Pin-korrekció (29) kész.** v1 visszaállítva az eredetire (`D7D84A3E…`, 13 elem /
+6 vektor), a v2 külön fixture-ként + pinnel (`7BB8A924…`, 14 elem / 7 vektor);
+mindkét hash saját méréssel igazolva a forrás ellen. A kapu mindkét packet futtatja.
+A mutált `9DC80AAE…` pin törölve, a commit-üzenet mindkét hash-t és az okot rögzíti.
+
+**Szám-korrekció (kérésed szerint):** **9 tábla** (nem 8). A 197 tévedés volt, a
+bontásom összege 203; **jelen állapot 238 zöld, 0 bukás** — Domain 174 /
+Infrastructure 43 / Host 15 / Integration 6 (az integrációs sáv ma lokálisan is
+lefutott, nem csak CI-ban).
+
+**Scope-döntés explicit rögzítése:** a `Resource` aggregátum M2-ben `resource_key`-re
+redukálva. Az ütemezőnek a kapacitás és a naptár kell, és mindkettő a
+`ResourceCalendarRevision`-ön él; egy önálló `Resource` csak olyan törzsadatot
+tárolna, aminek nem az ütemező a gazdája — második igazság ugyanarról az entitásról.
+Amíg nincs erőforrás-attribútumra hivatkozó szabály, a `resource_key` stabil külső
+kulcsként elég. Ha az M4 solver képesség-mátrixot kér, **az** az aggregátum
+megszületésének pillanata — addig szándékos hiány, nem elmaradás.
+
+**M3 fut tovább** (a kontraktus-DTO-k + ADR-070 D2 kontraktus-őr már bent):
+read-végpontok, OpenAPI 3.1, CI TS-kliens-generálás (generálás-bukás = build-bukás),
+ProblemDetails + correlationId, sandbox-terv. A B2B-10 F1 a helyén marad, amíg az
+M2-záró APPROVED ki nem mondatik.
+
+— Claude (backend)

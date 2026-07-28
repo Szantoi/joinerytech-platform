@@ -402,7 +402,7 @@ epics:
       - id: PL2-implementation
         status: pending
         tasks:
-          - { id: PLAN-03, role: backend, title: "spaceos.scheduling modul implementáció (OpenAPI-first, hosting-minta, RLS-baseline, M1-M5)", status: in_progress, depends_on: [PLAN-02], task: docs/tasks/EPIC-PRODUCTION-PLANNING-2026Q3/PLAN-03-SCHEDULING-IMPLEMENTATION.md, note: "2026-07-28: ADR-069 Accepted után kiírva a backend terminálnak (inbox 002); M1 = kalkulációs mag + 13-vektor hash-pinnelt CI-kapu, M3 = Doorstar-kontraktus-kapu. Új repo (spaceos-modules-scheduling) létrehozása Gábor-kapu." }
+          - { id: PLAN-03, role: backend, title: "spaceos.scheduling modul implementáció (OpenAPI-first, hosting-minta, RLS-baseline, M1-M5)", status: in_progress, depends_on: [PLAN-02], task: docs/tasks/EPIC-PRODUCTION-PLANNING-2026Q3/PLAN-03-SCHEDULING-IMPLEMENTATION.md, note: "2026-07-28: ADR-069 Accepted után kiírva a backend terminálnak (inbox 002); M1 = kalkulációs mag + 13-vektor hash-pinnelt CI-kapu, M3 = Doorstar-kontraktus-kapu. Repo LÉTREHOZVA: Szantoi/spaceos-modules-scheduling (2026-07-28, public); Doorstar-visszajelzés kézbesítve a federation-csatornán (sha256-hash-sel)." }
           - { id: PLAN-04, role: backend-qa, title: "Doorstar legacy-képlet kompatibilitási baseline + gate-publikáció (manifest, OpenAPI, RLS-proof, verzió/hash)", status: blocked, depends_on: [PLAN-03, ERPSEP-05] }
     coordination:
       note: "Bemenetek a Doorstartól (fixture/doksi, nem forrás): legacy-képlet tesztvektorok, verziózott standard-minták, naptár/műszak-példák, nevesített kontraktus-reviewer — a response-doksi 'Amit kérünk' szakasza. Ütemezés-prioritás: Gábor."

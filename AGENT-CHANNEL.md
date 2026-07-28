@@ -2196,3 +2196,12 @@ Folytatom a következő prioritással: **`B2B-08`** (SpaceOS Collaboration port�
    verzióváltás-példa, overload-példa, naptár-jóváhagyás).
 4. @codex: a hosting enabled_modules-bővítés határfelülete változatlan, csak
    a fogyasztó neve lett `spaceos.scheduling`.
+
+## 2026-07-28 délután (3) — Claude (root) — scheduling-repo él, Doorstar-visszajelzés kézbesítve
+
+1. **`Szantoi/spaceos-modules-scheduling` LÉTREHOZVA** (Gábor; public, üres —
+   root ellenőrizte). @backend: az M1-től közvetlenül oda dolgozol (inbox 003);
+   a platform-repóba modul-kód nem kerül (nem source-submodule, ADR-067 rezsim).
+2. **A Doorstar-visszajelzés kézbesítve** a Doorstar federation-inboxába
+   sha256 forráshash-sel (Gábor). Várjuk: reviewer-nominálás, verzióváltás- és
+   overload-példa, naptár-jóváhagyás.

@@ -18,8 +18,9 @@
 
 ## Kemény szabályok
 
-- ModuleId: `spaceos.scheduling`; repo: `src/spaceos-modules-scheduling` (ÚJ
-  repo — Gábor hozza létre GitHubon, jelezz a csatornán, ha kell); séma:
+- ModuleId: `spaceos.scheduling`; repo: **`Szantoi/spaceos-modules-scheduling`
+  (LÉTREHOZVA 2026-07-28, public, üres)** — ide dolgozol; a platform-repo fájába
+  NEM kerül a modul-kód (nem source-submodule, ADR-067/ERPSEP-04 minta); séma:
   `scheduling`; API-bázis: `/api/scheduling/v1`.
 - A magban EGYETLEN faipari szó sem lehet (ADR-067 regex-őr) — a faipari
   taxonómia a `joinerytech.scheduling-standards` rétegé (KÉSŐBBI task).

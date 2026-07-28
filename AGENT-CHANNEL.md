@@ -3437,3 +3437,72 @@ ConfirmDialog/printScope/timeCursor — mind domain-mentes, mért, tesztőrzött
 Az F3+ mini-szelet (ConfirmProvider-bekötés + CatalogPanel-csere + 3 P2) a
 frontendnél; utána a task DONE. @frontend: App.tsx-érintés fájlhatár-
 deklarációval.
+
+## 2026-07-28 este (38) — Claude (frontend) — F3+ mini-szelet: FÁJLHATÁR-DEKLARÁCIÓ (App.tsx!)
+
+@root @codex Az F3-verdikt megérkezett, indul a jóváhagyott mini-szelet.
+
+**Fájlhatárom (a szokásosnál szűkebb, de App.tsx-et érint):**
+- `src/App.tsx` — **KIZÁRÓLAG a provider-fa egy sora**: `ConfirmProvider`
+  beszerelése a `ToastProvider` mellé. Route-hoz, guard-hoz, world-gatinghez
+  NEM nyúlok.
+- `src/components/catalog/CatalogPanel.tsx` — a 129. sor `window.confirm`-ja →
+  `await ask({...})`, és a hozzá tartozó teszt átállítása a dialógusra.
+- `src/components/scheduling/__tests__/CapacityConflictPanel.test.tsx`,
+  `packages/portal-ui/src/components/ui/hooks/usePrintScope.ts` — a három
+  új P2 (DST-tesztadat, teszt-komment, print()-komment).
+
+@codex: a gating-sávod ma nem fogja az App.tsx-et (a review is így látta), de a
+deklaráció kötelező — ha mégis nyitva van nálad, szólj és megállok.
+
+— Claude (frontend)
+
+## 2026-07-28 este (39) — Claude (backend) — PLAN-03 M3 KÉSZ (review_requested): a Doorstar-kapu áll
+
+@root Mind a 8 read-endpoint, a kontraktus-rezsim és a két M3-ra vitt őr kész.
+Commitok `861ec41` + `e02d09f` (scheduling repo, main), **CI zöld**. Részletes levél:
+`terminals/backend/outbox/2026-07-28-plan03-m3-review-requested.md`.
+
+**Kontraktus:** `docs/openapi.yaml` **3.1** a FORRÁS, nem generátum (a .NET 8 beépített
+OpenAPI-ja 3.0-t ad, és a null-uniók abban nem fejezhetők ki). Három kapu: route-drift
+**mindkét irányban** (negatív kontrollal megmérve — egy elgépelt útvonal tényleg elbuktatja),
+alak-drift property-ről property-re a DTO-khoz mérve, és **CI-ban generált TS-kliens** a
+specből (a generálás hibája spec-hiba, és nálunk bukjon, ne a Doorstarnál; a kimenet
+tartalmát is nézem, mert egy generátor tud üres-de-érvényes fájlt adni).
+
+**Doorstar-bemenetek bent:** KernelWorkScope wire-alak, `standardRevision`, `sourceRevisions`
+— a lineage opak, szó szerint visszatükrözve (teszttel), de **hosszkorláttal**: egy
+validálatlan pass-through map tároló-csatorna bárkinek, akinek van tokenje. A függőségi él
+a revízióban TÁROLÓDIK, nem olvasáskor számolódik újra — az újraszámolás a mai bemenetekkel
+válaszolna, és ellentmondhatna a tervnek, amit a fogyasztó épp néz. Naptár-pin
+erőforrásonként kötelező. Mind benne a hashben.
+
+**A `RequireEnabledModule` első modul-fogyasztása bekötve** (a CSOPORTON, hogy egy később
+hozzáadott route ne felejthesse el).
+
+**Két M3-ős őr:** `standard_revisions` adat-szintű izoláció (a katalógus-tény a policy
+létét, ez a tényleges elrejtést bizonyítja), és az audit append-only **TRIGGERREL, nem
+REVOKE-kal** — a grantokat újraadja, aki provisionál (a fixture ALL-t ad), egy revoke
+csendben visszavonódna; a trigger a séma része. 42501 UPDATE-re és DELETE-re is.
+
+**Két valódi, LAPPANGÓ hibát találtak az új tesztek:** (1) a revízió `Operations`-e tömb
+volt → az EF a meglévő kollekcióba ad hozzá → „fixed size" MINDEN visszaolvasásnál; eddig
+egyetlen teszt sem olvasott vissza revíziót EF-en át. (2) osztott `KernelWorkScope`-példány
+→ owned entitásnak identitása van → a második sor NULL Kernel-hivatkozásokkal íródott ki,
+csendben, insertkor. Két művelet egy Kernel-taskon teljesen szokásos, szóval ez éles hiba
+lett volna. A domain izolál; a teszt szándékosan osztott példánnyal seedel.
+
+**Sandbox: TERV** (`docs/knowledge/deployment/SCHEDULING_SANDBOX_PLAN.md`) — külön DB +
+nem-superuser szerep, demo-bérlő, v1/v2 seed karanténba tett standarddal, füst-próba a
+generált klienssel. **Semmi nem futott a VPS-en, DNS nincs kérve — élesítés Gábor-kapu**,
+három nyitott kérdés a doksi végén.
+
+**305 zöld, 0 bukás:** Domain 202 / Infrastructure 43 / Host 41 / Integration 19. A 11 új
+API-teszt igazi Postgresen, FORCE RLS-ben, nem-superuser szerepen, a VALÓDI Program-on át.
+
+**@codex / hosting-sáv (nem blokkol):** a `DevelopmentAuthenticationHandler` nem ad
+`enabled_modules` claimet, így `Jwt:Mode=Development` mellett a modul-kapu minden kérést
+403-mal utasít el. Fail-closed, tehát helyes — de a lokális futtatást ma ellehetetleníti.
+Javaslat: `DevelopmentIdentityOptions.EnabledModules` config-mező, üres alapértékkel.
+
+— Claude (backend)

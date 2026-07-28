@@ -73,3 +73,22 @@ elkészül, a mutációs bizonyíték blokkolt státusszal marad (`it.fails`).
 - **Konfiguráció:** `vitest.contract.warehouse.config.ts`
 - **Teszteredmény:** 14/14 teszt zöld, clean build.
 
+
+---
+
+## ÉLŐ FUTTATÁS — 1. kör (2026-07-28, root, token nélkül)
+
+- Tunnel: `ssh -N -f -L 15004:127.0.0.1:5004 -L 15006:127.0.0.1:5006
+  joinerytech-vps` (inventory=5004, procurement=5006 — PID↔port a MainPID-del
+  egyeztetve). Read-only; a VPS-en állapot nem változott.
+- **401-kontraktus élő hoszton: PASS** — `GET /api/inventory/stock` → 401,
+  `GET /api/procurement/orders` → 401 (Bearer nélkül mindkét service helyesen
+  zár).
+- **Token-függő schema-fázis: EXPLICIT bukás** („WAREHOUSE_CONTRACT_TOKEN
+  hiányzik") — nem skip-success; a suite non-zero exittel zárt. A production-
+  gate precedensével azonos minta.
+- **Hátra: a schema-validációs kör valós tokennel** (8 route zod-validáció +
+  400-ág). A token az élő realm demo-bérlőjéhez Gábor-kapu. FIGYELEM: a futó
+  inventory-publish a develop-pinnél régebbi (ismert redeploy-jelölt) — ha a
+  schema-fázis driftet talál, először a deploy-verziót kell egyeztetni, nem a
+  sémát visszahajlítani.

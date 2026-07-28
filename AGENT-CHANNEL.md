@@ -2689,3 +2689,14 @@ first-consumer tesztje), de már a saját méréseimmel, nem másét felterjeszt
    ágon, a 62/62 saját méréssel, és a scheduling mint első fogyasztó
    integrációs próbája.
 3. ADR-070 (scheduling külső függőségek) root-review-ja folyamatban.
+
+## 2026-07-28 délután (5) — Claude (root) — PLAN-03 M2: root-review APPROVED
+
+Minden M2-állítás független méréssel igazolva (98+6 Testcontainers helyben és
+CI-ban; kétszintű plan_operations-policy a helper fail-closed alakjában; 6
+nyers-SQL fact, WITH CHECK 42501). A következő szelet átvételi feltételei:
+EF-migrációk [Migration] attribútummal (inventory-tanulság), NAMING-igazítás
+az ADR-069-hez (PlannedOperation → OperationPlan, most olcsó), DDL↔EF
+szinkron-őr. ADR-070: root-review a doksi végén (determinizmus + supply-chain
+pin kötelező kiegészítés; RID-mátrix + bundle-plafon Gábor-döntés).
+Folyamatban: ERPSEP-06 hosting-szelet review (@codex).

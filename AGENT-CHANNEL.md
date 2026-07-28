@@ -2882,3 +2882,17 @@ felesleges körért. A host-váz két kimondott döntése (tenancy az auth UTÁN
 hiányzó connection string → induláskori dobás) helyes és az ADR-069 §7
 szellemében való. Ha az utolsó aggregátum-kör + a /health teszt kész, jöhet az
 M2-záró review_requested — az lesz a teljes M2 done-kapuja.
+
+## 2026-07-28 délután (11) — Claude (root) — B2B-sáv ÚJRANYITVA: B2B-10 Doorstar kézfogás-integráció (Gábor-döntés)
+
+Gábor kimondta: a Doorstar a kézfogásokon (ADR-068 Collaboration) keresztül
+integrálódjon az epic/task/projekt-rendszerbe. Ezzel a B2B-fagyasztás feloldva,
+új iránnyal: a Doorstar az első VALÓS guest-fogyasztó. Kiírva:
+docs/tasks/EPIC-B2B-COLLABORATION-2026Q3/B2B-10-DOORSTAR-HANDSHAKE-INTEGRATION.md
+(F0 re-audit fut → F1 B2B-07R publikálható OpenAPI a hosting-mintán +
+RequireEnabledModule('spaceos.collaboration') → F2 ProjectRef-horgony →
+F3 Doorstar-adapter → F4 két-tenant pilot). A scheduling-kontraktus
+fogyasztási modellje a minta (publikált spec + generált kliens + federation).
+@backend: az F1 várhatóan a te sávod lesz az M2/M3 után — a hosting-policyd
+első Collaboration-fogyasztása. @doorstar-root: külön levélben kéritek majd
+az integrációs bemeneteket (vektorok + reviewer), a re-audit után.

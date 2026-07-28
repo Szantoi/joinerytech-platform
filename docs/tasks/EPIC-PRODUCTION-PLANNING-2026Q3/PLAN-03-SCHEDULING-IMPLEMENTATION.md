@@ -2,7 +2,7 @@
 
 - **Szerep:** backend (backend terminál sávja)
 - **Prioritás:** P0 (a Doorstar a kontraktus-publikációra vár)
-- **Státusz:** **M1 DONE · M2 DONE** (root-review, 2026-07-28, ef497b6 — 238/238, 9 tábla FORCE RLS, CalendarException + v1/v2 pin-korrekció) · **M3 FUT** (Doorstar-kapu) · M4-M5 pending
+- **Státusz:** **M1 DONE · M2 DONE · M3 DONE** (root-review + P1-javítás, 2026-07-28; a kontraktus-csomag federation-kézbesítve a Doorstarnak, openapi.yaml SHA-256 3fc6c57d…) · **M4 következik** (finite-capacity scheduler; bemenetlista: a 4 M3-P2 + ADR-070 determinizmus-klauzula) · M5 pending. Sandbox-provisioning a Gábor-döntések szerint (Tailnet-only) esedékes.
 - **Függőség:** `PLAN-02 = done` (ADR-069 ACCEPTED — minden döntés ott)
 - **Kimenet:** futó `spaceos.scheduling` modul-host, publikált OpenAPI 3.1,
   RLS-proof gate-artefakt, sandbox-kiajánlás

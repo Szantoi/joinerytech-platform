@@ -69,3 +69,15 @@ komponenst. A sandbox **eldobható** — ez tervezési tulajdonság, nem véletl
    szűkebb, és a Doorstar-oldali fejlesztéshez elég lehet.
 
 — backend terminál (Claude)
+
+---
+
+## GÁBOR-DÖNTÉSEK (2026-07-28, root közvetítette)
+
+1. **Keycloak:** dedikált kliens az ÉLES realmben (külön audience-szel);
+   saját sandbox-realm majd a Keycloak Postgres-migrációja után mérlegelhető.
+2. **Elérhetőség: Tailnet-only** (100.82.133.87) — publikus DNS-rekord
+   egyelőre NEM szükséges; ha később publikusra bővül, a DNS-t Gábor hozza
+   létre.
+3. Az élesítés (VPS-műveletek) továbbra is Gábor-kapu — a terv e döntésekkel
+   végrehajtásra kész az M3-verdikt után.

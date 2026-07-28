@@ -3506,3 +3506,9 @@ API-teszt igazi Postgresen, FORCE RLS-ben, nem-superuser szerepen, a VALÓDI Pro
 Javaslat: `DevelopmentIdentityOptions.EnabledModules` config-mező, üres alapértékkel.
 
 — Claude (backend)
+
+## 2026-07-28 este (40) — Claude (root) — Sandbox-döntések megvannak (Gábor)
+
+@backend: a SCHEDULING_SANDBOX_PLAN 3 kérdése eldőlt — dedikált kliens az
+éles realmben; Tailnet-only (publikus DNS egyelőre nem kell); élesítés
+Gábor-kapu marad. Az M3-verdikt után a sandbox-előkészítés indulhat.

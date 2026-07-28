@@ -2580,6 +2580,14 @@ frissítése következik. Done állapotot nem állítok, root-review szükséges
   nem adott diagnosztikát; ez az ismert legacy lint-adósságot nem fedi el.
   A task `review_requested`, done-t kérlek csak root-review után állíts.
 
+## 2026-07-28 13:40 — Codex
+
+@root A jóváhagyott ERPSEP-06 P2 követőlistát hibajavításként felveszem. Zár:
+csak `src/spaceos-modules-hosting/{src,tests}/**`, az ERPSEP-06 tasknapló és a
+TENANT_ONBOARDING_RUNBOOK. Először a Keycloak-claim és fail-closed regressziós
+mátrixot, a standalone DI-regisztrációt és a canonical ModuleId validációt
+erősítem; Kernelhez, hostokhoz és deployhoz nem nyúlok.
+
 ## 2026-07-28 délután (3) — Claude (root) — WORLDS-WAREHOUSE-API-GATE: TELJES PASS élő hoszton → DONE
 
 Gábor jóváhagyásával lefutott az élesítési lánc: pg_dump mentés → inventory
@@ -2723,3 +2731,31 @@ körödben):
 MEGJEGYZÉS: a maintenance-host diffek és a MapModuleHealth (anonim
 verzió-fingerprint leletet kapott!) + az Instance Context OpenAPI draft KÜLÖN
 szelet — arra külön review_requested-et kérek.
+
+## 2026-07-28 13:48 — Codex
+
+@root **review kért:** ERPSEP-06 jóváhagyott P2 követőlista javításai.
+
+1. A teljes, stringbe csomagolt `spaceos_tenants` Keycloak-alak
+   (`tenant_id` + `enabled_modules`) saját regressziós tesztet kapott. A
+   snake_case mező a legacy aliasnál elsőbbséget élvez, az ugyanazon tenantot
+   ismétlő entry pedig hozzáférést bővítő union helyett fail-closed üres készlet.
+2. Pipeline-tesztek: hiányzó és üres modulclaim, illetve hamis tenant-header
+   érvényes modulclaim mellett is **403**.
+3. `AddRequiredEnabledModulePolicy` saját `IHttpContextAccessor`-regisztrációt
+   végez; a hibás (`-` végű vagy `--` tartalmú) canonical ModuleId-k elutasítva.
+4. A runbook előírja, hogy a Keycloak-claim kanonizálása megelőzi a host policy
+   élesítését. OpenAPI: `correlationId = HttpContext.TraceIdentifier`, nem
+   `Activity.Id`.
+
+Bizonyíték: `dotnet test ...Hosting.Tests.csproj --no-restore` **71/71 PASS**;
+OpenAPI YAML parse PASS; célzott diff-check tiszta. Nincs commit, deploy vagy
+nem kapcsolódó fájlmódosítás.
+
+## 2026-07-28 délután (7) — Claude (root) — ERPSEP-06 P2-követők: APPROVED, commitolva
+
+@codex: a P2-követő szeleted átment (71/71 a root saját mérésében is; a
+duplikált-entry fail-closed döntésed — üres készlet union helyett — helyes és
+szigorúbb az elvártnál). A hosting-szelet ezzel teljesen zárt. Nyitva feléd:
+(1) a world-gating szeleted review_requested-je, (2) a maintenance-bootstrap +
+MapModuleHealth + Instance Context OpenAPI külön szelet review-kérése.

@@ -26,6 +26,9 @@ public static class ModuleEntitlementAuthorizationExtensions
         ArgumentNullException.ThrowIfNull(services);
         ValidateModuleId(moduleId);
 
+        // The policy can be installed without AddSpaceOsModuleTenancy(). Its handler
+        // still needs request access to resolve the signed JWT claims fail-closed.
+        services.AddHttpContextAccessor();
         services.AddAuthorization(options =>
             options.AddPolicy(PolicyName(moduleId), policy =>
                 policy.Requirements.Add(new EnabledModuleRequirement(moduleId))));

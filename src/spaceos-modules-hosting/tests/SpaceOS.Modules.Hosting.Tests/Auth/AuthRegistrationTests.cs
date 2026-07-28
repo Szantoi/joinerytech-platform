@@ -1,7 +1,9 @@
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Hosting.Internal;
+using SpaceOS.Modules.Hosting.Authorization;
 using SpaceOS.Modules.Hosting.Auth;
 using Xunit;
 
@@ -98,5 +100,28 @@ public sealed class AuthRegistrationTests
 
         Assert.Contains(services, static d =>
             d.ServiceType == typeof(Microsoft.AspNetCore.Authentication.IAuthenticationService));
+    }
+
+    [Fact]
+    public void Module_policy_registers_its_own_http_context_accessor()
+    {
+        var services = new ServiceCollection();
+
+        services.AddRequiredEnabledModulePolicy("spaceos.maintenance");
+
+        using var provider = services.BuildServiceProvider();
+        Assert.NotNull(provider.GetService<IHttpContextAccessor>());
+    }
+
+    [Theory]
+    [InlineData("spaceos.maintenance-")]
+    [InlineData("spaceos.maint--enance")]
+    [InlineData("spaceos.-maintenance")]
+    public void Module_policy_rejects_noncanonical_module_id_shapes(string moduleId)
+    {
+        var exception = Assert.Throws<ArgumentException>(() =>
+            new ServiceCollection().AddRequiredEnabledModulePolicy(moduleId));
+
+        Assert.Equal("moduleId", exception.ParamName);
     }
 }

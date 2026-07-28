@@ -169,4 +169,36 @@ public sealed class TenancyPipelineTests : IAsyncLifetime
 
         Assert.Equal(HttpStatusCode.Forbidden, deniedResponse.StatusCode);
     }
+
+    [Fact]
+    public async Task Enabled_module_policy_denies_missing_or_empty_module_claim()
+    {
+        using var missing = new HttpRequestMessage(HttpMethod.Get, "/maintenance/protected");
+        missing.Headers.Add("X-Test-Tid", TenantA.ToString());
+
+        var missingResponse = await _client.SendAsync(missing);
+
+        Assert.Equal(HttpStatusCode.Forbidden, missingResponse.StatusCode);
+
+        using var empty = new HttpRequestMessage(HttpMethod.Get, "/maintenance/protected");
+        empty.Headers.Add("X-Test-Tid", TenantA.ToString());
+        empty.Headers.Add("X-Test-Enabled-Modules", string.Empty);
+
+        var emptyResponse = await _client.SendAsync(empty);
+
+        Assert.Equal(HttpStatusCode.Forbidden, emptyResponse.StatusCode);
+    }
+
+    [Fact]
+    public async Task Forged_tenant_header_cannot_bypass_an_otherwise_valid_module_claim()
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/maintenance/protected");
+        request.Headers.Add("X-Test-Tid", TenantA.ToString());
+        request.Headers.Add("X-Test-Enabled-Modules", "spaceos.maintenance");
+        request.Headers.Add(TenancyDefaults.TenantHeader, TenantB.ToString());
+
+        var response = await _client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
 }

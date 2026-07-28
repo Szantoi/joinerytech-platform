@@ -126,8 +126,13 @@ public static class TenantResolver
             .Where(entry => TryParseGuid(entry.ResolvedTenantId, out var entryTenant) && entryTenant == tenantId)
             .ToArray();
 
-        if (matchedEntries.Length > 0)
-            return CanonicalizeModules(matchedEntries.SelectMany(static entry => entry.ResolvedEnabledModules));
+        // A signed token must contain one authoritative entry per tenant. Unioning
+        // duplicate entries would let a malformed issuer payload widen access.
+        if (matchedEntries.Length == 1)
+            return CanonicalizeModules(matchedEntries[0].ResolvedEnabledModules);
+
+        if (matchedEntries.Length > 1)
+            return new HashSet<string>(StringComparer.Ordinal);
 
         // A non-empty tenant list without a matching entry is not eligible for a global
         // fallback: it is malformed for the resolved tenant and therefore denied.
@@ -263,13 +268,25 @@ public static class TenantResolver
         if (value.IsEmpty || (!allowLeadingDigit && !char.IsAsciiLetterLower(value[0])))
             return false;
 
+        var previousWasHyphen = false;
         foreach (var character in value)
         {
             if (!(char.IsAsciiLetterLower(character) || char.IsAsciiDigit(character) || character == '-'))
                 return false;
+
+            if (character == '-')
+            {
+                if (previousWasHyphen)
+                    return false;
+
+                previousWasHyphen = true;
+                continue;
+            }
+
+            previousWasHyphen = false;
         }
 
-        return true;
+        return !previousWasHyphen;
     }
 
     private static bool TryParseGuid(string? value, out Guid guid)

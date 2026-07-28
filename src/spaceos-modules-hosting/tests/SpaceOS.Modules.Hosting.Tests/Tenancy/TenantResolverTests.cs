@@ -151,6 +151,46 @@ public sealed class TenantResolverTests
     }
 
     [Fact]
+    public void String_wrapped_snake_case_keycloak_entry_is_authoritative_for_modules()
+    {
+        var wrapped = System.Text.Json.JsonSerializer.Serialize(
+            $$"""[{"tenant_id":"{{TenantA}}","enabled_modules":["spaceos.maintenance"]}]""");
+        var principal = PrincipalWith(new Claim(TenancyDefaults.TenantListClaim, wrapped));
+
+        var resolution = TenantResolver.Resolve(principal, null);
+        var modules = TenantResolver.GetEnabledModules(principal, TenantA);
+
+        Assert.Equal(TenantResolutionStatus.Resolved, resolution.Status);
+        Assert.Equal(TenantA, resolution.TenantId);
+        Assert.Equal(new[] { "spaceos.maintenance" }, modules);
+    }
+
+    [Fact]
+    public void Snake_case_entry_fields_take_precedence_over_legacy_aliases()
+    {
+        var listJson = "[{\"tenant_id\":\"" + TenantA +
+                       "\",\"tenantId\":\"" + TenantB +
+                       "\",\"enabled_modules\":[\"spaceos.maintenance\"]" +
+                       ",\"enabledModules\":[\"spaceos.qa\"]}]";
+        var principal = PrincipalWith(new Claim(TenancyDefaults.TenantListClaim, listJson));
+
+        var modules = TenantResolver.GetEnabledModules(principal, TenantA);
+
+        Assert.Equal(new[] { "spaceos.maintenance" }, modules);
+        Assert.Empty(TenantResolver.GetEnabledModules(principal, TenantB));
+    }
+
+    [Fact]
+    public void Duplicate_entries_for_the_same_tenant_fail_closed()
+    {
+        var listJson = "[{\"tenant_id\":\"" + TenantA + "\",\"enabled_modules\":[\"spaceos.maintenance\"]}," +
+                       "{\"tenant_id\":\"" + TenantA + "\",\"enabled_modules\":[\"spaceos.qa\"]}]";
+        var principal = PrincipalWith(new Claim(TenancyDefaults.TenantListClaim, listJson));
+
+        Assert.Empty(TenantResolver.GetEnabledModules(principal, TenantA));
+    }
+
+    [Fact]
     public void Malformed_tenant_list_claim_is_treated_as_absent()
     {
         var result = TenantResolver.Resolve(

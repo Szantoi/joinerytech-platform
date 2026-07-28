@@ -53,7 +53,8 @@ Minta: `config/tenant-onboarding.sample.json`. A profil **nem tartalmaz titkot**
   "keycloak": { "baseUrl": "https://joinerytech.hu/auth", "realm": "spaceos",
                 "clientId": "portal-app", "adminRealm": "master", "adminClientId": "admin-cli" },
   "claims":   { "tenantIdAttribute": "tid", "modulesAttribute": "enabled_modules",
-                "moduleIdFormat": "canonical" },   // canonical | legacy | both
+                "moduleIdFormat": "canonical",     // canonical | legacy | both
+                "audiences": ["kernel-api"] },     // 0..n, ld. a záró kiegészítést
   "userProfile": { "unmanagedAttributePolicy": "ADMIN_EDIT" },
   "realmRoles": ["Admin", "Designer", "Joiner"],
   "tenant": { "id": "<GUID>", "name": "...", "tenantType": "Manufacturer",
@@ -206,15 +207,21 @@ később kódgenerátor váltja ki).
    a terv bemutatása.
 4. **Gábor-kapu** → `-Apply`.
 5. A verify automatikusan lefut; ha bukik, a hiányzó lépések tételesen kiírásra kerülnek.
-6. **Gábor-kapu** → a Kernel-SQL futtatása a `spaceos` DB-n (port 5433).
-7. Belépés-ellenőrzés: a token tartalmazza a `tid`-et, az `enabled_modules`-t és a
+6. **Modul-host policy csak ezután kapcsolható be.** A kiadott access tokenben a
+   kiválasztott tenant `spaceos_tenants` entryjének `enabled_modules` listája kizárólag
+   kanonikus ADR-067 ModuleId-ket tartalmazhat (pl. `spaceos.maintenance`). A legacy
+   rövid kulcsos Kernel-entry vagy claim szándékosan **403** a
+   `RequireEnabledModule` policy alatt; előbb a Keycloak-claimet kell kanonizálni,
+   utána lehet endpoint-policyt élesíteni.
+7. **Gábor-kapu** → a Kernel-SQL futtatása a `spaceos` DB-n (port 5433).
+8. Belépés-ellenőrzés: a token tartalmazza a `tid`-et, az `enabled_modules`-t és a
    `realm_access.roles`-ban a portál-szerepet.
 
 ---
 
 ## 9. Tesztek
 
-- `scripts/Invoke-KeycloakTenantOnboarding.Tests.ps1` — Pester 5.x, 42 teszt
+- `scripts/Invoke-KeycloakTenantOnboarding.Tests.ps1` — Pester 5.x, 48 teszt
   (alias-tábla, allowlist-tükör, modul-terv, profil-validáció, idempotencia-tervek,
   SQL-emit + injekció-védelem, script-kontraktus). Keycloak nem kell hozzá.
 
@@ -236,6 +243,27 @@ Invoke-Pester -Path scripts/Invoke-KeycloakTenantOnboarding.Tests.ps1 -Output De
 érvényes token mellett is 401. A fix (kézzel felvéve az élő realmben):
 `portal-app` → protocol mapper `kernel-api-audience`
 (oidc-audience-mapper, included.custom.audience=kernel-api, access token
-claim=true). **A provisioning-script ezt ma NEM kezeli** — bővítés-jelölt:
-a client-mapper terv/apply/verify ugyanúgy, mint a user-mapperek
-(fail-closed connvergencia-ellenőrzéssel).
+claim=true).
+
+### ✅ A script ezt már kezeli (backend, 2026-07-28)
+
+A bővítés elkészült: az audience **config-vezérelt**, mert instance-onként más lehet.
+A profilban:
+
+```jsonc
+"claims": { "tenantIdAttribute": "tid", "modulesAttribute": "enabled_modules",
+            "moduleIdFormat": "canonical",
+            "audiences": ["kernel-api"] }     // 0..n; audience-onként külön mapper
+```
+
+- Audience-onként **külön mapper** (`<audience>-audience` néven), így egy második
+  modul-API felvétele additív változás, nem írja felül az elsőt.
+- A mapper **csak az access tokenbe** teszi az audience-t (`id.token.claim=false`):
+  a böngészőnek nem mond semmit, viszont fölöslegesen tágítaná a token deklarált célját.
+- A terv/apply/verify ugyanazon az úton megy, mint a user-mapperek: hiányzó mapper →
+  `Create`, **rossz audience-re mutató** mapper → `Update` (drift-javítás), egyező →
+  `NoChange`. Ha a profil nem deklarál audience-t, a script **nem hoz létre** ilyen mappert.
+- Bizonyíték (valódi Keycloak 24.0.0, eldobható konténer): apply után a
+  password-granttal lekért access token `aud` claimje **`kernel-api, account`** —
+  vagyis pontosan az az érték, amit a modul-hostok `JWT_AUDIENCE`-ként validálnak.
+  A konténer a mérés után törölve.

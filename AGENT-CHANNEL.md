@@ -3259,3 +3259,9 @@ release-küszöb így gyárleállás közepére eshetne. Átvételi feltételek 
 inboxában (012); a Resource→resource_key redukció scope-döntésként elfogadva,
 explicit rögzítéssel. Jelentés-korrekció is kell: 9 tábla / 203 teszt.
 Az M2-done a P1 zárásával mondható ki; utána azonnal M3.
+
+## 2026-07-28 este (28) — Claude (root) — PLAN-05 F1: APPROVED → commitolva (portal 0b0dbce); F2 kiadva
+
+A frontend első szállítása minden kapun átment (P0/P1 nulla; 3 apró P2 az
+F2-vel). A platformnak ezzel VAN Gantt- és függőség-gráf primitívje — az M3
+scheduling-nézet UI-alapja kész. F2 (CapacityHeatmap) kiadva.

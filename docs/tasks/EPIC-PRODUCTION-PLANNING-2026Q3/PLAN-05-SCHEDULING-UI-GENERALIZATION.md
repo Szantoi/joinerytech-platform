@@ -2,7 +2,7 @@
 
 - **Szerep:** frontend
 - **Prioritás:** P1 (az M3 read-only scheduling-nézet UI-alapja)
-- **Státusz:** pending (kiosztás a world-gating zárása után)
+- **Státusz:** **F1 DONE** (root-review APPROVED, portal 0b0dbce, 2026-07-28) — F2 kiadva, F3 pending. F1 P2-követők az F2-vel: doksi-mondat pontosítás (1 assert igazítva), DependencyGraph él-kulcs index-védelem, formatTick UTC-jegyzet a barrel-doksiban.
 - **Eredet:** Gábor kérése (2026-07-28): „a DoorStar megjelenítéséhez kell némi
   egyedi eszköz, amit általánosítani kell, hogy bekerülhessen a JoineryTech-be."
 - **Bemenet:** root-felmérés (2026-07-28, teljes leltár a doorstar-instance
@@ -48,6 +48,68 @@
    (proposal→info, warning→warn, published→success, blocked→danger).
 3. `WorkflowDependencyGraph` → `DependencyGraph` primitív (lane/row méret
    prop-okkal).
+
+#### F1 végrehajtási napló (2026-07-28, frontend terminál — review_requested)
+
+**Szállítás (10 fájl):**
+
+| Fájl | Szerep |
+|------|--------|
+| `packages/portal-ui/src/theme/svgTones.ts` | ÚJ — `SVG_TONES` (a STATUS_TONES `bg/dot/fg` párja `fill/stroke/text`-re) + `SVG_AXIS` szemantikus vázelem-osztályok |
+| `packages/portal-ui/src/components/ui/GanttChart.tsx` | ÚJ primitív — lanes/items, `domain`, `ticks` (darabszám VAGY explicit lista), `formatTick`, méret-propok |
+| `packages/portal-ui/src/components/ui/DependencyGraph.tsx` | ÚJ primitív — lane/row elrendezés, él-felirat + szaggatás propból, `laneWidth`/`rowHeight`/`nodeWidth`/`nodeHeight` |
+| `src/lib/scheduling/planningVisualizationModel.ts` | ÚJ nézet-model — FS/SS/FF/SF + lag + partialRelease, `PLANNING_STATUS_TONES`, `buildPlanningGanttLanes`, `buildPlanningGraph`, formatter-propok |
+| `src/components/scheduling/ExecutionGantt.tsx` | ÚJ kompozíció — a beolvasztott gép×végrehajtás idősáv a primitíven |
+| `src/components/scheduling/ExecutionTimeline.tsx`, `TimelineRow.tsx` | **TÖRÖLVE** (beolvasztva) |
+| `src/components/scheduling/__tests__/ExecutionTimeline.test.tsx` | **TÖRÖLVE** → `ExecutionGantt.test.tsx` (mind a 7 eredeti assert megőrizve) |
+| `src/pages/SchedulingPage.tsx` | 2 sor: import + JSX-használat átállítva |
+
+**Az F1 három pontja:**
+
+1. **Nézet-model átemelve** — a magyar szövegek `DependencyLabelFormatters`
+   propba kerültek (`DEFAULT_DEPENDENCY_LABELS` a portál alapértelmezése);
+   a 2 átemelt tesztfájl mindhárom eredeti invariánsa él (érvénytelen
+   intervallum kimarad, a négy típus + audit-részlet látszik, hiányzó
+   végpontra nincs kitalált él).
+2. **GanttChart + beolvasztás** — pótolva: **időtengely-fejléc**
+   (óránkénti rács, 3 óránkénti felirat — 24 felirat a jobb szélen egymásra
+   csúszott, ez böngésző-méréssel derült ki), reszponzív viewBox
+   (`w-full h-auto` + belső vízszintes görgetés), STATUS_TONES tone-map
+   (proposal→info, warning→warn, published→success, blocked→danger),
+   prioritás→tónus az execution-oldalon (a 3 hardcode hex kivezetve).
+   **Inline style 0** (a geometria SVG-attribútum, nem stílus).
+3. **DependencyGraph** — lane/row méret-propokkal, `useId`-alapú egyedi
+   marker-azonosítóval (több gráf egy oldalon).
+
+**Kapuk:**
+
+- Célzott vitest: **61/61 PASS** (9 fájl: 2 primitív-teszt, 2 átemelt
+  nézet-model-teszt, ExecutionGantt + a teljes `src/components/scheduling`,
+  SchedulingPage)
+- Csomag-regresszió: `vitest run packages` → **773/773 PASS** (82 fájl)
+- Lint: **0 hiba** a 10 érintett fájlon
+- `npm run build` (tsc -b + vite build): **PASS**
+- Böngésző-mérés (a repo smoke-ja más sáv miatt bukik, ld. lent): eldobható
+  harness-oldalon, valós layout-motorral, 1440/768/390 px + light/dark:
+  **39/39 PASS** — nincs dokumentum-szintű vízszintes túlcsordulás, a Gantt
+  viewBox-szal skálázódik, 0 inline style, a tónus- és token-színek
+  világos↔sötét között ténylegesen váltanak
+
+**Nem az én sávom, de a kapuban akadt fenn (root/@codex felé jelezve):**
+
+- `npm run test:smoke:keyboard` **a változásaim NÉLKÜL is ugyanígy bukik**
+  (`/w/production/cutting`, `CPL-` gomb 15 s timeout) — stash-elt baseline-nal
+  bizonyítva
+- `src/__tests__/App.test.tsx` 5 világ-route teszt timeout — szintén
+  bizonyítottan előzetes (baseline: 5 failed | 3 passed)
+- Legacy lint-adósság az érintett mappában, amihez nem nyúltam:
+  `SchedulingPage.tsx` (3), `MachineDropZone.tsx` (2), `OperatorAutocomplete.tsx` (1)
+
+**Ismert korlát (F2-re vihető):** a `DependencyGraph` az eredeti algoritmust
+követve az azonos sávba (stage) eső utódot ugyanabba az oszlopba teszi, így az
+azonos-sávos él visszafelé ívelő görbét kap, és a felirata a sáv-közbe esik.
+A Doorstar-forrás viselkedése ugyanez; valódi javítás = réteg-alapú
+gráf-elrendezés, külön lépésben.
 
 ### F2 — kapacitás-ütközés
 

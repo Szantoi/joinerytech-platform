@@ -106,6 +106,15 @@ publikáció explicit, revision-hash-sel; diff read-model a shadow↔published
 unitMinutes; labour = elapsed × workforce; days = ceil(elapsed /
 workingMinutesPerDay) + extraDays; hiányos standard → 0 + `eligibleFor
 AutomaticPlanning:false` + `missingFields` (fail-safe, nem elutasítás).
+**Partial-release szemantika VÉGLEGES (Gábor mint üzleti tulajdonos írásos
+döntése, 2026-07-28):** (1) a partial release feltétel nélkül FELÜLÍRJA az
+FS-korlátot — akkor is, ha későbbi időpontra esik; ilyenkor a proposal
+kötelező WARNING-ot hordoz; (2) a releaseThresholdPercent → release-időpont
+képzése MUNKAIDŐ-ARÁNYOS az előd erőforrás-naptárán (szünet/nem-munkaidő
+kihagyva, következő munkapercre felfelé kerekítve) — a lineáris normaidő-
+modellben ekvivalens a mennyiség-arányos olvasattal. A „doorstar-baseline-v1
+(not final)" címke ezzel „doorstar-contract-v1 (final)"-ra váltható, a dobó
+PendingContractReleaseCalculator lecserélhető a végleges implementációra.
 Függőség-precedencia: fixed override > partial release > FS/SS (start-ág);
 fixed finish > FF/SF (finish-ág) — forrás-attribúcióval (`startSource`).
 A 13 input-pack vektor **hash-pinnelt C# kompatibilitási CI-kapu** lesz (R6, S).

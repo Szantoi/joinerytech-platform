@@ -3147,3 +3147,12 @@ wire-alakja, standardRevision, és a sourceRevisions provenance-blokk (opak,
 visszatükrözendő). A Doorstar nem old fel és nem autorizál — a platform
 validál. Ez illeszkedik a scope-modelledhez; az M3 DTO-tervezésnél innen
 indulj.
+
+## 2026-07-28 este (23) — Claude (root) — PARTIAL-RELEASE VÉGLEGES: Gábor üzleti tulajdonosi döntése rögzítve
+
+(1) A partial release feltétel nélkül felülírja az FS-t (későbbi esetben
+kötelező warninggal); (2) küszöb→perc munkaidő-arányosan az előd naptárán.
+ADR-069 §4-be bevezetve; @backend levélben kapta a teendőket (végleges
+policy + új vektorok, a „resolver done" tilalom FELOLDVA); a Doorstar
+federation-levélben kapta a döntést. A scheduling-kontraktus utolsó nyitott
+szemantikai kérdése ezzel zárult.

@@ -2,8 +2,10 @@
 
 - **Szerep:** frontend
 - **Prioritás:** P1 (az M3 read-only scheduling-nézet UI-alapja)
-- **Státusz:** **F1 DONE (0b0dbce) · F2 DONE (root-review APPROVED, 2026-07-28)** — F3 kiadva. F2 P2-követők az F3-mal: CapacityHeatmap teszt-szám doksi-javítás (11, nem 12); capacityLoadModel naptári nap-léptetés (DST-él); panel [style]-null teszt-őr; M3-bekötési jegyzet: a fogyasztó oldal pending/error ága átvételi feltétel.
-  **F2 review_requested** (2026-07-28, a 3 F1-es P2 rendezve), F3 pending.
+- **Státusz:** **F1-F3 DONE** (root-review APPROVED-ok; F3: portal-repo, 2026-07-28) — hátra: F3+ mini-szelet (ConfirmProvider App-bekötés + CatalogPanel window.confirm→useConfirm csere + P2-1 DST-tesztadat), utána a task DONE. EditableDataTable az M4 revízió-szerkesztés döntéséig parkolva (szándékos hiány).
+  **F3 review_requested** (2026-07-28, mind a 4 F2-es P2 rendezve). Ezzel a
+  PLAN-05 teljes hatóköre leszállítva, az `EditableDataTable` kivételével, ami a
+  task-doksi szerint az M4 revízió-szerkesztés döntéséig várakozik.
 - **Eredet:** Gábor kérése (2026-07-28): „a DoorStar megjelenítéséhez kell némi
   egyedi eszköz, amit általánosítani kell, hogy bekerülhessen a JoineryTech-be."
 - **Bemenet:** root-felmérés (2026-07-28, teljes leltár a doorstar-instance
@@ -128,7 +130,7 @@ gráf-elrendezés, külön lépésben.
 | `packages/portal-ui/src/components/ui/capacityHeatmap.types.ts` | ÚJ — típusok + `capacityTone` + `DEFAULT_CAPACITY_THRESHOLDS` (a `dataTable.types.ts` mintájára, react-refresh miatt külön modul) |
 | `src/lib/scheduling/capacityLoadModel.ts` | ÚJ nézet-model — `buildCapacityBuckets` / `buildCapacityRows`, Intl nap-nevek, formatter-propok |
 | `src/components/scheduling/CapacityConflictPanel.tsx` | ÚJ kompozíció — magyar keret + jelmagyarázat + szűk keresztmetszet-lista |
-| + 3 tesztfájl | CapacityHeatmap (12), capacityLoadModel (7), CapacityConflictPanel (6) |
+| + 3 tesztfájl | CapacityHeatmap (11: 2 tónus + 9 komponens), capacityLoadModel (7), CapacityConflictPanel (6) |
 
 **Döntések:**
 
@@ -175,6 +177,66 @@ gráf-elrendezés, külön lépésben.
    bekerül — addig várhat).
 6. `ConfirmDialog` + `useConfirm()` (portál-fókuszcsapdával); `usePrintScope()`;
    `useTimeCursor()` + locale-os date-helperek (DAY_NAMES → Intl).
+
+#### F3 végrehajtási napló (2026-07-28, frontend terminál — review_requested)
+
+**Szállítás (5 új forrásfájl + 1 CSS-blokk + 4 tesztfájl):**
+
+| Fájl | Szerep |
+|------|--------|
+| `packages/portal-ui/src/components/ui/ConfirmDialog.tsx` | ÚJ — `ConfirmDialog` + `ConfirmProvider` (promise-alapú `ask()`) |
+| `packages/portal-ui/src/components/ui/confirmContext.ts` | ÚJ — context + `useConfirm` (a Toast provider/hook szétválasztás mintájára) |
+| `packages/portal-ui/src/components/ui/hooks/usePrintScope.ts` | ÚJ — ref-fel kijelölt nyomtatási hatókör |
+| `packages/portal-ui/src/components/ui/hooks/useTimeCursor.ts` | ÚJ — csúszó idő-ablak (hét) navigációval |
+| `packages/portal-ui/src/dates.ts` | ÚJ — locale date-helperek (Intl), naptári léptetéssel |
+| `src/index.css` | +1 `@media print` blokk (a fájlban eddig nem volt ilyen) |
+
+**Döntések:**
+
+- **`usePrintScope` általánosítása:** a Doorstar `printOnly(scope)`-jában a
+  hatókör két beégetett név volt, és minden névhez saját CSS kellett. Itt a
+  hatókört a **ref** jelöli ki (`data-print-region`), a `<html>`-en pedig egy
+  `data-print-scope` kapcsoló ül — így a CSS statikus, és egy oldalon tetszőleges
+  számú, független nyomtatási régió lehet. A takarítás `afterprint`-re ÉS a
+  `print()` visszatérése után is fut (megszakított nyomtatásnál elmaradhat az
+  esemény, és a jelölés bennragadna).
+- **`ConfirmDialog` fókusz-sorrend:** a **Mégse** áll elöl a DOM-ban, így a
+  fókusz oda érkezik — egy véletlen Enter nem hajt végre romboló műveletet.
+  `role="alertdialog"`, Esc = mégse, záráskor a fókusz a triggerre tér vissza.
+- **`ask()` egyszerre egy kérdést** tart nyitva: új kérdésnél a korábbi promise
+  `false`-szal oldódik fel, nem marad függőben.
+- **`useTimeCursor` + `dates.ts`:** minden lépés **naptári** (`Date` setterek),
+  nem ms-összeadás — a DST-váltás hetén egy nap 23/25 órás. A `DAY_NAMES` tömb
+  helyére `Intl.DateTimeFormat` lépett. A „ma" kívülről adható át, hogy a nézet
+  determinisztikusan tesztelhető legyen.
+
+**P2-k az F2-ből (mind rendezve):**
+
+1. Doksi: a CapacityHeatmap tesztfájl **11** tesztet tartalmaz (2 `capacityTone`
+   + 9 komponens), nem 12-t.
+2. `capacityLoadModel`: naptári nap-léptetés (`addDays`/`isSameDay`/`parseIsoDate`
+   a portal-ui `dates.ts`-éből) az ms-összeadás helyett; DST-teszt őrzi, hogy az
+   októberi átállítás hetén se csússzon el egy nap sem.
+3. `CapacityConflictPanel`: `[style]`-null teszt-őr (inline style tilalom).
+4. **M3-bekötési jegyzet (átvételi feltétel a fogyasztó oldalon):** a
+   `CapacityConflictPanel` és az `ExecutionGantt` ma KÉSZ adatot vár. Az M3
+   bekötésnél a hívó oldal **pending és error ága** külön átvételi feltétel:
+   pending → `QueryGate`/skeleton (ne üres rács villanjon), error → hibaüzenet
+   ÉS a rács elrejtése (a részlegesen betöltött terhelés félrevezető). A
+   primitívek `emptyLabel`-je NEM hibaállapot-jelzés.
+
+**Kapuk:**
+
+- Célzott vitest (F3 + P2-regresszió): **77/77 PASS**
+- `packages/portal-ui` + `src/lib/scheduling` + `src/components/scheduling`:
+  **237/237 PASS** (31 fájl)
+- Csomag-regresszió: `vitest run packages` → **810/810 PASS** (87 fájl)
+- Lint: **0 hiba** az érintett fájlokon; `npm run build`: **PASS**
+- Böngésző-mérés (1440/390 px): **22/22 PASS** — köztük valós `print`
+  média-emulációban: nyomtatáskor a régió `visible`, minden más `hidden`, utána
+  a jelölés eltűnik; a dialógus kezdő fókusza a Mégsén, **4px-es látható
+  fókuszgyűrűvel**, 8 Tab után sem szökik ki, Escape után a fókusz a triggeren,
+  a promise elvetéssel oldódik fel; gombok 44px; nincs vízszintes túlcsordulás
 
 ## Kemény szabályok
 

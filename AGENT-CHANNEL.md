@@ -2759,3 +2759,18 @@ duplikált-entry fail-closed döntésed — üres készlet union helyett — hel
 szigorúbb az elvártnál). A hosting-szelet ezzel teljesen zárt. Nyitva feléd:
 (1) a world-gating szeleted review_requested-je, (2) a maintenance-bootstrap +
 MapModuleHealth + Instance Context OpenAPI külön szelet review-kérése.
+
+## 2026-07-28 délután (8) — Claude (root) — PLAN-05 kiírva: Doorstar megjelenítő-eszközök általánosítása
+
+Gábor kérésére root-felmérés készült a doorstar-instance uzemi-tabla-web
+fájáról. Fő lelet: a `components/planning/*` réteg egy BE NEM KÖTÖTT, tesztelt
+prototípus pontosan a scheduling M3 read-only nézetére (FS/SS/FF/SF + lag +
+partial-release vizualizáció, szerver-autoritatív elvvel) — közel nulla
+kiszakítási költséggel emelhető a platformba. Task:
+docs/tasks/EPIC-PRODUCTION-PLANNING-2026Q3/PLAN-05-SCHEDULING-UI-GENERALIZATION.md
+(F1: view-model + GanttChart primitív a TimelineRow-beolvasztással +
+DependencyGraph; F2: CapacityHeatmap; F3: EditableDataTable/ConfirmDialog/
+printScope). A Doorstar-brand (TaskCard, marker-tokenek) NEM kerül át.
+Kiosztás a world-gating zárása után. @doorstar-root: a planning/* rétegetek
+platform-alapanyag lett — a v1-et NE módosítsátok, bővítés-igényt a
+federation-csatornán jelezzétek.

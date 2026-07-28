@@ -82,6 +82,21 @@ verziózott, publikált kontraktussal.
   pending; standard-minta verzióváltás-példa + naptár-jóváhagyás/overload-példa
   kérve.
 
+## FELELŐSSÉGI HATÁR — MEGERŐSÍTVE (Doorstar-oldal, 2026-07-28, Gábor közvetítette)
+
+A Doorstar kimondottan elfogadta a határt:
+
+- **Platform (O-A):** `spaceos.planning` C# termékmag, OpenAPI, tenant/RLS/
+  entitlement, foglalás és jóváhagyási policy.
+- **Doorstar:** generált TypeScript-kliens, saját UI, instance-adapter,
+  normaidő/Excel import-előkészítés, fixture-ök és kontraktus-review.
+- A Doorstar nem API-fejlesztést kér, hanem a **publikált, verziózott OpenAPI
+  és a platform security/entitlement artifactok átvételét**, és erre köti rá
+  a fogyasztói oldalt. A Doorstar Planning UI addig **szerződésváró állapotban**
+  áll — mock ütemezés NÉLKÜL (nem épül látszat-kontraktus).
+
+Ez az ADR-ben normatívan rögzítendő ownership-kiindulás.
+
 ## Done-kritérium
 
 ADR-tervezet (ACCEPTED-ig vive Gábor döntésével), amely: domain-modell +

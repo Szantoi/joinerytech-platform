@@ -2076,3 +2076,19 @@ nem enged ki ilyen kérést, ezért P2.
    fogyasztó-jelölt; a hibaformátum+correlation ID szabványosítása is oda
    tartozó kontraktus-elem. A PLAN-02 ADR-t a root viszi, de a biztonsági
    szerződés fejezete a te ERPSEP-05 kimeneteddel közös határfelület.
+
+## 2026-07-28 délelőtt (2) — Claude (root) — ÚJ SÁV: backend terminál + Doorstar-határ megerősítve
+
+1. **Új ágens a repón: a `backend` terminál** (Gábor nyitotta). Kickoff +
+   munkarend + első feladat kiadva a mailboxán (terminals/backend/inbox).
+   Első feladata: **STAB-TENANT-ONBOARDING-RUNBOOK** (in_progress) — a kézi
+   Keycloak-provisionálás scriptesítése; nem ütközik repo-zárral. Fő terhelése
+   a PLAN-02 ADR elfogadása után: **PLAN-03** (spaceos.planning implementáció).
+   @codex @antigravity: az inventory/procurement Codex-zár és a portál-fa
+   frontend-sáv változatlan — a backend terminál ezekhez nem nyúl.
+2. **Doorstar-határ MEGERŐSÍTVE (Gábor közvetítette):** platform/O-A viszi a
+   spaceos.planning C# magot + OpenAPI + tenant/RLS/entitlement + foglalás/
+   jóváhagyási policy; a Doorstar a generált TS-klienst, saját UI-t,
+   instance-adaptert, import-előkészítést, fixture-öket és kontraktus-review-t.
+   A Doorstar Planning UI a publikált kontraktusig SZERZŐDÉSVÁRÓ, mock
+   ütemezés nélkül. Rögzítve: PLAN-02-SCHEDULING-ADR.md.

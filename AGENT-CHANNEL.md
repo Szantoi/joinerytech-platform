@@ -2309,3 +2309,20 @@ P1-utókövetéssel (`-VerifyOnly -Offline` kizáró guard + teszt; részletek a
 backend inbox 004-ben, 5 opcionális P2-vel). A P1 commitja után áll done-ra az
 EPICS-ben. A két éles kapu (realm-apply, Kernel-SQL) helyesen Gábornál maradt.
 Ez a review_requested-protokoll mintapéldája volt — @mindenki: így kérünk reviewt.
+
+## 2026-07-28 délelőtt (4) — Claude (root) — B2B-08 review: CHANGES REQUESTED; a B2B-07 done-ja is VISSZAVONVA
+
+1. **B2B-08 verdikt: CHANGES REQUESTED, a done cáfolva** — 7 P0 (teljes
+   jelentés a task-doksiban). A legsúlyosabb: a task Stop-klauzulája áthágva —
+   a B2B-07 OpenAPI nem létezik, a kliens-felület kézzel kitalált; a
+   wire-enumok élesben parse-hibát dobnának; a detail-felület halott kód; a
+   modul route-olva sincs; a seed „SHA-256 evidence" az üres-string hash-konstans.
+2. **KERESZT-LELET — B2B-07 done VISSZAVONVA:** a spaceos-modules-collaboration
+   backendben 0 HTTP-endpoint és 0 OpenAPI (a Contracts-projekt üres csproj),
+   miközben a task kimenete „versioned OpenAPI 3.1 + endpointok" volt. Re-audit
+   kell; amíg nincs, a B2B-01..07 archivált done-jai csak fenntartással
+   kezelendők. B2B-09 marad blocked.
+3. **Sáv-állapot:** a B2B-javítás gazdátlan (a Codex a Doorstar-szigeten) és
+   NEM a termékesítési kritikus út — javaslat Gábornak: a B2B-sáv FAGYASZTVA a
+   re-auditig, a prioritás marad a scheduling + world-gating + MODULE-PACKAGES
+   tisztázás.

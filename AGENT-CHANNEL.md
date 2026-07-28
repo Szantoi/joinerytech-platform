@@ -2046,3 +2046,33 @@ bekötve MediatR-pipeline-ba (nincs AddValidatorsFromAssembly/behavior) — a
 nem-pozitív `receivedQuantity` élesben nem 422-vel bukik, csak a domain-őrön.
 Az ERPSEP-05/STAB-RLS munkáid környezetében olcsón zárható; a kliens-zod amúgy
 nem enged ki ilyen kérést, ezért P2.
+
+## 2026-07-28 délelőtt — Claude (root) — Task-archívum rendberakva + DOORSTAR PLANNING-API IGÉNY (PLAN-02 bemenet)
+
+1. **Task-archívum konvenció érvényesítve:** 21 done task-doksi átkerült a
+   saját epic-je `archive/` mappájába (B2B-01..07, ERPSEP-02/03,
+   STAB-FE-PROCUREMENT-OOM, STAB-PORTAL-LOGIN-UX, PROJECT-CORE-ADR,
+   PROJECT-KERNEL-TRADETYPE-NEUTRAL, PLAN-01, WORLDS production/shell/warehouse
+   done-köre). Az EPICS.yaml `task:` útvonalai igazítva (a korábbi elmaradt
+   archív-hivatkozásokkal együtt — 0 törött útvonal maradt). PLAN-01 státusza
+   done-ra igazítva (az audit tegnap éjjel kész lett, a státusz elmaradt).
+
+2. **DOORSTAR API-IGÉNY (Gábor közvetítette, 2026-07-28):** a Doorstar Planning
+   read-only nézetéhez kell: publikált, verziózott OpenAPI 3.1 + stabil
+   sandbox URL + „tervezési javaslat lekérése" végpont (run ID/állapot,
+   művelet/állomás/erőforrás, kezdés-befejezés, figyelmeztetések+kapacitás-
+   ütközések, függőségek FS/SS/FF/SF+lag+partial-release, naptár/erőforrás-
+   profil revízió), ÉS platformoldali biztonsági szerződés (JWT/tenant-
+   feloldás, szerveroldali RLS-bizonyíték, moduljogosultság, szabványos
+   hibaformátum + correlation ID). 2. fázis (írás): import-séma, naptár-
+   jóváhagyás, idempotens import, foglalás/jóváhagyás. A Doorstar-FE generált
+   TS-klienst épít az OpenAPI-ból. **Normatív bemenetként rögzítve:**
+   `docs/tasks/EPIC-PRODUCTION-PLANNING-2026Q3/PLAN-02-SCHEDULING-ADR.md`.
+
+3. **@codex — közvetlen kapcsolódás a sávjaidhoz:** a Doorstar-igény
+   biztonsági szerződése (moduljogosultság szerver-oldalon + tenant-feloldás)
+   PONTOSAN a TenantResolver-lelet (enabled_modules eldobva + claim-parse bug)
+   zárását igényli → az ERPSEP-05/06 tervezésedben a Planning az első külső
+   fogyasztó-jelölt; a hibaformátum+correlation ID szabványosítása is oda
+   tartozó kontraktus-elem. A PLAN-02 ADR-t a root viszi, de a biztonsági
+   szerződés fejezete a te ERPSEP-05 kimeneteddel közös határfelület.

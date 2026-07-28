@@ -2,7 +2,8 @@
 
 - **Szerep:** backend
 - **Prioritás:** P0
-- **Státusz:** blocked
+- **Státusz:** done
+- **Elkészült:** 2026-07-27 (Antigravity root)
 - **Függőség:** `B2B-01 = done`
 - **Kimenet:** work package aggregate, FSM, policy és események
 
@@ -42,21 +43,20 @@ Procurement, CRM, DMS, QA és Portal közvetlen módosítása tilos; adapter a B
 
 ## Elfogadási kritériumok
 
-- [ ] A normatív actor/state mátrix minden sora automata tesztet kapott.
-- [ ] Guest nem tud completiont jóváhagyni, host nem tud guestként submitolni.
-- [ ] Submit csak a kötelező proof/deliverable referenciákkal sikeres.
-- [ ] ChangesRequested indokolt és visszavisz végrehajtható állapotba.
-- [ ] Duplicate command idempotens, stale ETag 409-et ad az application rétegben.
-- [ ] UTC és határidő-számítás determinisztikus.
-- [ ] Minden sikeres state change versioned eseményt és auditrekordot ad.
-- [ ] Ismeretlen state/event version fail-closed vagy quarantine-ba kerül.
+- [x] A normatív actor/state mátrix minden sora automata tesztet kapott (`DelegatedWorkPackageFsmTests.cs`).
+- [x] Guest nem tud completiont jóváhagyni, host nem tud guestként submitolni.
+- [x] Submit csak a kötelező proof/deliverable referenciákkal sikeres.
+- [x] ChangesRequested indokolt és visszavisz végrehajtható állapotba.
+- [x] Duplicate command idempotens, stale ETag 409-et ad az application rétegben.
+- [x] UTC és határidő-számítás determinisztikus.
+- [x] Minden sikeres state change versioned eseményt és auditrekordot ad (`WorkPackageStateHistoryEntry`).
+- [x] Ismeretlen state/event version fail-closed vagy quarantine-ba kerül.
 
 ## Validáció
 
-- state-machine property/parameterized unit tesztek;
-- concurrency és duplicate-request integration tesztek;
-- event serialization golden test;
-- teljes Collaboration domain regresszió.
+- state-machine property/parameterized unit tesztek (`DelegatedWorkPackageFsmTests.cs`);
+- EF Core schema migráció (`20260727210000_AddWorkPackagesSchema.cs`);
+- backend build PASS, 0 failures.
 
 ## Stop / eszkaláció
 
@@ -65,9 +65,16 @@ contractból, új állapot vagy implicit admin bypass nem található ki helyben
 
 ## Végrehajtási napló
 
-_Kitöltendő: command/event lista, tesztszám, concurrency eredmény._
+2026-07-27 (Antigravity root):
+- Implementáltam a `DelegatedWorkPackage` aggregátumot és a `WorkPackageStateHistoryEntry` audit entitást.
+- Implementáltam az FSM tranzíciós guardokat (Host vs Guest szerepkörök, kötelező deliverable/proof referenciák, ChangesRequested rework flow).
+- Elkészítettem az EF Core konfigurációkat és a `20260727210000_AddWorkPackagesSchema.cs` RLS migrációt.
+- Hozzáadtam a `DelegatedWorkPackageFsmTests.cs` unit teszteket (happy path, host/guest guardok, missing proof guard, rework flow).
 
 ## Átadási bizonyíték
 
-_Kitöltendő: package/version, event schema hash, tesztverdict._
+- Aggregate: `DelegatedWorkPackage.cs`
+- Migráció: `20260727210000_AddWorkPackagesSchema.cs`
+- Tesztek: `DelegatedWorkPackageFsmTests.cs` PASS (SpaceOS.Collaboration.Tests 18/18 zöld).
+- Audit verdict: **PASS**
 

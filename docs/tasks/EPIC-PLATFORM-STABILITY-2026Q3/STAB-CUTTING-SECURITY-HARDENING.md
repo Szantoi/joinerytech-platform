@@ -37,7 +37,7 @@ adjon traversal/RCE/SSRF képességet, és runtime sérülékeny csomag ne marad
 
 Az alábbi négy task önálló, éles fájlhatárral és tesztkapuval rendelkezik:
 
-- [`STAB-CUTTING-EDGE-PROXY-INCIDENT`](STAB-CUTTING-EDGE-PROXY-INCIDENT.md) —
+- [`STAB-CUTTING-EDGE-PROXY-INCIDENT`](archive/STAB-CUTTING-EDGE-PROXY-INCIDENT.md) —
   azonnali Nginx containment + backend rollout;
 - [`STAB-CUTTING-PUBLIC-CAPABILITY`](STAB-CUTTING-PUBLIC-CAPABILITY.md) —
   read/action token, replay és digitális elfogadási evidence;
@@ -118,7 +118,7 @@ Második audit kiegészítés:
 - [x] API clean build 0 warning/0 error;
 - [x] teljes Cutting suite **1069/1069** zöld, 0 skipped;
 - [ ] hívó- és deploy-rollout stagingben bizonyított;
-- [ ] edge `/cutting/internal/*` kívülről upstream nélkül `404`;
+- [x] edge `/cutting/internal/*` kívülről upstream nélkül `404`;
 - [x] `X-Original-Host` spoof nem választhat tenantot;
 - [x] trusted proxy mögött a limiter valódi IP-t használ, közvetlen XFF spoof nélkül;
 - [ ] admin mutation explicit permissiont és valódi actor `sub` claimet kér;
@@ -185,8 +185,9 @@ Bizonyíték: fő célzott mátrix **76/76**, legacy tesztprojekt **9/9**, clean
 build **0 warning / 0 error**. Commit és deploy nem történt.
 
 Rollout-kapu változatlanul nyitott: az éles `ReverseProxy:*` és
-`TenantResolution:*` konfiguráció, az Nginx három forwarded-headerének felülírása,
-staging smoke, valamint a külön `/cutting/internal/*` P0 edge containment szükséges.
+`TenantResolution:*` konfiguráció, az Nginx három forwarded-headerének felülírása
+és staging smoke szükséges. A külön `/cutting/internal/*` edge P0 containment már
+lezárt és bizonyított; ez nem jelenti az új proxy/tenant szelet deployját.
 
 ## Kötelező parancsok
 

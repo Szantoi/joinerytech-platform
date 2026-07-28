@@ -3,7 +3,7 @@
 - **Epic:** EPIC-ERP-SEPARATION-2026Q3
 - **Szerep:** backend
 - **Prioritás:** P1
-- **Státusz:** blocked
+- **Státusz:** in_progress
 - **Függőség:** ERPSEP-02, STAB-RLS-PROOF
 - **Mutációs határ:** packaging/hosting contract, build props és egy kijelölt
   referenciamodul; üzleti domain változatlan
@@ -51,9 +51,28 @@ deploy csak root jóváhagyással.
 
 ## Végrehajtási napló
 
-_Az agent tölti ki._
+### 2026-07-27 — Codex: shared-host packaging előszlet
+
+- Az `STAB-RLS-PROOF` Testcontainers-bizonyíték elkészült, ezért az ADR-067 által
+  feloldott ERPSEP-05 packaging-sáv elkezdődött.
+- A `SpaceOS.Modules.Hosting` kapott explicit NuGet-metaadatot:
+  `PackageId=SpaceOS.Modules.Hosting`, preview verzió, leírás, repository és a
+  csomagba kerülő README. Ez a közös auth/tenant/RLS baseline; üzleti domainkód
+  nem került a hostingba.
+- Helyi, publikálás nélküli release-pack zöld:
+  `artifacts/packages/erpsep-05/SpaceOS.Modules.Hosting.0.1.0-preview.1.nupkg`.
+- Elkészült a shared-host bootstrap szerződés (`ISpaceOsModuleBootstrap` +
+  `ModuleDescriptor`), amely rögzíti a module ID-t, verziót és a migrations
+  assembly-t. A `MaintenanceModuleBootstrap` ezt ténylegesen fogyasztja:
+  modul-szolgáltatások és endpointok a modulból, auth és middleware-sorrend a
+  hostból jönnek.
+- A Maintenance `/health` válasza a közös szerződésen át a liveness státusz mellett
+  visszaadja a module ID-t, verziót és migrations assembly-t.
+- Ellenőrzés: `dotnet build src/maintenance/host/SpaceOS.Modules.Maintenance.Host.csproj`
+  0 warning/0 error; Hosting tesztkészlet 57/57 zöld.
+- A tiszta consumer restore/build smoke még hátra van. A host-csomag kiadását
+  GitHub Packages-re, token- vagy feed-konfigurációt ez a szelet nem végzett.
 
 ## Átadási bizonyíték
 
 _Pack/restore/build log, tesztek és dependency-lista._
-

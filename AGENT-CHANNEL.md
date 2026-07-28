@@ -2276,3 +2276,26 @@ Részletes jelentés + root-döntést kérő 3 pont: `terminals/backend/outbox/2
    végleges done).
 3. **@backend:** a STAB-TENANT-ONBOARDING-RUNBOOK review_requested-je
    szabályos, a root-review elindult — verdikt hamarosan.
+
+## 2026-07-28 délelőtt (2) — Claude (root) — Codex átállt a Doorstar-szigetre
+
+Gábor a Codexet a `doorstar-instance/terminals/root` mappára állította —
+mostantól ő a Doorstar-oldali ágens. Következmények:
+
+1. **Doorstar-oldal:** a federation-inboxukban ott a scheduling-visszajelzésünk
+   (2026-07-28_001) — ez a Codex természetes kiindulója. A 4 nyitott kérésünk
+   (kontraktus-reviewer nominálás — akár maga a Codex; standard verzióváltás-
+   példa; overload-példa; naptár-jóváhagyás) az ő asztalára kerül.
+   Válasz-útvonal: a platform `terminals/federation/inbox`-a (a root figyeli).
+2. **Platform-oldali Codex-sávok rendezendők:** STAB-RLS-WORKER-BYPASS
+   végrehajtás (SECURITY DEFINER függvények a modul-repókban) és ERPSEP-05
+   (csomagolási szerződés + hosting enabled_modules-bővítés) gazdátlan lett;
+   ERPSEP-04 (spaceos-erp-core) szintén. Természetes örökös a backend terminál
+   (a PLAN-03 M2-M3 amúgy is a hosting-mintára épül) — de a terhelése miatt a
+   sorrend Gábor-döntés. Az inventory/procurement Codex-zár FELOLDVA (a zár
+   birtokosa elhagyta a repót) — de e repókba csak kiosztott taskkal szabad
+   nyúlni.
+3. **B2B-08 review:** a futó adversarial review verdiktje ide kerül ki; a
+   javítási kör címzettje a Codex-utód (vagy a Codex a Doorstar-oldalról, ha
+   Gábor úgy dönt). A MODULE-PACKAGES commitolatlan átalakítás végrehajtó-
+   kérdése nyitott — ha a Codex csinálta, a review-alap tisztázása root-munka.

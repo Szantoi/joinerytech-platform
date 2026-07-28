@@ -256,3 +256,34 @@ elfogadja mint kontraktus-követelményt:
 
 Az M3 OpenAPI DTO-tervezésekor ezek kötelező mezők; a proposal-válasz a
 beadott provenance-t változatlanul tükrözi vissza (lineage-igazolás).
+
+---
+
+## M4 KONTRAKTUS-BEMENETEK (az M3-verdikt P2-i, 2026-07-28)
+
+Mind a négy **additív** — a kézbesített `1.0.0-preview.1` kontraktust nem töri.
+
+1. **Proposal kapacitás-ütközés mező.** Az ígéretlistára most kerül fel, a
+   tartalma M4-ben lesz számított. A `resources/{key}/overload` már ma megadja
+   ugyanezt az információt erőforrás-nézetben; a proposal-beli mező a *terv*
+   nézetből mutatja majd — a kettő ugyanabból a detektorból jöjjön, különben két
+   igazság lesz ugyanarról az ütközésről.
+2. **DependencyEdge partial-release küszöb a wire-on.** Ma a küszöb hatása
+   látszik (`earliestStartMinute` + `startSource` + warning), maga a küszöb nem.
+   A Doorstar így nem tudja megkülönböztetni a „0.5-nél engedtük el" és a
+   „0.8-nál engedtük el" esetet — M4-ben `releaseThresholdFraction` néven megy ki.
+3. **„Erőforrásprofil-revízió" fogalom tisztázása.** Jelen állás: a
+   naptár-revízió (`ResourceCalendarRevision`) hordozza a zónát, a kapacitást, a
+   kapacitás-politikát, a műszakmintát és a kivételeket — vagyis a profilt is.
+   **Javaslat: ne vezessünk be külön profil-fogalmat**, hanem az ADR-069 §6
+   szövegében nevezzük egységesen naptár-revíziónak. Külön aggregátum csak akkor
+   indokolt, ha olyan attribútum jelenik meg, ami nem időfüggő (pl. képesség-mátrix
+   az M4 solverhez) — akkor viszont az a `Resource` aggregátum megszületése is
+   egyben (lásd az M2 scope-döntést).
+4. **Művelet-„név" a wire-on — DÖNTÉS: marad a stabil kulcs, név nem megy ki.**
+   A wire `operationId`-t hordoz, ami stabil és a revízión belül egyedi. Emberi
+   nevet szándékosan nem küldünk: a név gazdája a **forráskatalógus** (Doorstar
+   oldalán), és ha itt is tárolnánk, két igazság lenne ugyanarról a megnevezésről,
+   ami az első átnevezésnél szétcsúszik. Ha a Doorstar mégis kér megjelenítendő
+   nevet, az M4-ben **additív `displayName`** lehet, kifejezetten a standardból
+   származtatva és „csak megjelenítésre" jelöléssel — nem azonosítóként.

@@ -2299,3 +2299,13 @@ mostantól ő a Doorstar-oldali ágens. Következmények:
    javítási kör címzettje a Codex-utód (vagy a Codex a Doorstar-oldalról, ha
    Gábor úgy dönt). A MODULE-PACKAGES commitolatlan átalakítás végrehajtó-
    kérdése nyitott — ha a Codex csinálta, a review-alap tisztázása root-munka.
+
+## 2026-07-28 délelőtt (3) — Claude (root) — STAB-TENANT-ONBOARDING-RUNBOOK: root-review APPROVED
+
+A backend terminál szállítása független review-n igazolva (34/34 Pester saját
+méréssel, dry-run írás-biztonság teljes greppel, fail-closed 4 negatív futással,
+secret-szivárgás-teszt). **Verdikt: APPROVED** — egyetlen kötelező egysoros
+P1-utókövetéssel (`-VerifyOnly -Offline` kizáró guard + teszt; részletek a
+backend inbox 004-ben, 5 opcionális P2-vel). A P1 commitja után áll done-ra az
+EPICS-ben. A két éles kapu (realm-apply, Kernel-SQL) helyesen Gábornál maradt.
+Ez a review_requested-protokoll mintapéldája volt — @mindenki: így kérünk reviewt.

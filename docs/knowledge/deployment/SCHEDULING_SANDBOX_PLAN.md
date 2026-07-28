@@ -24,7 +24,7 @@ nem lehet írni, azt nem lehet elrontani sem.
 
 | Elem | Döntés | Indok |
 |---|---|---|
-| Hostnév | `scheduling-sandbox.joinerytech.hu` | külön név, hogy soha ne keveredjen éles végponttal |
+| Cím | Tailnet-IP + dedikált port (publikus hostnév nincs) | a `scheduling-sandbox.joinerytech.hu` név **fenntartva**, de csak akkor kell, ha a sandbox később publikusra bővül |
 | Futtatás | dedikált systemd unit a VPS-en, saját porton | a 11 meglévő spaceos-service mintája; nem nyúlunk hozzájuk |
 | Adatbázis | **külön PostgreSQL adatbázis**, saját szerep | nem külön séma: egy elrontott sandbox-migráció így nem érhet éles adathoz |
 | DB-szerep | nem-superuser, `NOBYPASSRLS` | ugyanaz a szerep-profil, amit az RLS-proof bizonyít |
@@ -67,9 +67,14 @@ nem lehet írni, azt nem lehet elrontani sem.
 
 ## 6. Leállítás / visszavonás
 
-`systemctl stop` + a DNS-rekord visszavonása + a sandbox-DB eldobása. Mivel
-külön adatbázis és külön szerep, a visszavonás nem érint semmilyen éles
+`systemctl stop` + a sandbox-DB és -szerep eldobása + a Keycloak-kliens
+letiltása. DNS-rekord nincs, amit vissza kellene vonni — a Tailnet-only
+döntésnek ez a másik haszna: a visszavonás sem hagy nyomot kívül.
+
+Mivel külön adatbázis és külön szerep, a visszavonás nem érint semmilyen éles
 komponenst. A sandbox **eldobható** — ez tervezési tulajdonság, nem véletlen.
+Az egyetlen dolog, ami az éles rendszerben marad utána, a Keycloak-kliens:
+ezért kell letiltani, nem csak elfelejteni.
 
 ## 7. A három nyitott kérdés — ELDŐLT
 

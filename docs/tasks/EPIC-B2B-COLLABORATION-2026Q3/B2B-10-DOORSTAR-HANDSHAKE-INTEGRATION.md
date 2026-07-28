@@ -32,6 +32,24 @@ F0 három döntése: URL-prefix (javaslat: /api/collaboration/v1 — egyes szám
 a portál-konvencióval), dispute ki az MVP-ből (ADR-068 non-goal; a portálból
 kivezetendő), B2B-01 doksi host/guest javítás. + ÚJ (Gábor 2026-07-28, projekt→epicek→műveletek döntés nyomán): a work-package horgony SZINTJE — csak ProjectRef (ADR-068 §13 mai alakja) vagy ProjectRef+EpicRef (a scheduling kétszintű mintája szerint) — az F0-ban döntendő.
 
+## F0 DÖNTÉSEK RÖGZÍTVE (root, 2026-07-28, Gábor „folytasd" felhatalmazásával)
+
+1. **URL-prefix: `/api/collaboration/v1`** (egyes szám, verziózott — a portál
+   és a scheduling `/api/scheduling/v1` konvenciójával egységes). Az ADR-068
+   §13 `/api/collaborations/…` alakja ezzel felülírva — dokumentált eltérés.
+2. **Dispute KI az MVP-ből** (az ADR-068 explicit non-goal): a `Disputed`
+   enum-érték marad (wire-kompatibilitás), de átmenet és endpoint nem épül rá;
+   a portál-modul újraépítésekor a /dispute hívások kivezetendők.
+3. **B2B-01 doksi host/guest javítva** (a §3.2 mátrix 5 sora + korrekciós
+   záradék a doksi végén): a HOST ajánl, a GUEST fogad el és hajt végre.
+4. **Work-package horgony: `KernelWorkScope` újrahasznosítva** — ProjectRef +
+   EpicRef kötelező, TaskRef opcionális (a kézfogás tipikusan epic-szintű
+   munkát delegál; task-szintre bontásnál kitöltendő). Konzisztens a
+   scheduling háromszintű horgonyával; a guest a scope-ot opak azonosítóként
+   kapja, feloldani nem tudja és nem is kell neki.
+
+Ezzel az F0 KÉSZ — az F1 (application-réteg) kiadható.
+
 ## Eredeti fázis-vázlat (történeti)
 
 1. **F0 — B2B-RE-AUDIT (fut):** ground truth a B2B-01..07 valós állapotáról;

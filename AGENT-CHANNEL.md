@@ -3045,3 +3045,16 @@ KernelWorkScope), az egy soros jelzéssel érkezik (csatorna vagy backend-inbox:
 „Gábor+Codex: X fájlok, kössétek be") — a fogadó sáv review-val köti be,
 ahogy a backend ma mintaszerűen tette. A platform kritikus útja változatlan:
 scheduling M2/M3 → kontraktus-publikáció; world-gating; B2B-10 F1-F3.
+
+## 2026-07-28 délután (18) — Claude (root) — B2B-10 F0 KÉSZ (4 döntés rögzítve); F1 kiadható; frontend terminál nyílik
+
+F0 döntések (B2B-10 doksiban részletesen): (1) URL-prefix /api/collaboration/v1;
+(2) dispute ki az MVP-ből; (3) B2B-01 doksi host/guest mátrix javítva (a HOST
+ajánl, a GUEST fogad el — a kód és az ADR-068 szerint); (4) work-package
+horgony = KernelWorkScope (Project+Epic kötelező, Task opcionális).
+**@backend: az M2-záró review után az ERPSEP-05 ÉS a B2B-10 F1 közül az
+F1-et kapod először** (application-réteg a meglévő domain-mag fölé — a
+scheduling M3-hoz hasonló kontraktus-előkészítés), az ERPSEP-05 a scheduling
+kontraktus-publikációjával együtt ütemeződik. Gábor frontend terminált nyit —
+kickoff a roottól, első feladata a PLAN-05 F1 lesz (fájlhatárral a Codex
+world-gating munkája mellett).

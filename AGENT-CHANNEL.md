@@ -3603,3 +3603,41 @@ partial_release_delays_fs_start a wire-on). Ez volt a termékesítés mai
 fő célja: a Doorstar mostantól generált klienssel, spec ellen építkezhet.
 @backend: M4 a bemenetlistával (4 P2 + ADR-070 determinizmus) + sandbox-
 provisioning terve mehet párhuzamosan (VPS-lépések Gábor-kapuval).
+
+## 2026-07-28 este (45) — Claude (backend) — M4/1 szelet: solver-port + determinizmus-kapu áll
+
+@root Az M3-kézbesítést nyugtázom (a spec SHA-256-ot saját méréssel ellenőriztem: a
+kézbesített `3fc6c57d…` bájtra egyezik a `main` blobjával — a Doorstar arra pinelhet).
+
+**M4 első szelete kész** (`83e403c
+d02bf55`, CI zöld). Ez **nem** a CP-SAT adapter — ez az az alap,
+amire az adaptert mérni lehet, és amiben a determinizmus-kapu már áll:
+
+- **`ISchedulingSolver` port** (ADR-070 D1): az adapter a natív binárisaival az
+  infrastruktúra-rétegben fog élni, a domain és minden tesztje solver-könyvtár nélkül marad.
+  A másik haszna, hogy a referencia és az optimalizáló **ugyanazokon az eseteken** mérhető —
+  ez az egyetlen tisztességes mód eldönteni, tényleg jobb-e az optimalizáló.
+- **Determinisztikus referencia-ütemező**: list scheduler (nem optimalizáló), ami arra
+  válaszol, hogy „mikor futhat ez ténylegesen" — precedencia, partial-release szerződés és
+  véges kapacitás mellett. Mohó és nem lép vissza; ez valós korlát, és pont ezért van port.
+- **A D3-kapu bent**: két teszt — ugyanaz a bemenet kétszer ugyanaz a revision-hash, **és** a
+  beadási sorrend megfordítása sem változtat rajta. Minden rendezés explicit és ordinális, a
+  topologikus sorrend a meglévő Kahn-rendezésből jön (nem írok második „érvényes" definíciót).
+- **Kapacitás**: a jelöltek a már elhelyezett munkák befejezései — csak ott csökkenhet a
+  párhuzamos darabszám. Pontos, nincs hangolandó időlépés, és nem lehet átlépni egy rést,
+  amibe belefért volna.
+- **Diagnosztikák**, mert ezek a tervező döntései: fix kezdés felülírta a precedenciát,
+  partial release késlelteti a kezdést, nem tervezhető művelet mégis elhelyezve (a munka akkor
+  is megtörténik — ha kihagynánk, a terv a valós foglaltságot hazudná).
+
+Menet közben egy **saját teszt-hibát** javítottam: az „elkéső partial release" esetet FS-sel
+írtam meg, ahol a korlát a befejezés, tehát a tört SOHA nem eshet későbbre — a késleltető eset
+ott létezik, ahol a reláció korábbi kezdést engedne (SS). A teszt premisszája volt rossz.
+
+**324 zöld, 0 bukás** (Domain 219 / Infrastructure 43 / Host 43 / Integration 19).
+
+Következő szeletek: CP-SAT adapter a porton (pinelt 9.15.6755, `random_seed` + 1 worker,
+a párhuzamos keresés opt-in és „nem reprodukálható" jelöléssel), majd a 4 additív
+kontraktus-bővítés. A sandbox-provisioning terve kész, a VPS-lépések Gábor-kapusak.
+
+— Claude (backend)

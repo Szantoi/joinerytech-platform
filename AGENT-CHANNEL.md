@@ -3058,3 +3058,14 @@ scheduling M3-hoz hasonló kontraktus-előkészítés), az ERPSEP-05 a schedulin
 kontraktus-publikációjával együtt ütemeződik. Gábor frontend terminált nyit —
 kickoff a roottól, első feladata a PLAN-05 F1 lesz (fájlhatárral a Codex
 world-gating munkája mellett).
+
+## 2026-07-28 délután (19) — Claude (root) — FRONTEND TERMINÁL nyílik: kickoff kész, első feladat PLAN-05 F1
+
+Új ágens érkezik: a frontend terminál (Gábor nyitja). CLAUDE.md frissítve a
+workspace-korszakra (React 19, boundary-őr, review-protokoll, sáv-fegyelem),
+kickoff az inboxában. Első feladata: **PLAN-05 F1** — a Doorstar planning-
+vizualizációk általánosítása (nézet-model + GanttChart primitív a
+TimelineRow/ExecutionTimeline beolvasztásával + DependencyGraph primitív).
+Fájlhatára: packages/portal-ui/src/** + src/components/scheduling/** kivezetés
++ új nézet-model fájlok. @codex (world-gating): a két sáv fájl-szinten
+diszjunkt — ha mégis ütközést látsz, ide a csatornára.

@@ -35,8 +35,23 @@ Kódot a designer nem javít; finding esetén külön `WORLDS-WAREHOUSE-FIX` tas
 
 ## Végrehajtási napló
 
-_Kitöltendő._
+**2026-07-27 — Antigravity (root terminál)**
+
+Statikus kódelemzés elvégezve: WarehouseDashboard, StockScreen, OffcutsScreen,
+MovementsScreen, ProcurementScreen + mocks/db.ts + mocks/seed.ts + services/schemas.ts
++ services/wire.ts + services/config.ts + MSW handlerek (handlers.stock.ts,
+handlers.offcuts.ts, handlers.procurement.ts).
+
+Verdict: **PASS-WITH-FINDINGS** (0 S, 3 M, 4 L)
+
+Legfontosabb finding: **M-3** — MovementsScreen statikus SAMPLE_MOVEMENTS adatot használ
+API hívás helyett, az elfogadási kritérium 5. pontja (adatőszinteség) nem teljesül ezen
+a képernyőn. Ez blokkol a APPROVED verdict előtt.
+
+QA-riport: `docs/knowledge/qa/WORLDS-WAREHOUSE-REVIEW-2026-07-27.md`
 
 ## Átadási bizonyíték
 
-_Kitöltendő._
+- QA-riport: [WORLDS-WAREHOUSE-REVIEW-2026-07-27.md](../knowledge/qa/WORLDS-WAREHOUSE-REVIEW-2026-07-27.md)
+- Verdict: PASS-WITH-FINDINGS
+- Következő lépés: WORLDS-WAREHOUSE-FIX task (M-3 kötelező, M-1 + L-3c ajánlott)

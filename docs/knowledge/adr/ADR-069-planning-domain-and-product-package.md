@@ -1,7 +1,14 @@
 # ADR-069: Planning — ütemezés-domain, termékcsomag és API-kontraktus
 
-- **Státusz:** **JAVASOLT (Proposed) — Gábor döntésére vár** (a döntési pontok
-  tételesen a 12. fejezetben, mindegyikhez ajánlással).
+- **Státusz:** **ELFOGADVA (Accepted) — 2026-07-28 (Gábor).** Mind a 7 döntési
+  pont (G1-G7, 12. fejezet) az ajánlás szerint elfogadva, PLUSZ névdöntés
+  (G8): a mag ModuleId-ja **`spaceos.scheduling`** — a „planning" túl általános;
+  a scheduling pontosan fedi a véges kapacitású műveletütemezést, amire a
+  Doorstarnak szüksége van (rétegnevek követik: `joinerytech.scheduling-
+  standards`, `doorstar.scheduling-import`; repo: `src/spaceos-modules-
+  scheduling`; séma: `scheduling`; API: `/api/scheduling/v1`). A portál-VILÁG
+  neve ettől függetlenül maradhat „Tervezés/Planning" (world ≠ module). Az
+  epic (EPIC-PRODUCTION-PLANNING-2026Q3) és a PLAN-* task-ID-k nem változnak.
 - **Dátum:** 2026-07-28
 - **Szerep:** architect (root) · **Epic:** EPIC-PRODUCTION-PLANNING-2026Q3 · **Task:** PLAN-02
 - **Függőség:** `PLAN-01 = done` — minden képesség-állítás forrása a
@@ -36,7 +43,7 @@ kontraktus-rezsim és a bevált FSM/snapshot/idempotencia-minták.
 
 ## 2. D1 — Ownership és fizikai hely: **O-A, új önálló modul** (ajánlott)
 
-Új `src/spaceos-modules-planning` repo/modul, saját host, saját `planning`
+Új `src/spaceos-modules-scheduling` repo/modul, saját host, saját `scheduling`
 Postgres-séma, saját OpenAPI — az ADR-068 O3 (Collaboration) precedens
 megismétlése. Az O-B (cutting-általánosítás) és O-C (production-bővítés)
 elvetésének indokai: audit §2.2 (a cutting élő, hardening alatt álló,
@@ -52,9 +59,9 @@ fogyasztó nélküli csontváz).
 
 | Réteg | ModuleId | Tartalom |
 |---|---|---|
-| Mag | `spaceos.planning` | naptárak (műszak/szünet/kivétel), finite-capacity scheduler, FS/SS/FF/SF+lag+partial release+fix-override, elapsed↔labour szétválasztás, plan-revíziók + proposal/shadow/publish, erőforrás-idő foglalás, standard-import MECHANIZMUS (nyílt qualifier-kulcsok), audit-események |
-| Iparági | `joinerytech.planning-standards` | faipari művelet-taxonómia és standard-TARTALOM (a production 6-lépéses taxonómiája ide menekítve), cutting/joinery-integrációs adapterek |
-| Instance | `doorstar.planning-import` (reserved) | Excel-import adapter (`GyV-*` kulcsok, sourceLookup-qualifierek, sha256-provenance), naptár-jóváhagyás Doorstar-oldala, legacy-vektor karbantartás |
+| Mag | `spaceos.scheduling` | naptárak (műszak/szünet/kivétel), finite-capacity scheduler, FS/SS/FF/SF+lag+partial release+fix-override, elapsed↔labour szétválasztás, plan-revíziók + proposal/shadow/publish, erőforrás-idő foglalás, standard-import MECHANIZMUS (nyílt qualifier-kulcsok), audit-események |
+| Iparági | `joinerytech.scheduling-standards` | faipari művelet-taxonómia és standard-TARTALOM (a production 6-lépéses taxonómiája ide menekítve), cutting/joinery-integrációs adapterek |
+| Instance | `doorstar.scheduling-import` (reserved) | Excel-import adapter (`GyV-*` kulcsok, sourceLookup-qualifierek, sha256-provenance), naptár-jóváhagyás Doorstar-oldala, legacy-vektor karbantartás |
 
 Szigorú szabály: a magban egyetlen faipari szó sem lehet (ADR-067 regex-őr).
 A domain-szintű product/component/finish minősítő-KULCSOK a `joinerytech.*`
@@ -62,9 +69,9 @@ rétegben normalizálódnak; a mag csak a kulcs-érték mechanizmust adja.
 
 ## 4. D3 — Domain-modell: aggregátumok és életciklus
 
-**Aggregátumok** (a `planning` sémában, mind tenant-scoped + FORCE RLS):
+**Aggregátumok** (a `scheduling` sémában, mind tenant-scoped + FORCE RLS):
 
-- `PlanningRun` + `PlanRevision` — egy futtatás és annak immutábilis
+- `ScheduleRun` + `ScheduleRevision` — egy futtatás és annak immutábilis
   revízió-lánca (revision-hash az ADR-068 §8 terms-revision mintájára).
 - `OperationPlan` — ütemezett művelet: művelet-azonosító, név, állomás/erőforrás,
   tervezett kezdés/befejezés, státusz, figyelmeztetések, kapacitás-ütközések.
@@ -80,7 +87,7 @@ rétegben normalizálódnak; a mag csak a kulcs-érték mechanizmust adja.
   (unitSeconds/unitMinutes + workforce + dep-default + qualifier-készlet),
   import-karantén állapotokkal (a Doorstar preflight 9+11 karantén-oka
   mint referencia-szemantika).
-- Append-only `PlanningAuditLog` + transactional outbox.
+- Append-only `SchedulingAuditLog` + transactional outbox.
 
 **Terv-életciklus FSM:** `Proposal → Shadow → Published → Superseded`
 (+ `Discarded`). A shadow-számítás az aktív publikált tervet nem érinti;
@@ -109,7 +116,7 @@ A 13 input-pack vektor **hash-pinnelt C# kompatibilitási CI-kapu** lesz (R6, S)
 
 ## 6. D5 — API-kontraktus (OpenAPI 3.1) — erőforrás-vázlat
 
-Bázis: `/api/planning/v1`. Read-only 1. fázis:
+Bázis: `/api/scheduling/v1`. Read-only 1. fázis:
 
 | Endpoint | Tartalom |
 |---|---|
@@ -125,7 +132,7 @@ Bázis: `/api/planning/v1`. Read-only 1. fázis:
 (Idempotency-Key header + kulcstábla), a jóváhagyások FSM-esek.
 
 **Kontraktus-rezsim:** semver + OpenAPI-fájl hash a manifestben
-(spaceos-module-v1.schema.json, `id: spaceos.planning`), GitHub Packages
+(spaceos-module-v1.schema.json, `id: spaceos.scheduling`), GitHub Packages
 publikáció (ADR-067). **Generált-kliens kapu:** a CI a spec-ből TS-klienst
 generál (openapi-typescript/orval), a generálás hibája = spec-hiba, build-bukás;
 breaking change csak major verzióval. Hibaformátum: RFC 9457 ProblemDetails
@@ -136,7 +143,7 @@ breaking change csak major verzióval. Hibaformátum: RFC 9457 ProblemDetails
 
 1. **Hosting-minta kötelező** (audit §5.1): `AddSpaceOsModuleAuth` +
    `AddSpaceOsModuleTenancy` + GUC-interceptor + `RlsMigrationSql` FORCE RLS +
-   EF query filter; `ModuleDescriptor.moduleId = spaceos.planning`.
+   EF query filter; `ModuleDescriptor.moduleId = spaceos.scheduling`.
 - 2. **Entitled/enabled gate, fail-closed, KÉT lépcsőben:** (a) MOST: a Planning
    endpoint-filterként a JWT `enabled_modules` claimet ellenőrzi a saját
    ModuleId-jára — hiányzó/üres claim → 403; ehhez a hosting `TenantClaimEntry`
@@ -145,7 +152,7 @@ breaking change csak major verzióval. Hibaformátum: RFC 9457 ProblemDetails
    (b) KÉSŐBB: Kernel `Tenant.EntitledModules` + Instance Context API mint
    hitelesített forrás (stale-claim threat ellen).
 3. **RLS-proof gate-artefakt:** `RlsFixtures`/`NonSuperuserRlsFixture` +
-   QA-minta teszt-osztály a `planning` séma MINDEN tábláján (4 fact: role,
+   QA-minta teszt-osztály a `scheduling` séma MINDEN tábláján (4 fact: role,
    FORCE RLS, A/B/üres-GUC izoláció, gyerek-tábla EXISTS) — a publikációs
    csomag része a manifest+OpenAPI+hash mellett.
 4. **Worker-szabály:** minden Planning-háttérjob (shadow-számítás,
@@ -155,7 +162,7 @@ breaking change csak major verzióval. Hibaformátum: RFC 9457 ProblemDetails
 ## 8. D7 — A `spaceos-modules-production` sorsa: **P-A, retire + taxonómia-mentés** (ajánlott)
 
 A modul nem fordul, tenant-vak, fogyasztója nincs (audit §1.2) — formális
-retire; a 6-lépéses `WorkflowStepName` taxonómia a `joinerytech.planning-
+retire; a 6-lépéses `WorkflowStepName` taxonómia a `joinerytech.scheduling-
 standards` rétegbe menekül. A gyártás-KÖVETÉS (checklist/fotó-proof) igénye
 külön termék-kérdés — ha később kell, az ADR-066 2. típusú `WorkItemRef`-fel
 épül újra (P-B tartalék), és a lépés-TÉNY időbélyegeket a Planning variancia-
@@ -172,8 +179,8 @@ tervezővé hizlalása.
 ## 10. D9 — Sandbox-környezet (javaslat)
 
 - Cél: **stabil URL** a Doorstar TS-kliens fejlesztéséhez. Javaslat:
-  `https://planning-sandbox.joinerytech.hu` (VPS, külön systemd-service,
-  `planning_sandbox` DB), seedelt demo-tenanttal és a 13 vektor fixture-ével.
+  `https://scheduling-sandbox.joinerytech.hu` (VPS, külön systemd-service,
+  `scheduling_sandbox` DB), seedelt demo-tenanttal és a 13 vektor fixture-ével.
 - Auth: a meglévő Keycloak realm külön sandbox-klienssel; **előfeltétel a
   STAB-KEYCLOAK-POSTGRES-MIGRATION** (a H2-s éles Keycloak sandbox-terhelést
   se kapjon) és a STAB-TENANT-ONBOARDING-RUNBOOK scriptje (a sandbox-tenant
@@ -200,7 +207,7 @@ tervezővé hizlalása.
 | G2 | Namespace-hármas a 3. fejezet szerint | **igen** |
 | G3 | Production-modul: P-A retire+mentés / P-B execution-tracker újraépítés | **P-A** (P-B külön termék-döntésként later) |
 | G4 | `CapacityReservation` név + Inventory-allowlist bővítés ha anyagfoglalás kell | **igen** |
-| G5 | Sandbox: planning-sandbox.joinerytech.hu a 10. fejezet előfeltételeivel | **igen** |
+| G5 | Sandbox: scheduling-sandbox.joinerytech.hu a 10. fejezet előfeltételeivel | **igen** |
 | G6 | Timezone-policy (UTC tárolás + tenant-IANA naptár) | **igen** |
 | G7 | A PLAN-03 M1-M5 fázisolás a backend terminálnak | **igen** |
 

@@ -2149,5 +2149,50 @@ cutting-viszony, sandbox: planning-sandbox.joinerytech.hu.
 - **@backend:** a fő sávod (PLAN-03, M1-M5 fázisolás az ADR 11. fejezetében)
   az ADR elfogadása után nyílik; addig a STAB-TENANT-ONBOARDING-RUNBOOK a
   feladatod (inbox-kickoff szerint).
-- Doorstar felé (Gábor útján) a nyitott kérések változatlanok: reviewer-
-  nominálás, standard verzióváltás-példa, overload-példa, naptár-jóváhagyás.
+
+---
+
+## 2026-07-28 09:30 — Codex (Antigravity)
+
+@root @gabor **`MODULE-PACKAGES` (Frontend npm workspace & ERP-modulcsomagok) FIZIKAI FÁZIS KÉSZ ÉS TISZTA ✅**
+
+Fizikai szerkezet és migráció a `packages/` alá sikeresen lefutott:
+1. **Workspace-váz (`workspaces: ["packages/*"]`)**: `pnpm-lock.yaml` törölve, `package-lock.json` frissítve.
+2. **Közös csomagok**:
+   - `@spaceos/portal-ui` (`packages/portal-ui`): UI elemek, theme, utils, statusTones.
+   - `@spaceos/portal-core` (`packages/portal-core`): apiClient, dateUtils, fsmGuards, offlineRetryService, AuthContext/useAuth/RequireAuth, dataMode. (az MSW browser.ts nem-top-level exportként elválasztva az SSR/Node tesztkörnyezet védelmében).
+3. **ERP-modulcsomagok (`@spaceos/module-*`)**:
+   - `@spaceos/module-crm`
+   - `@spaceos/module-controlling`
+   - `@spaceos/module-hr`
+   - `@spaceos/module-maintenance`
+   - `@spaceos/module-qa`
+   - `@spaceos/module-ehs` (subpath export: `@spaceos/module-ehs/wizard`)
+   - `@spaceos/module-dms`
+4. **Világ-csomagok (`@joinerytech/world-*`)**:
+   - `@joinerytech/world-production`
+   - `@joinerytech/world-warehouse`
+5. **Verifikáció & Kapuk**:
+   - `node scripts/check-erp-module-boundaries.mjs`: **0 missing entrypoints, 0 parse errors, 0 cross module imports, 0 external relative imports, 0 regressions!**
+   - `npm run build` (`tsc -b && vite build`): **PASS (0 hiba / 0 warning)**.
+   - `npm run test:pr`: **PASS, zöld suite**.
+
+Folytatom a következő prioritással: **`B2B-08`** (SpaceOS Collaboration portálmodul).
+
+
+## 2026-07-28 délután (2) — Claude (root) — ADR-069 ELFOGADVA: a modul neve `spaceos.scheduling`; PLAN-03 kiírva
+
+1. **ADR-069 ACCEPTED (Gábor):** G1-G7 az ajánlás szerint + G8 névdöntés —
+   a „planning" túl általános, a mag ModuleId-ja **`spaceos.scheduling`**
+   (rétegek: `joinerytech.scheduling-standards`, `doorstar.scheduling-import`;
+   repo: `src/spaceos-modules-scheduling`; séma: `scheduling`; API:
+   `/api/scheduling/v1`). A portál-VILÁG neve maradhat „Tervezés" (world≠module).
+   Az epic- és PLAN-* task-ID-k nem változnak.
+2. **PLAN-02 done, PLAN-03 kiírva a backend terminálnak** (M1-M5; M1 =
+   kalkulációs mag + 13-vektor hash-pinnelt CI-kapu, M3 = Doorstar-kontraktus-
+   kapu). Új GitHub-repo (spaceos-modules-scheduling) létrehozása Gábor-kapu.
+3. **Doorstar-visszajelzés csomag** összeállítva (root outbox), Gábor
+   továbbítja: döntések + M3-ütemezés + a 4 nyitott kérés (reviewer,
+   verzióváltás-példa, overload-példa, naptár-jóváhagyás).
+4. @codex: a hosting enabled_modules-bővítés határfelülete változatlan, csak
+   a fogyasztó neve lett `spaceos.scheduling`.

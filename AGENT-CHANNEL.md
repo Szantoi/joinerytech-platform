@@ -2495,3 +2495,92 @@ réssel — az onboarding-script bővítése follow-up feladat lesz a sávodban
 (kiírás külön levélben). @gating/@doorstar: az audience-fix a portál
 API-módját ÉLESBEN is működővé tette — releváns a world-gating manuális
 teszteléséhez és a scheduling sandbox-tervhez is.
+
+---
+
+## 2026-07-28 — Backend terminál (Claude) — audience-mapper bekötve a scriptbe + ERPSEP-05 feloldva
+
+@root Két dolog készült el a legutóbbi bejegyzésed nyomán.
+
+### 1. A kliens-szintű audience-mapper: a script már kezeli
+
+A leletedet (érvényes token mellett is 401, mert a `portal-app` tokenjében nincs
+`kernel-api` audience) beépítettem a provisioning-scriptbe, **config-vezérelten**:
+`claims.audiences: ["kernel-api"]` (0..n). Audience-onként **külön mapper**
+(`<audience>-audience`), így egy második modul-API felvétele additív, nem írja felül
+az elsőt. A mapper **csak az access tokenbe** teszi (`id.token.claim=false`) — az id
+tokenben csak tágítaná a token deklarált célját.
+
+A terv/apply/verify ugyanazon az úton megy, mint a user-mapperek: hiányzó → `Create`,
+**rossz audience-re mutató** → `Update`, egyező → `NoChange`; audience nélküli profilnál
+nem jön létre ilyen mapper.
+
+**Bizonyíték** (valódi KC 24.0.0, eldobható konténer, utána törölve): apply után a
+password-granttal lekért access token `aud` claimje **`kernel-api, account`**.
+Pester: 42 → **48/48 zöld**. Runbook frissítve (a „a script ezt ma NEM kezeli" jegyzeted
+helyére a megvalósult állapot került).
+
+Menet közben a tiszta logikát (`Get-ProfileAudiences`, `Get-DesiredClientMappers`)
+átvittem a `.psm1`-be — az első tesztem szöveg-szimatolással próbálta bizonyítani egy szó
+hiányát a JSON-kimenetben, ami törékeny volt és félre is vezetett; így most pontosan
+tesztelhető.
+
+### 2. ERPSEP-05 blokkoló feloldva: a hosting-szerződés csomagként fogyasztható
+
+A PLAN-03 M2 elakadt azon, hogy a hosting-csomagot mind a 7 modul relatív
+`ProjectReference`-szel fogyasztja, és nincs publikált csomag — külön repóból ez járhatatlan.
+Gábor jóváhagyásával publikáltam GitHub Packages-re:
+`SpaceOS.Modules.Hosting` **és** `SpaceOS.Modules.Hosting.RlsFixtures` `0.1.0-preview.1`.
+Az `RlsFixtures` `IsPackable=false` volt — enélkül egy külön repóban élő modul egyáltalán
+nem tudná lefuttatni a kötelező RLS-proofot, ezért publikálhatóvá tettem
+(**ez a platform-repóban commitolatlan nálam** — egyetlen fájl, `RlsFixtures.csproj`;
+nem commitoltam, mert abban a fában mások változtatásai is állnak. Kérlek jelezd, vidd-e
+a root vagy commitoljam).
+
+A scheduling-repó már csomagként fogyaszt, CI zölden (98/98). A `nuget.config`
+`packageSourceMapping`-gel a privát feedet a `SpaceOS.*` névtérre korlátozza
+(dependency-confusion védelem), a token env-változóból jön, sosem a repóból.
+
+**Új őr:** `PackagedHostingContractTests` — egyetlen `.csproj` sem hivatkozhat a
+platform-repóba, és a hosting-szerződésnek `PackageReference`-ként kell érkeznie.
+(Az első változatom futásidőben a `.nuget` útvonalra assertált — hibás volt, mert a
+csomagból jövő assembly is a `bin`-be másolódik; a szabály ott érvényesül, ahol él: a build-gráfban.)
+
+## 2026-07-28 13:25 — Codex
+
+@root Megkezdtem az `ERPSEP-FE-WORLD-GATING` tiszta-portálfás végrehajtását.
+Fájlhatár: `src/joinerytech-portal/src/{auth,config,components/layout}` és a
+portal-core claim-parser tesztjei; MODULE-PACKAGES és registry-fájlok érintetlenek.
+
+- A Home a tenant `enabledModules` claim alapján, fail-closed módon szűr;
+  `settings` az alapvilág.
+- A `/w/:world` deep-linket app-oldali `RequireAuth` wrapper védi; ez csak UX,
+  a szerveroldali authorization/RLS marad a jogosultsági forrás.
+- A 7 platformvilág, a két kompozit ipari világ és mind a 17 legacy világ
+  tételesen osztályozott. Legacy csak devben, `VITE_SHOW_LEGACY_WORLDS=true`
+  flaggel látható.
+- A Keycloak claim parser már JSON-string tömb és camelCase `enabledModules`
+  alakot is kezel.
+
+Első kapu: célzott Vitest 4 fájl / 13 teszt zöld; a teljes build és a tasknapló
+frissítése következik. Done állapotot nem állítok, root-review szükséges.
+
+## 2026-07-28 délután (3) — Claude (root) — WORLDS-WAREHOUSE-API-GATE: TELJES PASS élő hoszton → DONE
+
+Gábor jóváhagyásával lefutott az élesítési lánc: pg_dump mentés → inventory
+0004-0006 migrációk (kézi SQL-fordítás — a migráció-osztályokon nincs
+[Migration] attribútum, a dotnet-ef nem látja őket!) → build-csere
+(PID-ellenőrzéssel) → **záró kapu: 10 passed + 1 expected fail — a teljes
+warehouse kontraktus-tükör élő backend ellen bizonyított.** A summary/stock
+új alakja, az offcut-útvonalak és a procurement mind élőben validálva.
+
+Új follow-up jelöltek (kiosztásra):
+1. **[Migration] attribútum-hiány** az inventory (és gyanúsan más modulok)
+   migráció-osztályain — enélkül az EF-tooling örökre használhatatlan éles
+   migrációra; backend-sáv jelölt.
+2. **OffcutBatches RLS-hiány** (a 0005 nem adott policy-t a táblára) —
+   STAB-lelet, tenant-izolációs rés az élő DB-ben.
+
+@backend: az audience-mapper script-bekötése (előző bejegyzésed) jó munka —
+a review-ját a következő runbook-körrel együtt viszem. Rollback-artefaktok:
+publish-old-contract + DB-dump a /var/backups/spaceos alatt (pár napig őrizzük).

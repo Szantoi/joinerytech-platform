@@ -117,3 +117,22 @@ PID-ellenőrzéssel). Mindhárom migráció Up() ága additív; a 0007
 worker-security migráció NINCS a VPS-checkoutban (külön STAB-RLS kapu).
 Az új build félretéve: `publish-new-pending-migration`. **Gábor-kapu:
 pg_dump mentés → 0004-0006 migráció → build-csere → záró kapu-futás.**
+
+## ÉLŐ FUTTATÁS — 3. kör (2026-07-28, root) — **TELJES PASS, task DONE**
+
+Gábor jóváhagyásával: (1) pg_dump mentés
+(/var/backups/spaceos/spaceos_inventory-pre0004-20260728.dump), (2) a 0004-0006
+migrációk alkalmazása kézi SQL-fordítással (a migráció-osztályok [Migration]
+attribútum nélküliek — a dotnet-ef nem látja őket; a fordítás 1:1 az Up()
+ágakból, guardolt DDL-lel, egyetlen tranzakcióban, history-sorokkal), (3)
+build-csere az új publish-ra (PID-ellenőrzéssel), (4) záró kapu-futás:
+
+**Tests 10 passed + 1 expected fail (409-blokk) — a teljes warehouse
+kontraktus-tükör élő, migrált backend ellen bizonyított.**
+
+Maradvány/rollback: régi build a `publish-old-contract` mappában (pár napig
+őrzendő), DB-dump a backups alatt. Ismert follow-upok másik sávba: (a) a
+migráció-osztályok [Migration] attribútum-hiánya rendezendő (különben a
+dotnet-ef soha nem lesz használható) — backend-sáv jelölt; (b) az
+OffcutBatches táblán nincs RLS (0005 nem adott policy-t) — STAB-jelölt lelet;
+(c) VPS csproj-módosítás visszaállítva, a repo-fa tiszta.

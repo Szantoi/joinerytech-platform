@@ -40,9 +40,11 @@
       minden művelet átnyúlhat a nem-munkaidőn, a duration munkaidőben értendő.
 - [x] **Az M4/2 kötelező utókövetése** (`5957459`): az ütköző fix kezdéseket a **validator**
       utasítja vissza, mindkét stratégia előtt (Gábor döntése; 6 validator-teszt + conformance).
-- [ ] **Push + CI** a `5957459` és `b02616b` commitokra — Gábor engedélyére vár.
-- [ ] **Üzleti döntésre vár:** a **lag mértékegysége** (munkaperc vs. valós eltelt idő —
-      száradás/kötés). Javaslat: additív `lagKind`, alapérték a mai `working`.
+- [x] **Push + CI** a `5957459` és `b02616b` commitokra: run `30428183130` **zöld, 392 teszt**.
+- [x] **`lagKind`** (`d63f317`) — Gábor döntése: additív mező, alapérték `working`. A valós
+      idejű lagot **egyeztetés** oldja meg (solve → dátumozás → naptár-átváltás → újra),
+      mert a naptár-mentes solver nem tudja kifejezni; nem konvergálás esetén jelez.
+- [ ] **Push + CI** a `d63f317`-re — Gábor engedélyére vár.
 - [ ] **ADR-070 kiegészítő jegyzet**: a külön solver-assembly indoklása (root kérte az
       APPROVED-ban, csproj-mozgatás helyett).
 - [ ] A solver **DI-bekötése** a run-folyamatba (a Host ma egyik stratégiát sem regisztrálja).

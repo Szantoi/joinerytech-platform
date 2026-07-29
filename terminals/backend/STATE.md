@@ -24,10 +24,11 @@ Aktuális `main`: `0efc329`, **CI zöld** (run `30426082492`, Gábor engedélyé
 
 ## Mérés (2026-07-29 délelőtt)
 
-**Lokálisan (`b02616b`): 373 zöld** — Domain **245** / **Solver.OrTools 26** /
-**Infrastructure 59** / Host 43. Build 0 warning, szótár-őr OK.
-**Az utolsó CI-mérés a `0efc329`-en: 369 zöld** (a fentiek + Integration 19), `--locked-mode`
-zöld, generált TS-kliens 558 sor. **A `5957459` és `b02616b` még nincs pusholva.**
+**CI zöld a `b02616b`-n: 392 teszt** (run `30428183130`) — Domain 245 / Solver.OrTools 26 /
+Infrastructure 59 / Host 43 / **Integration 19**. Szótár-őr OK, generált TS-kliens 558 sor.
+
+**Lokálisan a `d63f317`-en: 379 zöld** (Infrastructure 65) — build 0 warning, szótár-őr OK.
+**A `d63f317` (lagKind) még nincs pusholva**, a CI azon nem futott.
 
 **Ezzel a linux-x64 natív OR-Tools bináris is mérve** (ubuntu-latest, glibc): a 26 solver-teszt
 — a determinizmus-kapuval együtt — ott is zöld. Lokálisan csak win-x64 volt bizonyítható, mert

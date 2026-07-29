@@ -1,0 +1,58 @@
+{
+  "version": "1.0.0",
+  "description": "STAB-TENANT-ONBOARDING-RUNBOOK sample profile. Copy, edit, keep OUT of git if it carries customer data. Admin credentials never live here (env vars only).",
+  "keycloak": {
+    "baseUrl": "http://localhost:8081",
+    "realm": "spaceos",
+    "clientId": "portal-app",
+    "adminRealm": "master",
+    "adminClientId": "admin-cli"
+  },
+  "claims": {
+    "tenantIdAttribute": "tid",
+    "modulesAttribute": "enabled_modules",
+    "moduleIdFormat": "canonical",
+    "audiences": ["kernel-api"]
+  },
+  "userProfile": {
+    "unmanagedAttributePolicy": "ADMIN_EDIT"
+  },
+  "realmRoles": ["Admin", "Designer", "Joiner", "production_manager", "machine_operator"],
+  "tenant": {
+    "id": "11111111-2222-4333-8444-555555555555",
+    "name": "Példa Kft. (demo)",
+    "tenantType": "Manufacturer",
+    "modules": [
+      "joinerytech.cutting",
+      "joinerytech.joinery",
+      "spaceos.crm",
+      "spaceos.dms"
+    ]
+  },
+  "users": [
+    {
+      "username": "pelda.admin",
+      "email": "admin@pelda.hu",
+      "firstName": "Példa",
+      "lastName": "Adminisztrátor",
+      "enabled": true,
+      "realmRoles": ["Admin"]
+    },
+    {
+      "username": "pelda.uzemvezeto",
+      "email": "uzemvezeto@pelda.hu",
+      "firstName": "Példa",
+      "lastName": "Üzemvezető",
+      "enabled": true,
+      "realmRoles": ["production_manager"]
+    },
+    {
+      "username": "pelda.gepkezelo",
+      "email": "gepkezelo@pelda.hu",
+      "firstName": "Példa",
+      "lastName": "Gépkezelő",
+      "enabled": true,
+      "realmRoles": ["machine_operator"]
+    }
+  ]
+}

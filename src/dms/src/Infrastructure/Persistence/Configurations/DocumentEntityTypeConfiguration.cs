@@ -42,6 +42,18 @@ public class DocumentEntityTypeConfiguration : IEntityTypeConfiguration<Document
         builder.Property(d => d.LinkLabel).HasColumnName("link_label").HasMaxLength(255).IsRequired();
 
         builder.Property(d => d.Owner).HasColumnName("owner").HasMaxLength(200).IsRequired();
+
+        // The owner's IDENTITY, next to the display name. Nullable because documents created
+        // before access control existed have no identity to record — see Document.OwnerUserId.
+        builder.Property(d => d.OwnerUserId)
+            .HasColumnName("owner_user_id")
+            .HasConversion(
+                userId => userId == null ? (Guid?)null : userId.Value,
+                value => value == null ? null : new UserId(value.Value));
+
+        // Access decisions filter on this column on every document read, so it is indexed
+        // rather than scanned.
+        builder.HasIndex(d => d.OwnerUserId).HasDatabaseName("ix_documents_owner_user_id");
         builder.Property(d => d.Note).HasColumnName("note").HasMaxLength(2000);
         builder.Property(d => d.ReviewNote).HasColumnName("review_note").HasMaxLength(2000);
         builder.Property(d => d.FileLabel).HasColumnName("file_label").HasMaxLength(255).IsRequired();

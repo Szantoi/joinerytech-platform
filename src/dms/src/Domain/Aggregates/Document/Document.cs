@@ -50,6 +50,21 @@ public class Document : AggregateRoot
     /// <summary>Display name of the owner — auth integration follow-up (portal contract: string).</summary>
     public string Owner { get; private set; } = null!;
 
+    /// <summary>
+    /// The owner as an IDENTITY, which <see cref="Owner"/> is not.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="Owner"/> is a display name and always was; it cannot carry an access decision,
+    /// because two colleagues may share a name and nobody authenticates as a string. Access
+    /// control needs this instead.
+    /// <para>
+    /// Nullable on purpose: documents created before ownership was recorded have no identity to
+    /// fill in, and inventing one would be worse than admitting the gap. The access rule treats
+    /// such documents as readable-but-not-writable inside the tenant — a documented transition.
+    /// </para>
+    /// </remarks>
+    public UserId? OwnerUserId { get; private set; }
+
     public string? Note { get; private set; }
 
     /// <summary>Note of the LAST transition (approval note / rejection reason) — portal reviewNote.</summary>
@@ -93,7 +108,8 @@ public class Document : AggregateRoot
         string owner,
         string? note,
         string fileLabel,
-        DateOnly? validUntil)
+        DateOnly? validUntil,
+        UserId? ownerUserId = null)
     {
         if (string.IsNullOrWhiteSpace(name) || name.Length > 255)
             throw new DomainException("Name required, max 255 chars");
@@ -117,6 +133,7 @@ public class Document : AggregateRoot
             LinkId = string.IsNullOrWhiteSpace(linkId) ? null : linkId.Trim(),
             LinkLabel = string.IsNullOrWhiteSpace(linkLabel) ? string.Empty : linkLabel.Trim(),
             Owner = owner.Trim(),
+            OwnerUserId = ownerUserId,
             Note = Normalize(note),
             ReviewNote = null,
             FileLabel = fileLabel.Trim(),
@@ -339,6 +356,26 @@ public class Document : AggregateRoot
         _entityLinks.Remove(link);
         AddDomainEvent(new DocumentUnlinkedFromEntityEvent(
             Id.Value, TenantId.Value, link.EntityType, link.EntityId));
+    }
+
+    /// <summary>Records who owns this document, for documents that pre-date ownership.</summary>
+    /// <remarks>
+    /// Assign-once: an owner who could be reassigned would be a way to take a document away from
+    /// its author, and nothing in the product needs that. Transferring ownership, if it is ever
+    /// wanted, is a separate operation with its own event and its own audit trail.
+    /// </remarks>
+    /// <exception cref="DomainException">The document already has an owner identity.</exception>
+    public void AssignOwner(UserId ownerUserId)
+    {
+        ArgumentNullException.ThrowIfNull(ownerUserId);
+
+        if (OwnerUserId is not null)
+        {
+            throw new DomainException("The document already has an owner; use a transfer instead.");
+        }
+
+        OwnerUserId = ownerUserId;
+        UpdatedAt = DateTime.UtcNow;
     }
 
     /// <summary>Grants a permission on this document (Phase 2 — permission matrix).</summary>

@@ -1,83 +1,101 @@
 # ROOT Terminal State
 
-> **Frissítve:** 2026-07-29 este Europe/Budapest
+> **Frissítve:** 2026-07-29 késő este Europe/Budapest
 > **Állapotforrás:** [`EPICS.yaml`](../../EPICS.yaml) + [`AGENT-CHANNEL.md`](../../AGENT-CHANNEL.md)
-> **Koordinációs mód:** eseményvezérelt (két persistent Monitor — ld. memória
-> `mailbox-monitor-orseg`; session-váltáskor újraélesítendő).
+> **Belépő:** a csatorna **eleje** („Nyitott szálak") és **vége**; a régebbi napok archívumban.
 
-## Aktív terminál-hálózat (2026-07-29)
+## ⛔ EGYETLEN BLOKKOLÓ: token-rotáció (Gábor-kapu)
 
-| Sáv | Ki | Mit csinál |
-|-----|-----|-----------|
-| **root** | Claude (ez) | review-kapuk, kontraktus-döntések, koordináció, commit-jog |
-| **backend** | Claude | scheduling (külön repó) + DMS ACL; jön a B2B-10 F1 |
-| **frontend** | Claude | portál — a mai scheduling/gating/dark-mode kör lezárva |
-| **Codex** | Codex | nexus shell-hardening + CRM-lapozás (új session ma délután) |
-| **Doorstar** | Codex + Gábor | `doorstar-instance` — saját C# réteg |
+**A platform-repó PUBLIKUS, és élő hitelesítő van kint.** Mérve, három ágens
+által, többféle módszerrel.
+
+**A rotáció öt eleme:**
+1. env-értékek cseréje (12 token),
+2. `bin/stdio-bridge.js` — `process.env.X || '<literál>'` **fallback-sor**
+   (a legveszélyesebb alak: a default maga a titok),
+3. `terminals/architect/CLAUDE.md` + `terminals/explorer/CLAUDE.md`,
+4. **négy PUBLIKUS submodule** `CLAUDE.md`-je: cutting · inventory ·
+   procurement · cabinet (külön repók, külön commit),
+5. két privát submodule (joinery, kernel) — kisebb sürgősség.
+
+⚠ **A submodule-okban lévő hitelesítő NEM a platform hatos listájának egyike** —
+egy **leltározatlan** kulcs. Egy rotáció mind a 12 előfordulást lefedi.
+
+**A push VISSZATARTVA (65+ commit):** a csatorna részletesen leírja a rést,
+tehát pusholni annyi lenne, mint útmutatót publikálni hozzá. **A rotáció után
+azonnal mehet.**
 
 ## A nap eredménye (2026-07-29)
 
-**Minden bejelentett szelet átment a review-kapun, és minden verdikt mögött
-saját root-mérés áll** (nem a jelentés elfogadása).
+Minden verdikt mögött **saját root-mérés** áll.
 
-- **scheduling: M4 MÉRFÖLDKŐ APPROVED** — root-mérés **414/414** (Domain 254 /
-  Solver.OrTools 26 / Infrastructure 65 / Host 50 / Integration 19). Hat szelet:
-  solver-port + determinisztikus referencia · CP-SAT adapter **közös**
-  conformance-készlettel · naptár-bekötés · `lagKind` · DI-választható stratégia
-  · shadow-diff. A mérföldkövet **szándékosan a kontraktus-bővítés nélkül**
-  zártam (külön tétel, saját kapuval) — így a **B2B-10 F1 indítható**.
-- **portál:** M3-bekötés · scheduling route · F4 (strukturált ConfirmDialog) ·
-  F5 (dátumválasztó) · F6+F6/2 (szerep-szótár) · világ-gating · smoke-kapu
-  javítás · WorkflowPage dark mode — **mind APPROVED és commitolva**
-  (portal `83b6f4b` → `ad8fd1b`, öt commit; platform `53efe8d`).
-  **A közös böngésző-kapu ma először teljesen zöld.**
-- **DMS ACL (Codex P1): teljes lánc zárva** — szabály → bekötés → tárolás →
-  lista, négy szelet, root-mérés 108/108.
-- **nexus security P0:** hitelesítetlen `/api/session` + shell-injekció javítva
-  (`09e2984`), majd a maradék hardening (Codex) — a mi másolatunkban 0 shell
-  `exec*`. **A Nexust saját projekt fejleszti** (Gábor): a mi dolgunk a jelzés.
-- **CRM lista SQL-lapozásra** (Codex) — 123/123.
-- **A csatorna tömörítve** (4155 → 560 sor), a 07-22..07-28 közti 178 bejegyzés
-  bájtra változatlanul archiválva.
+- **scheduling: M4 MÉRFÖLDKŐ APPROVED** (414/414), kontraktus-kör lezárva,
+  `1.0.0-preview.2` kézbesítve. **Két root kontraktus-döntés**: a hash fedje a
+  wire-tartalmat (alapérték-kihagyással); a proposal dátumosítása **pinelt
+  naptár-revíziókból**. Következik: **M5**.
+- **Collaboration: F1 + F2 MÉRFÖLDKŐ APPROVED** (126 unit + **25 integrációs
+  valódi PostgreSQL-en**). A modul reggel még csak a munkafán létezett
+  (verziókövetés alá helyezve), és a `B2B-02` „done/Security PASS"-a **hamis
+  zöld** volt — a bizonyíték a saját LINQ-jét mérte.
+- **DMS ACL (Codex P1): teljes lánc ZÁRVA** (108/108).
+- **portál:** M3-bekötés · scheduling route · F4 · F5 · F6+F6/2 · world-gating ·
+  smoke-kapu · WorkflowPage dark mode · TOUCH-44 — **mind APPROVED és
+  commitolva**; a közös böngésző-kapu **először teljesen zöld**.
+- **nexus security:** P0 (hitelesítetlen `/api/session` + shell-injekció)
+  javítva, hardening APPROVED, szivárgás-kapu él (2517/2517 arány + a kimaradók
+  nevesítve).
+- **CRM:** lista SQL-lapozásra (123/123).
+- **doc-capture: ÚJ TERMÉKVONAL** — három **publikus** repó (engine · modul ·
+  goods-receipt), CI-vel és **semlegességi kapuval első naptól**. DC-00 kész.
+- **A csatorna tömörítve** (4155 → ~560 sor + archívum).
 
-## Gábor mai döntései (mind végrehajtva vagy kiadva)
+## Root döntések (a részletek: `docs/knowledge/architecture/DONTESEK_2026-07-29.md`)
 
-1. `Joiner` → `production` világ + `settings`; ugyanez az üzemi szerepekre (root).
-2. Ütköző fix kezdések → a `SchedulingRequestValidator` utasítsa vissza.
-3. `lagKind` additív mező — üzemi indok: ragasztás és felületkezelés, és ugyanaz
-   a technológia **mindkét fajtát** adhatja (prés-idő vs. kikötés).
-4. Szerep-szótár **bővül**: `production_manager`, `machine_operator`.
-5. Legacy fák törlendők (megtörtént); DMS ACL fail-closed + `OwnerUserId`.
-6. Kell dátumválasztó az ütemezés-képernyőre.
+- **Grant NEM kerül vissza az RLS-policy-be**: az RLS a **részvételt** szűrje, a
+  grant az **engedélyt** szabályozza. Indok: a régi `Status=0` predikátum a
+  visszavonást tette lehetetlenné. ⚠ F3-ban **kötelező**: ma semmi nem szűri a
+  visszavont grantot, és az `ExpiresAtUtc`-re nincs teszt.
+- **`B2B-02` NYITVA MARAD** — három kritériuma nem teljesül; nem pipálunk ki
+  semmit, amit nem mértünk.
+- **doc-capture:** a négy bemenet **négy külön út** (Excel/digitális PDF =
+  parse, modell nélkül); **LLM az olvasáshoz, determinisztikus szabály a
+  könyveléshez**; a **jóváhagyási hurok** a termék magja, nem az OCR.
+- **Doorstar:** kétirányú primitív-áramlás, de **leválasztható marad**
+  (domain-mentes csomag + verziózás + a `portal-core` kimarad).
 
-## Root kontraktus-döntések (2026-07-29)
+## Gábor-kapuk
 
-- **A hash fedje a wire-tartalmat**, alapérték-kihagyással. Kikötés: a kihagyást
-  teszt pinelje, és a partial-release-es tervek egyszeri hash-mozdulása
-  **kimondva** menjen a Doorstarnak, konkrét előtte/utána példával.
-- **A proposal dátumosítása mehet** (additív `startUtc`/`finishUtc`). Kikötés:
-  azonosítható legyen, **melyik naptár-revízió alatt** oldódtak fel a dátumok.
+1. **🔴 Token-rotáció** — mindent blokkol.
+2. **Licenc** a három publikus doc-capture repóhoz (G5) — licenc nélkül a
+   „publikus" nem jelent felhasználhatót.
+3. **`npm publish`** a `@spaceos/portal-ui`-ra — a csomag kész, CI-lépéssel.
+4. **G4 adatvédelem** — a doc-capture motor telepítési alakja ezen múlik.
+5. scheduling-sandbox VPS-provisioning · Keycloak Postgres-migráció.
 
-## Nyitott
+## Nyitott, kiosztatlan
 
-- **backend:** kontraktus-bővítési kör (1. szelet leadva, `8da898a` —
-  **review vár rám**), majd M5; **B2B-10 F1 indítható**.
-- **Codex:** P2 — a `/wake`, `/inject`, `/stop`, `/stop-all` tesztjein maradt
-  megengedő `[200,400,401,403]` alak szigorítása; CRM lapozás-metaadat a wire-en.
-- **Gábor-kapuk:** scheduling-sandbox VPS-provisioning; Keycloak Postgres-migráció.
-- **Átadandó:** a `nexus-dev`-beli javítás jelzése a Nexus-projektnek.
+- **Platform-task:** a `NonSuperuserRlsFixture` kapjon „valódi interceptor"
+  változatot — ma **mind a hét modul RLS-bizonyítéka egy kézzel írt tükrön áll**,
+  és a tükör zöld marad, ha az eredeti elromlik. Referencia: a Collaboration
+  `InterceptorEndToEndTests`-e.
+- P2-k: `/wake`,`/inject`,`/stop`,`/stop-all` megengedő teszt-alakja · CRM
+  lapozás-metaadat a wire-en · `MaterialisationCode` wire-re emelése, ha a
+  read-model kiterített terveket szolgál · Alpine/musl solver-mérés.
 
 ## Újraindítási védelem
 
-1. Először az `AGENT-CHANNEL.md` **eleje** („Nyitott szálak") és a **vége**,
-   utána `EPICS.yaml`, ez a state és a `TODO.md`.
-2. **A két Monitort újra kell élesíteni** (session-váltáskor halnak).
-3. Friss `git status` nélkül nincs mutáció; más ágens fájlhatárát tiszteld.
-4. Vegyes fán nincs `git add -A`; taskonkénti fájllista.
-5. Done/APPROVED-ot KIZÁRÓLAG root-review állít.
-6. **Idegen repóban destruktív parancs (`reset --hard`, force-push) nem fér bele**
-   — ha vissza kell vonni, `revert`. (2026-07-29: ezt magam hágtam át.)
-7. Termékdöntés **egy** csatornán megy fel Gáborhoz; a választ ki kell hirdetni.
-8. VPS-művelet, éles migráció, credential csak Gábor-jóváhagyással.
-9. **Review-nként commitolj, ne nap végén** — ma hat APPROVED szelet állt
-   commitolatlanul, és a tiszta szétbontás elveszett.
+1. Csatorna **eleje + vége**, `EPICS.yaml`, ez a state, `TODO.md`.
+2. **A két Monitort újra kell élesíteni.**
+3. Friss `git status` nélkül nincs mutáció; más sáv fájlhatárát tiszteld.
+4. Nincs `git add -A` vegyes fán; **review-nként commitolj**.
+5. Done/APPROVED kizárólag root-review, **saját méréssel**.
+6. **Idegen repóban nincs destruktív parancs** (`revert`, nem `reset --hard`).
+7. Termékdöntés **egy** csatornán megy fel; a választ ki kell hirdetni.
+8. VPS/éles migráció/credential csak Gábor-jóváhagyással.
+9. **„Mit bizonyít, ha átment?"** — és külön: **a „harap-e?" és a „mire lát?"
+   két különböző kérdés.** Mutációs teszt az elsőre, visszamérés a tegnapon a
+   másodikra.
+10. **Hash mint csereeszköz csak megnevezett bemenettel bizonyíték**
+    (`sha1(<mit>)`), különben a mérőeszköz konvenciója visz félre.
+11. **A munkafa nem a publikált állapot** — publikált refet mérj.
+12. Egy hiba megtalálása után **keresd meg a testvéreit**.

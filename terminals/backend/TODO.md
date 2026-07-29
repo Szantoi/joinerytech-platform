@@ -19,7 +19,7 @@
       kimenete pont azt rejti el, amit ellenőrizni akarok.
 - [ ] Mérés előtt Docker-állapot ellenőrzése, ha integrációs sáv is kell.
 
-## P1 — M4: véges kapacitású ütemező (fut)
+## P1 — M4: véges kapacitású ütemező (a BELSŐ hatókör kimerült)
 
 - [x] `ISchedulingSolver` port + kérés/megoldás modell (`83e403c`).
 - [x] Determinisztikus referencia-ütemező (list scheduler: precedencia + partial release +

@@ -19,13 +19,13 @@ Aktuális `main`: `d63f317`, **CI zöld** (run `30438753129`); lokálisan is 398
 | M1 — kalkulációs mag | **DONE** (root-review) | EffortCalculator, DependencyBoundResolver, DependencyGraph; hash-pinnelt Doorstar-vektorok |
 | M2 — aggregátumok + perzisztencia + RLS | **DONE** (root-review, 2026-07-28) | 9 tábla FORCE RLS, valódi migrációs proof, `CalendarException` (P1 pótolva) |
 | M3 — publikált kontraktus | **DONE** (root-review) — **kézbesítve a Doorstarnak** | `docs/openapi.yaml` 3.1, SHA-256 `3fc6c57d…` (saját méréssel igazolva a `main` blobjához) |
-| M4 — véges kapacitású ütemező | **fut**, 1–3. szelet kész (2. **APPROVED**, 3. `review_requested`) | port + referencia; CP-SAT adapter + conformance (`0efc329`, CI zöld); utókövetés (`5957459`); **naptár-bekötés** (`b02616b`) |
+| M4 — véges kapacitású ütemező | **a belső hatókör KIMERÜLT** (6 szelet); a kontraktus-bővítés root-döntésre vár | port + referencia + CP-SAT + conformance; naptár-bekötés; `lagKind`; solver DI-bekötés; **shadow-diff** (`5cf9e7a`) |
 | M5 | nem indult | — |
 
 ## Mérés (2026-07-29 délután)
 
-**Scheduling `7cd7276`: 405/405 zöld lokálisan** (a `d63f317` CI-zöld volt 398-cal) — CI (run `30438753129`) **és lokálisan is**, mert a
-Docker 2026-07-29 délutánján elindult. Domain 245 / Solver.OrTools 26 / Infrastructure 65 /
+**Scheduling `5cf9e7a`: 414/414 zöld lokálisan** (a `d63f317` CI-zöld volt 398-cal) — CI (run `30438753129`) **és lokálisan is**, mert a
+Docker 2026-07-29 délutánján elindult. Domain **254** / Solver.OrTools 26 / Infrastructure 65 /
 **Host 50** / **Integration 19**. Szótár-őr OK, `--locked-mode` zöld, generált TS-kliens 558 sor.
 
 **DMS (platform-repó) `6554a09`: 99/99 zöld**, köztük **11 integrációs valódi PostgreSQL-en** —

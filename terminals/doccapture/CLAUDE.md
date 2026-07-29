@@ -60,29 +60,54 @@ meg fog állni az első ügyfélnél.**
 **Ezek nem ötletek, hanem drágán megvett tapasztalatok.** Aki a terméket építi,
 ezeket vigye tovább; ha valamit el akarsz hagyni, **kérdezz rá**.
 
-### `Bevetelezes` — a könyvelési út fegyelme
+> ⚠ **Általános mintaként tanuld meg, ne receptként.** A forrás-projektek egy
+> konkrét cég konkrét rendszerére készültek. **A cél-rendszer, a cégnevek, az
+> adószámok, az adókulcsok, a mértékegységek és a mezőnevek mind
+> KONFIGURÁCIÓ** — ha bármelyik a kódba kerül, a termék egyetlen ügyfélnél
+> használható. Az alábbiak a **minták**, amikre illeszteni kell.
 
-- **Determinizmus a könyvelési útvonalon.** LLM csak fejlesztésben és a hiányok
-  offline triage-ában; a párosító/bevételező hot path-ban **NINCS** LLM.
-- **„Inkább hiány, mint téves."** Bizonytalan adatot **ne tippelj**: jelöld
-  `ELLENŐRIZD` (sárga) / `HIÁNY` (piros) emberi ellenőrzésre. — *Ez a termék
-  legfontosabb viselkedési szabálya: a csendes tévedés drágább, mint a bevallott
-  hiány.*
-- **Excel = forrás-igazság.** A párosító táblát és a javító Exceleket a
-  felhasználó hagyja jóvá; a szkript onnan olvas.
-- **Eredetik érintetlenek.** Átnevezés/szétbontás **másolatot** készít új mappába.
-- **SAP-számokat (10 jegyű) és kézírást NEM olvasunk gépileg**
-  (`READ_SAP_HANDWRITING = False`) — kézi kitöltés, sárgán jelölve.
-- **Vevő-horgony:** a Vevő mindig ugyanaz (adószámmal azonosítva), a beszállító
-  az, ami *nem* ez. Kétoszlopos OCR gyakran egy sorba olvad → a sort a
-  vevő-token előtt vágjuk. *Általánosítandó: a horgony legyen konfiguráció.*
-- **Kereszt-ellenőrzés, nem hit:** `mennyiség × egységár ≟ nettó` (1% tűrés), és
-  a nettó **függetlenül** ellenőrizhető az ÁFA/bruttó sorból. Ahol nem stimmel,
-  ott jelölés van, nem javítás.
-- **Az egységárból számolt érték független a mennyiség OCR-hibájától** — ahol
-  lehet, ezt az utat válaszd.
-- Fájlnévből tiltott karakterek `sanitize()`-zal; a cél `.xlsx` legyen bezárva
-  írás előtt (`PermissionError` kezelve); a `tessdata/` **soha** nem törlendő.
+### Minta-készlet: dokumentumból adat (a `Bevetelezes` tapasztalatából általánosítva)
+
+**M1 — Horgony-fél és ellenfél.** Egy kétoldalú dokumentumon az egyik fél
+**állandó** (mi vagyunk), a másik változó. A horgonyt **stabil azonosítóval**
+ismerd fel (adószám, regisztrációs szám — konfigurációból), és az ellenfél az,
+ami *nem* a horgony. Ne névre illessz: a név elírható, az azonosító nem.
+
+**M2 — Összeolvadó oszlopok.** Szkennelt, hasábos elrendezésnél a szövegréteg
+gyakran **egy sorba olvasztja** a két hasábot. A megoldás nem jobb OCR, hanem
+**vágás a horgony-tokennél**: a horgony előtti rész az egyik fél, utána a másik.
+
+**M3 — Redundancia = ingyen ellenőrzés.** Az üzleti dokumentumok tele vannak
+**önellenőrző számtannal**: tétel-érték = mennyiség × egységár; adóalap × kulcs
+= adó; adóalap + adó = végösszeg. Ha a redundáns értékek nem stimmelnek
+(tűréssel), **jelöld** — ne javítsd csendben. *A hiba visszafejthető abból, hogy
+melyik egyenlőség bomlik el.*
+
+**M4 — Válaszd a hibára legkevésbé érzékeny bemenetet.** Ha ugyanaz az érték
+több úton is kiszámolható, azt az utat vedd, amelyik **nem függ a törékeny
+mezőtől**. (Példa: ahol a mennyiség OCR-érzékeny, ott az egységárból számolj.)
+Ez általános elv, nem számla-specifikus.
+
+**M5 — Növekvő megfeleltetési tábla.** A külső fél a **saját szavaival** ír; mi
+a **saját kódjainkkal** dolgozunk. A kettő közé kell egy tábla:
+*külső megnevezés/kód → belső kód + átváltó szorzó + belső mértékegység*.
+Ez a tábla a **forrás-igazság**, kézzel bővül, és **a jóváhagyásból nő**.
+
+**M6 — A bizonytalanság adat, nem hiba.** Minden kimenő érték hordozzon
+**megbízhatósági szintet** (biztos / ellenőrizendő / hiányzik). *„Inkább hiány,
+mint téves"* — a csendes tévedés drágább, mint a bevallott hiány.
+
+**M7 — Amit tudottan rosszul olvasunk, azt ne olvassuk gépileg.** Ha egy
+mező-típusnál a gépi olvasás megbízhatatlan (hosszú azonosító-számok, kézírás),
+**kapcsold ki és jelöld emberi kitöltésre** — ne adj rossz értéket
+magabiztosan. Ez konfiguráció legyen mezőtípusonként, ne beégetett tiltás.
+
+**M8 — Az eredetit nem bántjuk.** Átnevezés, szétbontás, normalizálás mindig
+**másolaton** dolgozik; a forrás érintetlen marad, és a kimenet **visszavezet rá**.
+
+**M9 — A felhasználó felülete a forrás-igazság.** Ahol az ember jóváhagy (ma:
+táblázat), az a hely dönt — a gép onnan olvassa a véglegeset. A jóváhagyó
+felület formátuma cserélhető, a **szerepe** nem.
 
 ### `tartalom_mentes` — a motor fegyelme
 
@@ -100,12 +125,29 @@ Gábor jelezte: **ez a terminál már fut**, és a bevezetési tapasztalatokat
 gyűjti. **Normatív bemenet** — olvasd el a `state.md` és `memory.md` fájljait,
 mielőtt bármit terveznél. A kimondott működési szabályai ránk is állnak:
 
-- **A forrásmappa csak olvasható**: nincs létrehozás, átnevezés, törlés, másolás.
-- **XLSM: OOXML-cache olvasás** — VBA, Excel, formula, Power Query és külső link
-  futtatása **tilos**. *(Biztonsági és determinizmus-kérdés egyszerre.)*
-- Kizárás: `.bak`, `.dwl`, `.dwl2`, `~$*`, lock- és cache-fájlok.
-- **Dokumentumhivatkozás = relatív útvonal + SHA-256.** Üzleti bináris **nem**
-  kerül a repóba.
+**M10 — A forrás csak olvasható.** Az ügyfél élő mappájában nincs létrehozás,
+átnevezés, törlés, másolás. Az importáló **olvas és javasol**, nem rendez.
+
+**M11 — Aktív tartalmat nem futtatunk.** Makrós/aktív dokumentumnál a
+**tárolt gyorsítótárat** olvassuk (OOXML-cache), és **nem futtatunk** makrót,
+képletet, lekérdezést vagy külső hivatkozást. Egyszerre biztonsági és
+determinizmus-kérdés: egy futtatott képlet más eredményt ad ma és holnap.
+
+**M12 — Zaj-fájlokat ki kell zárni.** Minden ügyfél-mappában van biztonsági
+másolat, lock- és cache-fájl (`~$*`, `.bak`, szerkesztő-lockok). A kizárási
+lista **konfiguráció**, mert rendszerenként más.
+
+**M13 — Bizonyíték-lánc: relatív út + tartalom-hash.** Minden kinyert adat
+**visszavezethető** a forrásra: hol volt, és **milyen tartalmú** fájlban
+(SHA-256). Így egy későbbi eltérésnél eldönthető, a forrás változott-e vagy a
+kinyerés. **Üzleti bináris nem kerül a repóba.**
+
+**M14 — Egy munka-azonosító = egy entitás.** Az összevonás **nem** történhet
+gyengébb egyezés alapján (pl. „ugyanaz az ügyfél"). Az entitás-azonosság
+szabálya explicit legyen — a hamis összevonás visszafordíthatatlan.
+
+**M15 — Az egységet előbb megőrizzük, a konverzió explicit és naplózott.**
+Amíg nem tudjuk biztosan, mi az eredeti mértékegység, ne normalizáljunk.
 - **Production/public adatbázisba írás tilos.** Csak reviewed preview után,
   explicit `schema=doorstar_test` védelemmel, DRAFT-ként.
 - **Az agent nem jóváhagyó:** DRAFT-ot készít elő, az ember hitelesít.

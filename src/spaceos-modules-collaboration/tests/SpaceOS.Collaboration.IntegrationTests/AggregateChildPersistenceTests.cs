@@ -91,4 +91,38 @@ public sealed class AggregateChildPersistenceTests : IAsyncLifetime
         Assert.Equal("Propose", stored.History[0].ActionName);
         Assert.Equal(AgreementStatus.Proposed, stored.History[0].ToStatus);
     }
+
+    [Fact]
+    public async Task A_transition_on_a_loaded_work_package_persists_its_history_entry()
+    {
+        // The same client-assigned-key defect was fixed on all eight configurations, but only the
+        // agreement side was measured. A fix asserted on one of two siblings is a fix asserted on
+        // half the claim — and the work package is the aggregate the guest actually works through.
+        Guid workPackageId;
+        await using (var db = NewContext())
+        {
+            var package = DelegatedWorkPackage.Create(
+                _agreementId, _host, _guest, "Cut the frames", "40 frame sets",
+                DateTimeOffset.UtcNow.AddDays(14), DateTimeOffset.UtcNow,
+                CollaborationWorkScope.Create(Guid.NewGuid(), Guid.NewGuid()));
+            db.WorkPackages.Add(package);
+            await db.SaveChangesAsync();
+            workPackageId = package.Id;
+        }
+
+        await using (var db = NewContext())
+        {
+            var package = await db.WorkPackages.SingleAsync(w => w.Id == workPackageId);
+            package.Offer(_host, Guid.NewGuid(), DateTimeOffset.UtcNow);
+            await db.SaveChangesAsync();
+        }
+
+        await using var verify = NewContext();
+        var stored = await verify.WorkPackages
+            .Include(w => w.History)
+            .SingleAsync(w => w.Id == workPackageId);
+
+        Assert.Single(stored.History);
+        Assert.Equal("Offer", stored.History[0].ActionName);
+    }
 }

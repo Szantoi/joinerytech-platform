@@ -1,62 +1,53 @@
 # ROOT Terminal TODO
 
-> **Frissítve:** 2026-07-28 este Europe/Budapest
-> **Részletes állapot:** [`state.md`](state.md)
+> **Frissítve:** 2026-07-29 este Europe/Budapest
+> **Részletes állapot:** [`STATE.md`](STATE.md)
 > **Kanonikus task-státusz:** [`EPICS.yaml`](../../EPICS.yaml)
-> **Koordináció:** [`AGENT-CHANNEL.md`](../../AGENT-CHANNEL.md)
+> **Koordináció:** [`AGENT-CHANNEL.md`](../../AGENT-CHANNEL.md) — a fájl **eleje**
+> („Nyitott szálak") és a **vége** is olvasandó; a régebbi napok archívumban.
 
 ## P0 — minden session elején
 
 - [ ] A két **Monitor** újraélesítése (platform-mailboxok+csatorna, ill.
       Doorstar-outboxok) — a sessionnel együtt halnak.
-- [ ] `AGENT-CHANNEL.md` vég + `git status` + a terminál-outboxok
-      (backend/frontend/federation) átnézése — mi jött a kiesés alatt.
-- [ ] Más ágens fájlhatárának tiszteletben tartása (scheduling-repo =
-      backend; gating-fájlok = Codex).
+- [ ] `AGENT-CHANNEL.md` eleje+vége, `git status` mindkét repóban, és a
+      terminál-outboxok átnézése — mi jött a kiesés alatt.
 
-## Várt bejövő események (review/kézbesítés)
+## Rám váró review
 
-- [ ] **backend M4** szelet-sorozat review_requested-jei (CP-SAT adapter jön);
-      M4-mérföldkő-review a végén. Bemenetlista a state-ben.
-- [ ] **backend sandbox-provisioning** terve — a VPS-lépéseknél Gábor-kaput
-      kérni; a base URL/demo-bérlő/token federation-kézbesítése a Doorstarnak.
-- [x] ~~Codex world-gating review~~ — **CHANGES REQUESTED 2026-07-29**
-      (1 P1: a szerep-alapú szűkítés eltűnt → Gábor: metszetként visszaállítandó,
-      Joiner-teszttel; 2 P2). Root-mérés: 5 fájl / 23 PASS. Javítás vissza vár.
-- [x] ~~Backend M4/2, M4/3, M4/4~~ — **APPROVED 2026-07-29** (root-mérés 379 zöld
-      saját gépen; az M4/2 validator-utókövetése lezárva). Kapu a mérföldkőhöz:
-      **zöld CI kell** az M4/3+M4/4-re (ma nincs pusholva).
-- [ ] **Frontend M3-bekötés** (pending/error, `useApi` additív `isPending`) —
-      `review_requested`, ez a következő a soromban.
-- [ ] **B2B-10 F1** három szeletének `review_requested`-jei (M4 után).
-- [ ] **Codex ERPSEP-06** DevelopmentIdentityOptions.EnabledModules szelet
-      (root-támogatással, 2 kikötéssel — hosting-javaslat) + a maintenance-
-      bootstrap/Instance-Context OpenAPI külön szelet review-kérése.
-- [ ] **Doorstar** válaszok: reviewer-kijelölés, standard-verzióváltás-példa,
-      overload-példa, naptár-jóváhagyás.
+- [ ] **backend: kontraktus-bővítési kör 1. szelet** (`8da898a`) — leadva, még
+      nem néztem meg.
+- [ ] **backend: B2B-10 F1** szeletei, ha elindult (az M4-feltétel teljesült).
 
-## Kiadható, ha sáv szabadul
+## Kiadva, végrehajtás alatt
 
-- [x] ~~**B2B-10 F1**~~ — **KIADVA 2026-07-29** (task-doksi +
-      backend inbox 011, a 010-es elő-kiírást váltja). Indulás az M4
-      mérföldkő-review APPROVED-ja után; 3 szeletben várom vissza.
-- [ ] **CatalogPanel handleDuplicate** előzetes lint-hibái (frontend, külön
-      tiszta szelet — a frontend felajánlotta).
-- [ ] **DS-RECONCILE** (designer, pending) — design-system spec-igazítás.
-- [ ] **WORLDS-WAREHOUSE-REVIEW** designer re-review (a FIX/GATE done után
-      indítható).
+- [ ] **B2B-10 F1** (backend) — Collaboration application-réteg, 3 szeletben.
+- [ ] **STAB-NEXUS-SHELL-HARDENING P2** (Codex) — a `/wake`, `/inject`, `/stop`,
+      `/stop-all` tesztjein maradt megengedő `[200,400,401,403]` szigorítása.
+- [ ] **CRM lapozás-metaadat a wire-en** (Codex, P2) — ma a fogyasztó nem tudja
+      megkülönböztetni: „ennyi van" vs. „ennyit adtam az elsőből".
+
+## Átadandó / jelzés
+
+- [ ] A `nexus-dev`-beli shell-injekció-javítás **jelzése a Nexus-projektnek**
+      (a Nexust saját projekt fejleszti — a mi dolgunk a jelzés, nem a fejlesztés).
 
 ## Gábor-kapuk (emberi döntés/művelet)
 
 - [ ] scheduling-sandbox VPS-provisioning (Tailnet-only, dedikált KC-kliens).
-- [ ] STAB-KEYCLOAK-POSTGRES-MIGRATION (az éles KC H2-n fut — Doorstar-
-      élesítés előtt rendezendő).
+- [ ] STAB-KEYCLOAK-POSTGRES-MIGRATION (az éles KC H2-n fut).
 - [ ] Doorstar kontraktus-reviewer kijelölése.
+- [ ] A két üzemi szerep éles realmbe vitele (a script + profil kész, éles
+      futtatás nem történt).
 
 ## Állandó szabályok
 
-1. Done/APPROVED csak root-review. review_requested a bejövő protokoll.
-2. Nincs `git add -A` vegyes fán; taskonkénti fájllista, más sáv érintetlen.
-3. VPS/éles migráció/credential csak Gábor-jóváhagyással.
-4. Hash-pin + verzió-fegyelem: csomag/fixture tartalmi változás = verzió-emelés
-   (ma kétszer fogott mutable-verziót — hosting preview.1, input-pack v1).
+1. Done/APPROVED csak root-review, **saját méréssel** — a jelentés elfogadása
+   nem review.
+2. **Review-nként commitolj**, ne nap végén (ma hat szelet állt commitolatlanul).
+3. Nincs `git add -A` vegyes fán; taskonkénti fájllista.
+4. **Idegen repóban destruktív parancs nem fér bele** — `revert`, nem `reset --hard`.
+5. Termékdöntés **egy** csatornán megy fel; a választ ki kell hirdetni.
+6. VPS/éles migráció/credential csak Gábor-jóváhagyással.
+7. Egy kapunál nem elég azt kérdezni, „átment-e", hanem azt is: **„mit bizonyít,
+   ha átment?"** (ma négy különböző alakban tért vissza ez a hiba).

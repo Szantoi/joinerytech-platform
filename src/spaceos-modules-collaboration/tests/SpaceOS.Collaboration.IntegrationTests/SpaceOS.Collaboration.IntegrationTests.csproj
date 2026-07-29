@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <!-- Matches what Npgsql.EntityFrameworkCore.PostgreSQL 8.0.11 pulls in; a lower pin here is a
+         package downgrade and the build treats that as an error. -->
+    <PackageReference Include="Npgsql" Version="8.0.6" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.11">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\SpaceOS.Collaboration.Domain\SpaceOS.Collaboration.Domain.csproj" />
+    <ProjectReference Include="..\..\src\SpaceOS.Collaboration.Infrastructure\SpaceOS.Collaboration.Infrastructure.csproj" />
+    <!--
+      The STAB-RLS-PROOF fixture: a real PostgreSQL container plus a NOSUPERUSER/NOBYPASSRLS
+      application role. Without the non-superuser role every assertion here would pass even with
+      the policies deleted, because superusers bypass RLS unconditionally.
+    -->
+    <ProjectReference Include="..\..\..\spaceos-modules-hosting\tests\SpaceOS.Modules.Hosting.RlsFixtures\SpaceOS.Modules.Hosting.RlsFixtures.csproj" />
+  </ItemGroup>
+</Project>

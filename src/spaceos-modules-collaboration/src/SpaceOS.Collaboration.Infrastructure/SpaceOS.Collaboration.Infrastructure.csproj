@@ -22,5 +22,11 @@
     <ProjectReference Include="../SpaceOS.Collaboration.Domain/SpaceOS.Collaboration.Domain.csproj" />
     <ProjectReference Include="../SpaceOS.Collaboration.Application/SpaceOS.Collaboration.Application.csproj" />
     <ProjectReference Include="../SpaceOS.Collaboration.Contracts/SpaceOS.Collaboration.Contracts.csproj" />
+    <!--
+      ADR-062 shared hosting package: the tenant session interceptor and the RLS SQL baseline.
+      B2B-10 F2 wires this module onto the platform baseline instead of keeping a private copy;
+      the five divergent per-module interceptors this package replaced are the reason it exists.
+    -->
+    <ProjectReference Include="../../../spaceos-modules-hosting/src/SpaceOS.Modules.Hosting/SpaceOS.Modules.Hosting.csproj" />
   </ItemGroup>
 </Project>

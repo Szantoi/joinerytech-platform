@@ -287,3 +287,56 @@ Mind a négy **additív** — a kézbesített `1.0.0-preview.1` kontraktust nem 
    ami az első átnevezésnél szétcsúszik. Ha a Doorstar mégis kér megjelenítendő
    nevet, az M4-ben **additív `displayName`** lehet, kifejezetten a standardból
    származtatva és „csak megjelenítésre" jelöléssel — nem azonosítóként.
+
+---
+
+## M4 végrehajtási napló (2026-07-29, backend terminál) — mérföldkő-review kérve
+
+**Hatókör a task szerint:** finite-capacity allokáció, slot-generálás, shadow-számítás + diff
+read-model, overload-endpoint. **A belső hatókör kimerült** (hat szelet); ami hátravan, az a
+kontraktus-bővítés, és az két nyitott root-döntésen múlik (lásd a végén).
+
+**Mérés a záró állapoton (`5cf9e7a`): 414 zöld, 0 bukás** — Domain 254 / Solver.OrTools 26 /
+Infrastructure 65 / Host 50 / Integration 19. Build 0 warning, szótár-őr OK, `--locked-mode`
+zöld. Az integrációs sáv valódi PostgreSQL-en, FORCE RLS-ben, nem-superuser szerepen.
+
+### A hat szelet
+
+1. **`ISchedulingSolver` port + determinisztikus referencia-ütemező** (`83e403c`). List
+   scheduler: legkorábbi lehetséges kezdés a precedencia, a partial release és a véges kapacitás
+   mellett. Mohó, nem lép vissza — ez valós korlát, és **ezért van port**.
+2. **CP-SAT adapter a porton + közös conformance-készlet** (`0efc329`, **root-APPROVED**).
+   A natív binárist **előbb** bizonyítottam eldobható projektben, mint hogy terméki kódot írtam
+   volna rá. A közös készlet azonnal talált egy **valódi hibát a referenciában**: az FF/SF élek
+   finish-oldali korlátját a placement csendben eldobta — a terv olyan függőség kielégítését
+   állította, amit nem teljesített. Egy stratégiával ez elvileg sem volt látható, mert a mérce
+   ugyanaz a kód volt, ami elrontotta.
+3. **Az APPROVED kötelező utókövetése** (`5957459`): ütköző fix kezdéseknél a **validator**
+   utasít vissza, mindkét stratégia előtt. Korábban az optimalizáló dobott, a referencia
+   elhelyezte és túllépte a kapacitást — hogy a tervező melyik választ kapja, a konfiguráción
+   múlt.
+4. **Naptár-bekötés** (`b02616b`): `WorkingTimeline` (munkaperc ↔ abszolút idő, DST-helyesen) +
+   `ScheduleMaterialiser`. **Üzleti döntés (Gábor):** minden művelet átnyúlhat a nem-munkaidőn,
+   a művelet ideje munkaidőben értendő. A vetítést a **kapacitás túléli** (erőforrásonként
+   monoton leképezés), a **precedencia nem feltétlenül** — eltérő naptárú erőforrások között a
+   terv ezt **kimondja** (`PrecedenceBrokenAcrossCalendars`), nem javítja csendben.
+5. **`lagKind`** (`d63f317`): a szervezési (munkaidő) és a fizikai (valós eltelt idő)
+   késleltetés szétválasztása. A naptár-mentes solver nem tudja kifejezni a valós idejű lagot,
+   ezért **egyeztetés** oldja meg (megoldás → dátumozás → naptár-átváltás → újra), és ha nem áll
+   be, azt kimondja. Mérve: egy péntek délutáni 48 órás száradás munkaidőként számolva **nyolc
+   nappal** későbbre tolná a következő munkát.
+6. **Solver DI-bekötés** (`7cd7276`) és **shadow-diff read-model** (`5cf9e7a`). A stratégia
+   mostantól konfigurációs döntés (alapérték a referencia, mert az Alpine/musl kérdés nyitott);
+   a diffben a **megváltozott naptár-revízió önmagában is különbség**, mert a munkaperc-terv
+   változatlanul is más dátumokra esik.
+
+### Ami tudatosan nem került bele
+
+- **A kontraktus-bővítés** (a 4 additív mező + a `lagKind` és a diff wire-alakja): **két nyitott
+  root-döntésen múlik** — (a) a `releaseThresholdFraction` bekerüljön-e a revision-hashbe (ha
+  nem, két különböző tartalom azonos hash-t kap; ha igen, a partial-release-es tervek hash-e
+  egyszer mozdul), és (b) a kapacitás-ütközés mező előfeltétele a proposal dátumosítása
+  (`startUtc`/`finishUtc` additívan), mert az `overload` detektor valós időben dolgozik.
+- **A run-folyamat írási végpontja**: az ADR-069 szerint a 2. fázis, és a bemeneti oldal
+  (honnan jönnek az ütemezendő műveletek) az M5 kérdése.
+- **Alpine/musl RID-mérés**: az ADR-070 nyitott pontja, a tényleges base image-en, deploy előtt.

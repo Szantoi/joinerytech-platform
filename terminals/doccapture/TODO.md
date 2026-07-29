@@ -1,18 +1,20 @@
 # DOC-CAPTURE Terminal TODO
 
-> **Frissítve:** 2026-07-29 este (root hozta létre)
+> **Frissítve:** 2026-07-29 este (a DC-00 lezárása után, doccapture terminál)
 > **Részletes állapot:** [`STATE.md`](STATE.md) · **Epic:** `docs/tasks/EPIC-DOC-CAPTURE-2026Q3/README.md`
 
 ## P0 — az első futásnál, kód előtt
 
-- [ ] **Olvasd el a `CLAUDE.md`-t végig** — különösen a „forrás-repók szabályai"
+- [x] **Olvasd el a `CLAUDE.md`-t végig** — különösen a „forrás-repók szabályai"
       szakaszt. Azok Gábor munka közben hozott döntései, nem javaslatok.
-- [ ] **`doorstar-instance/terminals/import-discovery`** — `state.md` és
-      `memory.md`. Ez a terminál **már fut**, és élő bevezetési tapasztalatot
-      gyűjt. Ne kezdj tervezni előtte.
-- [ ] `QUALITY.md` + `ADR-067` (modul-katalógus, `spaceos.*` semlegesség).
-- [ ] `AGENT-CHANNEL.md` **eleje** („Nyitott szálak") és **vége**.
-- [ ] A két forrás-projekt README/CLAUDE.md-je (`Bevetelezes`, `tartalom_mentes`).
+- [x] **`doorstar-instance/terminals/import-discovery`** — `state.md` és
+      `memory.md`. **Elolvasva:** a két élő szabálya (*„mértékegységet nem szabad
+      feltételezni"*, *„ne használd a befoglaló mappa nevét identitásra"*)
+      **megerősíti** az M14-M15 mintáinkat. Ellentmondás nem került elő.
+- [x] `QUALITY.md` + `ADR-067` (modul-katalógus, `spaceos.*` semlegesség).
+- [x] `AGENT-CHANNEL.md` **eleje** („Nyitott szálak") és **vége**.
+- [x] A két forrás-projekt felmérve. ⚠ **Csak az élő fából szabad átemelni** —
+      a `.claude/worktrees/agent-*` másolatok régebbi logikát tartalmaznak.
 
 ## Blokkolva — Gábor-kapura vár
 
@@ -24,8 +26,11 @@
 
 ## Szeletek (a kapuk után, sorrendben)
 
-- [ ] **DC-00** — három repó, CI, verziózás, és a **szótár-őr első naptól**
-      (márka, iparági és ügyfélnév tilos a motorban).
+- [x] **DC-00** — `review_requested` (2026-07-29). Három repó, CI, verziózás,
+      szótár-őr **egy implementációval, hash-pinnel, három szabályhalmazzal**,
+      és a hexagonális mag általánosított átemelése. Bizonyíték: kapu-önteszt
+      8/8 + 8/8, **29 teszt zöld**, két kapu mutációval igazolva.
+      **A commit a rooté** — minden darab commitolatlan.
 - [ ] **DC-01b** — Excel/CSV betöltő: oszlop-térképezés + validáció, **modell
       nélkül**. Ez a leggyorsabb megtérülés.
 - [ ] **DC-01** — kereshető PDF → DMS a mai ACL-lel.

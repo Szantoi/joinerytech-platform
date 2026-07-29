@@ -6,7 +6,8 @@
 - **Előzmény-felmérés:** `docs/knowledge/architecture/OCR_PROJEKTEK_FELMERES_2026-07-29.md`
 - **Forrás-projektek:** `Bevetelezes` (éles munkafolyamat) · `tartalom_mentes`
   (hexagonális OCR/RAG-motor, 19 teszt-fájl)
-- **Státusz:** javaslat — a G-kapuk Gábor döntésére várnak
+- **Státusz:** **DC-00 kész** (`review_requested`, 2026-07-29) — a további
+  szeletek a G-kapukra várnak; a kritikus úton a **G4** a blokkoló
 
 ## A cél
 
@@ -176,11 +177,24 @@ Ha eladható termék, kell rá döntés: **milyen licenc**, és mi a viszony a
 platform-forráshoz. Nem sürgős a DC-01-hez, de a repók létrehozása előtt jó
 tudni.
 
+**Részben megválaszolva (2026-07-29):** Gábor **irányt** adott — *„Nem gyártok
+jelenleg nagy titkokat, az a cél hogy minél többen tudják használni a
+rendszeremet"* —, tehát **nyílt licenc**. A **konkrét licenc még nyitva van**,
+és nem triviális: a nesting/szabás-optimalizálás szabadalmakkal sűrűn fedett
+terület, ezért az **Apache-2.0** (kifejezett szabadalmi engedély + védjegy-
+rendezés) más kockázati profilt ad, mint az **MIT**.
+
+⚠ **Mérve (2026-07-29):** `LICENSE`/`COPYING`/`NOTICE` **egyik repóban sincs**,
+és `license` mező egyetlen `package.json`-ban sem. Vagyis a repók ma
+**publikusak licenc nélkül** = minden jog fenntartva — ami a kimondott céllal
+(„minél többen használják") **ellentétes**. Amíg nincs döntés, a doccapture
+repókba **szándékosan nem tettünk** LICENSE-t, hogy ne előlegezzük meg.
+
 ## Szelet-terv
 
 | # | Szelet | Repó | Miért ez a sorrend |
 |---|---|---|---|
-| **DC-00** | Repók létrehozása, CI, verziózás, semlegességi őr | mind3 | a termék-alak alapja; a szótár-őr **első naptól** legyen bent |
+| ~~**DC-00**~~ ✅ | Repók, CI, verziózás, semlegességi őr | mind3 | **KÉSZ** (`review_requested`, 2026-07-29) — ld. a „DC-00 kivitelezés" szakaszt |
 | **DC-01** | **Kereshető PDF → DMS**, a mai ACL-lel | 1+2 | nem érinti a könyvelést, **azonnal hasznos**, és kockázat nélkül kiméri az integrációs határt |
 | **DC-01b** | **Excel/CSV betöltő** — oszlop-térképezés + validáció, modell nélkül | 1+2 | a cég-integráció **leggyakoribb** bemenete, és a legolcsóbb út: árlista, cikktörzs, beszállítói lista. Az OCR előtt térül meg. |
 | **DC-02** | Capture-kontraktus (OpenAPI 3.1 + hash-pin + generált kliens) | 1 | a motor cserélhető anélkül, hogy a platform tudna róla |
@@ -196,6 +210,89 @@ digitális** — árlista, cikktörzs, beszállítói lista Excelben. Ezt modell
 determinisztikusan be lehet tölteni, tehát ez a **leggyorsabb megtérülés** és a
 legkisebb kockázat. A papír és a kézírás utána jön, mert az a drágább és
 ritkább eset. Ha az OCR-rel kezdenénk, a látványosabb felét építenénk előbb.
+
+## DC-00 kivitelezés (2026-07-29, `review_requested`)
+
+> A QUALITY §4 szerint a kivitelezést a task-fájlba rögzítjük. **A commitot
+> Gábor kérésére a terminál végezte**, nem a root; done/APPROVED továbbra is
+> kizárólag root-review.
+
+### Amit a root készített (a kickoff előtt)
+
+A három repó váza, a motor `core/models.py`-ja (a két alapszabály **invariánsként**,
+7 teszt) és a `tools/neutrality_guard.py` negatív kontrollal.
+
+### Amit a terminál készített
+
+| Repó | Fájl | Mi |
+|---|---|---|
+| engine | `core/config.py` · `ports.py` · `layout.py` · `errors.py` | a hexagonális mag **általánosított** átemelése |
+| engine | `tests/test_config.py` · `test_core_boundary.py` · `test_ports.py` | +22 teszt |
+| engine | `docs/DESIGN-mag-altalanositas.md` | design intent (mit változtattunk és **miért**) |
+| modules | `Directory.Build.props` · `tools/neutrality.json` · `.github/workflows/ci.yml` | verzió egyetlen forrása + **szigorú** szabályhalmaz + CI |
+| goods-receipt | ugyanaz | **eltérő** szabályhalmaz: iparági szótár megengedett, cél-rendszer és ügyfélnév nem |
+
+### A két tervezési döntés
+
+1. **Egy implementáció, három szabályhalmaz.** A kapu **szkriptjét nem másoltuk**
+   a repókba (az három igazság lenne ugyanarról); a CI **hash-pinnel** tölti le
+   a motor repójából, és minden repó csak a saját `neutrality.json`-ját birtokolja.
+   Pin: `ba3414bd…`, megmérve, hogy a publikált változat bájtra egyezik.
+2. **A kapu minden futásnál bizonyítja, hogy harap** (negatív + pozitív kontroll).
+   A minták a `neutrality.json`-ban állnak, mert azt a kapu név szerint kihagyja —
+   a workflow YAML-ba írva **a kapu saját magára bukna el**.
+
+### Mért bizonyíték
+
+```
+Kapu-onteszt:      8/8 es 8/8      Repo-vizsgalat: 3/3 TISZTA
+Motor tesztjei:    29 zold (7 volt + 22 uj), 0 bukas
+Workflow YAML:     2/2 parse-olhato        Hash-pin: publikalt == lokalis
+```
+
+**A kulcs-bizonyíték:** ugyanaz a szó **ellentétes** eredményt ad — `furniture`
+a modul-repóban exit 1, a bevételezésben exit 0. A goods-receipt öntesztjében az
+iparági szó a `must_pass`-ban van, tehát ha valaki odamásolja a motor szigorú
+configját, a CI **azonnal pirosra vált**.
+
+**Mutációval igazolva:** a semlegességi kapu (becsempészett szó → `README.md:52`,
+exit 1) és az architekturális határ (külső csomag **és** saját infrastruktúra-import).
+
+### Amit tudatosan kihagytunk
+
+- **A számla-kinyerő port** — ez a **G1** tárgya; bemásolni annyi lenne, mint a
+  kérdést kódba írt tényként előredönteni. **Teszt őrzi** (`test_ports.GateTests`).
+- **LICENSE** — a **G5** iránya megvan, a konkrét licenc nincs (ld. fent).
+
+### Amit NEM mértünk — kimondva
+
+1. **A CI soha nem futott GitHub Actionsön** — csak a logikáját futtattuk lokálisan
+   + YAML-parse. A runner-viselkedés (hálózat, `setup-dotnet`, heredoc) bizonyítatlan.
+2. **A `dotnet` ág bizonyítatlan** (ma 0 `.csproj`); a CI ezt **kimondja** a logban,
+   nem ad üres zöldet.
+3. **A portoknak nincs adapterük** — a *használhatóságuk* bizonyítatlan; a `.pdf`
+   útválasztás feltevés; a redundancia-tűrés alapértéke találgatás.
+4. Az öntesztet futtató ~30 sor Python **tudatosan duplikált** a két workflow-ban
+   (közös futtató csak publikálás után lehet) — konszolidációs jelölt.
+
+### Két hiba, amit a saját kapunk talált — nem az ember
+
+- `CaptureConfig.save()` **előbb nyitotta meg** a fájlt, mint hogy elbukott volna
+  az ellenőrzésen; az `open(…,"w")` csonkol, tehát **egy meglévő, helyes configot
+  nullára írt volna**.
+- `assert_no_secret_values` `asdict()`-en iterált, ami csak a **deklarált** mezőket
+  adja vissza — a futásidőben hozzáadott `api_key`-t nem is látta volna.
+- **Utólag, önauditból:** a határ-kapu `glob("*.py")`-jal listázott (nem `rglob`),
+  tehát egy `core/alcsomag/` **csendben kimaradt volna**; és a találatokat
+  `module.name` szerint gyűjtötte, ami két azonos nevű fájlt összeolvasztott volna.
+  *A mutáció az érzékenységet bizonyítja, nem a lefedettséget.*
+
+### Mérési korrekció, ami több dokumentumot érintett
+
+A forrás-motor „**46 teszt-fájl**" száma **felfújt** volt: az élő fában **19** van,
+a 46 három `.claude/worktrees/agent-*` másolattal jön ki. A worktree-k **egyetlen
+új teszt-modult sem** hoznak, viszont **régebbi logikát** tartalmaznak — aki rossz
+fából emel át, csendben visszalép egy verziót. A root ezt négy helyen javította.
 
 ## Minőségi kapuk
 

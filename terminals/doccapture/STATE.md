@@ -2,7 +2,8 @@
 
 > **Létrehozva:** 2026-07-29 este Europe/Budapest (root)
 > **Epic:** [`docs/tasks/EPIC-DOC-CAPTURE-2026Q3/README.md`](../../docs/tasks/EPIC-DOC-CAPTURE-2026Q3/README.md)
-> **Állapot:** induló — még nem kezdődött végrehajtás, a G-kapuk döntésre várnak
+> **Állapot:** **DC-00 kész, `review_requested`** (2026-07-29 este) — a G-kapuk
+> (G1-G5) továbbra is döntésre várnak, a szeletek azokra várnak
 
 ## Miért létezik ez a terminál
 
@@ -25,6 +26,11 @@ PDF, Excel, papír és kézírás.
   szövegréteggel, Markdown/RAG export. Portjai: `IVisionClient`, `IOcrService`,
   `IPdfBuilder`, `IRepository`, `VectorStorePort`, `HandwritingOCRPort` — és
   **`InvoiceExtractionPort`** (ld. G1).
+  ⚠ **Csak az élő fából szabad átemelni.** A projektben három
+  `.claude/worktrees/agent-*` másolat is van ugyanarról a magról; **egyetlen új
+  teszt-modult sem** hoznak, viszont a **tartalmuk eltér** (régebbi logika).
+  Aki rossz fából emel át, csendben visszalép egy verziót. (Innen jött a
+  korábbi, felfújt „46 teszt-fájl" szám is.)
 - **`doorstar-instance/terminals/import-discovery`** — **már fut**, bizonyíték-
   alapú adatfelderítés legacy dokumentumokból (PDF/DWG/XLSX/XLSM). A működési
   szabályai ránk is állnak (csak olvasható forrás; XLSM OOXML-cache, VBA/formula
@@ -47,8 +53,61 @@ adatok többsége már digitális.
 | **G4** | adatvédelem | **ez dönti el a motor telepítési alakját** — a szeletek előtt kell |
 | **G5** | licenc- és tulajdon-határ | a repók létrehozása előtt jó tudni |
 
+## Ami 2026-07-29 este megtörtént
+
+**A premissza megdőlt:** a kickoff privátnak mondta a repókat — **mind a négy
+PUBLIC** (a három termék-repó + a platform). Gábor döntése: **maradjanak
+publikusak**, a titkok kerüljenek ki, a VPS-adatok gitignore-olt configba.
+
+**Ebből jött a nap legsúlyosabb lelete** (eszkalálva, a rotáció a rooté):
+az `origin/main`-en **6 követett fájl** tartalmazta nyílt szövegben az MCP
+master tokent + 11 agent-tokent. A tanulság a besorolásról szól: a `CLAUDE.md`
+**listázta** adósságként, de *történetiként*, privát repót feltételezve.
+A jelzés megvolt, a **súlyozása** volt rossz.
+
+**DC-00 mindhárom darabja kész**, commitolatlanul (a commit a rooté):
+
+| Darab | Bizonyíték |
+|---|---|
+| a két .NET repó CI-ja + verziózása | kapu-önteszt **8/8** és **8/8**, hash-pin megmérve |
+| a harmadik repó **eltérő** semlegességi szabálya | `furniture`: modul-repó **exit 1**, bevételezés **exit 0** — a különbség gépileg őrzött |
+| a hexagonális mag általánosított átemelése | **29 teszt zöld** (7 volt + 22 új), kapu TISZTA |
+
+**Két gépi kapu, mutációval igazolva:** a semlegességi kapu (becsempészett
+iparági szó → `README.md:52`, exit 1) és az architekturális határ (külső csomag
+**és** saját infrastruktúra-import is elbukott).
+
+**A kapu két valódi hibát talált a saját kódomban:** a `CaptureConfig.save()`
+előbb csonkolta a fájlt, mint hogy elbukott volna az ellenőrzésen (éles üzemben
+adatvesztés), és az `assert_no_secret_values` `asdict()`-en iterált, ami csak a
+deklarált mezőket látja — a kapu pont attól lett volna vak, ami ellen véd.
+
+**G1-et nem léptük át:** a számla-kinyerő port **nincs** átemelve, és **teszt
+őrzi**. Ha az a teszt elbukik, az jelzés, hogy valaki a kapu előtt lépett.
+
 ## Következő lépés
 
-**Nem kód.** Először: az `import-discovery` terminál `state.md` + `memory.md`
-elolvasása (élő tapasztalat), majd a G4 döntés megvárása. A DC-00 (repók, CI,
-**szótár-őr első naptól**) csak utána indul.
+**Feladatkiadásra vár.** Javaslat: **DC-01b** (Excel/CSV betöltő) — modell
+nélküli parse, a G-kapuktól **független**, és ez adná az első adaptert a
+`TabularReader` port mögé, tehát a most beépített portokat is bizonyítaná.
+
+**Nem indul el kiírás nélkül.** Blokkolt marad: DC-04 (G1-G3 + Gábor
+tapasztalat-gyűjtése) és minden, ami a motor **telepítési alakjától** függ (G4).
+
+**Nyitva, nem nálam** (2026-07-29 esti állás):
+
+| Tétel | Kinél | Állás |
+|---|---|---|
+| **Token-rotáció (R1)** | **root** — Gábor rá osztotta | friss fejjel, holnap |
+| Szivárgás-kapu | frontend, **APPROVED** | a lefedettséget is kimondja (`X/Y` + a 14 submodule nevesítve) |
+| **G5 — licenc** | Gábor | **irány megvan** („minél többen használják" → nyílt licenc), a **konkrét licenc nyitva**: MIT vs Apache-2.0, a nesting/szabás szabadalmi kockázata miatt nem triviális |
+| `portal-ui` publish | root | **a licencre vár** |
+| A hat meg nem mért submodule | — | **nyitva**, Gábor nem válaszolt rá |
+
+⚠ **A push vissza van tartva a rotációig.** A DC-00 minden darabja
+**commitolva, de nem pusholva** — a repók publikusak, és a kint lévő hitelesítő
+miatt a publikálás sorrendje számít.
+
+⚠ **A terminál `CLAUDE.md`-je két abszolút helyi útvonalat tartalmaz** (21-22.
+sor), és **követett** — a következő pushsal publikussá válik. Jelezve a
+csatornán; nem nyúltam hozzá, mert normatív utasítás.

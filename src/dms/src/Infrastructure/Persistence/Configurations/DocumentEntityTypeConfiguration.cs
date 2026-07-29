@@ -93,9 +93,56 @@ public class DocumentEntityTypeConfiguration : IEntityTypeConfiguration<Document
             .UsePropertyAccessMode(PropertyAccessMode.Field)
             .AutoInclude();
 
+        // Permission grants — owned collection, separate table.
+        //
+        // These used to be Ignore()d along with the other phase-2 collections, which was
+        // harmless while nothing read them. It stopped being harmless the moment access control
+        // started DECIDING on them: a grant would have been accepted, reported as saved, and
+        // then silently vanished on the next load, leaving the colleague locked out with no
+        // trace of why. Fail-closed plus unpersisted grants means "only the owner, forever".
+        builder.OwnsMany(d => d.Permissions, permission =>
+        {
+            permission.ToTable("document_permissions", "dms");
+            permission.WithOwner().HasForeignKey("document_id");
+
+            // Same reason as the version chain: the aggregate generates the key, so EF must not
+            // treat a new grant as a modification of an existing row.
+            permission.HasKey(p => p.Id);
+            permission.Property(p => p.Id)
+                .HasConversion(id => id.Value, value => new DocumentPermissionId(value))
+                .HasColumnName("id")
+                .ValueGeneratedNever();
+
+            permission.Property(p => p.PermissionType).HasColumnName("permission_type").IsRequired();
+            permission.Property(p => p.GrantedToUserId)
+                .HasConversion(
+                    userId => userId == null ? (Guid?)null : userId.Value,
+                    value => value == null ? null : new UserId(value.Value))
+                .HasColumnName("granted_to_user_id");
+            permission.Property(p => p.GrantedToRoleId).HasColumnName("granted_to_role_id");
+            permission.Property(p => p.GrantedByUserId)
+                .HasConversion(userId => userId.Value, value => new UserId(value))
+                .HasColumnName("granted_by_user_id")
+                .IsRequired();
+            permission.Property(p => p.GrantedAt).HasColumnName("granted_at").IsRequired();
+
+            // The list query will filter on these, one row per (document, grantee).
+            // Property names, not column names: "document_id" is the shadow FK EF created
+            // above, the rest are CLR properties.
+            permission.HasIndex("document_id", nameof(DocumentPermission.GrantedToUserId))
+                .HasDatabaseName("ix_document_permissions_document_id_user");
+            permission.HasIndex("document_id", nameof(DocumentPermission.GrantedToRoleId))
+                .HasDatabaseName("ix_document_permissions_document_id_role");
+        });
+
+        // Loaded with the document: every access decision needs them, so a lazy or forgotten
+        // Include would silently deny access rather than fail visibly.
+        builder.Navigation(d => d.Permissions)
+            .UsePropertyAccessMode(PropertyAccessMode.Field)
+            .AutoInclude();
+
         // Phase-2 linking model — behavior kept on the aggregate, storage follow-up
         builder.Ignore(d => d.EntityLinks);
-        builder.Ignore(d => d.Permissions);
         builder.Ignore(d => d.Tags);
     }
 }

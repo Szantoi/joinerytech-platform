@@ -20,7 +20,7 @@ public sealed class RlsNonSuperuserIsolationTests : IAsyncLifetime
 
     private static readonly string[] AllForceRlsTables =
     [
-        "document_categories", "tags", "documents", "document_versions",
+        "document_categories", "tags", "documents", "document_versions", "document_permissions",
     ];
 
     private readonly NonSuperuserRlsFixture _fixture = new("dms_rls_proof");

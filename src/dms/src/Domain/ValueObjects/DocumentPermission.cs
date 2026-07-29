@@ -15,12 +15,17 @@ public record DocumentPermission
     public UserId GrantedByUserId { get; init; }
     public DateTime GrantedAt { get; init; }
 
+    /// <remarks>
+    /// The parameter names match the property names on purpose: Entity Framework binds a
+    /// constructor by name when it materialises an owned entity, and a mismatch ("grantedBy"
+    /// versus <see cref="GrantedByUserId"/>) makes the whole model fail to build.
+    /// </remarks>
     public DocumentPermission(
         DocumentPermissionId id,
         PermissionType permissionType,
         UserId? grantedToUserId,
         Guid? grantedToRoleId,
-        UserId grantedBy,
+        UserId grantedByUserId,
         DateTime grantedAt)
     {
         if (grantedToUserId == null && grantedToRoleId == null)
@@ -30,7 +35,7 @@ public record DocumentPermission
         PermissionType = permissionType;
         GrantedToUserId = grantedToUserId;
         GrantedToRoleId = grantedToRoleId;
-        GrantedByUserId = grantedBy;
+        GrantedByUserId = grantedByUserId;
         GrantedAt = grantedAt;
     }
 }

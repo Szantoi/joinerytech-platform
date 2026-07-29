@@ -89,6 +89,61 @@ public class DocumentPersistenceTests
     }
 
     [Fact]
+    public async Task PermissionGrants_SurviveTheRoundTrip_AndRevokeDeletesThem()
+    {
+        // The reason this test exists: the grants were produced by the aggregate and DISCARDED
+        // by the persistence layer (the navigation was Ignore()d). Nothing read them, so
+        // nothing failed — until access control started deciding on them, at which point a
+        // grant would have been accepted, reported saved, and gone on the next load.
+        var grantee = new UserId(Guid.NewGuid());
+        var reviewerRole = Guid.NewGuid();
+        var grantedBy = new UserId(Guid.NewGuid());
+
+        var document = NewDocument();
+        document.GrantPermission(PermissionType.Edit, grantee, roleId: null, grantedBy: grantedBy);
+        document.GrantPermission(PermissionType.View, userId: null, roleId: reviewerRole, grantedBy: grantedBy);
+
+        using (var scope = _fixture.CreateScope())
+        {
+            await Repository(scope).AddAsync(document);
+        }
+
+        DocumentPermissionId editGrantId;
+        using (var scope = _fixture.CreateScope())
+        {
+            var reloaded = await Repository(scope).GetByIdAsync(document.Id);
+
+            reloaded!.Permissions.Should().HaveCount(2, "a kiadott jogosultságok nem veszhetnek el");
+            var direct = reloaded.Permissions.Single(p => p.GrantedToUserId is not null);
+            direct.GrantedToUserId.Should().Be(grantee);
+            direct.PermissionType.Should().Be(PermissionType.Edit);
+            direct.GrantedByUserId.Should().Be(grantedBy, "az audit-nyom is megőrzendő");
+
+            var byRole = reloaded.Permissions.Single(p => p.GrantedToRoleId is not null);
+            byRole.GrantedToRoleId.Should().Be(reviewerRole);
+
+            editGrantId = direct.Id;
+        }
+
+        // Revoking must actually remove the row, not just the in-memory entry — otherwise a
+        // withdrawn permission would come back on the next load.
+        using (var scope = _fixture.CreateScope())
+        {
+            var repository = Repository(scope);
+            var reloaded = await repository.GetByIdAsync(document.Id);
+            reloaded!.RevokePermission(editGrantId, grantedBy);
+            await repository.UpdateAsync(reloaded);
+        }
+
+        using (var scope = _fixture.CreateScope())
+        {
+            var reloaded = await Repository(scope).GetByIdAsync(document.Id);
+            reloaded!.Permissions.Should().ContainSingle("a visszavont jog nem térhet vissza");
+            reloaded.Permissions.Single().GrantedToRoleId.Should().Be(reviewerRole);
+        }
+    }
+
+    [Fact]
     public async Task ListAsync_Filters_StatusTypeSearch()
     {
         var draft = NewDocument(name: "Belváros Café — pultsor kiviteli rajz FILTERTEST");

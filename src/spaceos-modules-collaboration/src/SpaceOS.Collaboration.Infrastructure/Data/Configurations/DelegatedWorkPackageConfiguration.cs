@@ -25,6 +25,16 @@ internal sealed class DelegatedWorkPackageConfiguration : IEntityTypeConfigurati
             .HasMaxLength(256)
             .IsRequired();
 
+        // The work-scope anchor is a VALUE object, not an entity: owned, columns inline on the
+        // package row. Without this EF tries to treat it as an entity and cannot even build the
+        // model (it has no key and no bindable constructor).
+        builder.OwnsOne(w => w.WorkScope, scope =>
+        {
+            scope.Property(s => s.ProjectId).HasColumnName("work_scope_project_id");
+            scope.Property(s => s.EpicId).HasColumnName("work_scope_epic_id");
+            scope.Property(s => s.TaskId).HasColumnName("work_scope_task_id");
+        });
+
         builder.Property(w => w.ScopeDescription)
             .HasColumnType("text")
             .IsRequired();

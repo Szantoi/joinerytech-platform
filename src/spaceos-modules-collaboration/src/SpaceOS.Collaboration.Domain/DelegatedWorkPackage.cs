@@ -20,10 +20,39 @@ public class DelegatedWorkPackage
     public string? CompletionProofRef { get; private set; }
     public string? RejectionOrChangeReason { get; private set; }
 
+    /// <summary>
+    /// Which Kernel work this package serves (B2B-10 F1, F0/4 decision).
+    /// </summary>
+    /// <remarks>
+    /// Nullable only because packages created before this field existed have no anchor to fill
+    /// in. New packages always carry one — <see cref="Create"/> demands it.
+    /// </remarks>
+    public CollaborationWorkScope? WorkScope { get; private set; }
+
     private readonly List<WorkPackageStateHistoryEntry> _history = new();
     public IReadOnlyList<WorkPackageStateHistoryEntry> History => _history.AsReadOnly();
 
     private DelegatedWorkPackage() { }
+
+    /// <summary>
+    /// Guards the "one agreement plans one project" invariant across packages.
+    /// </summary>
+    /// <remarks>
+    /// The analogue of scheduling's one-run-one-project rule. Packages are separate aggregates,
+    /// so the check needs the sibling's project handed in — the caller that loads them is the
+    /// only one who can. Keeping the RULE here (rather than writing an `if` in a handler) means
+    /// there is still one place that says what it means.
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">The scope belongs to a different project.</exception>
+    public static void EnsureSameProject(Guid? existingProjectId, CollaborationWorkScope scope)
+    {
+        ArgumentNullException.ThrowIfNull(scope);
+
+        if (existingProjectId is { } project && project != scope.ProjectId)
+            throw new InvalidOperationException(
+                $"This agreement already delegates work of project {project}; a package scoped to " +
+                $"{scope.ProjectId} would make one agreement span two projects.");
+    }
 
     public static DelegatedWorkPackage Create(
         Guid agreementId,
@@ -32,7 +61,8 @@ public class DelegatedWorkPackage
         string title,
         string scopeDescription,
         DateTimeOffset dueAtUtc,
-        DateTimeOffset createdAtUtc)
+        DateTimeOffset createdAtUtc,
+        CollaborationWorkScope? workScope = null)
     {
         if (agreementId == Guid.Empty)
             throw new ArgumentException("Agreement ID cannot be empty.", nameof(agreementId));
@@ -60,6 +90,10 @@ public class DelegatedWorkPackage
             Status = WorkPackageStatus.Draft,
             DueAtUtc = dueAtUtc,
             CreatedAtUtc = createdAtUtc,
+            // Isolated copy: EF maps an owned value object by IDENTITY, so two packages sharing
+            // one instance would silently write NULL columns for the second (see the owned
+            // value-object trap). A record copy keeps equality intact and the storage honest.
+            WorkScope = workScope is null ? null : workScope with { },
             RowVersion = 1
         };
     }

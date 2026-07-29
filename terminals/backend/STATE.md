@@ -1,6 +1,6 @@
 # BACKEND Terminal State
 
-> **Frissítve:** 2026-07-29 délelőtt (Europe/Budapest)
+> **Frissítve:** 2026-07-29 délután (Europe/Budapest)
 > **Kanonikus task-státusz:** [`EPICS.yaml`](../../EPICS.yaml) — a `done`/`APPROVED`
 > kimondása **root-review joga**, ez a fájl a végrehajtó nézete.
 > **Aktív task:** [`PLAN-03`](../../docs/tasks/EPIC-PRODUCTION-PLANNING-2026Q3/PLAN-03-SCHEDULING-IMPLEMENTATION.md)
@@ -10,7 +10,7 @@
 A `spaceos.scheduling` modul **külön repóban**: `Szantoi/spaceos-modules-scheduling`
 (lokálisan `C:\Users\szant\Documents\Development\spaceos-modules-scheduling`).
 A platform-repóban csak a task-doksik és az ADR-ek vannak — **modul-kód nem kerülhet bele**.
-Aktuális `main`: `0efc329`, **CI zöld** (run `30426082492`, Gábor engedélyével pusholva).
+Aktuális `main`: `d63f317`, **CI zöld** (run `30438753129`); lokálisan is 398/398, mert a Docker elindult.
 
 ## Mérföldkövek
 
@@ -22,19 +22,17 @@ Aktuális `main`: `0efc329`, **CI zöld** (run `30426082492`, Gábor engedélyé
 | M4 — véges kapacitású ütemező | **fut**, 1–3. szelet kész (2. **APPROVED**, 3. `review_requested`) | port + referencia; CP-SAT adapter + conformance (`0efc329`, CI zöld); utókövetés (`5957459`); **naptár-bekötés** (`b02616b`) |
 | M5 | nem indult | — |
 
-## Mérés (2026-07-29 délelőtt)
+## Mérés (2026-07-29 délután)
 
 **Scheduling `d63f317`: 398/398 zöld** — CI (run `30438753129`) **és lokálisan is**, mert a
 Docker 2026-07-29 délutánján elindult. Domain 245 / Solver.OrTools 26 / Infrastructure 65 /
 Host 43 / **Integration 19**. Szótár-őr OK, `--locked-mode` zöld, generált TS-kliens 558 sor.
 
-**DMS (platform-repó) `d15f6e7`: 90/90 zöld**, köztük **11 integrációs valódi PostgreSQL-en** —
+**DMS (platform-repó) `6554a09`: 99/99 zöld**, köztük **11 integrációs valódi PostgreSQL-en** —
 tehát a `DocumentOwnerIdentity` migráció és az RLS-izoláció **bizonyított**.
 
-**Ezzel a linux-x64 natív OR-Tools bináris is mérve** (ubuntu-latest, glibc): a 26 solver-teszt
-— a determinizmus-kapuval együtt — ott is zöld. Lokálisan csak win-x64 volt bizonyítható, mert
-a **Docker ezen a gépen nem fut** (Testcontainers-hiba, igazolva), így az integrációs sáv
-helyben ma sem mérhető.
+**A linux-x64 natív OR-Tools bináris is mérve** (CI, ubuntu-latest/glibc): a 26 solver-teszt —
+a determinizmus-kapuval együtt — ott is zöld, a fejlesztői win-x64 mellett.
 
 ## Ami a helyén van (és negatív kontrollal igazolt)
 

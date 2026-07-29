@@ -33,8 +33,8 @@
       mindkét oldalon leszármazott. Ez fogta meg a referencia **FF/SF finish-korlát** hibáját.
 - [x] Lockfile-ok + `--locked-mode` zöld (ADR-070 D4), minden OrTools runtime-alcsomag
       `contentHash`-sel pinelve.
-- [ ] **Push + CI** — a **linux-x64 natív bináris** csak ott dől el (ma csak win-x64 mérve).
-      Gábor/root döntése, magamtól nem indítom.
+- [x] **Push + CI** (Gábor engedélyével): run `30426082492` **zöld, 369 teszt** — ezzel a
+      **linux-x64** natív bináris is mérve (glibc). ⚠ Alpine/musl továbbra sem mérve.
 - [ ] Naptár-bekötés az ütemezésbe: a perc-idővonal ↔ `WorkingCalendar` (DST, kivételek) — ma a
       solver tiszta perc-idővonalon dolgozik. **Ez az M4 következő szelete.**
 - [ ] **Root-döntésre vár:** ütköző fix kezdéseknél az adapter dob, a referencia elhelyezi és

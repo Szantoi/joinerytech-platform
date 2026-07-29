@@ -10,8 +10,7 @@
 A `spaceos.scheduling` modul **külön repóban**: `Szantoi/spaceos-modules-scheduling`
 (lokálisan `C:\Users\szant\Documents\Development\spaceos-modules-scheduling`).
 A platform-repóban csak a task-doksik és az ADR-ek vannak — **modul-kód nem kerülhet bele**.
-Aktuális `main`: `0efc329` — **lokálisan mérve, még NINCS pusholva**, tehát a CI ezen a
-commiton nem futott (az előző pusholt állapot `83e403c` volt CI-zölddel).
+Aktuális `main`: `0efc329`, **CI zöld** (run `30426082492`, Gábor engedélyével pusholva).
 
 ## Mérföldkövek
 
@@ -25,12 +24,14 @@ commiton nem futott (az előző pusholt állapot `83e403c` volt CI-zölddel).
 
 ## Mérés (2026-07-29 délelőtt)
 
-**350 zöld, 0 bukás** — Domain **238** (+19 conformance) / **Solver.OrTools 26** /
-Infrastructure 43 / Host 43. Build 0 warning, `--locked-mode` zöld, szótár-őr OK.
+**369 zöld, 0 bukás a CI-ban** (`0efc329`) — Domain **238** (+19 conformance) /
+**Solver.OrTools 26** / Infrastructure 43 / Host 43 / **Integration 19**.
+Build 0 warning, `--locked-mode` zöld, szótár-őr OK, generált TS-kliens 558 sor.
 
-⚠ **Az integrációs sáv (19) ma NEM mérhető:** a Docker ezen a gépen nem fut
-(Testcontainers-hiba, igazolva) — a mai diff nem érinti (a solver nem megy DB-hez), de a
-teljes 369-es szám csak Dockerrel vagy a CI-ban mondható ki.
+**Ezzel a linux-x64 natív OR-Tools bináris is mérve** (ubuntu-latest, glibc): a 26 solver-teszt
+— a determinizmus-kapuval együtt — ott is zöld. Lokálisan csak win-x64 volt bizonyítható, mert
+a **Docker ezen a gépen nem fut** (Testcontainers-hiba, igazolva), így az integrációs sáv
+helyben ma sem mérhető.
 
 ## Ami a helyén van (és negatív kontrollal igazolt)
 
@@ -54,8 +55,8 @@ teljes 369-es szám csak Dockerrel vagy a CI-ban mondható ki.
 
 - A referencia-ütemező **mohó, nem lép vissza** — ezért van port. Mérve a greedy csapdáján:
   **referencia 160 perc → CP-SAT 110 perc**.
-- **A linux-x64 natív bináris még nincs mérve** — csak a fejlesztői win-x64. Ez a CI első
-  futásán dől el, ami **push-t igényel** (nem indítottam el magamtól).
+- **RID-mátrix:** linux-x64 (CI, glibc) és win-x64 (fejlesztői) mérve. **Alpine/musl NEM** —
+  az ADR-070 nyitott pontja marad, deploy előtt a tényleges base image-en mérendő.
 - **Nyitott döntés a rootnál:** ütköző fix kezdéseknél az adapter **dob**, a referencia
   elhelyezi és **túllépi a kapacitást**. Üzleti kérdés, tesztben rögzítve.
 - A solver **tiszta perc-idővonalon** dolgozik — naptár/DST-bekötés a következő szelet.
@@ -63,8 +64,9 @@ teljes 369-es szám csak Dockerrel vagy a CI-ban mondható ki.
   a naptár a `ResourceCalendarRevision`-ön él. Képesség-mátrixnál születik meg.
 - A hosting `DevelopmentAuthenticationHandler` **nem ad `enabled_modules` claimet**, így
   `Jwt:Mode=Development` mellett a modul-kapu mindent 403-mal utasít el. Fail-closed, tehát
-  helyes — de a lokális futtatást ellehetetleníti. Javaslat a Codex/ERPSEP-06 sávnak kiment,
-  root **támogatja** (két kikötéssel). Nálam nem blokkoló: teszt-séma mintázza a claimeket.
+  helyes — de a lokális futtatást ellehetetleníti. **2026-07-29 10:05: a Codex leszállította
+  (ERPSEP-06, `review_requested`, hosting 76/76)** — a claim mostantól konfigurálható, az üres
+  alapérték szándékosan fail-closed. Root-approval után ez a korlát törölhető innen.
 - **Nexus MCP-tunnel nem él** — a mailbox-kézbesítés a lokális sorban vár.
 
 ## Kapuk, amik NEM az enyémek

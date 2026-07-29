@@ -92,7 +92,8 @@ mind additív, a kézbesített `1.0.0-preview.1` nem törik.
 - [ ] Nem az én sávom, de követem: **P2-k** (SSE kapcsolat-korlát/backpressure,
       `costMonitoringService` nem takarított Map-jei, CRM/Kontrolling korlátlan listák) —
       **kiosztatlanok**.
-- [ ] **DMS model-snapshot** hiánya: a generált migráció az egész sémát újraírja. Külön szelet.
+- [x] **DMS model-snapshot** bevezetve (`43753b1`): a generált migráció eddig az egész sémát
+      újraírta. Bizonyíték: a snapshot után egy újabb `migrations add` ÜRES `Up()`-ot adott.
 
 ## P2 — sandbox (a VPS-lépések Gábor-kapusak)
 

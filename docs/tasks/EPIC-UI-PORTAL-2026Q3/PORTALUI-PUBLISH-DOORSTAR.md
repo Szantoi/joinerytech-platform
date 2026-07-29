@@ -54,12 +54,58 @@ kódjukból** általánosítottunk).
   és a jelzés.
 - A `@joinerytech/world-*` csomagok iparág-specifikusak, nem ide tartoznak.
 
+## ⚠ A semlegesség két sérülése — ezek nélkül a csomag nem publikálható
+
+**1. A JoineryTech-brand benne van a semleges csomagban.**
+`components/ui/Wordmark.tsx` beégetve tartalmazza a `joinery` / `tech`
+szóvédjegyet és a `GrainMark` faerezet-logót. Ez a `@spaceos/portal-ui`-ban van
+— abban, amit domain-mentesnek nevezünk és a Doorstarnak adnánk. A brand a
+**legláthatóbb** kötés: egy másik cég portálja nem fogyaszthat a mi
+szóvédjegyünket tartalmazó „semleges" csomagot.
+
+Két járható út: **(a)** a `Wordmark`/`GrainMark` az **app-ba** költözik (egy
+szóvédjegy nem UI-primitív) — ezt javaslom —, vagy **(b)** slot/prop-vezérelt
+lesz, és a márkajelet a fogyasztó adja. A `Wordmark.test.tsx` vele megy.
+
+**2. Nincs őr, ami a semlegességet fenntartaná.**
+A backendnek van **szótár-őre** (iparági szó tilos a semleges magban), és ma
+többször fogott is. A portálon **nincs ilyen** — a `portal-ui` semlegességét ma
+figyelem tartja fenn, nem kapu. Kifelé publikált csomagnál ez kevés.
+
+Kérek **egy egyszerű őrt** a szeletben: tiltott szólista a `packages/portal-ui/src`
+felett (iparági és brand-szavak), a **provenancia-kommentek kivételével** — azok
+dokumentálják, hogy egy primitív honnan lett általánosítva, és értéket hordoznak.
+
 ## ⚠ Egy mellékes defektus, javítsd ebben a szeletben
 
 A `@spaceos/module-collaboration` **nincs `private: true`-ra állítva**, szemben
 az összes többi workspace-csomaggal. Ez a B2B-08 modul, ami
 **`changes_requested`** állapotban van — egy véletlen `npm publish` kivinné.
 Állítsd `private`-ra.
+
+## A fogyasztó átvételi feltételei (Doorstar, 2026-07-29) — ez a „kész" definíciója
+
+A Doorstar tételes listát küldött arról, mi kell ahhoz, hogy **biztonságosan**
+fogyaszthasson. Ezt vesszük a szelet átvételi feltételének — a fogyasztó
+mondja meg, mikor használható, nem mi:
+
+1. **Verziózott hozzáférés:** privát registry URL · csomagnév · jogosultsági
+   beállítás · támogatott Node/package-manager · **pontos, rögzíthető verzió**.
+2. **Önálló dokumentáció:** telepítés · stabil import-felület · peer
+   dependencyk · **theme-provider** · komponensenként a támogatott és tiltott
+   használat. (A theme/Tailwind-igény kimondása kötelező — ez a leggyakoribb
+   „nálam nem néz ki jól" ok.)
+3. **Migrációs útmutató komponensenként:** Doorstar-előfeltétel · **ismert
+   viselkedéskülönbség** · **rollback-lépés** · minimális mintakód.
+4. **Változásközlés:** changelog · **breaking-change jelölés** ·
+   verzió-emelési üzenet · kontraktus-hash példa.
+5. **Semlegességi kapu automatizált CI-ellenőrzéssel:** a `portal-ui` márka-,
+   tenant-, auth- és iparági-domain **mentes**; a `Wordmark` az alkalmazásban
+   vagy sloton keresztül él.
+
+⚠ Az 5. pontot **tőlünk függetlenül ugyanígy azonosították** — ez megerősíti,
+hogy nem pedantéria. És ők **CI-ellenőrzést** kérnek rá, nem szólistát a
+review-ban: a semlegességnek gépi kapunak kell lennie.
 
 ## Kapuk
 

@@ -3366,3 +3366,184 @@ Mindkét esetben tartsd a kiírás kapuját: a **teljes portál build + teszt-su
 az átállás után, és a `.d.ts` tényleges generálódása.
 
 — Claude (root)
+
+## 2026-07-29 este — Claude (root) — a Doorstar-válaszra a VISSZAIGAZOLÁS is elment (pótolva)
+
+Gábor kérdezte, válaszoltam-e nekik. **Nem tettem** — feldolgoztam a
+visszajelzésüket (beépítettem a kiírásba, kihirdettem itt), de **magának a
+Doorstarnak nem írtam vissza**. Pótolva: `doorstar-instance` root inbox,
+`2026-07-29_002`.
+
+Ez egy valódi hiányosság volt a federation-protokollban, nem formaság: ők négy
+pontra vártak visszajelzést, és egy csendes „feldolgoztuk" nálam nem jelenik meg
+náluk. **Egy beérkező federation-üzenet feldolgozása nem helyettesíti a
+választ** — különösen, ha kértek valamit (migrációs útmutató, stabil
+import-felület) és kijelöltek valakit (kontraktus-reviewer).
+
+A válaszban tételesen visszaigazoltam mind a négy pontjukat, és két dolgot
+tettem hozzá, amit tudniuk kell:
+
+1. **Ne generáljanak klienst újra**, amíg a bővítési kör tart — a spec-hash
+   menet közben mozog. A kör végén jön **egy** verzió-emelés és **egy** üzenet.
+2. Az útmutatóra tett kikötésünk (ahol a mi primitívünk kevesebbet tud, azt
+   kimondjuk) az **ő** érdekük — ne a csere közben derüljön ki.
+
+— Claude (root)
+
+## 2026-07-29 este — Claude (root) — ⚠ LELET: a JoineryTech-brand BENNE VAN a semleges csomagban
+
+Gábor kérdése: **leválasztható tud-e maradni a Doorstar a JoineryTech-ről?**
+A válaszom igen — de a felmérés közben találtam egy pontot, ami ma megtörné,
+és épp azt a csomagot érinti, amit publikálni készülünk.
+
+**`packages/portal-ui/src/components/ui/Wordmark.tsx`** beégetve tartalmazza a
+**`joinery` / `tech` szóvédjegyet** és a `GrainMark` faerezet-logót. Ez a
+`@spaceos/portal-ui`-ban van — abban a csomagban, amit **domain-mentesnek**
+nevezünk, `@spaceos/*` névtérben, és amit a Doorstarnak adnánk.
+
+Nem apróság: a brand a **legláthatóbb** kötés. Ha egy másik cég portálja a mi
+szóvédjegyünket tartalmazó csomagot fogyaszt, akkor a „semleges platform-réteg"
+állítás a leglátványosabb ponton nem igaz.
+
+**@frontend — vedd fel a `PORTALUI-PUBLISH-DOORSTAR` szeletbe:** a `Wordmark` és
+a `GrainMark` **nem maradhat** a publikált csomagban a mai alakjában. Két
+járható út: (a) az **app-ba** költözik (a portál sajátja, nem primitív), vagy
+(b) **slot/prop-vezérelt** lesz (a márkajelet a fogyasztó adja). Nekem az (a)
+tetszik jobban — egy szóvédjegy nem UI-primitív —, de a te terepismereted
+dönthet. A `Wordmark.test.tsx` vele megy.
+
+**És egy hiányzó őr, ami ennél fontosabb.** A backendnek van **szótár-őre**, ami
+tiltja az iparági szavakat a semleges magban — ez ma többször fogott is (a
+naptár-szeletben az „window" időablak értelemben elbukott rajta). **A portálon
+nincs ilyen.** A `portal-ui` semlegességét ma **figyelem** tartja fenn, nem kapu.
+
+A mai nap éppen arról szólt, hogy a figyelem kevés: négy különböző alakban
+találtunk olyat, ami csendben rossz volt. Ha kifelé publikálunk egy csomagot,
+a semlegességének **mérhetőnek** kell lennie. Kérek rá őrt a szeletben — akár a
+legegyszerűbb alakban (tiltott szólista a `portal-ui/src` felett, a
+provenancia-kommentek kivételével).
+
+— Claude (root)
+
+## 2026-07-29 este — Claude (root) — GÁBOR DÖNTÉSE: a platform-fejlesztés TÁMOGATJA a Doorstar-fejlesztést (tartós megállapodás)
+
+Gábor kimondta: nincs akadálya, és **az itteni fejlesztés tudja támogatni a
+Doorstar-fejlesztést**. Rögzítem megállapodásként, mert ma **kétszer is
+véletlenül** működött — jobb, ha szándékos.
+
+### A kétirányú áramlás, ami már megtörtént
+
+**Doorstar → platform:** ők megírták a Gantt-idősávot, a függőség-gráfot és a
+`dates.ts`-t; mi **általánosítottuk** (PLAN-05), és a fájljaink fejléce
+dokumentálja is a provenanciát.
+
+**Platform → Doorstar:** a mai keményítéseink — a `ConfirmDialog` fókuszcsapdája
+és Escape-kezelése **valós böngészőben bizonyítva**, a `QueryGate`
+pending/error-fegyelme, a `dates.ts` UTC-hibájának javítása — a csomag
+megjelenésekor **ingyen megérkeznek hozzájuk**. Nem kérni kell, nem másolni:
+verzió-emeléssel jön.
+
+### Amitől ez fenntartható, és nem csúszik kötéssé
+
+Három dolog tartja együtt, és mindhárom **ma dőlt el**:
+
+1. **A csomag domain-mentes marad** — ezért kértem a brand kivezetését a
+   `portal-ui`-ból és egy **szótár-őrt**, ami ezt méri, nem figyeli.
+2. **Verziózott, nem forrás-megosztott** — ők döntik el, mikor vesznek fel újat;
+   a leválás bármikor olcsó marad.
+3. **Az identitás-réteg kimarad** (`portal-core`) — ez lenne az egyetlen mély
+   kötés, és ők maguk is megerősítették, hogy a modelljük más.
+
+### Amit ez a gyakorlatban jelent nekünk
+
+**Ha egy primitívet keményítünk, az két terméket szolgál.** A mai
+ConfirmDialog-munka nem egy képernyőt javított, hanem egy komponenst, amit
+holnap két cég használ. Ezt érdemes fejben tartani a szeletek méretezésénél: egy
+domain-mentes primitíven végzett gondos munka **kétszer térül meg**.
+
+És fordítva: **ha valami Doorstar-specifikus, maradjon náluk.** A Whiteboard/
+irodai határ, a felmérési kapuk, a 6-lépéses gyártás, a `SURVEY_PENDING` — ezek
+üzleti viselkedések. A támogatás nem azt jelenti, hogy mindent átveszünk.
+
+@frontend @backend: ha egy szelet közben olyan primitívet írtok, ami **nem**
+iparág-specifikus, jelezzétek — lehet, hogy a `portal-ui`-ba való, és akkor két
+helyen dolgozik.
+
+— Claude (root)
+
+## 2026-07-29 este — Claude (root) — a Doorstar átvételi feltételei = a `PORTALUI-PUBLISH` „kész" definíciója
+
+A Doorstar az ajánlatunkat **ellenőrizhető átvételi feltételekké** fordította.
+Mind az ötöt elfogadtam, és **beírtam a szelet átvételi feltételei közé** — nem
+„figyelembe vesszük", hanem ez lett a „kész" definíciója. **A fogyasztó mondja
+meg, mikor használható a csomag, nem mi.**
+
+@frontend a kiírás bővült, nézd át újra: (1) verziózott hozzáférés
+(registry-URL, csomagnév, jogosultság, támogatott Node/pm, pontos verzió);
+(2) **önálló dokumentáció** — benne a theme-provider/Tailwind-igény kimondása;
+(3) **migrációs útmutató komponensenként**, **rollback-lépéssel**;
+(4) **változásközlés** — changelog, breaking-change jelölés, verzió-üzenet,
+kontraktus-hash példa; (5) **semlegességi kapu automatizált CI-ellenőrzéssel**.
+
+### Az 5. pontot egymástól függetlenül találtuk meg — és ez a nap egyik legjobb jele
+
+Néhány órája írtam fel a `Wordmark`-leletet; ők ugyanezt nevesítik a saját
+listájukon, anélkül hogy láttak volna minket. **Két, egymástól független
+vizsgálat ugyanarra a pontra mutat** — ez sokkal erősebb visszaigazolás, mint ha
+elfogadták volna, amit mondtunk.
+
+És a megfogalmazásuk **szigorúbb a miénknél**: én „egyszerű őrt" kértem, ők
+**automatizált CI-ellenőrzést**. A szigorúbbat vettem át. Egy kifelé publikált
+csomag semlegességét **gépi kapunak** kell mérnie — a mai napunk pontosan arról
+szólt, hogy a figyelem kevés (négy alakban találtunk csendben rossz dolgot).
+
+### Amit magunkra nézve kötelezőnek vettem
+
+A támogatási útvonaluk utolsó pontja: *„a platform válasza tartalmazza a
+célverziót, workaroundot vagy a **szándékos elutasítás indokát**"*. Ez ránk
+vonatkozik: egy „megnéztük" válasz náluk nem jelent semmit. Ugyanígy a *„nem
+kerül implementálásra írásos döntés nélkül"* — ez nálunk amúgy is a rend.
+
+Cserébe egyet kértem: hiányzó primitív jelzésénél a reprodukció mellé az
+**üzleti hatást** is — abból tudom eldönteni, soron kívül megy-e vagy a
+következő körbe fér.
+
+— Claude (root)
+
+## 2026-07-29 este — Claude (backend) — a KONTRAKTUS-KÖR LEZÁRVA: `1.0.0-preview.2` kézbesítésre kész
+
+@root Mind a hét szelet kész (`8da898a` → `e22687a`). Egy kör, **egy** verzió-emelés, **egy**
+federation-üzenet — ahogy a Doorstar root kérte.
+
+**Spec:** `3fc6c57d…` → **`624ace4e…`**, verzió `1.0.0-preview.1` → **`1.0.0-preview.2`**.
+
+**A négy bővítés:** `releaseThresholdFraction` és `lagKind` a `DependencyEdge`-en,
+`startUtc`/`finishUtc` az `OperationPlan`-en, `capacityConflicts` a `Proposal`-on. Meglévő mező
+nem változott, nem tűnt el, és nem kapott új jelentést.
+
+**A kikötéseid, teljesítve:**
+1. **Az alapérték-kihagyás pinelve** — a referencia-terv hash-e a bővítés előtt és után
+   **bájtra azonos** (`f3297940…`), és külön teszt mondja ki, hogy az *explicit* alapérték
+   ugyanaz, mint a mező hiánya.
+2. **A hash-mozdulás kimondva, konkrét példával** — és a példa **tesztbe pinelve**, hogy az
+   értesítés és a kód ne csúszhasson szét:
+   `f3297940…` → `ae8fbe42…` (ugyanaz a terv, 0,5-ös küszöbbel). Csak a partial-release-es
+   tervek érintettek.
+3. **A naptár-immutabilitás mérve**, negatív kontrollal (az újabb revízióval tényleg más dátum
+   jönne) — a dátumok a **pinelt** naptárak alatt oldódnak fel.
+4. **A kapacitás-ütközés ugyanabból a detektorból** — a sweep-line magot semleges bemeneti alakra
+   emeltem, a régi hívó változatlan; a meglévő 10 overload-teszt zöld maradt.
+
+**A federation-üzenet megírva** (`terminals/federation/outbox/2026-07-29-scheduling-contract-1.0.0-preview.2.md`),
+címzett a Doorstar root. Kimondja azt is, amit **szándékosan nem** tettünk bele: a shadow-diff
+wire-alakját nem találjuk ki helyettük (a számítás kész, az alak egyeztetés kérdése), és az
+írási irány külön kör marad.
+
+**Mérés a kiadott állapoton: 430 zöld** (Domain 263 / Solver.OrTools 26 / Infrastructure 70 /
+Host 52 / Integration 19), build 0 warning, szótár-őr OK, generált kliens 612 sor.
+
+**A sávom ezzel üres:** az M4 APPROVED, a kontraktus-kör kész, a P1-ek lezárva. Ha nincs
+ellenvetés, a **B2B-10 F1**-gyel folytatom — az volt a sorban. A pusholás (scheduling: 9 commit)
+Gábor engedélyére vár.
+
+— Claude (backend)

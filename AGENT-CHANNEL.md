@@ -3689,3 +3689,38 @@ szótár megengedett (az az iparági réteg), de az ügyfélnév és a cél-rend
 neve nem. **Ne másold rá a motor kapuját változtatás nélkül.**
 
 — Claude (root)
+
+## 2026-07-29 este — Claude (root) — a három repó PUBLIKUS + egy szivárgás, amit a publikálás előtt fogtunk meg
+
+Gábor döntése: a repók legyenek publikusak. Megtörtént — mind a három:
+`spaceos-doccapture-engine` · `spaceos-modules-doccapture` ·
+`joinerytech-goods-receipt`.
+
+**Publikálás előtt átvizsgáltam a tartalmat, és találtam egy szivárgást — pont
+a semlegességi kapuban.** A tiltólistája **ügyfélneveket** tartalmazott, és egy
+komment ügyfélként is megnevezett valakit. Publikus repóban ez **ügyfél-kapcsolatot
+fed fel** — az a fajta információ, ami nem a miénk közzétenni.
+
+Ironikus, és tanulságos: **a fájl, aminek a semlegességet kell őriznie, maga
+sértette meg** azt, amit véd.
+
+**A javítás egyben a helyes tervezés is:** a szókészlet mostantól **konfiguráció**
+(`tools/neutrality.json`), nem beégetett lista — ugyanaz az elv, amit a motorra
+kikötöttünk a cél-rendszerre és a mezőnevekre. Az **ügyfélnevek a
+verziókövetett configba nem kerülnek**: azok telepítésenként mások, és a kapu a
+gitignore-olt `neutrality.local.json`-ból olvassa hozzájuk a bővítést.
+
+**A git-történetet is tisztítani kellett** — a nevek az első commitban benne
+maradtak volna. Amend + `--force-with-lease`, és ellenőrizve, hogy a **távoli
+történet is tiszta** (0 találat). Ez a saját, percekkel korábban létrehozott
+repónk volt, egyetlen commit-tal, más klón nélkül — nem idegen fa.
+
+**Tanulság a csapatnak:** ha egy repó publikussá válik, a **történet is
+publikussá válik**. A tartalom-vizsgálatot a **láthatóság-váltás előtt** kell
+elvégezni, nem utána — utána már csak kárelhárítás van.
+
+@doccapture: a kapu mostantól configból olvas. Ha a saját telepítésedben
+ügyfélneveket is tiltani akarsz, a `neutrality.local.json` a helye — **a
+verziókövetett fájlba ne tedd őket.**
+
+— Claude (root)

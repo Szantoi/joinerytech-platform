@@ -2,8 +2,8 @@
 /**
  * MCP Stdio-HTTP Bridge
  *
- * Bridges Claude Code's stdio-based MCP client to the knowledge-service HTTP API.
- * This allows Claude Code to use mcp__spaceos-knowledge__* tools.
+ * Bridges a stdio MCP client to the Knowledge Service HTTP transport. The
+ * credential must be supplied by the process environment or service manager.
  */
 
 const readline = require('readline');
@@ -11,36 +11,36 @@ const http = require('http');
 
 const MCP_HOST = process.env.MCP_HOST || 'localhost';
 const MCP_PORT = parseInt(process.env.MCP_PORT || '3456', 10);
-const AUTH_TOKEN = process.env.MCP_AUTH_TOKEN || 'IoUpLUgr4v6Mj5lt4u2XD1JOy5iGmVdxne473srMl2o=';
+const AUTH_TOKEN = process.env.MCP_AUTH_TOKEN?.trim();
 
-// Setup readline for stdin only (don't bind to stdout)
+if (!AUTH_TOKEN) {
+  process.stderr.write('[MCP bridge] MCP_AUTH_TOKEN is required.\n');
+  process.exit(78);
+}
+
 const rl = readline.createInterface({
   input: process.stdin,
-  terminal: false
+  terminal: false,
 });
 
-// Forward JSON-RPC messages from stdin to HTTP endpoint
 rl.on('line', (line) => {
   if (!line.trim()) return;
 
   let jsonrpcMessage;
   try {
     jsonrpcMessage = JSON.parse(line);
-  } catch (err) {
-    // Invalid JSON - send error response
-    const errorResponse = {
+  } catch {
+    console.log(JSON.stringify({
       jsonrpc: '2.0',
       error: {
         code: -32700,
-        message: 'Parse error: Invalid JSON'
+        message: 'Parse error: Invalid JSON',
       },
-      id: null
-    };
-    console.log(JSON.stringify(errorResponse));
+      id: null,
+    }));
     return;
   }
 
-  // Forward to HTTP MCP server
   const postData = JSON.stringify(jsonrpcMessage);
   const options = {
     hostname: MCP_HOST,
@@ -50,8 +50,8 @@ rl.on('line', (line) => {
     headers: {
       'Content-Type': 'application/json',
       'Content-Length': Buffer.byteLength(postData),
-      'Authorization': `Bearer ${AUTH_TOKEN}`
-    }
+      Authorization: `Bearer ${AUTH_TOKEN}`,
+    },
   };
 
   const req = http.request(options, (res) => {
@@ -62,22 +62,19 @@ rl.on('line', (line) => {
     });
 
     res.on('end', () => {
-      // Write response to stdout
       console.log(responseData.trim());
     });
   });
 
-  req.on('error', (err) => {
-    // HTTP request failed - send JSON-RPC error
-    const errorResponse = {
+  req.on('error', (error) => {
+    console.log(JSON.stringify({
       jsonrpc: '2.0',
       error: {
         code: -32603,
-        message: `Internal error: ${err.message}`
+        message: `Internal error: ${error.message}`,
       },
-      id: jsonrpcMessage.id || null
-    };
-    console.log(JSON.stringify(errorResponse));
+      id: jsonrpcMessage.id || null,
+    }));
   });
 
   req.write(postData);
@@ -88,7 +85,6 @@ rl.on('close', () => {
   process.exit(0);
 });
 
-// Graceful shutdown
 process.on('SIGTERM', () => {
   rl.close();
 });

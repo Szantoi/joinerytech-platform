@@ -5,18 +5,18 @@
 #
 # Permission values:
 #   - "all"     : everyone can use this tool
-#   - "none"    : no one can use this tool
-#   - [list]    : only listed terminals can use (root always has access)
+#   - "none"    : no identity, including root, can use this tool
+#   - [list]    : only listed terminals can use (root may override an allow list)
 #
-# If a tool is not listed here, default is "all" (everyone can use).
+# If a tool is not listed here, it is denied to every terminal, including root.
 #
 # Terminal names: root, conductor, architect, librarian, explorer, backend, frontend, designer
 
-version: "1.1"
-updated: "2026-06-24"
+version: "1.2"
+updated: "2026-07-22"
 
 # Default permission for unlisted tools
-default: "all"
+default: "none"
 
 permissions:
   # ─── Focus Queue (Conductor priority tracking) ───────────────────────────────
@@ -169,8 +169,7 @@ permissions:
   # A marketing csapat read-only hozzáférést kap a rendszerhez
   # Nem írhatnak semmit, csak olvashatnak
   #
-  # Ezek explicit tiltások:
-  # (Ha nincs itt, a default "all" érvényes, ami nekik read-only)
+  # Minden olvasási jog is explicit szabályt igényel, mert a default "none".
   #
   # A marketing csapat tagjai (marketing-pm, marketing-content, marketing-analyst)
   # automatikusan kapnak read hozzáférést az "all" toolokhoz.

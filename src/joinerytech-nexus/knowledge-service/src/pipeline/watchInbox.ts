@@ -41,6 +41,19 @@ interface UnreadInfo {
   files: string[];
 }
 
+/** Builds authenticated headers for this process's local session-control calls. */
+function localApiHeaders(): Record<string, string> | null {
+  const token = process.env.MCP_TOKEN_WATCHINBOX?.trim()
+    || process.env.MCP_AUTH_TOKEN?.trim();
+
+  if (!token) return null;
+
+  return {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${token}`,
+  };
+}
+
 // ── Find oldest UNREAD inbox ────────────────────────────────────────────────
 
 async function findOldestUnread(terminal: string): Promise<UnreadInfo | null> {
@@ -121,9 +134,15 @@ async function nudgeSession(
   // Previous implementation sent bash-formatted text to tmux, causing "bash: command not found" errors
   // Now we inject the prompt via MCP API to Claude session directly
   try {
+    const headers = localApiHeaders();
+    if (!headers) {
+      await log('[WatchInbox] Nudge skipped: local API credential is not configured');
+      return false;
+    }
+
     const response = await fetch('http://localhost:3456/api/session/inject', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify({
         terminal,
         prompt: nudgeMsg,
@@ -174,9 +193,15 @@ async function autoStartSession(
   const initialPrompt = `[${timestamp}] [INBOX] Te a ${terminal.toUpperCase()} terminál vagy. Olvasd be: MEMORY.md — Inbox: ${path.basename(unread.path)}`;
 
   try {
+    const headers = localApiHeaders();
+    if (!headers) {
+      await log('[WatchInbox] Auto-start skipped: local API credential is not configured');
+      return false;
+    }
+
     const response = await fetch('http://localhost:3456/api/session/start', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify({
         terminal,
         model: wantedModel,

@@ -17,6 +17,7 @@ import {
 } from '../../../mailbox';
 import { validate, TerminalParamSchema, TerminalSchema } from '../../../validation';
 import { triggerImmediatePipelineAsync } from '../../../pipeline/immediatePipeline';
+import { authorizeMailboxRest } from '../../../mcp';
 
 const router = Router();
 
@@ -75,7 +76,7 @@ function broadcastToTerminal(terminal: string, event: string, data: MailboxEvent
 
 // ─── List Inbox ──────────────────────────────────────────────────────────────
 
-router.get('/:terminal/inbox', validate(TerminalParamSchema, 'params'), async (req: Request, res: Response) => {
+router.get('/:terminal/inbox', validate(TerminalParamSchema, 'params'), authorizeMailboxRest, async (req: Request, res: Response) => {
   const terminal = String(req.params.terminal);
   const statusParam = req.query.status as string | undefined;
   const status = statusParam && ['UNREAD', 'READ', 'all'].includes(statusParam)
@@ -93,7 +94,7 @@ router.get('/:terminal/inbox', validate(TerminalParamSchema, 'params'), async (r
 
 // ─── Send Message ────────────────────────────────────────────────────────────
 
-router.post('/:terminal/inbox', validate(TerminalParamSchema, 'params'), async (req: Request, res: Response) => {
+router.post('/:terminal/inbox', validate(TerminalParamSchema, 'params'), authorizeMailboxRest, async (req: Request, res: Response) => {
   const terminal = String(req.params.terminal);
   const { type, content, priority, ref, model } = req.body;
 
@@ -132,7 +133,7 @@ router.post('/:terminal/inbox', validate(TerminalParamSchema, 'params'), async (
 
 // ─── Submit DONE ─────────────────────────────────────────────────────────────
 
-router.post('/:terminal/outbox', validate(TerminalParamSchema, 'params'), async (req: Request, res: Response) => {
+router.post('/:terminal/outbox', validate(TerminalParamSchema, 'params'), authorizeMailboxRest, async (req: Request, res: Response) => {
   const terminal = String(req.params.terminal);
   const { task_id, summary, files_changed } = req.body;
 
@@ -176,7 +177,7 @@ router.post('/:terminal/outbox', validate(TerminalParamSchema, 'params'), async 
 
 // ─── List Outbox ─────────────────────────────────────────────────────────────
 
-router.get('/:terminal/outbox', validate(TerminalParamSchema, 'params'), async (req: Request, res: Response) => {
+router.get('/:terminal/outbox', validate(TerminalParamSchema, 'params'), authorizeMailboxRest, async (req: Request, res: Response) => {
   const terminal = String(req.params.terminal);
   const statusParam = req.query.status as string | undefined;
   const status = statusParam && ['UNREAD', 'READ', 'all'].includes(statusParam)
@@ -194,7 +195,7 @@ router.get('/:terminal/outbox', validate(TerminalParamSchema, 'params'), async (
 
 // ─── List All UNREAD Outbox ──────────────────────────────────────────────────
 
-router.get('/outbox/unread', async (_req: Request, res: Response) => {
+router.get('/outbox/unread', authorizeMailboxRest, async (_req: Request, res: Response) => {
   try {
     const results = await listAllUnreadOutbox();
     const totalCount = results.reduce((sum, r) => sum + r.messages.length, 0);
@@ -211,7 +212,7 @@ router.get('/outbox/unread', async (_req: Request, res: Response) => {
 
 // ─── Inbox Message Counter ───────────────────────────────────────────────────
 
-router.get('/counter', async (_req: Request, res: Response) => {
+router.get('/counter', authorizeMailboxRest, async (_req: Request, res: Response) => {
   try {
     const counts = await getInboxMessageCounter();
     const totalUnread = Object.values(counts).reduce((sum, c) => sum + c.unread, 0);
@@ -229,7 +230,7 @@ router.get('/counter', async (_req: Request, res: Response) => {
 
 // ─── Mark as READ ────────────────────────────────────────────────────────────
 
-router.post('/:terminal/:box/:messageId/read', validate(TerminalParamSchema, 'params'), async (req: Request, res: Response) => {
+router.post('/:terminal/:box/:messageId/read', validate(TerminalParamSchema, 'params'), authorizeMailboxRest, async (req: Request, res: Response) => {
   const terminal = String(req.params.terminal);
   const box = String(req.params.box) as 'inbox' | 'outbox';
   const messageId = String(req.params.messageId);
@@ -254,7 +255,7 @@ router.post('/:terminal/:box/:messageId/read', validate(TerminalParamSchema, 'pa
 
 // ─── SSE: Subscribe to Inbox ─────────────────────────────────────────────────
 
-router.get('/:terminal/subscribe', (req: Request, res: Response) => {
+router.get('/:terminal/subscribe', validate(TerminalParamSchema, 'params'), authorizeMailboxRest, (req: Request, res: Response) => {
   const terminal = String(req.params.terminal);
 
   // Validate terminal
@@ -304,7 +305,7 @@ router.get('/:terminal/subscribe', (req: Request, res: Response) => {
 
 // ─── Broadcast ───────────────────────────────────────────────────────────────
 
-router.post('/broadcast', (req: Request, res: Response) => {
+router.post('/broadcast', authorizeMailboxRest, (req: Request, res: Response) => {
   const { message, priority = 'info' } = req.body;
 
   if (!message) {
@@ -327,7 +328,7 @@ router.post('/broadcast', (req: Request, res: Response) => {
 
 // ─── Tasks Status (legacy endpoint under mailbox) ────────────────────────────
 
-router.get('/tasks/status', async (req: Request, res: Response) => {
+router.get('/tasks/status', authorizeMailboxRest, async (req: Request, res: Response) => {
   const task_id = req.query.task_id as string | undefined;
 
   try {

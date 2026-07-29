@@ -93,7 +93,7 @@ export interface WebhookConfig {
 
 const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN || process.env.TELEGRAM_TOKEN || '';
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || '';
-const WEBHOOK_SECRET = process.env.TELEGRAM_WEBHOOK_SECRET || 'spaceos-webhook-secret-2026';
+const WEBHOOK_SECRET = process.env.TELEGRAM_WEBHOOK_SECRET?.trim() || '';
 
 // Allowed chat IDs (add more as needed)
 const ALLOWED_CHAT_IDS = TELEGRAM_CHAT_ID ? [parseInt(TELEGRAM_CHAT_ID, 10)] : [];
@@ -211,6 +211,10 @@ export async function sendTelegramMessage(
 export async function setWebhook(webhookUrl: string): Promise<boolean> {
   if (!TELEGRAM_TOKEN) {
     log('[TelegramBot] No token configured');
+    return false;
+  }
+  if (!WEBHOOK_SECRET) {
+    log('[TelegramBot] No webhook secret configured');
     return false;
   }
 
@@ -640,14 +644,25 @@ export function createTelegramRouter() {
   const express = require('express');
   const router = express.Router();
 
+  const requireWebhookSecret = (req: any, res: any): boolean => {
+    if (!WEBHOOK_SECRET) {
+      res.status(503).json({ error: 'Telegram webhook authentication is not configured' });
+      return false;
+    }
+
+    const secretHeader = req.headers['x-telegram-bot-api-secret-token'];
+    if (secretHeader !== WEBHOOK_SECRET) {
+      log('[TelegramBot] Invalid webhook secret');
+      res.status(403).json({ error: 'Invalid secret' });
+      return false;
+    }
+
+    return true;
+  };
+
   // Webhook endpoint (central bot - datahaven_daemon_bot)
   router.post('/webhook', async (req: any, res: any) => {
-    // Verify secret token
-    const secretHeader = req.headers['x-telegram-bot-api-secret-token'];
-    if (WEBHOOK_SECRET && secretHeader !== WEBHOOK_SECRET) {
-      log('[TelegramBot] Invalid webhook secret');
-      return res.status(403).json({ error: 'Invalid secret' });
-    }
+    if (!requireWebhookSecret(req, res)) return;
 
     try {
       const update = req.body as TelegramBotUpdate;
@@ -662,6 +677,8 @@ export function createTelegramRouter() {
   // Terminal-specific webhook endpoints (dedicated bots per terminal)
   // Format: /webhook/:terminal (e.g., /webhook/root for Sárkány bot)
   router.post('/webhook/:terminal', async (req: any, res: any) => {
+    if (!requireWebhookSecret(req, res)) return;
+
     const terminal = req.params.terminal;
     log(`[TelegramBot] Terminal-specific webhook: ${terminal}`);
 

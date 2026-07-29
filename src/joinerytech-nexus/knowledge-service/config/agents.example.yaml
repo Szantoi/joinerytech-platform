@@ -1,0 +1,42 @@
+# Token-free MCP identity manifest.
+#
+# This file documents identity-to-secret bindings only. Credential values must
+# be supplied by the service manager/environment and must never be committed.
+# The current runtime derives agent identity from MCP_TOKEN_<NAME> variables;
+# this manifest is the rollout/schema reference for operators.
+
+version: "2.0"
+credential_source: "environment-or-service-manager"
+
+agents:
+  root:
+    role: root
+    credential_env: MCP_AUTH_TOKEN
+  conductor:
+    role: conductor
+    credential_env: MCP_TOKEN_CONDUCTOR
+  architect:
+    role: architect
+    credential_env: MCP_TOKEN_ARCHITECT
+  librarian:
+    role: librarian
+    credential_env: MCP_TOKEN_LIBRARIAN
+  explorer:
+    role: explorer
+    credential_env: MCP_TOKEN_EXPLORER
+  backend:
+    role: backend
+    credential_env: MCP_TOKEN_BACKEND
+  frontend:
+    role: frontend
+    credential_env: MCP_TOKEN_FRONTEND
+  designer:
+    role: designer
+    credential_env: MCP_TOKEN_DESIGNER
+  monitor:
+    role: monitor
+    credential_env: MCP_TOKEN_MONITOR
+
+# Local-only escape hatch (never set in staging/production):
+# NODE_ENV=development
+# MCP_ALLOW_INSECURE_DEV_AUTH=true

@@ -5,6 +5,7 @@ import {
   hasScope,
   authorizeScope,
   clearCache,
+  reloadConfig,
   isValidTerminal,
   VALID_TERMINALS,
 } from '../../task-audit/auth';
@@ -16,8 +17,22 @@ import {
  */
 
 describe('TokenAuth', () => {
+  const originalNodeEnv = process.env.NODE_ENV;
+  const originalInsecureDevelopmentAuth = process.env.TASK_AUDIT_ALLOW_INSECURE_DEV_AUTH;
+
   beforeEach(() => {
+    process.env.NODE_ENV = 'development';
+    process.env.TASK_AUDIT_ALLOW_INSECURE_DEV_AUTH = 'true';
+    reloadConfig();
     clearCache();
+  });
+
+  afterEach(() => {
+    if (originalNodeEnv === undefined) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = originalNodeEnv;
+    if (originalInsecureDevelopmentAuth === undefined) delete process.env.TASK_AUDIT_ALLOW_INSECURE_DEV_AUTH;
+    else process.env.TASK_AUDIT_ALLOW_INSECURE_DEV_AUTH = originalInsecureDevelopmentAuth;
+    reloadConfig();
   });
 
   describe('hashToken', () => {
@@ -83,6 +98,17 @@ describe('TokenAuth', () => {
       const result = verifyToken('super-secret-token-12345');
       expect(result.error).not.toContain('super-secret');
       expect(result.error).not.toContain('12345');
+    });
+
+    it('rejects the former development tokens when insecure development auth is not explicitly enabled', () => {
+      process.env.NODE_ENV = 'production';
+      delete process.env.TASK_AUDIT_ALLOW_INSECURE_DEV_AUTH;
+      reloadConfig();
+
+      const result = verifyToken('dev-token-root-2026');
+
+      expect(result.authenticated).toBe(false);
+      expect(result.error).toBe('Invalid token');
     });
   });
 

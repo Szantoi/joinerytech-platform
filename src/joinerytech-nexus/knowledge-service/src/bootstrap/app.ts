@@ -164,10 +164,10 @@ export function createApp(config: AppConfig = {}): Express {
   app.use('/api/task', taskRoutes);
 
   // Mailbox (MSG-NEXUS-016: Authentication required)
-  app.use('/api/mailbox', authenticateRest, authorizeMailboxRest, mailboxRoutes);
+  app.use('/api/mailbox', authenticateRest, mailboxRoutes);
 
-  // Tasks status (backward compatibility - redirect to mailbox)
-  app.get('/api/tasks/status', (req, res, next) => {
+  // Authenticated, read-only compatibility alias for mailbox task status.
+  app.get('/api/tasks/status', authenticateRest, authorizeMailboxRest, (req, res, next) => {
     req.url = '/tasks/status' + (req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : '');
     mailboxRoutes(req, res, next);
   });

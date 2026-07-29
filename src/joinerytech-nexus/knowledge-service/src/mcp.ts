@@ -191,132 +191,67 @@ const router = Router();
 // MCP Protocol Version
 const MCP_VERSION = '2024-11-05';
 
-// ─── Agent Authentication (loaded from YAML config) ────────────────────────
+// ─── Agent Authentication (environment / service-manager secrets) ─────────
 //
-// Config file: config/agents.yaml
-// Auto-reloads every 30 seconds without restart.
+// Credentials come only from environment or service-manager secret sources.
+// Changing credentials requires a controlled service restart; the tracked
+// config/agents.yaml file is not a runtime credential source.
 //
-// Tokens can also be set via environment variables:
+// Supported credential variables:
 //   MCP_AUTH_TOKEN=xxx       -> master token (root access)
-//   MCP_TOKEN_<NAME>=xxx     -> agent token (overrides YAML)
+//   MCP_TOKEN_<NAME>=xxx     -> named agent token
 
 import * as fs from 'fs';
 import * as path from 'path';
-import * as yaml from 'js-yaml';
+import {
+  authenticateBearer,
+  authorizeMailboxRoute,
+  buildAuthSnapshot,
+  canUseToolWithPolicy,
+  getToolPermissionCoverage,
+  loadToolPermissionsFile,
+  resolveAuthenticatedIdentity,
+  resolveFailedPermissionLoad,
+  type AuthSnapshot,
+  type ToolPermissionCoverage,
+  type ToolPermissionsSnapshot,
+} from './mcpSecurity';
 
-interface AgentsConfig {
-  version?: string;
-  updated?: string;
-  master_token?: string;
-  agents: Record<string, string>;  // token -> agent_name
-  groups?: Record<string, string[]>;
-  default_agent?: string | null;
+// Credentials come only from the process environment (or a service manager's
+// secret provider). Changing credentials requires a controlled service restart.
+const authSnapshot: AuthSnapshot = buildAuthSnapshot(process.env);
+if (authSnapshot.allowInsecureDevelopmentRoot) {
+  console.warn('[MCP] INSECURE development authentication enabled explicitly');
 }
-
-const AGENTS_CONFIG_PATH = path.join(__dirname, '..', 'config', 'agents.yaml');
-
-let masterToken: string = process.env.MCP_AUTH_TOKEN || '';
-let agentTokens: Record<string, string> = {};  // token -> agent_name
-let defaultAgent: string | null = null;
-let lastAgentsConfigMtime: number = 0;
-
-/**
- * Load agent tokens from YAML config and environment variables
- */
-function loadAgentTokens(): void {
-  // First load from env variables (these always take precedence)
-  const envTokens: Record<string, string> = {};
-  for (const key of Object.keys(process.env)) {
-    if (key.startsWith('MCP_TOKEN_')) {
-      const agentName = key.substring(10).toLowerCase(); // MCP_TOKEN_CONDUCTOR -> conductor
-      const token = process.env[key] || '';
-      if (token) {
-        envTokens[token] = agentName;  // Reverse mapping: token -> agent
-      }
-    }
-  }
-
-  // Load master token from env (only if set, don't clear existing)
-  const envMasterToken = process.env.MCP_AUTH_TOKEN;
-  if (envMasterToken) {
-    masterToken = envMasterToken;
-  }
-
-  try {
-    const stat = fs.statSync(AGENTS_CONFIG_PATH);
-    const mtime = stat.mtimeMs;
-
-    // Skip if file hasn't changed and we already loaded
-    if (mtime === lastAgentsConfigMtime && Object.keys(agentTokens).length > 0) {
-      return;
-    }
-
-    const content = fs.readFileSync(AGENTS_CONFIG_PATH, 'utf-8');
-    const config = yaml.load(content) as AgentsConfig;
-
-    if (config) {
-      // Use YAML master token if env not set
-      // Always read from YAML on file change (unless env overrides)
-      if (!envMasterToken && config.master_token) {
-        masterToken = config.master_token;
-      }
-
-      // Load agent tokens from YAML (env vars override these)
-      const yamlTokens: Record<string, string> = {};
-      if (config.agents) {
-        for (const [token, agentName] of Object.entries(config.agents)) {
-          if (token && agentName) {
-            yamlTokens[token] = agentName;
-          }
-        }
-      }
-
-      // Merge: env tokens override YAML tokens
-      agentTokens = { ...yamlTokens, ...envTokens };
-
-      defaultAgent = config.default_agent || null;
-      lastAgentsConfigMtime = mtime;
-
-      const tokenCount = Object.keys(agentTokens).length;
-      console.log(`[MCP] 🔑 Agent tokens loaded (${tokenCount} agents, master: ${masterToken ? 'set' : 'not set'})`);
-    }
-  } catch (err) {
-    // If YAML fails, use env vars only
-    if (Object.keys(agentTokens).length === 0) {
-      agentTokens = envTokens;
-      console.warn(`[MCP] ⚠️ Could not load agents.yaml, using env vars only (${Object.keys(envTokens).length} agents)`);
-    }
-  }
-}
-
-// Initial load
-loadAgentTokens();
-
-// Auto-reload every 30 seconds
-setInterval(() => {
-  loadAgentTokens();
-}, 30_000);
+console.log(
+  `[MCP] Agent credentials loaded (${Object.keys(authSnapshot.agentTokens).length} agents, master: ${authSnapshot.masterToken ? 'set' : 'not set'})`,
+);
 
 // ─── Tool Permissions (loaded from YAML config) ────────────────────────────
 //
 // Config file: config/tool-permissions.yaml
 // Auto-reloads every 30 seconds without restart.
 
-type ToolPermission = 'all' | 'none' | string[];
-
-interface ToolPermissionsConfig {
-  version?: string;
-  updated?: string;
-  default?: ToolPermission;
-  permissions: Record<string, ToolPermission>;
-}
-
 const CONFIG_PATH = path.join(__dirname, '..', 'config', 'tool-permissions.yaml');
 const RELOAD_INTERVAL_MS = 30_000; // 30 seconds
 
-let toolPermissions: Record<string, ToolPermission> = {};
-let defaultPermission: ToolPermission = 'all';
+let permissionSnapshot: ToolPermissionsSnapshot = {
+  defaultPermission: 'none',
+  permissions: {},
+};
 let lastConfigMtime: number = 0;
+let hasLoadedPermissionConfig = false;
+let declaredToolNames: string[] = [];
+
+function formatCoverageSummary(coverage: ToolPermissionCoverage): string {
+  return [
+    `declared=${coverage.declaredCount}`,
+    `rules=${coverage.explicitRuleCount}`,
+    `missing=${coverage.missingRules.join(',') || 'none'}`,
+    `stale=${coverage.staleRules.join(',') || 'none'}`,
+    `duplicates=${coverage.duplicateDeclarations.join(',') || 'none'}`,
+  ].join('; ');
+}
 
 /**
  * Load tool permissions from YAML config file
@@ -327,96 +262,43 @@ function loadToolPermissions(): void {
     const mtime = stat.mtimeMs;
 
     // Skip if file hasn't changed
-    if (mtime === lastConfigMtime && Object.keys(toolPermissions).length > 0) {
+    if (mtime === lastConfigMtime && hasLoadedPermissionConfig) {
       return;
     }
 
-    const content = fs.readFileSync(CONFIG_PATH, 'utf-8');
-    const config = yaml.load(content) as ToolPermissionsConfig;
-
-    if (config && config.permissions) {
-      toolPermissions = config.permissions;
-      defaultPermission = config.default || 'all';
-      lastConfigMtime = mtime;
-      console.log(`[MCP] 🔄 Tool permissions loaded (${Object.keys(toolPermissions).length} rules, default: ${defaultPermission})`);
+    const candidate = loadToolPermissionsFile(CONFIG_PATH);
+    if (declaredToolNames.length > 0) {
+      const coverage = getToolPermissionCoverage(declaredToolNames, candidate.permissions);
+      if (!coverage.complete) {
+        const summary = formatCoverageSummary(coverage);
+        console.warn(`[MCP] Incomplete permission policy (unlisted tools remain denied): ${summary}`);
+      }
     }
+
+    permissionSnapshot = candidate;
+    lastConfigMtime = mtime;
+    hasLoadedPermissionConfig = true;
+    console.log(`[MCP] Tool permissions loaded (${Object.keys(candidate.permissions).length} rules, default: none)`);
   } catch (err) {
-    if (Object.keys(toolPermissions).length === 0) {
-      // First load failed - use fallback defaults
-      console.warn(`[MCP] ⚠️ Could not load tool-permissions.yaml, using defaults:`, err);
-      toolPermissions = {
-        'set_focus_queue': ['root', 'conductor'],
-        'add_focus_item': ['root', 'conductor'],
-        'set_active_task': ['root', 'conductor'],
-        'set_task_status': ['root', 'conductor'],
-        'get_focus_queue': 'all',
-        'create_project': ['root', 'conductor'],
-        'dispatch_next': ['root', 'conductor'],
-        'write_memory': ['root', 'conductor', 'librarian'],
-        'append_memory': ['root', 'conductor', 'librarian'],
-        'save_tiered_memory': ['root', 'conductor', 'librarian'],
-        'promote_memory': ['root', 'conductor', 'librarian'],
-        'send_message': ['root', 'conductor'],
-      };
-      defaultPermission = 'all';
-    }
-    // If already loaded, keep existing config on reload failure
+    permissionSnapshot = resolveFailedPermissionLoad(
+      {
+        snapshot: permissionSnapshot,
+        hasLoadedValidSnapshot: hasLoadedPermissionConfig,
+      },
+      process.env.NODE_ENV === 'production',
+      err,
+    );
+    // First non-production failure retains the empty deny-all snapshot. Reload
+    // failures retain the last validated snapshot.
+    console.warn('[MCP] Tool permission config rejected; keeping fail-closed snapshot:', err);
   }
-}
-
-// Initial load
-loadToolPermissions();
-
-// Auto-reload every 30 seconds
-setInterval(() => {
-  loadToolPermissions();
-}, RELOAD_INTERVAL_MS);
-
-/**
- * Get agent name from token
- * Returns: 'root' for master token, agent name for specific token, defaultAgent if configured, null otherwise
- */
-function getAgentFromToken(token: string): string | null {
-  // Check master token first
-  if (masterToken && token === masterToken) {
-    return 'root';
-  }
-
-  // Check agent tokens (from YAML + env vars)
-  const agentName = agentTokens[token];
-  if (agentName) {
-    return agentName;
-  }
-
-  return null;
 }
 
 /**
  * Check if terminal can use a tool
  */
 function canUseTool(terminal: string, toolName: string): boolean {
-  // root can do everything
-  if (terminal === 'root') return true;
-
-  const permission = toolPermissions[toolName];
-
-  // No specific permission = use default
-  if (permission === undefined) {
-    if (defaultPermission === 'all') return true;
-    if (defaultPermission === 'none') return false;
-    if (Array.isArray(defaultPermission)) return defaultPermission.includes(terminal);
-    return true;
-  }
-
-  if (permission === 'all') return true;
-  if (permission === 'none') return false;
-
-  // Array of allowed terminals
-  if (Array.isArray(permission)) {
-    return permission.includes(terminal);
-  }
-
-  return true;
+  return canUseToolWithPolicy(permissionSnapshot, terminal, toolName);
 }
 
 /**
@@ -438,41 +320,20 @@ declare global {
 // ─── Authentication Middleware ──────────────────────────────────────────────
 
 function authenticate(req: Request, res: Response, next: () => void) {
-  // If no tokens configured, allow all (dev mode)
-  if (!masterToken && Object.keys(agentTokens).length === 0) {
-    req.mcpTerminal = 'root'; // Default to root access in dev mode
-    return next();
-  }
-
-  const authHeader = req.headers.authorization;
-
-  // Check for default agent if no auth header
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    if (defaultAgent) {
-      req.mcpTerminal = defaultAgent;
-      return next();
-    }
-    res.status(401).json({
+  const decision = authenticateBearer(authSnapshot, req.headers.authorization);
+  if (!decision.authenticated) {
+    res.status(decision.status).json({
       jsonrpc: '2.0',
-      error: { code: -32001, message: 'Unauthorized: Bearer token required' },
+      error: {
+        code: decision.status === 401 ? -32001 : -32002,
+        message: decision.message,
+      },
       id: null,
     });
     return;
   }
 
-  const token = authHeader.substring(7);
-  const agent = getAgentFromToken(token);
-
-  if (!agent) {
-    res.status(403).json({
-      jsonrpc: '2.0',
-      error: { code: -32002, message: 'Forbidden: Invalid token' },
-      id: null,
-    });
-    return;
-  }
-
-  req.mcpTerminal = agent;
+  req.mcpTerminal = decision.terminal;
   next();
 }
 
@@ -483,29 +344,13 @@ function authenticate(req: Request, res: Response, next: () => void) {
  * Similar to MCP authenticate(), but returns JSON error responses
  */
 export function authenticateRest(req: Request, res: Response, next: () => void): void {
-  // If no tokens configured, allow all (dev mode)
-  if (!masterToken && Object.keys(agentTokens).length === 0) {
-    req.mcpTerminal = 'root'; // Default to root access in dev mode
-    return next();
-  }
-
-  const authHeader = req.headers.authorization;
-
-  // Require Bearer token
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    res.status(401).json({ error: 'Unauthorized: Bearer token required' });
+  const decision = authenticateBearer(authSnapshot, req.headers.authorization);
+  if (!decision.authenticated) {
+    res.status(decision.status).json({ error: decision.message });
     return;
   }
 
-  const token = authHeader.substring(7);
-  const agent = getAgentFromToken(token);
-
-  if (!agent) {
-    res.status(403).json({ error: 'Forbidden: Invalid token' });
-    return;
-  }
-
-  req.mcpTerminal = agent;
+  req.mcpTerminal = decision.terminal;
   next();
 }
 
@@ -520,69 +365,34 @@ export function authenticateRest(req: Request, res: Response, next: () => void):
  * - broadcast: root/conductor only
  */
 export function authorizeMailboxRest(req: Request, res: Response, next: () => void): void {
-  const terminal = req.mcpTerminal;
+  const terminal = resolveAuthenticatedIdentity(req.mcpTerminal);
   const targetTerminal = req.params.terminal as string | undefined;
   const method = req.method;
-  const path = req.path;
+  const routePath = typeof req.route?.path === 'string' ? req.route.path : '';
 
   if (!terminal) {
     res.status(401).json({ error: 'Unauthorized: No terminal identity' });
     return;
   }
 
-  // root and conductor: full access
-  if (terminal === 'root' || terminal === 'conductor') {
-    return next();
-  }
+  const decision = authorizeMailboxRoute({
+    identity: terminal,
+    method,
+    routePath,
+    targetTerminal,
+    canCreateTask: canUseTool(terminal, 'create_task'),
+  });
+  if (decision.allowed) return next();
 
-  // monitor: GET only
-  if (terminal === 'monitor') {
-    if (method === 'GET') {
-      return next();
-    }
-    console.warn(`[MailboxAuth] DENY: monitor attempted ${method} ${path}`);
-    res.status(403).json({ error: 'Forbidden: monitor can only perform GET operations' });
-    return;
-  }
-
-  // Broadcast endpoint: root/conductor only
-  if (path === '/broadcast') {
-    console.warn(`[MailboxAuth] DENY: ${terminal} attempted broadcast`);
-    res.status(403).json({ error: 'Forbidden: Only root/conductor can broadcast' });
-    return;
-  }
-
-  // Counter and unread outbox: allow all (read-only)
-  if (path === '/counter' || path === '/outbox/unread' || path === '/tasks/status') {
-    return next();
-  }
-
-  // Terminal-specific operations: check if accessing own mailbox
-  if (targetTerminal) {
-    // Own mailbox: allow all operations
-    if (targetTerminal === terminal) {
-      return next();
-    }
-
-    // POST to other terminal's inbox: check create_task permission
-    if (method === 'POST' && path.includes('/inbox')) {
-      const canCreateTask = canUseTool(terminal, 'create_task');
-      if (!canCreateTask) {
-        console.warn(`[MailboxAuth] DENY: ${terminal} attempted POST to ${targetTerminal}/inbox (no create_task permission)`);
-        res.status(403).json({ error: `Forbidden: ${terminal} cannot send tasks to other terminals` });
-        return;
-      }
-      return next();
-    }
-
-    // All other operations on other terminal's mailbox: deny
-    console.warn(`[MailboxAuth] DENY: ${terminal} attempted ${method} ${path}`);
-    res.status(403).json({ error: `Forbidden: ${terminal} can only access their own mailbox` });
-    return;
-  }
-
-  // Default: allow (shouldn't reach here normally)
-  next();
+  const messages = {
+    unknown_route: 'Forbidden: mailbox route is not authorized',
+    broadcast: 'Forbidden: Only root/conductor can broadcast',
+    target_required: 'Forbidden: validated mailbox target is required',
+    monitor_read_only: 'Forbidden: monitor can only perform read operations',
+    other_mailbox: `Forbidden: ${terminal} can only access their own mailbox`,
+  } as const;
+  console.warn(`[MailboxAuth] DENY ${decision.reason} for ${terminal}: ${method} ${routePath || '<unmatched>'}`);
+  res.status(403).json({ error: messages[decision.reason] });
 }
 
 // ─── Tool Definitions ───────────────────────────────────────────────────────
@@ -2711,6 +2521,19 @@ const TOOLS = [
   // Subscription tools (ADR-052)
   ...SUBSCRIPTION_TOOLS,
 ];
+
+declaredToolNames = TOOLS.map((tool) => tool.name);
+loadToolPermissions();
+
+// Hot reload is safe: malformed policies keep the last valid snapshot, while
+// incomplete policies remain deny-by-default and emit a deterministic report.
+// The first malformed production load fails during module startup.
+setInterval(loadToolPermissions, RELOAD_INTERVAL_MS);
+
+/** Deterministic runtime/CI evidence for policy coverage. */
+export function getMcpToolPermissionCoverage(): ToolPermissionCoverage {
+  return getToolPermissionCoverage(declaredToolNames, permissionSnapshot.permissions);
+}
 
 // ─── Tool Handlers ──────────────────────────────────────────────────────────
 
@@ -5679,7 +5502,15 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
 
       case 'tools/list': {
         // Filter tools based on terminal permissions
-        const callerTerminal = req.mcpTerminal || 'root';
+        const callerTerminal = resolveAuthenticatedIdentity(req.mcpTerminal);
+        if (!callerTerminal) {
+          res.status(403).json({
+            jsonrpc: '2.0',
+            error: { code: -32002, message: 'Forbidden: authenticated identity required' },
+            id,
+          });
+          return;
+        }
         const visibleTools = filterToolsForTerminal(TOOLS, callerTerminal);
 
         res.json({
@@ -5704,7 +5535,15 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
         }
 
         // Check tool permission
-        const callerTerminal = req.mcpTerminal || 'root';
+        const callerTerminal = resolveAuthenticatedIdentity(req.mcpTerminal);
+        if (!callerTerminal) {
+          res.status(403).json({
+            jsonrpc: '2.0',
+            error: { code: -32002, message: 'Forbidden: authenticated identity required' },
+            id,
+          });
+          return;
+        }
         if (!canUseTool(callerTerminal, name)) {
           console.log(`[MCP] 🚫 ${name} DENIED for terminal: ${callerTerminal}`);
           res.status(403).json({
@@ -5768,14 +5607,15 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
 
 // ─── MCP Info Endpoint (GET) ────────────────────────────────────────────────
 
-router.get('/', (_req: Request, res: Response) => {
+router.get('/', authenticate, (req: Request, res: Response) => {
+  const visibleTools = filterToolsForTerminal(TOOLS, req.mcpTerminal || '');
   res.json({
     name: 'spaceos-knowledge-service',
     version: '1.3.0',
     protocol: MCP_VERSION,
     description: 'SpaceOS Knowledge Service MCP Server - RAG search, mailbox, identity, memory, skills, workflow, terminal setup, terminal docs',
-    tools: TOOLS.map(t => t.name),
-    toolCount: TOOLS.length,
+    tools: visibleTools.map(t => t.name),
+    toolCount: visibleTools.length,
     terminals: TERMINALS,
     documentation: process.env.MCP_DOCUMENTATION_URL || 'https://nexus.joinerytech.hu',
   });

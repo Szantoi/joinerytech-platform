@@ -255,9 +255,9 @@ describe('Session Start Authorization', () => {
       }),
     });
 
-    // Session start may require auth (401) or reject without fromTerminal (400)
-    // Both are valid security behaviors
-    expect([400, 401, 403]).toContain(res.status);
+    // This is explicitly an unauthenticated request: the session-control router
+    // must reject it before validating request fields.
+    expect(res.status).toBe(401);
   });
 
   it('POST /api/session/start validates terminal name', async () => {

@@ -28,7 +28,7 @@ vi.mock('../../pipeline/common', () => ({
   getState: vi.fn(),
   setState: vi.fn(),
   getInboxModel: vi.fn(),
-  getInboxPath: vi.fn((terminal: string) => `/opt/spaceos/terminals/${terminal}/inbox`),
+  getInboxPath: vi.fn(() => '/tmp/test-inbox'),
   log: vi.fn(),
   telegram: vi.fn(),
   isPrioritySession: vi.fn(() => false),
@@ -37,9 +37,13 @@ vi.mock('../../pipeline/common', () => ({
 describe('watchInbox MCP API Integration (MSG-BACKEND-193)', () => {
   const mockInboxPath = '/tmp/test-inbox';
   const mockUnreadFile = path.join(mockInboxPath, '2026-07-08_001_test-task.md');
+  const previousWatchInboxToken = process.env.MCP_TOKEN_WATCHINBOX;
+  const previousMasterToken = process.env.MCP_AUTH_TOKEN;
 
   beforeEach(async () => {
     vi.clearAllMocks();
+    process.env.MCP_TOKEN_WATCHINBOX = 'watch-inbox-test-token';
+    delete process.env.MCP_AUTH_TOKEN;
     // Create mock inbox with UNREAD message
     await fs.mkdir(mockInboxPath, { recursive: true });
     await fs.writeFile(
@@ -60,11 +64,17 @@ Test inbox message.
 `,
       'utf-8'
     );
+    const oldUnreadAt = new Date(Date.now() - 10 * 60 * 1000);
+    await fs.utimes(mockUnreadFile, oldUnreadAt, oldUnreadAt);
   });
 
   afterEach(async () => {
     // Cleanup
     await fs.rm(mockInboxPath, { recursive: true, force: true });
+    if (previousWatchInboxToken === undefined) delete process.env.MCP_TOKEN_WATCHINBOX;
+    else process.env.MCP_TOKEN_WATCHINBOX = previousWatchInboxToken;
+    if (previousMasterToken === undefined) delete process.env.MCP_AUTH_TOKEN;
+    else process.env.MCP_AUTH_TOKEN = previousMasterToken;
   });
 
   it('nudgeSession uses /api/session/inject (NOT tmux send-keys)', async () => {
@@ -87,7 +97,10 @@ Test inbox message.
       'http://localhost:3456/api/session/inject',
       expect.objectContaining({
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer watch-inbox-test-token',
+        },
         body: expect.stringContaining('"terminal"'),
       })
     );
@@ -122,7 +135,10 @@ Test inbox message.
       'http://localhost:3456/api/session/start',
       expect.objectContaining({
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer watch-inbox-test-token',
+        },
         body: expect.stringContaining('"terminal"'),
       })
     );

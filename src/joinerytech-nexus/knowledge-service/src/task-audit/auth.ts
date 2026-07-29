@@ -117,9 +117,14 @@ function loadTokensConfig(): TokensFile {
     tokensConfig = yaml.load(content) as TokensFile;
     return tokensConfig;
   } catch (error) {
-    // Return empty config if file doesn't exist
-    console.warn(`[Auth] Token config not found at ${TOKEN_CONFIG_PATH}, using defaults`);
-    return {
+    // Development credentials are an explicit local-only escape hatch. In all
+    // other environments a missing secret configuration must deny every token.
+    const allowInsecureDevelopmentTokens = process.env.NODE_ENV === 'development'
+      && process.env.TASK_AUDIT_ALLOW_INSECURE_DEV_AUTH === 'true';
+
+    if (allowInsecureDevelopmentTokens) {
+      console.warn(`[Auth] Token config not found at ${TOKEN_CONFIG_PATH}; insecure development tokens enabled explicitly`);
+      return {
       version: '1.0',
       tokens: [
         {
@@ -135,7 +140,12 @@ function loadTokensConfig(): TokensFile {
           created: '2026-06-23',
         }
       ]
-    };
+      };
+    }
+
+    console.error(`[Auth] Token config not found at ${TOKEN_CONFIG_PATH}; denying all task-audit tokens`);
+    tokensConfig = { version: '1.0', tokens: [] };
+    return tokensConfig;
   }
 }
 

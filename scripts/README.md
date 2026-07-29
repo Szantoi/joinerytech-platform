@@ -10,6 +10,10 @@ Repo-level automation scripts. Currently:
 - `Invoke-DotNetPackageAudit.ps1` — sequential, read-only NuGet vulnerability
   gate with machine-readable JSON output; explicit project list or `-Discover`
   opt-in is required. See below.
+- `Invoke-KeycloakTenantOnboarding.ps1` + `KeycloakOnboarding.psm1` — idempotent,
+  dry-run-by-default tenant onboarding against the Keycloak Admin API
+  (STAB-TENANT-ONBOARDING-RUNBOOK). See below.
+- `Invoke-KeycloakTenantOnboarding.Tests.ps1` — Pester tests for the above (no Keycloak needed).
 - `federation-watcher.sh` — federation inbox/outbox watcher (unrelated, pre-existing).
 - `check-erp-module-boundaries.mjs` (+ `tests/`) — ERP module-boundary lint check
   (unrelated, pre-existing).
@@ -90,6 +94,78 @@ CLI tokens to a `string[]` parameter. Use `-ProjectListPath` for a multi-project
 CI run. From an existing PowerShell session, invoke the script path directly
 with an array (`& ./scripts/Invoke-DotNetPackageAudit.ps1 -Project $projects`);
 the internal audit function intentionally uses a different parameter name.
+
+## Invoke-KeycloakTenantOnboarding.ps1 — idempotent tenant onboarding
+
+### Problem it solves
+
+Onboarding a customer means provisioning realm roles, the `tid` and
+`enabled_modules` protocol mappers, the realm's unmanaged-attribute policy, the
+user with its claim attributes and role mapping, and the Kernel tenant record.
+This was done **by hand** on 2026-07-27 and every step is a silent-failure trap:
+a missing realm role renders an empty world grid, a missing
+`unmanagedAttributePolicy` discards the attributes without an error, a user
+without `firstName`/`lastName` gets a Keycloak 24 `VERIFY_PROFILE` action and can
+never log in, and the Kernel DB trigger rejects the seven ERP module keys outright.
+
+The script turns that sequence into a config-driven, repeatable run. Every step is
+*observe → compare → act only on drift*, so an interrupted run is simply re-run,
+and a converged realm reports `PendingCount = 0`.
+
+### Safety model
+
+- **Dry-run is the default.** Mutations require the explicit `-Apply` switch; a run
+  against the live realm additionally requires Gábor's approval (repo `CLAUDE.md`).
+- **No database writes.** The Kernel tenant record is emitted as an
+  allowlist-validated, `ON CONFLICT DO NOTHING` SQL statement (`-KernelSqlPath`) for
+  the runbook's separately gated DB step.
+- **No secrets in output.** Admin credentials come from `-AdminCredential` or
+  `KEYCLOAK_ADMIN_USER` / `KEYCLOAK_ADMIN_PASSWORD`; neither they, the access token,
+  nor `-TemporaryPassword` are ever printed, summarised or written to a file.
+- **Fail-closed contract check.** The mirrored Kernel `TenantType` allowlist is
+  compared against the ADR-067 alias table
+  (`docs/knowledge/contracts/module-id-legacy-aliases.json`) before anything else;
+  drift aborts the run.
+
+### Usage
+
+```powershell
+# Validate the profile and compute the module/SQL plan without any Keycloak call
+powershell -File scripts/Invoke-KeycloakTenantOnboarding.ps1 -ProfilePath <profile>.json -Offline
+
+# Dry-run against a realm (read-only) + machine-readable artifacts
+powershell -File scripts/Invoke-KeycloakTenantOnboarding.ps1 -ProfilePath <profile>.json `
+  -SummaryPath artifacts/onboarding.json -KernelSqlPath artifacts/kernel-tenant.sql
+
+# Execute; the run ends with an automatic re-plan as a convergence proof
+powershell -File scripts/Invoke-KeycloakTenantOnboarding.ps1 -ProfilePath <profile>.json -Apply
+
+# Read-only convergence check
+powershell -File scripts/Invoke-KeycloakTenantOnboarding.ps1 -ProfilePath <profile>.json -VerifyOnly
+```
+
+Exit codes: `0` converged (nothing to do, or `-Apply` succeeded and verified);
+`1` pending drift or a failed verification; `2` usage/validation/tooling error —
+in which case **no Keycloak mutation was attempted**. `-Apply`, `-VerifyOnly` and
+`-Offline` are pairwise mutually exclusive; in particular `-VerifyOnly -Offline` is
+refused, because an offline run cannot verify a realm and its exit 0 would read as
+a false convergence signal in CI.
+
+Config: `config/tenant-onboarding.sample.json`. Runbook, gates and the full pitfall
+list: `docs/knowledge/deployment/TENANT_ONBOARDING_RUNBOOK.md`. Measured evidence
+(34 Pester tests + an end-to-end run against a disposable Keycloak 24.0.0 container):
+`docs/tasks/EPIC-PLATFORM-STABILITY-2026Q3/STAB-TENANT-ONBOARDING-RUNBOOK.md`.
+
+### Testing
+
+```powershell
+Import-Module Pester -MinimumVersion 5.0
+Invoke-Pester -Path scripts/Invoke-KeycloakTenantOnboarding.Tests.ps1 -Output Detailed
+```
+
+The decision logic lives in `KeycloakOnboarding.psm1` (no network, no mutation)
+precisely so it can be unit-tested without a Keycloak instance — same split as
+`TestcontainersHygiene.psm1`.
 
 ## Invoke-VpsHealthSmoke.ps1 — read-only VPS smoke check
 

@@ -52,9 +52,12 @@ const router = Router();
  * 2. Tokens cannot be guessed without the secret
  * 3. Server can verify token → terminal mapping
  */
-const TERMINAL_SECRET = process.env.TERMINAL_TOKEN_SECRET || 'spaceos-terminal-secret-2026';
+const TERMINAL_SECRET = process.env.TERMINAL_TOKEN_SECRET?.trim() || '';
+const ADMIN_SECRET = process.env.ADMIN_SECRET?.trim() || '';
 
 function generateTerminalToken(terminal: string): string {
+  if (!TERMINAL_SECRET) return '';
+
   return crypto
     .createHash('sha256')
     .update(TERMINAL_SECRET + terminal)
@@ -63,6 +66,8 @@ function generateTerminalToken(terminal: string): string {
 }
 
 function verifyTerminalToken(token: string, terminal: string): boolean {
+  if (!TERMINAL_SECRET) return false;
+
   const expectedToken = generateTerminalToken(terminal);
   return crypto.timingSafeEqual(
     Buffer.from(token),
@@ -75,6 +80,14 @@ function verifyTerminalToken(token: string, terminal: string): boolean {
  * Expects: Authorization: Bearer <token>
  */
 function requireTerminalAuth(req: Request, res: Response, next: NextFunction): void {
+  if (!TERMINAL_SECRET) {
+    res.status(503).json({
+      success: false,
+      error: 'Terminal authentication is not configured',
+    });
+    return;
+  }
+
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -123,10 +136,14 @@ function requireTerminalAuth(req: Request, res: Response, next: NextFunction): v
  * Protected by admin secret
  */
 router.get('/token/:terminal', (req: Request, res: Response) => {
-  const adminSecret = process.env.ADMIN_SECRET || 'spaceos-admin-2026';
+  if (!TERMINAL_SECRET || !ADMIN_SECRET) {
+    res.status(503).json({ success: false, error: 'Terminal token administration is not configured' });
+    return;
+  }
+
   const providedSecret = req.headers['x-admin-secret'] as string;
 
-  if (providedSecret !== adminSecret) {
+  if (providedSecret !== ADMIN_SECRET) {
     res.status(403).json({ success: false, error: 'Admin access required' });
     return;
   }

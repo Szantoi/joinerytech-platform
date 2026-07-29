@@ -82,3 +82,22 @@ describe('session control — no shell in the start path', () => {
     expect(startSessionBody).not.toMatch(/execSync\(`tmux[^`]*new-session/);
   });
 });
+
+describe('session starter — no shell interpolation', () => {
+  it('uses argv for tmux and curl, validates model ids, and uses timers for delays', async () => {
+    const fs = await import('fs');
+    const path = await import('path');
+    const source = fs.readFileSync(
+      path.join(__dirname, '..', '..', 'sessionStarter.ts'),
+      'utf8',
+    );
+
+    expect(source).toContain("import { isValidModelId } from './sessionManager'");
+    expect(source.match(/isValidModelId\(model\)/g)).toHaveLength(2);
+    expect(source).toContain("execFileSync('tmux'");
+    expect(source).toContain("execFileAsync('tmux'");
+    expect(source).toContain("execFileAsync('curl'");
+    expect(source).not.toMatch(/\bexec(?:Sync|Async)\(/);
+    expect(source).not.toMatch(/\bexec(?:Sync|Async)\(\s*['"`]?sleep\b/);
+  });
+});

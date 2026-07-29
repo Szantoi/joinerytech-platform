@@ -7,7 +7,7 @@
 //
 // 2026-06-24: Optimized to use messageRegistry DB for model detection
 
-import { exec, execSync } from 'child_process';
+import { execFile, execFileSync } from 'child_process';
 import { promisify } from 'util';
 import { promises as fs } from 'fs';
 import * as path from 'path';
@@ -31,8 +31,20 @@ import { buildRecoveryContext, saveGoalState } from './conductor/sessionState';
 
 // Epic-aware task routing (2026-07-11 bugfix)
 import { setTerminalContext } from './pipeline/epicRouter';
+import { isValidModelId } from './sessionManager';
 
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
+const delay = (milliseconds: number): Promise<void> => new Promise(resolve => setTimeout(resolve, milliseconds));
+
+async function sendTelegramMessage(token: string, chatId: string, message: string): Promise<void> {
+  await execFileAsync('curl', [
+    '-s', '-X', 'POST', `https://api.telegram.org/bot${token}/sendMessage`,
+    '-d', `chat_id=${chatId}`,
+    '--data-urlencode', `text=${message}`,
+    '-d', 'parse_mode=Markdown',
+    '-o', '/dev/null',
+  ]);
+}
 
 // ─── Escalated Re-Inject Helper (2026-07-01) ─────────────────────────────────
 // When UNREAD message has no response after timeout, send detailed instructions
@@ -388,12 +400,12 @@ ${summary}
 
     // 4. Kill tmux session
     try {
-      execSync(`tmux -S ${TMUX_SOCKET} kill-session -t ${sessionName}`, { timeout: 5000 });
+      execFileSync('tmux', ['-S', TMUX_SOCKET, 'kill-session', '-t', sessionName], { timeout: 5000 });
       console.log(`[SessionStarter] ✓ Killed cold session ${sessionName}`);
     } catch {
       // Try default socket
       try {
-        execSync(`tmux kill-session -t ${sessionName}`, { timeout: 5000 });
+        execFileSync('tmux', ['kill-session', '-t', sessionName], { timeout: 5000 });
         console.log(`[SessionStarter] ✓ Killed cold session ${sessionName} (default socket)`);
       } catch {
         console.log(`[SessionStarter] Session ${sessionName} already terminated`);
@@ -407,7 +419,7 @@ ${summary}
     if (telegramToken && telegramChatId) {
       const emoji = endReason === 'done' ? '✅' : '🚫';
       const message = `${emoji} *${terminal.toUpperCase()} cold session ended*\nTask: \`${taskId}\`\nReason: ${endReason}`;
-      await execAsync(`curl -s -X POST "https://api.telegram.org/bot${telegramToken}/sendMessage" -d chat_id="${telegramChatId}" --data-urlencode "text=${message}" -d parse_mode="Markdown" -o /dev/null`);
+      await sendTelegramMessage(telegramToken, telegramChatId, message);
     }
 
     return {
@@ -425,54 +437,29 @@ ${summary}
 }
 
 /**
- * Execute a tmux command, trying configured socket first, then default socket.
- * This handles the case where sessions might be running on either socket.
- */
-function tmuxExec(command: string, sessionName: string, opts: { timeout?: number } = {}): string {
-  const timeout = opts.timeout || 5000;
-
-  // First try configured socket
-  try {
-    return execSync(`tmux -S ${TMUX_SOCKET} ${command} -t ${sessionName}`, {
-      timeout,
-      encoding: 'utf-8'
-    });
-  } catch {
-    // Fall through to default socket
-  }
-
-  // Fallback: try default tmux socket
-  return execSync(`tmux ${command} -t ${sessionName}`, {
-    timeout,
-    encoding: 'utf-8'
-  });
-}
-
-/**
  * Send keys to a session, trying both sockets
  * Uses -H 0d (hex carriage return) for Enter to avoid bracketed paste mode issues
  */
 function tmuxSendKeys(sessionName: string, keys: string, literal: boolean = false): void {
-  const safeKeys = keys.replace(/'/g, "'\\''");
-
-  // Special handling for Enter key - use hex code to avoid bracketed paste mode
-  const isEnter = keys === 'Enter';
-  const cmdSuffix = isEnter
-    ? '-H 0d'
-    : literal
-      ? `-l '${safeKeys}'`
-      : keys;
+  const args = ['send-keys', '-t', sessionName];
+  if (keys === 'Enter') {
+    args.push('-H', '0d');
+  } else if (literal) {
+    args.push('-l', keys);
+  } else {
+    args.push(keys);
+  }
 
   // First try configured socket
   try {
-    execSync(`tmux -S ${TMUX_SOCKET} send-keys -t ${sessionName} ${cmdSuffix}`, { timeout: 5000 });
+    execFileSync('tmux', ['-S', TMUX_SOCKET, ...args], { timeout: 5000 });
     return;
   } catch {
     // Fall through to default socket
   }
 
   // Fallback: try default socket
-  execSync(`tmux send-keys -t ${sessionName} ${cmdSuffix}`, { timeout: 5000 });
+  execFileSync('tmux', args, { timeout: 5000 });
 }
 
 // Chunk size for tmux send-keys (avoid terminal buffer overflow)
@@ -480,10 +467,10 @@ const CHUNK_SIZE = 80;
 
 // Max retry attempts for stuck prompt (Marveen pattern)
 const SUBMIT_RETRY_MAX_ATTEMPTS = 4;
-// Delay between retries (ms string for sleep)
-const SUBMIT_RETRY_POLL_MS = '0.3';
+// Delay between retries (milliseconds)
+const SUBMIT_RETRY_POLL_MS = 300;
 // Delay between chunks to avoid paste detection
-const CHUNK_DELAY_MS = '0.03';
+const CHUNK_DELAY_MS = 30;
 
 // Pasted text placeholder regex (Marveen pattern)
 // When several chunks coalesce, tmux bracketed-paste detector may create a stub
@@ -539,7 +526,7 @@ async function getInboxModel(terminal: string): Promise<string> {
 async function isSessionRunning(sessionName: string): Promise<boolean> {
   // First try configured socket
   try {
-    await execAsync(`tmux -S ${TMUX_SOCKET} has-session -t ${sessionName}`);
+    await execFileAsync('tmux', ['-S', TMUX_SOCKET, 'has-session', '-t', sessionName]);
     return true;
   } catch {
     // Fall through to check default socket
@@ -547,7 +534,7 @@ async function isSessionRunning(sessionName: string): Promise<boolean> {
 
   // Fallback: try default tmux socket
   try {
-    await execAsync(`tmux has-session -t ${sessionName}`);
+    await execFileAsync('tmux', ['has-session', '-t', sessionName]);
     return true;
   } catch {
     return false;
@@ -598,7 +585,7 @@ function isClaudeRunning(sessionName: string): boolean {
 function capturePane(sessionName: string): string | null {
   // First try configured socket
   try {
-    return execSync(`tmux -S ${TMUX_SOCKET} capture-pane -t ${sessionName} -p`, {
+    return execFileSync('tmux', ['-S', TMUX_SOCKET, 'capture-pane', '-t', sessionName, '-p'], {
       timeout: 3000,
       encoding: 'utf-8'
     });
@@ -608,7 +595,7 @@ function capturePane(sessionName: string): string | null {
 
   // Fallback: try default socket
   try {
-    return execSync(`tmux capture-pane -t ${sessionName} -p`, {
+    return execFileSync('tmux', ['capture-pane', '-t', sessionName, '-p'], {
       timeout: 3000,
       encoding: 'utf-8'
     });
@@ -634,15 +621,15 @@ function detectsPastePlaceholder(pane: string | null): boolean {
  * - Ctrl+U: clear the input line
  * Tries both configured and default socket
  */
-function clearInputBuffer(sessionName: string): void {
+async function clearInputBuffer(sessionName: string): Promise<void> {
   try {
     // Send Escape to close any modal (e.g., file picker, menu)
     tmuxSendKeys(sessionName, 'Escape');
-    execSync('sleep 0.1');
+    await delay(100);
 
     // Send Ctrl+U to clear any parked text in input buffer
     tmuxSendKeys(sessionName, 'C-u');
-    execSync('sleep 0.1');
+    await delay(100);
   } catch (error) {
     // Non-fatal - continue with injection anyway
     console.warn(`[SessionStarter] Buffer clear warning for ${sessionName}:`, error);
@@ -655,7 +642,7 @@ function clearInputBuffer(sessionName: string): void {
  * Returns true if placeholder was cleared
  * Tries both configured and default socket
  */
-function discardPlaceholderBuffer(sessionName: string): boolean {
+async function discardPlaceholderBuffer(sessionName: string): Promise<boolean> {
   const MAX_ATTEMPTS = 3;
   for (let i = 0; i < MAX_ATTEMPTS; i++) {
     const pane = capturePane(sessionName);
@@ -664,7 +651,7 @@ function discardPlaceholderBuffer(sessionName: string): boolean {
 
     try {
       tmuxSendKeys(sessionName, 'C-c');
-      execSync('sleep 0.45'); // Settle window
+      await delay(450); // Settle window
     } catch (err) {
       console.warn(`[SessionStarter] discardPlaceholderBuffer: Ctrl+C send failed`, err);
       return false;
@@ -680,7 +667,7 @@ function discardPlaceholderBuffer(sessionName: string): boolean {
  * - Adds delay between chunks to avoid paste detection
  * - Tries both configured and default socket
  */
-function sendChunks(sessionName: string, text: string): void {
+async function sendChunks(sessionName: string, text: string): Promise<void> {
   const oneLine = text.replace(/\r?\n/g, ' ');
   const MAX_SLIDE = 8;
 
@@ -707,13 +694,13 @@ function sendChunks(sessionName: string, text: string): void {
 
     // Small delay between chunks to avoid triggering paste detection
     if (i < oneLine.length) {
-      execSync(`sleep ${CHUNK_DELAY_MS}`);
+      await delay(CHUNK_DELAY_MS);
     }
   }
 
   // Wait before sending Enter to ensure all chunks are processed
   // (Marveen pattern: sleep between paste and Enter to avoid bracketed paste mode swallowing it)
-  execSync('sleep 0.5');
+  await delay(500);
 
   // Send Enter to submit
   tmuxSendKeys(sessionName, 'Enter');
@@ -727,18 +714,18 @@ function sendChunks(sessionName: string, text: string): void {
  * - Post-send retry loop for stuck prompts
  * - Placeholder detection and clear-and-resend recovery
  */
-function injectMessageToSession(sessionName: string, message: string): boolean {
+async function injectMessageToSession(sessionName: string, message: string): Promise<boolean> {
   try {
     // STEP 1: Pre-flight - clear any stuck text in input buffer
-    clearInputBuffer(sessionName);
+    await clearInputBuffer(sessionName);
 
     // STEP 2: Send chunks
-    sendChunks(sessionName, message);
+    await sendChunks(sessionName, message);
 
     // STEP 3: Post-send retry loop (Marveen pattern)
     // Check if prompt got stuck and needs extra Enter or clear-and-resend
     for (let attempt = 0; attempt < SUBMIT_RETRY_MAX_ATTEMPTS; attempt++) {
-      execSync(`sleep ${SUBMIT_RETRY_POLL_MS}`);
+      await delay(SUBMIT_RETRY_POLL_MS);
 
       const pane = capturePane(sessionName);
 
@@ -752,12 +739,12 @@ function injectMessageToSession(sessionName: string, message: string): boolean {
       if (detectsPastePlaceholder(pane)) {
         console.log(`[SessionStarter] Paste placeholder detected for ${sessionName}, clearing and resending (attempt ${attempt + 1})`);
 
-        if (!discardPlaceholderBuffer(sessionName)) {
+        if (!await discardPlaceholderBuffer(sessionName)) {
           console.warn(`[SessionStarter] Failed to clear placeholder for ${sessionName}`);
         }
 
         // Resend the message
-        sendChunks(sessionName, message);
+        await sendChunks(sessionName, message);
         continue;
       }
 
@@ -905,7 +892,7 @@ A token az MCP regisztrációdban van, automatikusan autentikált.`;
 
     console.log(`[SessionStarter] ${sessionName} (priority) running, injecting task assignment...`);
 
-    const injected = injectMessageToSession(sessionName, nudgeMsg);
+    const injected = await injectMessageToSession(sessionName, nudgeMsg);
     if (injected) {
       // Update terminal context (bugfix 2026-07-11: MCP fetch_task/complete_task needs this)
       setTerminalContext(
@@ -938,7 +925,7 @@ A token az MCP regisztrációdban van, automatikusan autentikált.`;
       // Session exists but Claude not running - need to start Claude
       // Kill the existing bash-only session and start fresh
       try {
-        execSync(`tmux -S ${TMUX_SOCKET} kill-session -t ${sessionName}`, { timeout: 5000 });
+        execFileSync('tmux', ['-S', TMUX_SOCKET, 'kill-session', '-t', sessionName], { timeout: 5000 });
         console.log(`[SessionStarter] Killed bash-only session ${sessionName}`);
       } catch {
         // Ignore errors, continue to start fresh
@@ -951,7 +938,7 @@ A token az MCP regisztrációdban van, automatikusan autentikált.`;
 
       console.log(`[SessionStarter] ${sessionName} running with Claude, injecting task assignment...`);
 
-      const injected = injectMessageToSession(sessionName, nudgeMsg);
+      const injected = await injectMessageToSession(sessionName, nudgeMsg);
       if (injected) {
         // Update terminal context (bugfix 2026-07-11: MCP fetch_task/complete_task needs this)
         setTerminalContext(
@@ -979,13 +966,17 @@ A token az MCP regisztrációdban van, automatikusan autentikált.`;
   // Get model and workdir from config
   // ADR-046: Use modelOverride if provided (for priority sessions), else detect from inbox
   const model = modelOverride || await getInboxModel(terminal);
+  if (!isValidModelId(model)) {
+    console.error(`[SessionStarter] SECURITY: Invalid model rejected: ${model}`);
+    return { success: false, message: `Invalid model: ${model}` };
+  }
   const workdir = getWorkdir(terminal);
 
   console.log(`[SessionStarter] Starting ${sessionName}: model=${model}, inbox=${messageId}`);
 
   try {
     // Create tmux session
-    await execAsync(`tmux -S ${TMUX_SOCKET} new-session -d -s ${sessionName} -c "${workdir}"`);
+    await execFileAsync('tmux', ['-S', TMUX_SOCKET, 'new-session', '-d', '-s', sessionName, '-c', workdir]);
 
     // Wait a bit for session to be ready
     await new Promise(resolve => setTimeout(resolve, 1000));
@@ -1005,14 +996,14 @@ A token az MCP regisztrációdban van, automatikusan autentikált.`;
     console.log(`[SessionStarter] Cold start context: ${startContext.memoriesLoaded} memories (~${startContext.contextTokens} tokens)${startContext.domainKnowledge?.domains.length ? `, domains: [${startContext.domainKnowledge.domains.join(', ')}]` : ''}`);
 
     // Send claude command (text first, then Enter)
-    await execAsync(`tmux -S ${TMUX_SOCKET} send-keys -t ${sessionName} "claude --model ${model}" Enter`);
+    await execFileAsync('tmux', ['-S', TMUX_SOCKET, 'send-keys', '-t', sessionName, `claude --model ${model}`, 'Enter']);
 
     // Wait for claude to start (10s needed for full initialization on cold start)
     await new Promise(resolve => setTimeout(resolve, 10000));
 
     // Inject context into session
     if (startContext.memoriesLoaded > 0) {
-      const contextInjected = injectMessageToSession(sessionName, startContext.contextMarkdown);
+      const contextInjected = await injectMessageToSession(sessionName, startContext.contextMarkdown);
       if (contextInjected) {
         console.log(`[SessionStarter] ✓ Injected ${startContext.memoriesLoaded} memories into ${sessionName}`);
       } else {
@@ -1030,7 +1021,7 @@ A token az MCP regisztrációdban van, automatikusan autentikált.`;
       // Inject previous session context FIRST, before mode awareness
       const recoveryContext = buildRecoveryContext();
       if (recoveryContext) {
-        const recoveryInjected = injectMessageToSession(sessionName, recoveryContext);
+        const recoveryInjected = await injectMessageToSession(sessionName, recoveryContext);
         if (recoveryInjected) {
           console.log(`[SessionStarter] ✓ Injected cross-session recovery context to ${sessionName}`);
         }
@@ -1038,7 +1029,7 @@ A token az MCP regisztrációdban van, automatikusan autentikált.`;
       }
 
       const modeContext = buildModeAwarenessContext();
-      const modeInjected = injectMessageToSession(sessionName, modeContext);
+      const modeInjected = await injectMessageToSession(sessionName, modeContext);
       if (modeInjected) {
         console.log(`[SessionStarter] ✓ Injected Mode #4 awareness context to ${sessionName}`);
       } else {
@@ -1062,7 +1053,7 @@ A token az MCP regisztrációdban van, automatikusan autentikált.`;
 
     // Inject task assignment prompt (Smart 2026-06-26 + ADR-049 - reuses extracted content)
     const taskAssignment = buildTaskAssignmentPromptFromContent(terminal, messageId, inboxContent);
-    const taskInjected = injectMessageToSession(sessionName, taskAssignment);
+    const taskInjected = await injectMessageToSession(sessionName, taskAssignment);
     if (taskInjected) {
       // Update terminal context (bugfix 2026-07-11: MCP fetch_task/complete_task needs this)
       setTerminalContext(
@@ -1085,7 +1076,7 @@ A token az MCP regisztrációdban van, automatikusan autentikált.`;
 
     if (telegramToken && telegramChatId) {
       const message = `🚀 *${terminal.toUpperCase()} wake-on-inbox*\nModell: \`${model}\`\nInbox: \`${messageId}\``;
-      await execAsync(`curl -s -X POST "https://api.telegram.org/bot${telegramToken}/sendMessage" -d chat_id="${telegramChatId}" --data-urlencode "text=${message}" -d parse_mode="Markdown" -o /dev/null`);
+      await sendTelegramMessage(telegramToken, telegramChatId, message);
     }
 
     return {
@@ -1125,6 +1116,10 @@ export async function startWorkSession(
       message: `Invalid terminal name: ${terminal}`,
     };
   }
+  if (!isValidModelId(model)) {
+    console.error(`[SessionStarter] SECURITY: Invalid model rejected: ${model}`);
+    return { success: false, message: `Invalid model: ${model}` };
+  }
 
   const sessionName = `spaceos-${terminal}`;
   const workdir = getWorkdir(terminal);
@@ -1135,7 +1130,7 @@ export async function startWorkSession(
     if (!isClaudeRunning(sessionName)) {
       console.log(`[SessionStarter] Work session ${sessionName} exists but Claude not running, killing and restarting...`);
       try {
-        execSync(`tmux -S ${TMUX_SOCKET} kill-session -t ${sessionName}`, { timeout: 5000 });
+        execFileSync('tmux', ['-S', TMUX_SOCKET, 'kill-session', '-t', sessionName], { timeout: 5000 });
       } catch {
         // Ignore, continue to start fresh
       }
@@ -1153,7 +1148,7 @@ ${task}
 ---
 Dolgozd fel a feladatot, majd ha kész vagy, jelezd vissza.`;
 
-      const injected = injectMessageToSession(sessionName, taskPrompt);
+      const injected = await injectMessageToSession(sessionName, taskPrompt);
       if (injected) {
         return {
           success: true,
@@ -1174,13 +1169,13 @@ Dolgozd fel a feladatot, majd ha kész vagy, jelezd vissza.`;
 
   try {
     // Create tmux session
-    await execAsync(`tmux -S ${TMUX_SOCKET} new-session -d -s ${sessionName} -c "${workdir}"`);
+    await execFileAsync('tmux', ['-S', TMUX_SOCKET, 'new-session', '-d', '-s', sessionName, '-c', workdir]);
 
     // Wait for session to be ready
     await new Promise(resolve => setTimeout(resolve, 1000));
 
     // Send claude command with specified model (text first, then Enter)
-    await execAsync(`tmux -S ${TMUX_SOCKET} send-keys -t ${sessionName} "claude --model ${model}" Enter`);
+    await execFileAsync('tmux', ['-S', TMUX_SOCKET, 'send-keys', '-t', sessionName, `claude --model ${model}`, 'Enter']);
 
     // Wait for claude to initialize
     await new Promise(resolve => setTimeout(resolve, 10000));
@@ -1201,7 +1196,7 @@ A chat session Haiku, te pedig ${model.toUpperCase()} vagy - összetettebb felad
 Dolgozd fel a feladatot. Ha kész vagy, írd: "DONE: [összefoglaló]"`;
 
     // Inject task
-    const taskInjected = injectMessageToSession(sessionName, taskPrompt);
+    const taskInjected = await injectMessageToSession(sessionName, taskPrompt);
     if (!taskInjected) {
       console.warn(`[SessionStarter] Failed to inject task to work session ${sessionName}`);
     }
@@ -1214,7 +1209,7 @@ Dolgozd fel a feladatot. Ha kész vagy, írd: "DONE: [összefoglaló]"`;
 
     if (telegramToken && telegramChatId) {
       const message = `🔧 *${terminal.toUpperCase()} work session started*\nModell: \`${model}\`\nFeladat: \`${task.slice(0, 100)}...\``;
-      await execAsync(`curl -s -X POST "https://api.telegram.org/bot${telegramToken}/sendMessage" -d chat_id="${telegramChatId}" --data-urlencode "text=${message}" -d parse_mode="Markdown" -o /dev/null`);
+      await sendTelegramMessage(telegramToken, telegramChatId, message);
     }
 
     return {
@@ -1293,10 +1288,7 @@ export async function startParallelWorkSession(
 
     // Create tmux session
     const workdir = path.join(TERMINALS_DIR, config.terminal);
-    execSync(
-      `tmux -S ${TMUX_SOCKET} new-session -d -s ${sessionName} -c ${workdir}`,
-      { timeout: 5000 }
-    );
+    execFileSync('tmux', ['-S', TMUX_SOCKET, 'new-session', '-d', '-s', sessionName, '-c', workdir], { timeout: 5000 });
 
     // Register worker
     registerWorker(workerId, config, sessionName);
@@ -1337,10 +1329,7 @@ export async function spawnRawWorkers(config: {
       const workdir = path.join(TERMINALS_DIR, config.terminal);
 
       // Create session
-      execSync(
-        `tmux -S ${TMUX_SOCKET} new-session -d -s ${sessionName} -c ${workdir}`,
-        { timeout: 5000 }
-      );
+      execFileSync('tmux', ['-S', TMUX_SOCKET, 'new-session', '-d', '-s', sessionName, '-c', workdir], { timeout: 5000 });
 
       workerIds.push(workerId);
       console.log(`[SessionStarter] ✓ Raw worker ${workerId} spawned (${config.model})`);
@@ -1395,14 +1384,14 @@ export async function collectRawResults(
 
         // Kill completed worker session
         try {
-          execSync(`tmux -S ${TMUX_SOCKET} kill-session -t ${sessionName}`, {
+          execFileSync('tmux', ['-S', TMUX_SOCKET, 'kill-session', '-t', sessionName], {
             timeout: 3000,
           });
           console.log(`[SessionStarter] ✓ Killed completed raw worker ${sessionName}`);
         } catch (err) {
           // Try default socket
           try {
-            execSync(`tmux kill-session -t ${sessionName}`, { timeout: 3000 });
+            execFileSync('tmux', ['kill-session', '-t', sessionName], { timeout: 3000 });
           } catch {
             console.warn(`[SessionStarter] Failed to kill session ${sessionName}`);
           }

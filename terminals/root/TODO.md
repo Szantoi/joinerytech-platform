@@ -20,8 +20,15 @@
       M4-mérföldkő-review a végén. Bemenetlista a state-ben.
 - [ ] **backend sandbox-provisioning** terve — a VPS-lépéseknél Gábor-kaput
       kérni; a base URL/demo-bérlő/token federation-kézbesítése a Doorstarnak.
-- [ ] **Codex world-gating** review_requested VAGY státusz-válasz — ha
-      elhúzódik, sáv-átadási javaslat Gábornak (draft kimentve).
+- [x] ~~Codex world-gating review~~ — **CHANGES REQUESTED 2026-07-29**
+      (1 P1: a szerep-alapú szűkítés eltűnt → Gábor: metszetként visszaállítandó,
+      Joiner-teszttel; 2 P2). Root-mérés: 5 fájl / 23 PASS. Javítás vissza vár.
+- [x] ~~Backend M4/2, M4/3, M4/4~~ — **APPROVED 2026-07-29** (root-mérés 379 zöld
+      saját gépen; az M4/2 validator-utókövetése lezárva). Kapu a mérföldkőhöz:
+      **zöld CI kell** az M4/3+M4/4-re (ma nincs pusholva).
+- [ ] **Frontend M3-bekötés** (pending/error, `useApi` additív `isPending`) —
+      `review_requested`, ez a következő a soromban.
+- [ ] **B2B-10 F1** három szeletének `review_requested`-jei (M4 után).
 - [ ] **Codex ERPSEP-06** DevelopmentIdentityOptions.EnabledModules szelet
       (root-támogatással, 2 kikötéssel — hosting-javaslat) + a maintenance-
       bootstrap/Instance-Context OpenAPI külön szelet review-kérése.
@@ -30,8 +37,9 @@
 
 ## Kiadható, ha sáv szabadul
 
-- [ ] **B2B-10 F1** (Collaboration application-réteg, L) — a backendnek, az
-      M4/M5 után (elő-kiírás megvan: backend inbox 010). F0 kész.
+- [x] ~~**B2B-10 F1**~~ — **KIADVA 2026-07-29** (task-doksi +
+      backend inbox 011, a 010-es elő-kiírást váltja). Indulás az M4
+      mérföldkő-review APPROVED-ja után; 3 szeletben várom vissza.
 - [ ] **CatalogPanel handleDuplicate** előzetes lint-hibái (frontend, külön
       tiszta szelet — a frontend felajánlotta).
 - [ ] **DS-RECONCILE** (designer, pending) — design-system spec-igazítás.

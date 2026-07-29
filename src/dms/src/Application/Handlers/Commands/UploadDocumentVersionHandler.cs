@@ -2,9 +2,12 @@ using MediatR;
 using Microsoft.Extensions.Logging;
 using SpaceOS.Modules.DMS.Application.Commands;
 using SpaceOS.Modules.DMS.Application.Configuration;
+using SpaceOS.Modules.DMS.Application.Contracts;
 using SpaceOS.Modules.DMS.Application.DTOs;
 using SpaceOS.Modules.DMS.Application.Mapping;
+using SpaceOS.Modules.DMS.Domain.Exceptions;
 using SpaceOS.Modules.DMS.Domain.Repositories;
+using SpaceOS.Modules.DMS.Domain.Services;
 using SpaceOS.Modules.DMS.Domain.ValueObjects;
 
 namespace SpaceOS.Modules.DMS.Application.Handlers.Commands;
@@ -19,15 +22,21 @@ namespace SpaceOS.Modules.DMS.Application.Handlers.Commands;
 public class UploadDocumentVersionHandler : IRequestHandler<UploadDocumentVersionCommand, DocumentDto>
 {
     private readonly IDocumentRepository _repository;
+    private readonly IDocumentAccessControlService _access;
+    private readonly ICallerContext _caller;
     private readonly DmsExpiryOptions _expiryOptions;
     private readonly ILogger<UploadDocumentVersionHandler> _logger;
 
     public UploadDocumentVersionHandler(
         IDocumentRepository repository,
+        IDocumentAccessControlService access,
+        ICallerContext caller,
         DmsExpiryOptions expiryOptions,
         ILogger<UploadDocumentVersionHandler> logger)
     {
         _repository = repository;
+        _access = access;
+        _caller = caller;
         _expiryOptions = expiryOptions;
         _logger = logger;
     }
@@ -38,6 +47,19 @@ public class UploadDocumentVersionHandler : IRequestHandler<UploadDocumentVersio
             .GetByIdAsync(new DocumentId(request.DocumentId), ct)
             .ConfigureAwait(false)
             ?? throw new KeyNotFoundException("Dokumentum nem található");
+
+        // A new version IS a change to the document, so it needs the same right a transition
+        // does. Invisible documents answer as missing, for the same reason as everywhere else.
+        var caller = new DocumentAccessContext(new UserId(_caller.UserId), _caller.RoleIds);
+        if (!_access.CanView(document, caller))
+        {
+            throw new KeyNotFoundException("Dokumentum nem található");
+        }
+
+        if (!_access.CanEdit(document, caller))
+        {
+            throw new DocumentAccessDeniedException("upload-version");
+        }
 
         var entry = document.AddVersion(
             request.FileLabel ?? string.Empty,

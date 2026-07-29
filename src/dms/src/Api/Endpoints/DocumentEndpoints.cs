@@ -290,6 +290,14 @@ public static class DocumentEndpoints
             logger.LogWarning("DMS document {Action}: not found", action);
             return NotFound();
         }
+        catch (DocumentAccessDeniedException ex)
+        {
+            // 403, not 404: the caller was allowed to SEE this document, so pretending it does
+            // not exist would only produce an unexplainable screen. The invisible case never
+            // reaches here — it is refused as not-found further in.
+            logger.LogWarning("DMS document {Action} forbidden (403): {Message}", action, ex.Message);
+            return Results.Json(new ErrorBody("Forbidden", ex.Message), statusCode: StatusCodes.Status403Forbidden);
+        }
         catch (InvalidStatusTransitionException ex)
         {
             logger.LogWarning("DMS document {Action} rejected (409): {Message}", action, ex.Message);

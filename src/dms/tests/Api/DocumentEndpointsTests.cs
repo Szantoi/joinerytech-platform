@@ -320,6 +320,27 @@ public class DocumentEndpointsTests
     }
 
     [Fact]
+    public async Task Transition_WithoutTheRight_Returns403WithMswBody()
+    {
+        // The caller could SEE the document but may not change it. The refusal has to reach the
+        // portal as 403 — a 404 here would make the screen unexplainable, and a 200 would mean
+        // the check never ran.
+        var mediator = new Mock<IMediator>();
+        mediator
+            .Setup(m => m.Send(It.IsAny<SubmitDocumentCommand>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new DocumentAccessDeniedException("submit"));
+
+        await using var host = await StartHostAsync(mediator.Object);
+        var response = await host.Client.PostAsJsonAsync(
+            $"/api/dms/documents/{DocumentGuid}/submit", new { });
+
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        body.RootElement.GetProperty("error").GetString().Should().Be("Forbidden");
+        body.RootElement.GetProperty("message").GetString().Should().Contain("submit");
+    }
+
+    [Fact]
     public async Task Transition_UnknownDocument_Returns404()
     {
         var mediator = new Mock<IMediator>();

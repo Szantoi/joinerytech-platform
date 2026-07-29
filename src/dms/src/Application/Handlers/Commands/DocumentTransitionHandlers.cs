@@ -2,34 +2,48 @@ using MediatR;
 using Microsoft.Extensions.Logging;
 using SpaceOS.Modules.DMS.Application.Commands;
 using SpaceOS.Modules.DMS.Application.Configuration;
+using SpaceOS.Modules.DMS.Application.Contracts;
 using SpaceOS.Modules.DMS.Application.DTOs;
 using SpaceOS.Modules.DMS.Application.Mapping;
 using SpaceOS.Modules.DMS.Domain.Aggregates.Document;
+using SpaceOS.Modules.DMS.Domain.Exceptions;
 using SpaceOS.Modules.DMS.Domain.Repositories;
+using SpaceOS.Modules.DMS.Domain.Services;
 using SpaceOS.Modules.DMS.Domain.ValueObjects;
 
 namespace SpaceOS.Modules.DMS.Application.Handlers.Commands;
 
 /// <summary>
 /// Shared FSM-transition handling (Maintenance WorkOrderTransitionHandlerBase
-/// precedent): load → domain action → persist → fresh DTO. Domain guard
+/// precedent): load → ACCESS CHECK → domain action → persist → fresh DTO. Domain guard
 /// exceptions bubble to the endpoint layer (module error contract:
-/// KeyNotFoundException → 404, InvalidStatusTransitionException → 409,
-/// DomainException → 400).
+/// KeyNotFoundException → 404, DocumentAccessDeniedException → 403,
+/// InvalidStatusTransitionException → 409, DomainException → 400).
 /// </summary>
+/// <remarks>
+/// The access check sits in the shared base rather than in each transition, so a transition
+/// added later cannot forget it — the same reason the scheduling host puts
+/// <c>RequireEnabledModule</c> on the route group instead of on each endpoint.
+/// </remarks>
 public abstract class DocumentTransitionHandlerBase<TCommand> : IRequestHandler<TCommand, DocumentDto>
     where TCommand : IRequest<DocumentDto>, IDocumentTransitionCommand
 {
     private readonly IDocumentRepository _repository;
+    private readonly IDocumentAccessControlService _access;
+    private readonly ICallerContext _caller;
     private readonly DmsExpiryOptions _expiryOptions;
     private readonly ILogger _logger;
 
     protected DocumentTransitionHandlerBase(
         IDocumentRepository repository,
+        IDocumentAccessControlService access,
+        ICallerContext caller,
         DmsExpiryOptions expiryOptions,
         ILogger logger)
     {
         _repository = repository;
+        _access = access;
+        _caller = caller;
         _expiryOptions = expiryOptions;
         _logger = logger;
     }
@@ -47,6 +61,23 @@ public abstract class DocumentTransitionHandlerBase<TCommand> : IRequestHandler<
             .ConfigureAwait(false)
             ?? throw new KeyNotFoundException("Dokumentum nem található");
 
+        // Two different refusals, on purpose. A caller who may not even see the document gets
+        // the same answer as for a document that does not exist, so the API cannot be used to
+        // enumerate what is there. A caller who CAN see it, but may not change it, is told so —
+        // they already know it exists, and hiding the reason only makes the UI inexplicable.
+        var caller = new DocumentAccessContext(new UserId(_caller.UserId), _caller.RoleIds);
+        if (!_access.CanView(document, caller))
+        {
+            throw new KeyNotFoundException("Dokumentum nem található");
+        }
+
+        // Every state transition is a change to the document, so they all require Edit.
+        // Deleting is a separate right and a separate command.
+        if (!_access.CanEdit(document, caller))
+        {
+            throw new DocumentAccessDeniedException(ActionName);
+        }
+
         Apply(document, command);
         await _repository.UpdateAsync(document, ct).ConfigureAwait(false);
 
@@ -62,8 +93,8 @@ public abstract class DocumentTransitionHandlerBase<TCommand> : IRequestHandler<
 public class SubmitDocumentHandler : DocumentTransitionHandlerBase<SubmitDocumentCommand>
 {
     public SubmitDocumentHandler(
-        IDocumentRepository repository, DmsExpiryOptions expiryOptions, ILogger<SubmitDocumentHandler> logger)
-        : base(repository, expiryOptions, logger) { }
+        IDocumentRepository repository, IDocumentAccessControlService access, ICallerContext caller, DmsExpiryOptions expiryOptions, ILogger<SubmitDocumentHandler> logger)
+        : base(repository, access, caller, expiryOptions, logger) { }
 
     protected override string ActionName => "submit";
     protected override void Apply(Document document, SubmitDocumentCommand command)
@@ -74,8 +105,8 @@ public class SubmitDocumentHandler : DocumentTransitionHandlerBase<SubmitDocumen
 public class ApproveDocumentHandler : DocumentTransitionHandlerBase<ApproveDocumentCommand>
 {
     public ApproveDocumentHandler(
-        IDocumentRepository repository, DmsExpiryOptions expiryOptions, ILogger<ApproveDocumentHandler> logger)
-        : base(repository, expiryOptions, logger) { }
+        IDocumentRepository repository, IDocumentAccessControlService access, ICallerContext caller, DmsExpiryOptions expiryOptions, ILogger<ApproveDocumentHandler> logger)
+        : base(repository, access, caller, expiryOptions, logger) { }
 
     protected override string ActionName => "approve";
     protected override void Apply(Document document, ApproveDocumentCommand command)
@@ -86,8 +117,8 @@ public class ApproveDocumentHandler : DocumentTransitionHandlerBase<ApproveDocum
 public class RejectDocumentHandler : DocumentTransitionHandlerBase<RejectDocumentCommand>
 {
     public RejectDocumentHandler(
-        IDocumentRepository repository, DmsExpiryOptions expiryOptions, ILogger<RejectDocumentHandler> logger)
-        : base(repository, expiryOptions, logger) { }
+        IDocumentRepository repository, IDocumentAccessControlService access, ICallerContext caller, DmsExpiryOptions expiryOptions, ILogger<RejectDocumentHandler> logger)
+        : base(repository, access, caller, expiryOptions, logger) { }
 
     protected override string ActionName => "reject";
     protected override void Apply(Document document, RejectDocumentCommand command)
@@ -98,8 +129,8 @@ public class RejectDocumentHandler : DocumentTransitionHandlerBase<RejectDocumen
 public class RecallDocumentHandler : DocumentTransitionHandlerBase<RecallDocumentCommand>
 {
     public RecallDocumentHandler(
-        IDocumentRepository repository, DmsExpiryOptions expiryOptions, ILogger<RecallDocumentHandler> logger)
-        : base(repository, expiryOptions, logger) { }
+        IDocumentRepository repository, IDocumentAccessControlService access, ICallerContext caller, DmsExpiryOptions expiryOptions, ILogger<RecallDocumentHandler> logger)
+        : base(repository, access, caller, expiryOptions, logger) { }
 
     protected override string ActionName => "recall";
     protected override void Apply(Document document, RecallDocumentCommand command)
@@ -110,8 +141,8 @@ public class RecallDocumentHandler : DocumentTransitionHandlerBase<RecallDocumen
 public class ArchiveDocumentHandler : DocumentTransitionHandlerBase<ArchiveDocumentCommand>
 {
     public ArchiveDocumentHandler(
-        IDocumentRepository repository, DmsExpiryOptions expiryOptions, ILogger<ArchiveDocumentHandler> logger)
-        : base(repository, expiryOptions, logger) { }
+        IDocumentRepository repository, IDocumentAccessControlService access, ICallerContext caller, DmsExpiryOptions expiryOptions, ILogger<ArchiveDocumentHandler> logger)
+        : base(repository, access, caller, expiryOptions, logger) { }
 
     protected override string ActionName => "archive";
     protected override void Apply(Document document, ArchiveDocumentCommand command)
@@ -122,8 +153,8 @@ public class ArchiveDocumentHandler : DocumentTransitionHandlerBase<ArchiveDocum
 public class ReopenDocumentHandler : DocumentTransitionHandlerBase<ReopenDocumentCommand>
 {
     public ReopenDocumentHandler(
-        IDocumentRepository repository, DmsExpiryOptions expiryOptions, ILogger<ReopenDocumentHandler> logger)
-        : base(repository, expiryOptions, logger) { }
+        IDocumentRepository repository, IDocumentAccessControlService access, ICallerContext caller, DmsExpiryOptions expiryOptions, ILogger<ReopenDocumentHandler> logger)
+        : base(repository, access, caller, expiryOptions, logger) { }
 
     protected override string ActionName => "reopen";
     protected override void Apply(Document document, ReopenDocumentCommand command)

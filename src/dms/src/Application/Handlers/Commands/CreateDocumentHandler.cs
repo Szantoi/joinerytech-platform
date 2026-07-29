@@ -2,6 +2,7 @@ using MediatR;
 using Microsoft.Extensions.Logging;
 using SpaceOS.Modules.DMS.Application.Commands;
 using SpaceOS.Modules.DMS.Application.Configuration;
+using SpaceOS.Modules.DMS.Application.Contracts;
 using SpaceOS.Modules.DMS.Application.DTOs;
 using SpaceOS.Modules.DMS.Application.Mapping;
 using SpaceOS.Modules.DMS.Domain.Aggregates.Document;
@@ -17,15 +18,18 @@ namespace SpaceOS.Modules.DMS.Application.Handlers.Commands;
 public class CreateDocumentHandler : IRequestHandler<CreateDocumentCommand, DocumentDto>
 {
     private readonly IDocumentRepository _repository;
+    private readonly ICallerContext _caller;
     private readonly DmsExpiryOptions _expiryOptions;
     private readonly ILogger<CreateDocumentHandler> _logger;
 
     public CreateDocumentHandler(
         IDocumentRepository repository,
+        ICallerContext caller,
         DmsExpiryOptions expiryOptions,
         ILogger<CreateDocumentHandler> logger)
     {
         _repository = repository;
+        _caller = caller;
         _expiryOptions = expiryOptions;
         _logger = logger;
     }
@@ -42,7 +46,12 @@ public class CreateDocumentHandler : IRequestHandler<CreateDocumentCommand, Docu
             request.Owner,
             request.Note,
             request.FileLabel,
-            request.ValidUntil);
+            request.ValidUntil,
+
+            // The creator owns it. Without this every new document would be born without an
+            // owner identity and would fall under the legacy read-for-everyone exception —
+            // fail-closed would then apply to nothing that actually matters.
+            ownerUserId: new UserId(_caller.UserId));
 
         await _repository.AddAsync(document, ct).ConfigureAwait(false);
 

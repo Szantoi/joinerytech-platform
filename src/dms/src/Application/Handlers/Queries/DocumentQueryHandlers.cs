@@ -1,9 +1,11 @@
 using MediatR;
 using SpaceOS.Modules.DMS.Application.Configuration;
+using SpaceOS.Modules.DMS.Application.Contracts;
 using SpaceOS.Modules.DMS.Application.DTOs;
 using SpaceOS.Modules.DMS.Application.Mapping;
 using SpaceOS.Modules.DMS.Application.Queries;
 using SpaceOS.Modules.DMS.Domain.Repositories;
+using SpaceOS.Modules.DMS.Domain.Services;
 using SpaceOS.Modules.DMS.Domain.ValueObjects;
 
 namespace SpaceOS.Modules.DMS.Application.Handlers.Queries;
@@ -48,11 +50,19 @@ public class ListDocumentsHandler : IRequestHandler<ListDocumentsQuery, IReadOnl
 public class GetDocumentHandler : IRequestHandler<GetDocumentQuery, DocumentDto?>
 {
     private readonly IDocumentRepository _repository;
+    private readonly IDocumentAccessControlService _access;
+    private readonly ICallerContext _caller;
     private readonly DmsExpiryOptions _expiryOptions;
 
-    public GetDocumentHandler(IDocumentRepository repository, DmsExpiryOptions expiryOptions)
+    public GetDocumentHandler(
+        IDocumentRepository repository,
+        IDocumentAccessControlService access,
+        ICallerContext caller,
+        DmsExpiryOptions expiryOptions)
     {
         _repository = repository;
+        _access = access;
+        _caller = caller;
         _expiryOptions = expiryOptions;
     }
 
@@ -62,8 +72,16 @@ public class GetDocumentHandler : IRequestHandler<GetDocumentQuery, DocumentDto?
             .GetByIdAsync(new DocumentId(request.DocumentId), ct)
             .ConfigureAwait(false);
 
-        return document is null
-            ? null
-            : DocumentDtoMapper.ToDto(document, ServeDay.Today(), _expiryOptions.WarnDays);
+        if (document is null)
+        {
+            return null;
+        }
+
+        // A document the caller may not view answers exactly like one that does not exist —
+        // otherwise the difference between 404 and 403 becomes a way to enumerate documents.
+        var caller = new DocumentAccessContext(new UserId(_caller.UserId), _caller.RoleIds);
+        return _access.CanView(document, caller)
+            ? DocumentDtoMapper.ToDto(document, ServeDay.Today(), _expiryOptions.WarnDays)
+            : null;
     }
 }

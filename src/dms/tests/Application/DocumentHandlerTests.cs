@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using SpaceOS.Modules.DMS.Application.Commands;
 using SpaceOS.Modules.DMS.Application.Configuration;
+using SpaceOS.Modules.DMS.Application.Contracts;
 using SpaceOS.Modules.DMS.Application.Handlers.Commands;
 using SpaceOS.Modules.DMS.Application.Handlers.Queries;
 using SpaceOS.Modules.DMS.Application.Mapping;
@@ -10,6 +11,7 @@ using SpaceOS.Modules.DMS.Application.Queries;
 using SpaceOS.Modules.DMS.Domain.Aggregates.Document;
 using SpaceOS.Modules.DMS.Domain.Enums;
 using SpaceOS.Modules.DMS.Domain.Repositories;
+using SpaceOS.Modules.DMS.Domain.Services;
 using SpaceOS.Modules.DMS.Domain.ValueObjects;
 using Xunit;
 
@@ -25,7 +27,21 @@ public class DocumentHandlerTests
 {
     private static readonly DmsExpiryOptions Expiry = DmsExpiryOptions.Default;
 
-    private static Document SampleDocument(DateOnly? validUntil = null) => Document.Create(
+    /// <summary>The real rule, not a mock: these tests must break if the rule changes.</summary>
+    private static readonly IDocumentAccessControlService Access = new DocumentAccessControlService();
+
+    private static readonly Guid OwnerId = Guid.Parse("55555555-5555-5555-5555-555555555555");
+
+    /// <summary>A caller who owns the sample document — the ordinary case.</summary>
+    private static ICallerContext Caller(Guid? userId = null)
+    {
+        var caller = new Mock<ICallerContext>();
+        caller.SetupGet(c => c.UserId).Returns(userId ?? OwnerId);
+        caller.SetupGet(c => c.RoleIds).Returns(new HashSet<Guid>());
+        return caller.Object;
+    }
+
+    private static Document SampleDocument(DateOnly? validUntil = null, Guid? ownerUserId = null) => Document.Create(
         new TenantId(Guid.NewGuid()),
         name: "Bognár Bútor Kft. — keretszerződés 2026",
         type: DocType.Contract,
@@ -35,7 +51,8 @@ public class DocumentHandlerTests
         owner: "Szabó Anna",
         note: null,
         fileLabel: "bognar-keretszerzodes-2026.pdf",
-        validUntil: validUntil);
+        validUntil: validUntil,
+        ownerUserId: new UserId(ownerUserId ?? OwnerId));
 
     private static Mock<IDocumentRepository> RepositoryReturning(Document? document)
     {
@@ -52,7 +69,7 @@ public class DocumentHandlerTests
         var document = SampleDocument();
         var repository = RepositoryReturning(document);
         var handler = new SubmitDocumentHandler(
-            repository.Object, Expiry, NullLogger<SubmitDocumentHandler>.Instance);
+            repository.Object, Access, Caller(), Expiry, NullLogger<SubmitDocumentHandler>.Instance);
 
         var dto = await handler.Handle(new SubmitDocumentCommand(document.Id.Value), default);
 
@@ -66,7 +83,7 @@ public class DocumentHandlerTests
     public async Task TransitionHandler_UnknownDocument_ThrowsKeyNotFound()
     {
         var handler = new ArchiveDocumentHandler(
-            RepositoryReturning(null).Object, Expiry, NullLogger<ArchiveDocumentHandler>.Instance);
+            RepositoryReturning(null).Object, Access, Caller(), Expiry, NullLogger<ArchiveDocumentHandler>.Instance);
 
         var act = () => handler.Handle(new ArchiveDocumentCommand(Guid.NewGuid()), default);
 
@@ -80,7 +97,7 @@ public class DocumentHandlerTests
         var document = SampleDocument();
         var repository = RepositoryReturning(document);
         var handler = new UploadDocumentVersionHandler(
-            repository.Object, Expiry, NullLogger<UploadDocumentVersionHandler>.Instance);
+            repository.Object, Access, Caller(), Expiry, NullLogger<UploadDocumentVersionHandler>.Instance);
 
         var dto = await handler.Handle(
             new UploadDocumentVersionCommand(
@@ -145,7 +162,8 @@ public class DocumentHandlerTests
         var document = SampleDocument(validUntil: ServeDay.Today().AddDays(10));
         document.SubmitForReview();
         document.Approve();
-        var handler = new GetDocumentHandler(RepositoryReturning(document).Object, Expiry);
+        var handler = new GetDocumentHandler(
+            RepositoryReturning(document).Object, Access, Caller(), Expiry);
 
         var dto = await handler.Handle(new GetDocumentQuery(document.Id.Value), default);
 
@@ -157,7 +175,7 @@ public class DocumentHandlerTests
     [Fact]
     public async Task GetHandler_UnknownDocument_ReturnsNull()
     {
-        var handler = new GetDocumentHandler(RepositoryReturning(null).Object, Expiry);
+        var handler = new GetDocumentHandler(RepositoryReturning(null).Object, Access, Caller(), Expiry);
 
         var dto = await handler.Handle(new GetDocumentQuery(Guid.NewGuid()), default);
 

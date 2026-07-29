@@ -1,7 +1,10 @@
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using SpaceOS.Modules.DMS.Api.Security;
+using SpaceOS.Modules.DMS.Application.Contracts;
 using SpaceOS.Modules.DMS.Domain.Enums;
+using SpaceOS.Modules.DMS.Domain.Services;
 using SpaceOS.Modules.DMS.Infrastructure;
 using SpaceOS.Modules.Hosting.Wire;
 
@@ -24,6 +27,13 @@ public static class DmsServiceCollectionExtensions
         // Infrastructure (shared tenancy + adapter, DbContext + shared RLS
         // interceptor, repositories, blob store, options)
         services.AddDMSInfrastructure(configuration);
+
+        // Object-level access control (Codex P1). RLS keeps tenants apart; this decides who
+        // inside a tenant may touch a given document. The rule is stateless domain logic; the
+        // caller comes from the authenticated principal, per request.
+        services.AddHttpContextAccessor();
+        services.AddScoped<ICallerContext, ClaimsCallerContext>();
+        services.AddSingleton<IDocumentAccessControlService, DocumentAccessControlService>();
 
         // Application (MediatR handlers)
         services.AddDMSApplication();

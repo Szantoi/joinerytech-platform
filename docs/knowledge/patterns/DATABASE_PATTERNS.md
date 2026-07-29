@@ -232,6 +232,71 @@ migrationBuilder.CreateIndex(name: "idx_orders_tenant", ...);
 
 ---
 
+## 7. Mit NEM lát a teszted — négy mérésen alapuló csapda (2026-07-29, Collaboration F2)
+
+> Forrás: a `spaceos-modules-collaboration` első valódi PostgreSQL-futása. Mind a négy
+> csapda **117 zöld teszt mellett** volt jelen; egyiket sem a kód olvasása találta meg.
+
+### 7.1 A tükör zöld marad, ha az eredeti elromlik
+
+**Mérve: a platformon EGYETLEN modul RLS-suite-ja sem futtatja a valódi
+`SpaceOsTenantSessionInterceptor`-t.** Mind (az EHS-é is) **kézzel** állítja a session-kulcsot
+a `NonSuperuserRlsFixture.SetTenantAsync`-kel — amit a fixture doc-comment-je maga is
+„mirroring"-nak nevez. Ez a policy-t bizonyítja, az interceptort nem.
+
+Következmény: ha valaki elírja a session-kulcs nevét, kiveszi a `ConnectionClosing` resetet
+vagy elrontja a fail-loud ágat, **mind a hét modul RLS-bizonyítéka változatlanul átmegy.**
+
+**Minta:** `SpaceOS.Collaboration.IntegrationTests/InterceptorEndToEndTests.cs` — a modul saját
+DI-regisztrációján (`AddCollaborationInfrastructure`) át, nem-superuser szereppel. A legfontosabb
+teszt benne **a kulcs ÉRTÉKÉT** állítja (`SELECT current_setting('app.current_tenant_id', true)`):
+ha a kulcs neve eltávolodna a policy-kétól, a viselkedés-alapú tesztek úgy is átmennének, hogy
+**mindkét oldal üres** — a modul örökre fail-closed maradna, észrevétlenül.
+
+### 7.2 Üzleti állapot a policy `USING`-jában blokkolja a saját karbantartását
+
+```sql
+-- ROSSZ: a visszavont grant nem látszik... es EZERT nem is lehet visszavonni
+CREATE POLICY "..." ON collaboration_participant_grants
+    USING ((host OR guest) AND "Status" = 0);   -- WITH CHECK nincs
+```
+
+`WITH CHECK` hiányában PostgreSQL a `USING` kifejezést **az új sorra is** alkalmazza. A `Revoke()`
+UPDATE-je `Status = 1`-re írna → az új sor megbukik → **`42501`, a visszavonás lehetetlen.**
+Egy policy, ami a saját karbantartását tiltja, nem védelem, hanem csapda.
+
+**Szabály (ADR-062 kiegészítés, 2026-07-29 root-döntés):** *az RLS a RÉSZVÉTELT szűrje, az
+engedélyt az application/API réteg szabályozza.* Időfüggő predikátum (lejárat) pedig végképp
+nem való statikus SQL-be.
+
+### 7.3 Kliens-oldali Guid kulcs → `UPDATE` `INSERT` helyett
+
+Ha az aggregátum maga osztja ki az Id-t (`Id = Guid.NewGuid()`), az EF a **nem-default** kulcsot
+létező sornak hiszi. Amíg a mentés `Add`-del megy az egész gráfra (seed, első írás), nincs baj —
+de egy **követett szülőhöz adott gyerek** a MÁSODIK írásnál `UPDATE`-té válik, ami semmire nem
+illeszkedik → `DbUpdateConcurrencyException`. **A hibaüzenet versenyt mond, az ok leképezés.**
+
+```csharp
+builder.Property(e => e.Id).ValueGeneratedNever();   // minden ilyen konfiguráción
+```
+
+Rokon akna ugyaninnen: privát lista + read-only property önmagában **nem navigáció** —
+`HasMany(...).WithOne().HasForeignKey(...)` nélkül az EF **nem menti** a gyerekeket.
+
+### 7.4 InMemory-suite elvileg sem lát hiányzó oszlopot vagy táblát
+
+A Collaborationben 117 zöld teszt mellett hiányzott **egy oszlop** (`AcceptanceEvidence`, EF
+konvencióból leképezve, migráció nélkül) **és egy egész tábla** (az agreement-FSM audit-nyomvonala).
+Az egyes hibák javítása meghagyta volna a hibaosztályt.
+
+**Minta:** `ModelSchemaConformanceTests` — a `db.Model`-ből generálva veti össze minden leképezett
+tábla/oszlop nevét az `information_schema.columns`-szal. Kézzel karbantartott lista pont az, ami
+elmarad. **Egyirányúra kell írni:** a DB-ben létező, modellben nem szereplő oszlop **nem** bukás —
+egy oszlop túlélheti a kódot, ami használta, és ezt bukásnak venni minden szándékos kivezetést
+eltört buildté tenne.
+
+---
+
 ## Referencia: EF Core Version Konfliktusx
 
 Lásd: `docs/knowledge/deployment/KNOWN_GOTCHAS.md` — pont #1 (dotnet-ef version).

@@ -89,31 +89,31 @@ A kódbázis auditja alapján a `spaceos_inventory_worker` és `spaceos_procurem
 
 #### A. Inventory Modul (`src/spaceos-modules-inventory`)
 1. **`ReservationCleanupWorker.cs`**
-   - **Fájl & sor:** [`src/spaceos-modules-inventory/src/SpaceOS.Modules.Inventory.Infrastructure/Services/ReservationCleanupWorker.cs:88-112`](file:///C:/Users/szant/Documents/Development/joinerytech-platform/src/spaceos-modules-inventory/src/SpaceOS.Modules.Inventory.Infrastructure/Services/ReservationCleanupWorker.cs#L88-L112)
+   - **Fájl & sor:** [`src/spaceos-modules-inventory/src/SpaceOS.Modules.Inventory.Infrastructure/Services/ReservationCleanupWorker.cs:88-112`](./src/spaceos-modules-inventory/src/SpaceOS.Modules.Inventory.Infrastructure/Services/ReservationCleanupWorker.cs#L88-L112)
    - **Művelet:** Periodikus (15 perces) háttérfolyamat. Az `InventoryWorkerDbContext`-en keresztül futtatja:
      `db.Reservations.Where(r => r.Status == ReservationStatus.Active && r.ExpiresAt < DateTimeOffset.UtcNow).Take(_batchSize).ToListAsync(ct)`, majd a lejárt elemeket `Expired`-re állítja és menti.
    - **Keresztbérlős jelleg:** A lekérdezés nem tartalmaz bérlői szűrést (`TenantId`). Az összes bérlő lejárt foglalását egyetlen bérlő-független batchben dolgozza fel.
-   - **DbContext / Interceptor:** A háttérjob által használt `InventoryWorkerDbContext` ([Persistence/InventoryWorkerDbContext.cs:8-13](file:///C:/Users/szant/Documents/Development/joinerytech-platform/src/spaceos-modules-inventory/src/SpaceOS.Modules.Inventory.Infrastructure/Persistence/InventoryWorkerDbContext.cs#L8-L13)) szándékosan nem regisztrál `TenantSessionInterceptor`-t, és a `spaceos_inventory_worker` kapcsolattal fut.
+   - **DbContext / Interceptor:** A háttérjob által használt `InventoryWorkerDbContext` ([Persistence/InventoryWorkerDbContext.cs:8-13](./src/spaceos-modules-inventory/src/SpaceOS.Modules.Inventory.Infrastructure/Persistence/InventoryWorkerDbContext.cs#L8-L13)) szándékosan nem regisztrál `TenantSessionInterceptor`-t, és a `spaceos_inventory_worker` kapcsolattal fut.
 
 2. **`ReorderAlertWorker.cs`**
-   - **Fájl & sor:** [`src/spaceos-modules-inventory/src/SpaceOS.Modules.Inventory.Infrastructure/Services/ReorderAlertWorker.cs:104-110`](file:///C:/Users/szant/Documents/Development/joinerytech-platform/src/spaceos-modules-inventory/src/SpaceOS.Modules.Inventory.Infrastructure/Services/ReorderAlertWorker.cs#L104-L110)
-   - **Művelet:** Outbox tábla polling (`db.InventoryReorderOutboxes.Where(o => (o.Status == "Pending" && o.NextAttemptAt <= now) || (o.Status == "InFlight" && o.LeaseUntil < now))`), majd HTTP kérés küldése a Procurement felé (`X-SpaceOS-TenantId` fejléccel, [L140](file:///C:/Users/szant/Documents/Development/joinerytech-platform/src/spaceos-modules-inventory/src/SpaceOS.Modules.Inventory.Infrastructure/Services/ReorderAlertWorker.cs#L140)).
+   - **Fájl & sor:** [`src/spaceos-modules-inventory/src/SpaceOS.Modules.Inventory.Infrastructure/Services/ReorderAlertWorker.cs:104-110`](./src/spaceos-modules-inventory/src/SpaceOS.Modules.Inventory.Infrastructure/Services/ReorderAlertWorker.cs#L104-L110)
+   - **Művelet:** Outbox tábla polling (`db.InventoryReorderOutboxes.Where(o => (o.Status == "Pending" && o.NextAttemptAt <= now) || (o.Status == "InFlight" && o.LeaseUntil < now))`), majd HTTP kérés küldése a Procurement felé (`X-SpaceOS-TenantId` fejléccel, [L140](./src/spaceos-modules-inventory/src/SpaceOS.Modules.Inventory.Infrastructure/Services/ReorderAlertWorker.cs#L140)).
    - **Keresztbérlős jelleg:** Az outbox polling bérlőszűrő nélkül történik a teljes globális outbox soron.
 
 #### B. Procurement Modul (`src/spaceos-modules-procurement`)
 1. **`ProcurementIntegrationWorker.cs`**
-   - **Fájl & sor:** [`src/spaceos-modules-procurement/src/SpaceOS.Modules.Procurement.Infrastructure/Workers/ProcurementIntegrationWorker.cs:97-105`](file:///C:/Users/szant/Documents/Development/joinerytech-platform/src/spaceos-modules-procurement/src/SpaceOS.Modules.Procurement.Infrastructure/Workers/ProcurementIntegrationWorker.cs#L97-L105)
+   - **Fájl & sor:** [`src/spaceos-modules-procurement/src/SpaceOS.Modules.Procurement.Infrastructure/Workers/ProcurementIntegrationWorker.cs:97-105`](./src/spaceos-modules-procurement/src/SpaceOS.Modules.Procurement.Infrastructure/Workers/ProcurementIntegrationWorker.cs#L97-L105)
    - **Művelet (CLAIM):** Nyers SQL-alapú outbox polling:
      `SELECT * FROM spaceos_procurement.procurement_outbox WHERE ("Status" = 'Pending' AND "NextAttemptAt" <= NOW()) OR ("Status" = 'InFlight' AND "LeaseUntil" < NOW()) ORDER BY "NextAttemptAt" ASC FOR UPDATE SKIP LOCKED LIMIT 10`
    - **Keresztbérlős jelleg:** Az outbox lekérdezés bérlőszűrő nélkül, az összes bérlő kimenő üzenetére fut.
-   - **Per-üzenet bérlői izoláció (COMPLETE):** A [L171-L176](file:///C:/Users/szant/Documents/Development/joinerytech-platform/src/spaceos-modules-procurement/src/SpaceOS.Modules.Procurement.Infrastructure/Workers/ProcurementIntegrationWorker.cs#L171-L176) sorokban az üzenet feldolgozása után a worker explicit módon beállítja a bérlői kontextust:
+   - **Per-üzenet bérlői izoláció (COMPLETE):** A [L171-L176](./src/spaceos-modules-procurement/src/SpaceOS.Modules.Procurement.Infrastructure/Workers/ProcurementIntegrationWorker.cs#L171-L176) sorokban az üzenet feldolgozása után a worker explicit módon beállítja a bérlői kontextust:
      `SELECT set_config('app.current_tenant_id', {0}, true)` (`msg.TenantId`), és ezután frissíti a `spaceos_procurement."Deliveries"` táblát (`InventorySyncStatus`).
-   - **DbContext / Factory:** `ProcurementWorkerDbContextFactory` ([Workers/IProcurementWorkerDbContextFactory.cs:18-22](file:///C:/Users/szant/Documents/Development/joinerytech-platform/src/spaceos-modules-procurement/src/SpaceOS.Modules.Procurement.Infrastructure/Workers/IProcurementWorkerDbContextFactory.cs#L18-L22)) BYPASSRLS kapcsolati sztringet használ a kezdeti outbox claimhez.
+   - **DbContext / Factory:** `ProcurementWorkerDbContextFactory` ([Workers/IProcurementWorkerDbContextFactory.cs:18-22](./src/spaceos-modules-procurement/src/SpaceOS.Modules.Procurement.Infrastructure/Workers/IProcurementWorkerDbContextFactory.cs#L18-L22)) BYPASSRLS kapcsolati sztringet használ a kezdeti outbox claimhez.
 
 ### 2. A két szerep keletkezési helye a kódbázisban
 
 1. **`spaceos_inventory_worker`**:
-   - **Fájl & sor:** [`src/spaceos-modules-inventory/src/SpaceOS.Modules.Inventory.Infrastructure/Migrations/20260418000003_CreateInventoryWorkerRole.cs:13-31`](file:///C:/Users/szant/Documents/Development/joinerytech-platform/src/spaceos-modules-inventory/src/SpaceOS.Modules.Inventory.Infrastructure/Migrations/20260418000003_CreateInventoryWorkerRole.cs#L13-L31)
+   - **Fájl & sor:** [`src/spaceos-modules-inventory/src/SpaceOS.Modules.Inventory.Infrastructure/Migrations/20260418000003_CreateInventoryWorkerRole.cs:13-31`](./src/spaceos-modules-inventory/src/SpaceOS.Modules.Inventory.Infrastructure/Migrations/20260418000003_CreateInventoryWorkerRole.cs#L13-L31)
    - **SQL kód:** EF Core Migration futtatja:
      ```sql
      CREATE ROLE spaceos_inventory_worker WITH LOGIN BYPASSRLS NOCREATEDB NOCREATEROLE NOINHERIT PASSWORD NULL;
@@ -127,7 +127,7 @@ A kódbázis auditja alapján a `spaceos_inventory_worker` és `spaceos_procurem
    - Megjegyzés: A migráció `REVOKE ALL`-al korlátozza a hozzáférést a törzsadat táblákra, de megadja a `BYPASSRLS`-t a `reservations` és `reservation_items` tisztításához.
 
 2. **`spaceos_procurement_worker`**:
-   - **Fájl & sor:** [`src/spaceos-modules-procurement/src/SpaceOS.Modules.Procurement.Infrastructure/ManualMigrations/PR-M1_worker_role.sql:3-7`](file:///C:/Users/szant/Documents/Development/joinerytech-platform/src/spaceos-modules-procurement/src/SpaceOS.Modules.Procurement.Infrastructure/ManualMigrations/PR-M1_worker_role.sql#L3-L7)
+   - **Fájl & sor:** [`src/spaceos-modules-procurement/src/SpaceOS.Modules.Procurement.Infrastructure/ManualMigrations/PR-M1_worker_role.sql:3-7`](./src/spaceos-modules-procurement/src/SpaceOS.Modules.Procurement.Infrastructure/ManualMigrations/PR-M1_worker_role.sql#L3-L7)
    - **SQL kód:** Manuális migrációs script:
      ```sql
      CREATE ROLE spaceos_procurement_worker LOGIN BYPASSRLS;

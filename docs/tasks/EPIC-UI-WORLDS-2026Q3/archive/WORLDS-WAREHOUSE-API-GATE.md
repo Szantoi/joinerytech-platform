@@ -58,11 +58,11 @@ elkészül, a mutációs bizonyíték blokkolt státusszal marad (`it.fails`).
 
 - **2026-07-25 (Antigravity):**
   - Elkészült a warehouse kontraktus kapu infrastruktúra:
-    - [gateHelpers.ts](file:///C:/Users/szant/Documents/Development/joinerytech-platform/src/joinerytech-portal/src/modules/warehouse/services/contract/gateHelpers.ts): Tiszta segédfüggvények (fail-fast `requireEnv`, `summarizeDrift`, `formatReportRow`).
-    - [gateHelpers.test.ts](file:///C:/Users/szant/Documents/Development/joinerytech-platform/src/joinerytech-portal/src/modules/warehouse/services/contract/__tests__/gateHelpers.test.ts): Egységtesztek a helper függvényekhez (4/4 PASS).
-    - [warehouseContract.gate.ts](file:///C:/Users/szant/Documents/Development/joinerytech-platform/src/joinerytech-portal/src/modules/warehouse/services/__tests__/warehouseContract.gate.ts): Élő inventory és procurement hálózati kontraktus-kapu test suite (401 unauth tesztek, read-only zod schema parse PASS tesztek, 400 invalid paraméter tesztek, és az FSM mutáció `it.fails` blokkolt állapota).
-    - [vitest.contract.warehouse.config.ts](file:///C:/Users/szant/Documents/Development/joinerytech-platform/src/joinerytech-portal/vitest.contract.warehouse.config.ts): Különálló Vitest config a kapu izolált futtatásához.
-    - [package.json](file:///C:/Users/szant/Documents/Development/joinerytech-platform/src/joinerytech-portal/package.json): `test:contract:warehouse` script felvétele.
+    - [gateHelpers.ts](./src/joinerytech-portal/src/modules/warehouse/services/contract/gateHelpers.ts): Tiszta segédfüggvények (fail-fast `requireEnv`, `summarizeDrift`, `formatReportRow`).
+    - [gateHelpers.test.ts](./src/joinerytech-portal/src/modules/warehouse/services/contract/__tests__/gateHelpers.test.ts): Egységtesztek a helper függvényekhez (4/4 PASS).
+    - [warehouseContract.gate.ts](./src/joinerytech-portal/src/modules/warehouse/services/__tests__/warehouseContract.gate.ts): Élő inventory és procurement hálózati kontraktus-kapu test suite (401 unauth tesztek, read-only zod schema parse PASS tesztek, 400 invalid paraméter tesztek, és az FSM mutáció `it.fails` blokkolt állapota).
+    - [vitest.contract.warehouse.config.ts](./src/joinerytech-portal/vitest.contract.warehouse.config.ts): Különálló Vitest config a kapu izolált futtatásához.
+    - [package.json](./src/joinerytech-portal/package.json): `test:contract:warehouse` script felvétele.
   - Verifikáció:
     - Vitest unit tests: 14/14 PASS.
     - Production build: `npm run build` 0 TypeScript / Vite hiba.

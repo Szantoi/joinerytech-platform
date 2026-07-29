@@ -40,3 +40,7 @@ src/joinerytech-nexus/knowledge-service/data/
 src/joinerytech-nexus/knowledge-service/config/agents.yaml
 src/joinerytech-nexus/knowledge-service/docs/MCP_AUTH_TOKENS.md
 terminals/*/.mcp.json
+
+# Fejlesztoi gepre jellemzo abszolut utvonalak (publikus repo -- nem kovetjuk)
+LOCAL_PATHS.md
+terminals/*/LOCAL_PATHS.md

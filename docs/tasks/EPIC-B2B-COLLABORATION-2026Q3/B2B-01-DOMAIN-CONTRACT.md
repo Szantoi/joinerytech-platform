@@ -98,6 +98,6 @@ Procurement lifecycle tulajdona kettős marad, a task nem zárható le.
 
 ## Átadási bizonyíték
 
-- Contract dokumentum: [docs/knowledge/domain/B2B_COLLABORATION_DOMAIN_CONTRACT.md](file:///C:/Users/szant/Documents/Development/joinerytech-platform/docs/knowledge/domain/B2B_COLLABORATION_DOMAIN_CONTRACT.md)
+- Contract dokumentum: [docs/knowledge/domain/B2B_COLLABORATION_DOMAIN_CONTRACT.md](./docs/knowledge/domain/B2B_COLLABORATION_DOMAIN_CONTRACT.md)
 - Review verdict: **APPROVED / PASS**
 - Handoff feladatok: B2B-02 (Participant RLS), B2B-03 (Agreement Evidence), B2B-04 (Work State Protocol) feloldva és előkészítve.

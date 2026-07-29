@@ -17,9 +17,16 @@ termékként szolgáltatni lehessen):
 | `spaceos-modules-doccapture` (.NET) | befogadás, DMS-tárolás ACL-lel, RAG-indexelés | `spaceos.doccapture` |
 | `joinerytech-goods-receipt` | bevételezés: számla-sorok → cikkszám + mennyiség, jóváhagyási hurokkal | `joinerytech.procurement` bővítése |
 
-**Forrás-projektek** (nem másolni — általánosítva átemelni):
-`C:\Users\szant\Documents\Development\Bevetelezes` (éles munkafolyamat) ·
-`C:\Users\szant\Documents\Development\tartalom_mentes` (hexagonális motor, 19 teszt-fájl).
+**Forrás-projektek** (nem másolni — általánosítva átemelni): két helyi, **nem
+publikus** prototípus a fejlesztői munkakönyvtárban, a platform-repóval azonos
+szinten — egy éles bevételezési munkafolyamat és egy hexagonális OCR/RAG-motor
+(19 teszt-fájl). A pontos elérési utat a **gitignore-olt** `LOCAL_PATHS.md`
+tartja; abszolút útvonal **nem kerül követett fájlba** (ez a repó publikus, és
+a gépi könyvtárszerkezet felfedése fölösleges kitettség).
+
+⚠ **Csak az élő fából szabad átemelni** — a `.claude/worktrees/agent-*`
+másolatok régebbi logikát tartalmaznak, és aki rossz fából emel át, **csendben
+visszalép egy verziót**.
 
 ---
 

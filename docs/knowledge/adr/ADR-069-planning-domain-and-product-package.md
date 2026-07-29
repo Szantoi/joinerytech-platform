@@ -143,6 +143,21 @@ Bázis: `/api/scheduling/v1`. Read-only 1. fázis:
 | `GET /resources/{id}/overload` | overload-ablakok (R5) |
 | `GET /standards` · `GET /standards/{id}/revisions` | verziózott standardok (read) |
 
+### Pontosítás (2026-07-29, backend — az M3-verdikt P2-je)
+
+**„Erőforrásprofil-revízió" nem külön fogalom: a naptár-revízió fedi.** A fenti táblázat két
+revíziót említ („a használt naptár- **és erőforrásprofil**-revízió"), de a megvalósításban
+minden, ami egy erőforrásról tervezés szempontjából számít — **kapacitás, kapacitás-politika,
+IANA zóna, műszakok, szünetek, kivételek** — a `ResourceCalendarRevision`-ön él, és azzal
+együtt verziózódik. Külön „profil"-revízió bevezetése **két igazságot** hozna létre ugyanarról
+az erőforrásról, és a terv reprodukálhatósága attól függene, hogy a kettő szinkronban van-e.
+
+Következmény a kontraktusra: a proposal **egy** revízió-térképet ad vissza
+(`calendarRevisions`), és ez a teljes válasz arra, hogy „mihez képest készült ez a terv".
+Ha később valóban megjelenik olyan erőforrás-tulajdonság, ami **nem** naptár-jellegű (pl.
+képesség-mátrix), az **saját aggregátumot és saját revíziót** kap — de akkor is külön néven,
+nem ennek a mezőnek a kibővítésével.
+
 2. fázis (irány, nem MVP): `POST /standards/import` (idempotency-key kötelező),
 `POST /calendars/{id}/revisions` + `POST .../approve`, `POST /reservations`,
 `POST /runs/{runId}/publish` külső jóváhagyással. Minden írás idempotens

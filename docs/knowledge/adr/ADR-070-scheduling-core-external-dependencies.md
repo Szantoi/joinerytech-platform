@@ -201,3 +201,37 @@ PLAN-03 M2 napló (a mai állapot: Domain nulla külső függőséggel, 98 unit 
    elfogadásig; a solver-döntés az M4 kapuja marad.
 4. Q1 (RID-mátrix) és Q2 (bundle-plafon) Gábor asztalán — a döntéssel együtt
    fordul az ADR Accepted-re.
+
+---
+
+## KIEGÉSZÍTŐ JEGYZET (2026-07-29) — a solver-adapter fizikai helye
+
+**A root kérésére rögzítve** (M4/2 review, APPROVED: „ez az ADR-070 D1 *szelleme*, még ha a
+betűjén túl is megy — ADR-070 kiegészítő jegyzetként rögzítendő, nem csproj-mozgatással
+»visszaigazítva«").
+
+**A D1 szövege** azt mondja, hogy az adapter „az alkalmazás/infrastruktúra rétegben" él, a
+Domain pedig solver-mentes marad. **A megvalósítás egy lépéssel tovább megy:** a CP-SAT adapter
+**saját assembly-ben** él (`SpaceOS.Modules.Scheduling.Solver.OrTools`), nem az
+`Infrastructure`-ban.
+
+**Indoklás:**
+
+1. A `Google.OrTools` **natív binárisokat** szállít (linux-x64 önmagában 25,22 MB). Az
+   `Infrastructure`-t viszont a **`dotnet ef` minden migrációnál betölti** — a solver-binárisok
+   ebből az útból kitartása valódi, mindennapi nyereség a fejlesztői körben és a CI-ban is.
+2. A Domain **és** a perzisztencia-réteg így egyaránt solver-mentes marad; a függőség pontosan
+   ott van, ahol használják.
+3. A **Q2 „külön artefaktum"** opció (ha a bundle valaha 100 MB fölé megy) ezzel **csomagolási
+   döntés** marad, nem újraírás: egy már különálló assembly kivétele a bundle-ből
+   nagyságrenddel olcsóbb, mint egy összefont Infrastructure szétbontása.
+
+**Ami NEM változik:** a port (`ISchedulingSolver`) a Domainben marad, a Domain továbbra sem
+hivatkozik solver-könyvtárra, és mindkét stratégia ugyanazon a **közös conformance-készleten**
+mérődik (a készlet a Domain teszt-assemblyben él, az adapter teszt-assemblye ugyanazt a típust
+származtatja le — nem másolatot).
+
+**Mérve (2026-07-29):** a pinelt 9.15.6755 natív binárisa betöltődik **win-x64**-en (fejlesztői)
+és **linux-x64/glibc**-n (CI, run `30428183130`), a determinizmus-kapu mindkettőn zöld.
+⚠ **Alpine/musl változatlanul nincs mérve** — a D1 nyitott ellenőrzése marad, a tényleges base
+image-en, deploy előtt.

@@ -68,6 +68,21 @@ mind additív, a kézbesített `1.0.0-preview.1` nem törik.
 - [x] Művelet-„név" döntés kimondva: **marad a stabil kulcs**, emberi név nem megy ki; ha kell,
       additív `displayName` „csak megjelenítésre".
 
+## P1 — Codex biztonsági leletek (Gábor osztotta ki, 2026-07-29)
+
+- [x] **Triage**: a CRM RLS-lelet a **legacy** fára vonatkozott; az élő `src/SpaceOS.Modules.CRM/`
+      a hosting `RlsMigrationSql`-t használja (ENABLE + FORCE + `app.current_tenant_id`).
+- [x] **Legacy CRM + DMS fa törölve** (`71ca8ff`, 192 fájl) — a hibás RLS-t telepítő kockázat
+      megszűnt. ⚠ A `src/spaceos-modules/` alatt a Kontrolling **élő**; a **HR nem vizsgált**.
+- [x] **DMS ACL 1. szelet** (`d15f6e7`): fail-closed szabály + `OwnerUserId` + migráció, 12 teszt.
+- [ ] **DMS ACL 2. szelet — A RÉS EDDIG NYITVA VAN**: caller-kontextus (userId + szerepek) a
+      parancsokba/handler-ekbe, az ACL tényleges hívása, a host kinyerje a JWT-ből.
+- [ ] A migráció bizonyítása **valódi Postgresen** (Docker kell hozzá).
+- [ ] Nem az én sávom, de követem: **P2-k** (SSE kapcsolat-korlát/backpressure,
+      `costMonitoringService` nem takarított Map-jei, CRM/Kontrolling korlátlan listák) —
+      **kiosztatlanok**.
+- [ ] **DMS model-snapshot** hiánya: a generált migráció az egész sémát újraírja. Külön szelet.
+
 ## P2 — sandbox (a VPS-lépések Gábor-kapusak)
 
 Terv: [`SCHEDULING_SANDBOX_PLAN.md`](../../docs/knowledge/deployment/SCHEDULING_SANDBOX_PLAN.md) —

@@ -99,6 +99,22 @@ public class LeadEndpointsTests
     }
 
     [Fact]
+    public async Task ListLeads_UnexpectedFailure_ReturnsGeneric500WithoutInternalDetail()
+    {
+        var mediator = new Mock<IMediator>();
+        mediator
+            .Setup(m => m.Send(It.IsAny<GetLeadsQuery>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<PaginatedResponse<LeadDto>>.Error("NpgsqlException: connection string=secret"));
+
+        await using var host = await StartHostAsync(mediator.Object);
+        var response = await host.Client.GetAsync("/api/crm/leads");
+
+        response.StatusCode.Should().Be(HttpStatusCode.InternalServerError);
+        var body = await response.Content.ReadAsStringAsync();
+        body.Should().Contain("InternalServerError").And.NotContain("connection string=secret");
+    }
+
+    [Fact]
     public async Task GetLead_NotFound_Returns404()
     {
         var mediator = new Mock<IMediator>();
@@ -133,7 +149,7 @@ public class LeadEndpointsTests
     }
 
     [Fact]
-    public async Task NurtureLead_PassesNoteAndActorToCommand()
+    public async Task NurtureLead_PassesNoteAndAuthenticatedCallerToCommand()
     {
         NurtureLeadCommand? captured = null;
         var mediator = new Mock<IMediator>();
@@ -150,7 +166,8 @@ public class LeadEndpointsTests
         captured!.LeadId.Should().Be(LeadId);
         captured.TenantId.Should().Be(CrmEndpointTestHost.TenantId);
         captured.Notes.Should().Be("Parkolópálya");
-        captured.ActedBy.Should().Be(ActorId);
+        captured.ActedBy.Should().Be(CrmEndpointTestHost.UserId);
+        captured.ActedBy.Should().NotBe(ActorId);
     }
 
     [Fact]
@@ -304,11 +321,14 @@ public class LeadEndpointsTests
     }
 
     [Fact]
-    public async Task CreateLead_Valid_Returns201WithLocation()
+    public async Task CreateLead_Valid_Returns201WithLocation_AndUsesAuthenticatedCallerAsCreator()
     {
+        CreateLeadCommand? captured = null;
         var mediator = new Mock<IMediator>();
         mediator
             .Setup(m => m.Send(It.IsAny<CreateLeadCommand>(), It.IsAny<CancellationToken>()))
+            .Callback((IRequest<Result<LeadDto>> command, CancellationToken _) =>
+                captured = (CreateLeadCommand)command)
             .ReturnsAsync(Result<LeadDto>.Success(SampleLead()));
 
         await using var host = await StartHostAsync(mediator.Object);
@@ -323,6 +343,8 @@ public class LeadEndpointsTests
 
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         response.Headers.Location!.ToString().Should().Contain(LeadId.ToString());
+        captured!.CreatedBy.Should().Be(CrmEndpointTestHost.UserId);
+        captured.CreatedBy.Should().NotBe(ActorId);
     }
 
     [Fact]

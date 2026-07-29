@@ -9,6 +9,7 @@ using SpaceOS.Modules.CRM.Application.Queries;
 using SpaceOS.Modules.CRM.Application.Wire;
 using SpaceOS.Modules.CRM.Domain.Enums;
 using SpaceOS.Modules.CRM.Domain.FSM;
+using SpaceOS.Modules.Hosting.Auth;
 
 namespace SpaceOS.Modules.CRM.Api.Endpoints;
 
@@ -35,6 +36,8 @@ public static class OpportunityEndpoints
 {
     private const string LoggerCategory = "SpaceOS.Modules.CRM.Api.OpportunityEndpoints";
     private const string RouteBase = "/api/crm/opportunities";
+
+    private static Guid CallerUserId(HttpContext httpContext) => httpContext.User.GetRequiredUserId();
 
     public static IEndpointRouteBuilder MapOpportunityEndpoints(this IEndpointRouteBuilder app)
     {
@@ -177,6 +180,7 @@ public static class OpportunityEndpoints
         [FromBody] OpportunityNoteRequestDto? request,
         [FromServices] IMediator mediator,
         [FromServices] ILoggerFactory loggerFactory,
+        HttpContext httpContext,
         [FromHeader(Name = CrmApiHeaders.TenantId)] Guid tenantId,
         CancellationToken ct)
         => ExecuteTransition(
@@ -185,7 +189,7 @@ public static class OpportunityEndpoints
             {
                 TenantId = tenantId,
                 OpportunityId = id,
-                ActedBy = request?.ActedBy ?? Guid.Empty
+                ActedBy = CallerUserId(httpContext)
             },
             id, tenantId, "start-discovery", ct);
 
@@ -194,6 +198,7 @@ public static class OpportunityEndpoints
         [FromBody] OpportunityNoteRequestDto? request,
         [FromServices] IMediator mediator,
         [FromServices] ILoggerFactory loggerFactory,
+        HttpContext httpContext,
         [FromHeader(Name = CrmApiHeaders.TenantId)] Guid tenantId,
         CancellationToken ct)
         => ExecuteTransition(
@@ -202,7 +207,7 @@ public static class OpportunityEndpoints
             {
                 TenantId = tenantId,
                 OpportunityId = id,
-                ActedBy = request?.ActedBy ?? Guid.Empty
+                ActedBy = CallerUserId(httpContext)
             },
             id, tenantId, "start-proposal", ct);
 
@@ -211,6 +216,7 @@ public static class OpportunityEndpoints
         [FromBody] SendQuoteRequestDto? request,
         [FromServices] IMediator mediator,
         [FromServices] ILoggerFactory loggerFactory,
+        HttpContext httpContext,
         [FromHeader(Name = CrmApiHeaders.TenantId)] Guid tenantId,
         CancellationToken ct)
         // QuoteId is optional on the wire: the portal sends only a note, because
@@ -222,7 +228,7 @@ public static class OpportunityEndpoints
                 TenantId = tenantId,
                 OpportunityId = id,
                 QuoteId = request?.QuoteId ?? Guid.Empty,
-                SentBy = request?.ActedBy ?? Guid.Empty
+                SentBy = CallerUserId(httpContext)
             },
             id, tenantId, "send-quote", ct);
 
@@ -231,6 +237,7 @@ public static class OpportunityEndpoints
         [FromBody] OpportunityNoteRequestDto? request,
         [FromServices] IMediator mediator,
         [FromServices] ILoggerFactory loggerFactory,
+        HttpContext httpContext,
         [FromHeader(Name = CrmApiHeaders.TenantId)] Guid tenantId,
         CancellationToken ct)
         => ExecuteTransition(
@@ -239,7 +246,7 @@ public static class OpportunityEndpoints
             {
                 TenantId = tenantId,
                 OpportunityId = id,
-                ActedBy = request?.ActedBy ?? Guid.Empty
+                ActedBy = CallerUserId(httpContext)
             },
             id, tenantId, "negotiate", ct);
 
@@ -248,6 +255,7 @@ public static class OpportunityEndpoints
         [FromBody] WinOpportunityRequestDto? request,
         [FromServices] IMediator mediator,
         [FromServices] ILoggerFactory loggerFactory,
+        HttpContext httpContext,
         [FromHeader(Name = CrmApiHeaders.TenantId)] Guid tenantId,
         CancellationToken ct)
         // OrderId is optional on the wire for the same reason as QuoteId above:
@@ -260,7 +268,7 @@ public static class OpportunityEndpoints
                 OpportunityId = id,
                 OrderId = request?.OrderId ?? Guid.Empty,
                 FinalValue = request?.FinalValue,
-                WonBy = request?.ActedBy ?? Guid.Empty
+                WonBy = CallerUserId(httpContext)
             },
             id, tenantId, "win", ct);
 
@@ -269,6 +277,7 @@ public static class OpportunityEndpoints
         [FromBody] LoseOpportunityRequestDto? request,
         [FromServices] IMediator mediator,
         [FromServices] ILoggerFactory loggerFactory,
+        HttpContext httpContext,
         [FromHeader(Name = CrmApiHeaders.TenantId)] Guid tenantId,
         CancellationToken ct)
     {
@@ -286,7 +295,7 @@ public static class OpportunityEndpoints
                     OpportunityId = id,
                     Reason = request.Reason,
                     CompetitorName = request.CompetitorName,
-                    LostBy = request.ActedBy
+                    LostBy = CallerUserId(httpContext)
                 },
                 id, tenantId, "lose", ct)
             .ConfigureAwait(false);
@@ -356,14 +365,26 @@ public static class OpportunityEndpoints
 
 // ══════════ Request DTOs ══════════
 
-/// <summary>Optional note carried by the simple opportunity transitions.</summary>
+/// <summary>
+/// Optional note carried by the simple opportunity transitions. The legacy
+/// audit id is ignored; transitions are recorded against the authenticated caller.
+/// </summary>
 public record OpportunityNoteRequestDto(string? Note, Guid ActedBy);
 
-/// <summary>Send-quote payload; QuoteId is optional (Sales module handoff).</summary>
+/// <summary>
+/// Send-quote payload; QuoteId is optional (Sales module handoff). The legacy
+/// audit id is ignored in favour of the authenticated caller.
+/// </summary>
 public record SendQuoteRequestDto(string? Note, Guid? QuoteId, Guid ActedBy);
 
-/// <summary>Win payload; OrderId / FinalValue are optional (Sales module handoff).</summary>
+/// <summary>
+/// Win payload; OrderId / FinalValue are optional (Sales module handoff). The
+/// legacy audit id is ignored in favour of the authenticated caller.
+/// </summary>
 public record WinOpportunityRequestDto(string? Note, Guid? OrderId, decimal? FinalValue, Guid ActedBy);
 
-/// <summary>Lose payload — the reason is mandatory (400 without it).</summary>
+/// <summary>
+/// Lose payload — the reason is mandatory (400 without it). The legacy audit
+/// id is ignored in favour of the authenticated caller.
+/// </summary>
 public record LoseOpportunityRequestDto(string Reason, string? CompetitorName, Guid ActedBy);

@@ -23,27 +23,22 @@ public sealed class GetOpportunitiesQueryHandler : IRequestHandler<GetOpportunit
     {
         try
         {
-            var opportunities = await _repository.GetByTenantAsync(request.TenantId, ct).ConfigureAwait(false);
-
-            // Apply status filter if provided
-            if (!string.IsNullOrEmpty(request.StatusFilter))
+            var status = ParseStatus(request.StatusFilter);
+            if (!string.IsNullOrEmpty(request.StatusFilter) && !status.HasValue)
             {
-                opportunities = opportunities.Where(o => o.Status.ToString() == request.StatusFilter).ToList();
+                return Result.Success(new PaginatedResponse<OpportunityDto>
+                {
+                    Data = [], Total = 0, Page = request.Page, PageSize = request.PageSize
+                });
             }
 
-            // Apply assigned user filter if provided
-            if (request.AssignedToUserIdFilter.HasValue)
-            {
-                opportunities = opportunities.Where(o => o.AssignedTo == request.AssignedToUserIdFilter).ToList();
-            }
+            // The repository applies all predicates and Skip/Take in SQL; this
+            // prevents a tenant-wide aggregate load for a 50-row portal list.
+            var page = await _repository.GetPageAsync(
+                request.TenantId, status, request.AssignedToUserIdFilter,
+                request.Page, request.PageSize, ct).ConfigureAwait(false);
 
-            // Count total before pagination
-            int total = opportunities.Count;
-
-            // Apply pagination
-            var paginatedOpportunities = opportunities
-                .OrderByDescending(o => o.CreatedAt)
-                .Skip((request.Page - 1) * request.PageSize)
+            var paginatedOpportunities = page.Items
                 .Take(request.PageSize)
                 .Select(CrmDtoMapper.ToDto)
                 .ToList();
@@ -51,7 +46,7 @@ public sealed class GetOpportunitiesQueryHandler : IRequestHandler<GetOpportunit
             var response = new PaginatedResponse<OpportunityDto>
             {
                 Data = paginatedOpportunities,
-                Total = total,
+                Total = page.Total,
                 Page = request.Page,
                 PageSize = request.PageSize
             };
@@ -63,5 +58,8 @@ public sealed class GetOpportunitiesQueryHandler : IRequestHandler<GetOpportunit
             return Result.Error($"Failed to retrieve opportunities: {ex.Message}");
         }
     }
+
+    private static Domain.Enums.OpportunityStatus? ParseStatus(string? statusFilter)
+        => Enum.TryParse<Domain.Enums.OpportunityStatus>(statusFilter, out var status) ? status : null;
 
 }

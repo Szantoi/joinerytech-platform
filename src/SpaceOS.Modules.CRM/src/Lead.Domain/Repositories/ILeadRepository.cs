@@ -15,8 +15,24 @@ public interface ILeadRepository
     /// <summary>Load a lead with its activities and tasks; null if absent in the tenant.</summary>
     Task<Lead?> GetByIdAsync(Guid tenantId, Guid leadId, CancellationToken cancellationToken);
 
+    /// <summary>Loads the lead owning a CRM task, if that task belongs to the tenant.</summary>
+    Task<Lead?> GetByTaskIdAsync(Guid tenantId, Guid taskId, CancellationToken cancellationToken);
+
     /// <summary>All leads of the tenant (activities and tasks included).</summary>
     Task<List<Lead>> GetByTenantAsync(Guid tenantId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Reads one filtered lead page without materialising the tenant's complete
+    /// aggregate collection. Intended for the read-side list endpoint only.
+    /// </summary>
+    Task<RepositoryPage<Lead>> GetPageAsync(
+        Guid tenantId,
+        LeadStatus? status,
+        Guid? assignedToUserId,
+        string? searchText,
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken);
 
     /// <summary>Leads of the tenant in the given status.</summary>
     Task<List<Lead>> GetByStatusAsync(Guid tenantId, LeadStatus status, CancellationToken cancellationToken);
@@ -30,3 +46,6 @@ public interface ILeadRepository
 
     Task DeleteAsync(Guid tenantId, Guid leadId, CancellationToken cancellationToken);
 }
+
+/// <summary>Database-filtered page returned by a CRM aggregate repository.</summary>
+public sealed record RepositoryPage<T>(IReadOnlyList<T> Items, int Total);

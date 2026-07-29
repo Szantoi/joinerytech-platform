@@ -11,7 +11,7 @@ namespace SpaceOS.Modules.CRM.Api.Endpoints;
 ///   404 = not found
 ///   409 = illegal FSM transition / status-guarded action (aggregate → Result.Conflict)
 ///   400 = payload / aggregate validation (aggregate → Result.Invalid)
-///   everything else = 400 with the raw errors
+///   unexpected processing failure = generic 500 (never raw errors)
 ///
 /// Mirrors the portal MSW guard shape: <c>{ error, message }</c>
 /// (<c>modules/crm/mocks/db.ts</c> — jsonError). This is also the ADR-059 wire
@@ -35,13 +35,22 @@ internal static class CrmEndpointResults
             ResultStatus.Invalid => Results.BadRequest(
                 new { error = "BadRequest", message = FirstValidationMessage(result) }),
 
-            _ => Results.BadRequest(new { error = "BadRequest", message = FirstMessage(result, "Invalid request") })
+            _ => InternalServerError()
         };
     }
 
     /// <summary>Payload guard rejected before a command was even built.</summary>
     public static Microsoft.AspNetCore.Http.IResult BadRequest(string message)
         => Results.BadRequest(new { error = "BadRequest", message });
+
+    /// <summary>
+    /// Keeps infrastructure/provider details in server-side diagnostics rather
+    /// than returning an application handler's raw error to API callers.
+    /// </summary>
+    private static Microsoft.AspNetCore.Http.IResult InternalServerError()
+        => Results.Json(
+            new { error = "InternalServerError", message = "An unexpected error occurred." },
+            statusCode: StatusCodes.Status500InternalServerError);
 
     private static string FirstMessage(Ardalis.Result.IResult result, string fallback)
         => result.Errors.FirstOrDefault() ?? fallback;

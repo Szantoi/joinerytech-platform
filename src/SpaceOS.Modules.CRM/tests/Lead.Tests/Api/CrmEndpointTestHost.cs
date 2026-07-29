@@ -28,6 +28,7 @@ public sealed class CrmEndpointTestHost : IAsyncDisposable
 {
     public const string TenantHeader = "X-Tenant-Id";
     public static readonly Guid TenantId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+    public static readonly Guid UserId = Guid.Parse("22222222-2222-2222-2222-222222222222");
 
     private readonly IHost _host;
 
@@ -99,7 +100,7 @@ public sealed class TestAuthHandler : AuthenticationHandler<AuthenticationScheme
     protected override Task<AuthenticateResult> HandleAuthenticateAsync()
     {
         var identity = new ClaimsIdentity(
-            new[] { new Claim(ClaimTypes.NameIdentifier, "test-user") }, Scheme);
+            new[] { new Claim(ClaimTypes.NameIdentifier, CrmEndpointTestHost.UserId.ToString()) }, Scheme);
         var ticket = new AuthenticationTicket(new ClaimsPrincipal(identity), Scheme);
 
         return Task.FromResult(AuthenticateResult.Success(ticket));

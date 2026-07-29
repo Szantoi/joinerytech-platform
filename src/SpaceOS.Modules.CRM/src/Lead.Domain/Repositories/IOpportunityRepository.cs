@@ -14,8 +14,23 @@ public interface IOpportunityRepository
     /// <summary>Load an opportunity with its activities and tasks; null if absent in the tenant.</summary>
     Task<Opportunity?> GetByIdAsync(Guid tenantId, Guid opportunityId, CancellationToken cancellationToken);
 
+    /// <summary>Loads the opportunity owning a CRM task, if that task belongs to the tenant.</summary>
+    Task<Opportunity?> GetByTaskIdAsync(Guid tenantId, Guid taskId, CancellationToken cancellationToken);
+
     /// <summary>All opportunities of the tenant (activities and tasks included).</summary>
     Task<List<Opportunity>> GetByTenantAsync(Guid tenantId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Reads one filtered opportunity page without materialising the tenant's
+    /// complete aggregate collection. Intended for the read-side list endpoint.
+    /// </summary>
+    Task<RepositoryPage<Opportunity>> GetPageAsync(
+        Guid tenantId,
+        OpportunityStatus? status,
+        Guid? assignedToUserId,
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken);
 
     /// <summary>Opportunities of the tenant in the given status.</summary>
     Task<List<Opportunity>> GetByStatusAsync(Guid tenantId, OpportunityStatus status, CancellationToken cancellationToken);

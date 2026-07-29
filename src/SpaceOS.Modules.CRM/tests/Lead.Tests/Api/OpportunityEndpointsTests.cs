@@ -119,7 +119,8 @@ public class OpportunityEndpointsTests
         captured.Should().NotBeNull();
         captured!.OrderId.Should().Be(orderId);
         captured.FinalValue.Should().Be(4_200_000m);
-        captured.WonBy.Should().Be(ActorId);
+        captured.WonBy.Should().Be(CrmEndpointTestHost.UserId);
+        captured.WonBy.Should().NotBe(ActorId);
     }
 
     [Fact]

@@ -23,34 +23,22 @@ public sealed class GetLeadsQueryHandler : IRequestHandler<GetLeadsQuery, Result
     {
         try
         {
-            // Fetch leads for tenant (RLS enforced by repository)
-            var leads = await _repository.GetByTenantAsync(request.TenantId, ct).ConfigureAwait(false);
-
-            // Apply status filter if provided
-            if (!string.IsNullOrEmpty(request.StatusFilter))
+            var status = ParseStatus(request.StatusFilter);
+            if (!string.IsNullOrEmpty(request.StatusFilter) && !status.HasValue)
             {
-                leads = leads.Where(l => l.Status.ToString() == request.StatusFilter).ToList();
+                return Result.Success(new PaginatedResponse<LeadDto>
+                {
+                    Data = [], Total = 0, Page = request.Page, PageSize = request.PageSize
+                });
             }
 
-            // Apply assigned user filter if provided
-            if (request.AssignedToUserIdFilter.HasValue)
-            {
-                leads = leads.Where(l => l.AssignedTo == request.AssignedToUserIdFilter).ToList();
-            }
+            // The repository applies all predicates and Skip/Take in SQL; this
+            // prevents a tenant-wide aggregate load for a 50-row portal list.
+            var page = await _repository.GetPageAsync(
+                request.TenantId, status, request.AssignedToUserIdFilter,
+                request.SearchText, request.Page, request.PageSize, ct).ConfigureAwait(false);
 
-            // Free-text search over contact name / company / e-mail (portal: q)
-            if (!string.IsNullOrWhiteSpace(request.SearchText))
-            {
-                leads = leads.Where(l => Matches(l, request.SearchText)).ToList();
-            }
-
-            // Count total before pagination
-            int total = leads.Count;
-
-            // Apply pagination
-            var paginatedLeads = leads
-                .OrderByDescending(l => l.CreatedAt)
-                .Skip((request.Page - 1) * request.PageSize)
+            var paginatedLeads = page.Items
                 .Take(request.PageSize)
                 .Select(CrmDtoMapper.ToDto)
                 .ToList();
@@ -58,7 +46,7 @@ public sealed class GetLeadsQueryHandler : IRequestHandler<GetLeadsQuery, Result
             var response = new PaginatedResponse<LeadDto>
             {
                 Data = paginatedLeads,
-                Total = total,
+                Total = page.Total,
                 Page = request.Page,
                 PageSize = request.PageSize
             };
@@ -71,15 +59,7 @@ public sealed class GetLeadsQueryHandler : IRequestHandler<GetLeadsQuery, Result
         }
     }
 
-    /// <summary>
-    /// Case-insensitive free-text match over the fields the portal's lead search
-    /// covers (contact name, company, e-mail). Pure — unit-testable in isolation.
-    /// </summary>
-    internal static bool Matches(Domain.Aggregates.Lead lead, string searchText)
-    {
-        var haystack = $"{lead.ContactInfo.Name} {lead.ContactInfo.Company} {lead.ContactInfo.Email}";
-
-        return haystack.Contains(searchText, StringComparison.OrdinalIgnoreCase);
-    }
+    private static Domain.Enums.LeadStatus? ParseStatus(string? statusFilter)
+        => Enum.TryParse<Domain.Enums.LeadStatus>(statusFilter, out var status) ? status : null;
 
 }

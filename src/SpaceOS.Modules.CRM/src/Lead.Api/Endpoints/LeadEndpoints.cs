@@ -8,6 +8,7 @@ using SpaceOS.Modules.CRM.Application.Commands;
 using SpaceOS.Modules.CRM.Application.Queries;
 using SpaceOS.Modules.CRM.Application.Wire;
 using SpaceOS.Modules.CRM.Domain.Enums;
+using SpaceOS.Modules.Hosting.Auth;
 
 namespace SpaceOS.Modules.CRM.Api.Endpoints;
 
@@ -30,6 +31,8 @@ public static class LeadEndpoints
     private const string LoggerCategory = "SpaceOS.Modules.CRM.Api.LeadEndpoints";
     private const string RouteBase = "/api/crm/leads";
     private const string DefaultCurrency = "HUF";
+
+    private static Guid CallerUserId(HttpContext httpContext) => httpContext.User.GetRequiredUserId();
 
     public static IEndpointRouteBuilder MapLeadEndpoints(this IEndpointRouteBuilder app)
     {
@@ -108,6 +111,7 @@ public static class LeadEndpoints
         [FromBody] CreateLeadRequestDto request,
         [FromServices] IMediator mediator,
         [FromServices] ILoggerFactory loggerFactory,
+        HttpContext httpContext,
         [FromHeader(Name = CrmApiHeaders.TenantId)] Guid tenantId,
         CancellationToken ct)
     {
@@ -127,7 +131,7 @@ public static class LeadEndpoints
             Company = request.Company,
             Source = source,
             AssignedToUserId = request.AssignedToUserId,
-            CreatedBy = request.CreatedBy
+            CreatedBy = CallerUserId(httpContext)
         };
 
         var result = await mediator.Send(command, ct).ConfigureAwait(false);
@@ -196,6 +200,7 @@ public static class LeadEndpoints
         [FromBody] LeadNoteRequestDto? request,
         [FromServices] IMediator mediator,
         [FromServices] ILoggerFactory loggerFactory,
+        HttpContext httpContext,
         [FromHeader(Name = CrmApiHeaders.TenantId)] Guid tenantId,
         CancellationToken ct)
         => ExecuteTransition(
@@ -205,7 +210,7 @@ public static class LeadEndpoints
                 TenantId = tenantId,
                 LeadId = id,
                 Notes = request?.Note,
-                ActedBy = request?.ActedBy ?? Guid.Empty
+                ActedBy = CallerUserId(httpContext)
             },
             id, tenantId, "contact", ct);
 
@@ -214,6 +219,7 @@ public static class LeadEndpoints
         [FromBody] LeadNoteRequestDto? request,
         [FromServices] IMediator mediator,
         [FromServices] ILoggerFactory loggerFactory,
+        HttpContext httpContext,
         [FromHeader(Name = CrmApiHeaders.TenantId)] Guid tenantId,
         CancellationToken ct)
         => ExecuteTransition(
@@ -223,7 +229,7 @@ public static class LeadEndpoints
                 TenantId = tenantId,
                 LeadId = id,
                 QualificationNotes = request?.Note,
-                ActedBy = request?.ActedBy ?? Guid.Empty
+                ActedBy = CallerUserId(httpContext)
             },
             id, tenantId, "qualify", ct);
 
@@ -232,6 +238,7 @@ public static class LeadEndpoints
         [FromBody] LeadNoteRequestDto? request,
         [FromServices] IMediator mediator,
         [FromServices] ILoggerFactory loggerFactory,
+        HttpContext httpContext,
         [FromHeader(Name = CrmApiHeaders.TenantId)] Guid tenantId,
         CancellationToken ct)
         => ExecuteTransition(
@@ -241,7 +248,7 @@ public static class LeadEndpoints
                 TenantId = tenantId,
                 LeadId = id,
                 Notes = request?.Note,
-                ActedBy = request?.ActedBy ?? Guid.Empty
+                ActedBy = CallerUserId(httpContext)
             },
             id, tenantId, "nurture", ct);
 
@@ -250,6 +257,7 @@ public static class LeadEndpoints
         [FromBody] DiscardLeadRequestDto? request,
         [FromServices] IMediator mediator,
         [FromServices] ILoggerFactory loggerFactory,
+        HttpContext httpContext,
         [FromHeader(Name = CrmApiHeaders.TenantId)] Guid tenantId,
         CancellationToken ct)
     {
@@ -266,7 +274,7 @@ public static class LeadEndpoints
                     TenantId = tenantId,
                     LeadId = id,
                     Reason = request.Reason,
-                    ActedBy = request.ActedBy
+                    ActedBy = CallerUserId(httpContext)
                 },
                 id, tenantId, "discard", ct)
             .ConfigureAwait(false);
@@ -399,10 +407,16 @@ public record CreateLeadRequestDto(
     Guid CreatedBy
 );
 
-/// <summary>Optional note carried by the simple lead transitions.</summary>
+/// <summary>
+/// Optional note carried by the simple lead transitions. The legacy audit id is
+/// ignored; transitions are recorded against the authenticated caller.
+/// </summary>
 public record LeadNoteRequestDto(string? Note, Guid ActedBy);
 
-/// <summary>Discard payload — the reason is mandatory (400 without it).</summary>
+/// <summary>
+/// Discard payload — the reason is mandatory (400 without it). The legacy
+/// audit id is ignored in favour of the authenticated caller.
+/// </summary>
 public record DiscardLeadRequestDto(string Reason, Guid ActedBy);
 
 /// <summary>

@@ -23,11 +23,48 @@ public sealed class OpportunityRepository : IOpportunityRepository
         => _context.Opportunities
             .FirstOrDefaultAsync(o => o.TenantId == tenantId && o.Id == opportunityId, cancellationToken);
 
+    public Task<Opportunity?> GetByTaskIdAsync(Guid tenantId, Guid taskId, CancellationToken cancellationToken)
+        => _context.Opportunities
+            .FirstOrDefaultAsync(o => o.TenantId == tenantId && o.Tasks.Any(task => task.Id == taskId), cancellationToken);
+
     public Task<List<Opportunity>> GetByTenantAsync(Guid tenantId, CancellationToken cancellationToken)
         => _context.Opportunities
             .Where(o => o.TenantId == tenantId)
             .OrderByDescending(o => o.CreatedAt)
             .ToListAsync(cancellationToken);
+
+    public async Task<RepositoryPage<Opportunity>> GetPageAsync(
+        Guid tenantId,
+        OpportunityStatus? status,
+        Guid? assignedToUserId,
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken)
+    {
+        var query = _context.Opportunities
+            .AsNoTracking()
+            .Where(o => o.TenantId == tenantId);
+
+        if (status.HasValue)
+        {
+            query = query.Where(o => o.Status == status.Value);
+        }
+
+        if (assignedToUserId.HasValue)
+        {
+            query = query.Where(o => o.AssignedTo == assignedToUserId.Value);
+        }
+
+        var total = await query.CountAsync(cancellationToken).ConfigureAwait(false);
+        var items = await query
+            .OrderByDescending(o => o.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return new RepositoryPage<Opportunity>(items, total);
+    }
 
     public Task<List<Opportunity>> GetByStatusAsync(Guid tenantId, OpportunityStatus status, CancellationToken cancellationToken)
         => _context.Opportunities

@@ -25,8 +25,30 @@ public sealed class InMemoryLeadRepository : ILeadRepository
     public Task<Lead?> GetByIdAsync(Guid tenantId, Guid leadId, CancellationToken cancellationToken)
         => Task.FromResult(_leads.FirstOrDefault(l => l.TenantId == tenantId && l.Id == leadId));
 
+    public Task<Lead?> GetByTaskIdAsync(Guid tenantId, Guid taskId, CancellationToken cancellationToken)
+        => Task.FromResult(_leads.FirstOrDefault(l =>
+            l.TenantId == tenantId && l.Tasks.Any(task => task.Id == taskId)));
+
     public Task<List<Lead>> GetByTenantAsync(Guid tenantId, CancellationToken cancellationToken)
         => Task.FromResult(_leads.Where(l => l.TenantId == tenantId).ToList());
+
+    public Task<RepositoryPage<Lead>> GetPageAsync(Guid tenantId, LeadStatus? status, Guid? assignedToUserId,
+        string? searchText, int page, int pageSize, CancellationToken cancellationToken)
+    {
+        var query = _leads.Where(l => l.TenantId == tenantId);
+        if (status.HasValue) query = query.Where(l => l.Status == status.Value);
+        if (assignedToUserId.HasValue) query = query.Where(l => l.AssignedTo == assignedToUserId.Value);
+        if (!string.IsNullOrWhiteSpace(searchText))
+        {
+            query = query.Where(l =>
+                l.ContactInfo.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase) ||
+                l.ContactInfo.Email.Contains(searchText, StringComparison.OrdinalIgnoreCase) ||
+                (l.ContactInfo.Company?.Contains(searchText, StringComparison.OrdinalIgnoreCase) ?? false));
+        }
+
+        var filtered = query.OrderByDescending(l => l.CreatedAt).ToList();
+        return Task.FromResult(new RepositoryPage<Lead>(filtered.Skip((page - 1) * pageSize).Take(pageSize).ToList(), filtered.Count));
+    }
 
     public Task<List<Lead>> GetByStatusAsync(Guid tenantId, LeadStatus status, CancellationToken cancellationToken)
         => Task.FromResult(_leads.Where(l => l.TenantId == tenantId && l.Status == status).ToList());
@@ -65,8 +87,23 @@ public sealed class InMemoryOpportunityRepository : IOpportunityRepository
     public Task<Opportunity?> GetByIdAsync(Guid tenantId, Guid opportunityId, CancellationToken cancellationToken)
         => Task.FromResult(_opportunities.FirstOrDefault(o => o.TenantId == tenantId && o.Id == opportunityId));
 
+    public Task<Opportunity?> GetByTaskIdAsync(Guid tenantId, Guid taskId, CancellationToken cancellationToken)
+        => Task.FromResult(_opportunities.FirstOrDefault(o =>
+            o.TenantId == tenantId && o.Tasks.Any(task => task.Id == taskId)));
+
     public Task<List<Opportunity>> GetByTenantAsync(Guid tenantId, CancellationToken cancellationToken)
         => Task.FromResult(_opportunities.Where(o => o.TenantId == tenantId).ToList());
+
+    public Task<RepositoryPage<Opportunity>> GetPageAsync(Guid tenantId, OpportunityStatus? status,
+        Guid? assignedToUserId, int page, int pageSize, CancellationToken cancellationToken)
+    {
+        var query = _opportunities.Where(o => o.TenantId == tenantId);
+        if (status.HasValue) query = query.Where(o => o.Status == status.Value);
+        if (assignedToUserId.HasValue) query = query.Where(o => o.AssignedTo == assignedToUserId.Value);
+
+        var filtered = query.OrderByDescending(o => o.CreatedAt).ToList();
+        return Task.FromResult(new RepositoryPage<Opportunity>(filtered.Skip((page - 1) * pageSize).Take(pageSize).ToList(), filtered.Count));
+    }
 
     public Task<List<Opportunity>> GetByStatusAsync(Guid tenantId, OpportunityStatus status, CancellationToken cancellationToken)
         => Task.FromResult(_opportunities.Where(o => o.TenantId == tenantId && o.Status == status).ToList());

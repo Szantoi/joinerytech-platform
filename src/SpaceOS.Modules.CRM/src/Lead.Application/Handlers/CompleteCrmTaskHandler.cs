@@ -45,8 +45,9 @@ public sealed class CompleteCrmTaskHandler : IRequestHandler<CompleteCrmTaskComm
 
     public async Task<Result<CrmTaskListItemDto>> Handle(CompleteCrmTaskCommand request, CancellationToken ct)
     {
-        var leads = await _leadRepository.GetByTenantAsync(request.TenantId, ct).ConfigureAwait(false);
-        var owningLead = leads.FirstOrDefault(l => l.Tasks.Any(t => t.Id == request.TaskId));
+        var owningLead = await _leadRepository
+            .GetByTaskIdAsync(request.TenantId, request.TaskId, ct)
+            .ConfigureAwait(false);
 
         if (owningLead is not null)
         {
@@ -69,8 +70,9 @@ public sealed class CompleteCrmTaskHandler : IRequestHandler<CompleteCrmTaskComm
                 owningLead.ContactInfo.Name, owningLead.AssignedTo));
         }
 
-        var opportunities = await _opportunityRepository.GetByTenantAsync(request.TenantId, ct).ConfigureAwait(false);
-        var owningOpportunity = opportunities.FirstOrDefault(o => o.Tasks.Any(t => t.Id == request.TaskId));
+        var owningOpportunity = await _opportunityRepository
+            .GetByTaskIdAsync(request.TenantId, request.TaskId, ct)
+            .ConfigureAwait(false);
 
         if (owningOpportunity is null)
         {

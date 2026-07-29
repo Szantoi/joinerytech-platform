@@ -10,7 +10,7 @@
  * Now uses terminalConfig.ts for terminal definitions.
  */
 
-import { execSync, exec } from 'child_process';
+import { execSync, execFileSync, exec } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
 import {
@@ -25,6 +25,17 @@ import * as terminalsConfig from './config/terminals';
 import { handleSessionEnd, type SessionEndContext } from './sessionHooks';
 
 const TMUX_SOCKET = terminalsConfig.getTmuxSocket();
+
+/**
+ * Model identifiers reach us from request bodies and end up in a command line.
+ * Anything outside this alphabet cannot be a model id, so we refuse it rather
+ * than trying to quote it — a rejected start is recoverable, a shell escape is not.
+ */
+const MODEL_ID_PATTERN = /^[A-Za-z0-9._-]{1,64}$/;
+
+export function isValidModelId(model: string): boolean {
+  return MODEL_ID_PATTERN.test(model);
+}
 const SPACEOS_ROOT = process.env.SPACEOS_ROOT || '/opt/spaceos';
 const SESSION_LOG_PATH = `${SPACEOS_ROOT}/logs/sessions`;
 
@@ -210,6 +221,20 @@ export async function startSession(options: SessionStartOptions): Promise<Sessio
   const terminalDef = getTerminal(canonical);
   const model = options.model || terminalDef?.model || 'sonnet';
 
+  // SECURITY: the model id is caller-supplied and lands on a command line.
+  if (!isValidModelId(model)) {
+    const result: SessionActionResult = {
+      success: false,
+      message: `Invalid model id: ${model}`,
+      action: 'start_session',
+      terminal,
+      timestamp,
+      fromTerminal,
+    };
+    logSessionAction(result);
+    return result;
+  }
+
   // Check permission
   if (!hasPermission(fromTerminal, canonical)) {
     const resolvedFrom = resolveTerminal(fromTerminal || '');
@@ -247,7 +272,7 @@ export async function startSession(options: SessionStartOptions): Promise<Sessio
   try {
     // Create or reuse tmux session
     if (!sessionExists(canonical)) {
-      execSync(`tmux -S ${TMUX_SOCKET} new-session -d -s ${session} -c ${workdir}`);
+      execFileSync('tmux', ['-S', TMUX_SOCKET, 'new-session', '-d', '-s', session, '-c', workdir]);
     }
 
     // Build claude command
@@ -255,8 +280,11 @@ export async function startSession(options: SessionStartOptions): Promise<Sessio
       ? `claude --model ${model} --dangerously-skip-permissions -c "${prompt.replace(/"/g, '\\"')}"`
       : `claude --model ${model} --dangerously-skip-permissions`;
 
-    // Send claude command (text first, then Enter)
-    execSync(`tmux -S ${TMUX_SOCKET} send-keys -t ${session} '${claudeCmd}' Enter`);
+    // SECURITY: no shell here. `claudeCmd` carries a caller-supplied prompt, and the
+    // previous `execSync` wrapped it in single quotes — one apostrophe in the prompt
+    // broke out of them and ran as a shell command on this host. Passing argv directly
+    // means tmux receives the string as one argument no matter what it contains.
+    execFileSync('tmux', ['-S', TMUX_SOCKET, 'send-keys', '-t', session, claudeCmd, 'Enter']);
 
     // FIX (MSG-NEXUS-017): Wait for Claude to actually start before returning
     // Previously returned immediately after sending command, causing injection to bash prompt

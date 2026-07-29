@@ -172,9 +172,13 @@ export function createApp(config: AppConfig = {}): Express {
     mailboxRoutes(req, res, next);
   });
 
-  // Sessions
-  app.use('/api/session', sessionRoutes);
-  app.use('/api/sessions', sessionRoutes);
+  // Sessions (SECURITY 2026-07-29: authentication required)
+  // These routes start, inject into, wake and stop agent sessions on this host.
+  // They were reachable unauthenticated, which made them remote agent control;
+  // `fromTerminal` in the body is a caller-asserted identity and cannot stand in
+  // for authentication.
+  app.use('/api/session', authenticateRest, sessionRoutes);
+  app.use('/api/sessions', authenticateRest, sessionRoutes);
 
   // Terminal Status
   app.use('/api/terminal', terminalRoutes);

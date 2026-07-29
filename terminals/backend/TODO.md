@@ -35,10 +35,17 @@
       `contentHash`-sel pinelve.
 - [x] **Push + CI** (Gábor engedélyével): run `30426082492` **zöld, 369 teszt** — ezzel a
       **linux-x64** natív bináris is mérve (glibc). ⚠ Alpine/musl továbbra sem mérve.
-- [ ] Naptár-bekötés az ütemezésbe: a perc-idővonal ↔ `WorkingCalendar` (DST, kivételek) — ma a
-      solver tiszta perc-idővonalon dolgozik. **Ez az M4 következő szelete.**
-- [ ] **Root-döntésre vár:** ütköző fix kezdéseknél az adapter dob, a referencia elhelyezi és
-      túllépi a kapacitást — a két stratégiának egyet kell mondania.
+- [x] **Naptár-bekötés** (`b02616b`): `WorkingTimeline` (munkaperc ↔ abszolút idő, DST-helyes)
+      + `ScheduleMaterialiser` (valós dátumok + **valós idejű precedencia-őr**). Gábor döntése:
+      minden művelet átnyúlhat a nem-munkaidőn, a duration munkaidőben értendő.
+- [x] **Az M4/2 kötelező utókövetése** (`5957459`): az ütköző fix kezdéseket a **validator**
+      utasítja vissza, mindkét stratégia előtt (Gábor döntése; 6 validator-teszt + conformance).
+- [ ] **Push + CI** a `5957459` és `b02616b` commitokra — Gábor engedélyére vár.
+- [ ] **Üzleti döntésre vár:** a **lag mértékegysége** (munkaperc vs. valós eltelt idő —
+      száradás/kötés). Javaslat: additív `lagKind`, alapérték a mai `working`.
+- [ ] **ADR-070 kiegészítő jegyzet**: a külön solver-assembly indoklása (root kérte az
+      APPROVED-ban, csproj-mozgatás helyett).
+- [ ] A solver **DI-bekötése** a run-folyamatba (a Host ma egyik stratégiát sem regisztrálja).
 
 ## P1 — a 4 additív kontraktus-bővítés (M3-verdikt P2-i)
 

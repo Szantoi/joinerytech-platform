@@ -19,14 +19,15 @@ Aktuális `main`: `0efc329`, **CI zöld** (run `30426082492`, Gábor engedélyé
 | M1 — kalkulációs mag | **DONE** (root-review) | EffortCalculator, DependencyBoundResolver, DependencyGraph; hash-pinnelt Doorstar-vektorok |
 | M2 — aggregátumok + perzisztencia + RLS | **DONE** (root-review, 2026-07-28) | 9 tábla FORCE RLS, valódi migrációs proof, `CalendarException` (P1 pótolva) |
 | M3 — publikált kontraktus | **DONE** (root-review) — **kézbesítve a Doorstarnak** | `docs/openapi.yaml` 3.1, SHA-256 `3fc6c57d…` (saját méréssel igazolva a `main` blobjához) |
-| M4 — véges kapacitású ütemező | **fut**, 1–2. szelet kész (2. `review_requested`) | port + referencia-ütemező; **CP-SAT adapter** + közös conformance-készlet (`0efc329`) |
+| M4 — véges kapacitású ütemező | **fut**, 1–3. szelet kész (2. **APPROVED**, 3. `review_requested`) | port + referencia; CP-SAT adapter + conformance (`0efc329`, CI zöld); utókövetés (`5957459`); **naptár-bekötés** (`b02616b`) |
 | M5 | nem indult | — |
 
 ## Mérés (2026-07-29 délelőtt)
 
-**369 zöld, 0 bukás a CI-ban** (`0efc329`) — Domain **238** (+19 conformance) /
-**Solver.OrTools 26** / Infrastructure 43 / Host 43 / **Integration 19**.
-Build 0 warning, `--locked-mode` zöld, szótár-őr OK, generált TS-kliens 558 sor.
+**Lokálisan (`b02616b`): 373 zöld** — Domain **245** / **Solver.OrTools 26** /
+**Infrastructure 59** / Host 43. Build 0 warning, szótár-őr OK.
+**Az utolsó CI-mérés a `0efc329`-en: 369 zöld** (a fentiek + Integration 19), `--locked-mode`
+zöld, generált TS-kliens 558 sor. **A `5957459` és `b02616b` még nincs pusholva.**
 
 **Ezzel a linux-x64 natív OR-Tools bináris is mérve** (ubuntu-latest, glibc): a 26 solver-teszt
 — a determinizmus-kapuval együtt — ott is zöld. Lokálisan csak win-x64 volt bizonyítható, mert
@@ -57,9 +58,12 @@ helyben ma sem mérhető.
   **referencia 160 perc → CP-SAT 110 perc**.
 - **RID-mátrix:** linux-x64 (CI, glibc) és win-x64 (fejlesztői) mérve. **Alpine/musl NEM** —
   az ADR-070 nyitott pontja marad, deploy előtt a tényleges base image-en mérendő.
-- **Nyitott döntés a rootnál:** ütköző fix kezdéseknél az adapter **dob**, a referencia
-  elhelyezi és **túllépi a kapacitást**. Üzleti kérdés, tesztben rögzítve.
-- A solver **tiszta perc-idővonalon** dolgozik — naptár/DST-bekötés a következő szelet.
+- **Nyitott döntés (üzleti):** a **lag mértékegysége** — ma munkaperc, de a száradás/kötés
+  típusú lag valós eltelt idő. Javaslat: additív `lagKind` (`working` | `elapsed`).
+- **Eltérő naptárú erőforrások között a precedencia valós időben sérülhet** — a kiterítés ezt
+  **kimondja** (`PrecedenceBrokenAcrossCalendars`), nem javítja csendben. A kapacitás nem
+  érintett (erőforrásonként monoton a leképezés).
+- A **Host egyik stratégiát sem regisztrálja** DI-ből — a run-folyamat bekötése hátravan.
 - `Resource` aggregátum **szándékosan nincs** (M2 scope-döntés, root elfogadta): a kapacitás és
   a naptár a `ResourceCalendarRevision`-ön él. Képesség-mátrixnál születik meg.
 - A hosting `DevelopmentAuthenticationHandler` **nem ad `enabled_modules` claimet**, így

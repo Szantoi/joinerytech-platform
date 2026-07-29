@@ -67,11 +67,9 @@ a determinizmus-kapuval együtt — ott is zöld, a fejlesztői win-x64 mellett.
   az ADR-069 szerint amúgy is a 2. fázis.
 - `Resource` aggregátum **szándékosan nincs** (M2 scope-döntés, root elfogadta): a kapacitás és
   a naptár a `ResourceCalendarRevision`-ön él. Képesség-mátrixnál születik meg.
-- A hosting `DevelopmentAuthenticationHandler` **nem ad `enabled_modules` claimet**, így
-  `Jwt:Mode=Development` mellett a modul-kapu mindent 403-mal utasít el. Fail-closed, tehát
-  helyes — de a lokális futtatást ellehetetleníti. **2026-07-29 10:05: a Codex leszállította
-  (ERPSEP-06, `review_requested`, hosting 76/76)** — a claim mostantól konfigurálható, az üres
-  alapérték szándékosan fail-closed. Root-approval után ez a korlát törölhető innen.
+- ~~A hosting `DevelopmentAuthenticationHandler` nem ad `enabled_modules` claimet~~ —
+  **MEGOLDVA**: a Codex ERPSEP-06 szelete **root-APPROVED** (2026-07-29 délután). A claim
+  konfigurálható, az üres alapérték szándékosan fail-closed marad.
 - **Nexus MCP-tunnel nem él** — a mailbox-kézbesítés a lokális sorban vár.
 
 ## Kapuk, amik NEM az enyémek

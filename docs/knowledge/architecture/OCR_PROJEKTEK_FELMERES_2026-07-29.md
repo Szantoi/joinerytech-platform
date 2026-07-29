@@ -38,7 +38,7 @@ Ez pontosan az, amit kértél: **a napi rutin alig változik.**
 Beszkennelt kép → kereshető PDF + Markdown RAG-tudásbázis.
 
 - **Hexagonális architektúra** (`core` / `infrastructure` / `usecases`),
-  tiszta portokkal, **46 teszt-fájl**.
+  tiszta portokkal, **19 teszt-fájl**.
 - Négy fázis: **EXTRACT** (EasyOCR + kétmenetes Vision-LLM átirat) → **REVIEW**
   (fragmentumonkénti javítás hallucináció-szűrővel) → **BEAUTIFY** (Markdown +
   RAG-export) → **BUILD** (kereshető PDF **láthatatlan szövegréteggel**).

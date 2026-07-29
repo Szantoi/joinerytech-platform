@@ -5,7 +5,7 @@
   **külön repókban, hogy termékként szolgáltatni lehessen.**
 - **Előzmény-felmérés:** `docs/knowledge/architecture/OCR_PROJEKTEK_FELMERES_2026-07-29.md`
 - **Forrás-projektek:** `Bevetelezes` (éles munkafolyamat) · `tartalom_mentes`
-  (hexagonális OCR/RAG-motor, 46 teszt-fájl)
+  (hexagonális OCR/RAG-motor, 19 teszt-fájl)
 - **Státusz:** javaslat — a G-kapuk Gábor döntésére várnak
 
 ## A cél

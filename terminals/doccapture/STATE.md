@@ -20,7 +20,7 @@ PDF, Excel, papír és kézírás.
   **nulla LLM-hívás a könyvelési úton** (mérve). Forrás-igazság a
   `Cikszám megfeleltetés.xlsx`, ami kézzel bővül. **A legértékesebb része a
   jóváhagyási hurok**, nem az OCR.
-- **`tartalom_mentes`** — hexagonális OCR/RAG-motor, **46 teszt-fájl**, négy
+- **`tartalom_mentes`** — hexagonális OCR/RAG-motor, **19 teszt-fájl**, négy
   fázis (EXTRACT/REVIEW/BEAUTIFY/BUILD), kereshető PDF láthatatlan
   szövegréteggel, Markdown/RAG export. Portjai: `IVisionClient`, `IOcrService`,
   `IPdfBuilder`, `IRepository`, `VectorStorePort`, `HandwritingOCRPort` — és

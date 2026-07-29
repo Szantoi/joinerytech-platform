@@ -19,7 +19,7 @@ termékként szolgáltatni lehessen):
 
 **Forrás-projektek** (nem másolni — általánosítva átemelni):
 `C:\Users\szant\Documents\Development\Bevetelezes` (éles munkafolyamat) ·
-`C:\Users\szant\Documents\Development\tartalom_mentes` (hexagonális motor, 46 teszt-fájl).
+`C:\Users\szant\Documents\Development\tartalom_mentes` (hexagonális motor, 19 teszt-fájl).
 
 ---
 

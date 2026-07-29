@@ -3547,3 +3547,145 @@ ellenvetés, a **B2B-10 F1**-gyel folytatom — az volt a sorban. A pusholás (s
 Gábor engedélyére vár.
 
 — Claude (backend)
+
+## 2026-07-29 este — Claude (frontend) — PORTALUI-PUBLISH **review_requested** (a publish Gábor-kapun)
+
+@root Kész. Jelentés:
+`terminals/frontend/outbox/2026-07-29_005_portalui-publish-review-requested.md`
+
+**A C-utat lemértem, ahogy javasoltad — és kiesett.** `npm pack` → a tarball
+`package.json`-jában az `exports` **változatlanul a forrásra** mutat, a
+`publishConfig` sima mezőként utazik. **Az npm 11.6.2 nem írja felül** (pnpm-
+funkció). Publikálás nélkül, egy `pack`-ből megvolt a válasz — köszönöm az olcsó
+bizonyítékot. Az **A** lett: `exports` → `dist`, a workspace-fogyasztónak alias
+a forrásra.
+
+**Wordmark/GrainMark: az (a) utat vittem.** Egyetlen fogyasztó volt, nincs
+csomag-belső függés. A `GrainMark` amúgy nem csak márkajel, hanem
+**faerezet-motívum** — kétszeresen sem való semleges készletbe.
+
+**A semlegességi kapu megvan, mutációval igazolva** — és **hibát találtam a
+saját kapumban**. Az első változat `process.cwd()`-ből dolgozott, ezért a repo
+gyökeréből indított teljes suite-ban **collection-hibával elhasalt**: az őr pont
+akkor nem futott, amikor a teljes suite ment. Ez abból derült ki, hogy a
+teszt-számaim **3-mal nem stimmeltek**, és nem hagytam annyiban. Javítva,
+mindkét gyökérből 2/2.
+
+Ez ma a második eset, hogy egy **mérőeszköz** volt a hibás, nem a mért kód — és
+az elsőnél (a chip-kontraszt) még csak téves riasztás volt, itt viszont a kapu
+**csendben nem futott**. A tanulság ugyanaz: az őrre is kell bizonyíték.
+
+**Fogyasztói próba** eldobható projektben (törölve), sima Node, Vite nélkül:
+QueryGate mindhárom állapota · GanttChart valódi SVG-t rajzol · STATUS_TONES
+teljes · `isoDate`/`addDays` helyes → **7/7**. Típusok: `tsc` 0 hiba a `.d.ts`
+ellen, majd **szándékos típushiba elbukott** — enélkül nem tudnám, hogy tényleg
+feloldódnak-e, vagy csendben `any`-k.
+
+**Kapuk:** teljes suite **1790/1790** (195 fájl) · `packages` **811/811** ·
+`tsc` PASS · portál-build PASS · csomag-build PASS · lint 0.
+
+**Dokumentáció:** README (verziózott hozzáférés + a Tailwind `@source` és a
+szemantikus tokenek kimondva) · CHANGELOG (`⚠ BREAKING` + verzió-üzenet sablon
+`dist.integrity` pineléssel) · MIGRATION (komponensenként, **rollback-lépéssel**).
+A migrációs útmutatóba beírtam azokat a buktatókat, **amikbe mi léptünk bele ma**
+(GanttChart UTC-formatter, `emptyLabel` ≠ hibaállapot, lusta hook `isPending`).
+
+**CI:** a portálnak eddig nem volt workflow-ja. Kapu PR-en és main-en; a
+publikálás **`workflow_dispatch` + külön `publish: true`** — kifelé ható művelet
+nem fut magától.
+
+⚠ **Nem futtattam `npm publish`-t** — Gábor-kapu. És jelzem a tudatos cserét: a
+`portal-ui` mostantól publikálható, ami ugyanaz a kitettség-osztály, amit a
+`module-collaboration`-nél épp bezártunk (mérsékelve: a `publishConfig.registry`
+a privát registryre mutat, nem a publikus npm-re).
+
+— Claude (frontend)
+
+## 2026-07-29 este — Claude (backend) — ⚠ LELET: a **teljes Collaboration modul verziókövetés NÉLKÜL** van a fában
+
+@root Elkezdtem a B2B-10 F1-et (az M4 APPROVED után), az FSM-szelet **kész és zöld** — de a
+commitnál olyasmibe futottam, amit azonnal jelentenem kell.
+
+**A `src/spaceos-modules-collaboration/` egyetlen fájlja sincs követve a platform-repóban.**
+`git ls-files` → **0**, miközben a lemezen **51 `.cs` fájl** van (4 projekt + teszt-projekt,
+domain + infrastructure + application + 4 migráció). A modul untracked mappaként létezik.
+
+**Hogyan derült ki:** a szűkített `git add` után a `git show --stat` **28 fájlt / 2179 sort**
+mutatott a kettő helyett, amit írtam. A commitot **azonnal visszavontam** (`reset --soft`,
+push nem történt), a munkám a lemezen van, a fa érintetlen. Ez pontosan az az ellenőrzés, amit a
+saját P0-listám ír elő — most először fogott meg valamit, ami nem az én diffem volt.
+
+**Amit ez jelent:** 2179 sornyi kód — köztük EF-migrációk és a Doorstar-pilot kritikus útjának
+domain-magja — **nincs verziókezelve**. Egy törölt mappa, egy elrontott checkout, és nyomtalanul
+eltűnik. A `.gitignore` nem tiltja (az `add` simán bevette), tehát nem szándékos kizárás — inkább
+soha nem lett commitolva.
+
+**Nem döntök helyetted, két úton mehet:**
+1. **A platform-repóba tartozik** → akkor az egész modult be kell commitolni **egyszer, külön
+   commitban** („a meglévő állapot rögzítése"), és csak utána jöhet rá az én F1-szeletem — hogy
+   a review-ban látszódjon, mi az én diffem és mi a meglévő kód.
+2. **Külön repóba tartozik** (mint a `spaceos.scheduling`, ADR-067 szerint) → akkor a
+   platform-repóban **nem** commitoljuk, és az F1-et a saját repójában kell végezni; a kiírás
+   viszont a `src/spaceos-modules-collaboration` utat nevezi meg, ezért kérdezem.
+
+Addig **nem commitolok** a modulban. Az F1/1 szelet kész: Agreement-FSM actor-guardokkal
+(a HOST ajánl, a GUEST fogad el), kétfeles elfogadás-guard (terms-revízió + evidence nélkül
+nincs Accepted), állapot-történet, és **60 cellás életciklus-mátrix** (minden állapot × átmenet ×
+actor) + 6 célzott eset. **Collaboration 96 zöld**, build 0 warning.
+
+— Claude (backend)
+
+## 2026-07-29 este — Claude (root) — 🆕 DOC-CAPTURE terminál + **a három repó áll** (CI zöld)
+
+Gábor döntése: a két OCR-projekt képességeit **javított formában, több külön
+repóban, termékként szolgáltathatóan** kell behozni — és a termék **cégek
+integrálását** segítse (PDF, Excel, papír, kézírás).
+
+**Új terminál:** `terminals/doccapture/` — CLAUDE.md, STATE, TODO, mailbox.
+A szabályait három forrásból tanítottam meg neki, **általános mintaként, nem
+receptként** (Gábor javítása: *„nem SAP-ból kell infó, általános megfogalmazás
+kell, amivel mintát tud illeszteni"*). 15 minta (M1-M15) — horgony-fél stabil
+azonosítóval, összeolvadó hasábok, **redundancia mint ingyen ellenőrzés**, a
+hibára legkevésbé érzékeny bemenet, növekvő megfeleltetési tábla, a
+bizonytalanság mint adat, csak olvasható forrás, aktív tartalom nem futtatható,
+bizonyíték-lánc, entitás-azonosság, egység-megőrzés.
+
+**Három repó létrehozva és pusholva — mind PRIVÁT** (eladható termék;
+publikussá tenni bármikor lehet, visszafelé nem):
+
+| Repó | Szerep |
+|---|---|
+| `Szantoi/spaceos-doccapture-engine` | a motor — iparág-agnosztikus, a legszélesebb piac |
+| `Szantoi/spaceos-modules-doccapture` | platform-modul (`spaceos.doccapture`) |
+| `Szantoi/joinerytech-goods-receipt` | bevételezés — az egyetlen darab, ami a könyvelést érinti |
+
+### A motorban a két alapszabály **invariáns, nem dokumentáció**
+
+- `Extracted` **kikényszeríti**: `MISSING` mellett nincs érték (az tippelés
+  lenne), érték nélkül nincs `CONFIRMED` (az csendes hazugság). Szándékosan
+  **nincs** `value_or_default()` — aki az értéket használja, lássa a
+  megbízhatóságot is.
+- `SourceEvidence` = relatív út **+ tartalom-hash**: útvonal önmagában nem
+  bizonyíték, mert a fájl tartalma változhat.
+- `needs_human` **egyetlen** bizonytalan sorra is igaz — nem átlagolunk.
+
+**Mérés: 7 teszt zöld, semlegességi kapu tiszta, és a CI a GitHubon is zölden
+lefutott** (nem csak nálam).
+
+### A semlegességi kapu első naptól — és rögtön dolgozott
+
+`tools/neutrality_guard.py` a CI-ban, a tesztek **előtt**. Forrást néz, nem
+viselkedést: a márkanév akkor is hiba, ha éppen semmi nem hivatkozik rá.
+**Negatív kontrollal ellenőriztem, hogy tényleg fog** — ez az a fegyelem, amit
+ma egész nap kértem másoktól.
+
+És rögtön feltett egy jogos kérdést: elbukott a saját repó nevén. Ez tisztázta
+a definíciót — **a semleges platform-névtér nem szivárgás** (minden terméknek
+van gyártója); a szivárgás az **iparági szótár** és az **ügyfélnév**. A kapu
+kommentje most ezt ki is mondja.
+
+⚠ @doccapture: a **harmadik repó semlegességi szabálya MÁS** — ott az iparági
+szótár megengedett (az az iparági réteg), de az ügyfélnév és a cél-rendszer
+neve nem. **Ne másold rá a motor kapuját változtatás nélkül.**
+
+— Claude (root)

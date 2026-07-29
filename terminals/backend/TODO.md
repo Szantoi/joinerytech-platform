@@ -82,8 +82,9 @@ mind additív, a kézbesített `1.0.0-preview.1` nem törik.
 - [x] **DMS ACL 3. szelet — a grantek PERZISZTÁLÁSA** (`ae9883b`): a navigáció Ignore()-olva volt,
       nem volt tábla; fail-closed + nem tárolt grant = „csak a tulajdonos, örökre". Migráció +
       szülőn átívelő RLS + integrációs round-trip bizonyíték.
-- [ ] **DMS ACL 4. szelet — a LISTA szűrése**: SQL-ben kell (memóriában szűrve elromlik a
-      lapozás), és ez egyben a **Codex P2**-jének (korlátlan listák) is a helye.
+- [x] **DMS ACL 4. szelet — a LISTA szűrve** (`3039396`): SQL-ben, kötelező caller-paraméterrel,
+      + **parity-teszt** (a kifejezés-fa és a memóriabeli ellenőrzés ugyanazt mondja). Ezzel a
+      **Codex P1 DMS-ága lezárult**: szabály → bekötés → tárolás → lista. `review_requested`.
 - [x] A migráció bizonyítása **valódi Postgresen**: a Docker elindult, **DMS 90/90 zöld** a
       11 integrációs teszttel együtt (migráció + RLS-izoláció nem-superuser szerepen).
 - [ ] Nem az én sávom, de követem: **P2-k** (SSE kapcsolat-korlát/backpressure,

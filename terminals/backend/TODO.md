@@ -45,8 +45,8 @@
       idejű lagot **egyeztetés** oldja meg (solve → dátumozás → naptár-átváltás → újra),
       mert a naptár-mentes solver nem tudja kifejezni; nem konvergálás esetén jelez.
 - [ ] **Push + CI** a `d63f317`-re — Gábor engedélyére vár.
-- [ ] **ADR-070 kiegészítő jegyzet**: a külön solver-assembly indoklása (root kérte az
-      APPROVED-ban, csproj-mozgatás helyett).
+- [x] **ADR-070 kiegészítő jegyzet**: a külön solver-assembly indoklása (root kérte az
+      APPROVED-ban) — benne a mért RID-lefedettség; ⚠ Alpine/musl továbbra sem mérve.
 - [ ] A solver **DI-bekötése** a run-folyamatba (a Host ma egyik stratégiát sem regisztrálja).
 
 ## P1 — a 4 additív kontraktus-bővítés (M3-verdikt P2-i)
@@ -54,11 +54,17 @@
 Rögzítve a [PLAN-03 doksi végén](../../docs/tasks/EPIC-PRODUCTION-PLANNING-2026Q3/PLAN-03-SCHEDULING-IMPLEMENTATION.md);
 mind additív, a kézbesített `1.0.0-preview.1` nem törik.
 
-- [ ] Proposal **kapacitás-ütközés mező** (tartalma M4-ből; ugyanabból a detektorból, mint az
-      `overload` végpont — különben két igazság lesz ugyanarról).
-- [ ] `DependencyEdge` **partial-release küszöb** a wire-on (`releaseThresholdFraction`).
-- [ ] „Erőforrásprofil-revízió" fogalom tisztázása az ADR-069 §6 szövegében (javaslat: a
-      naptár-revízió fedi, külön fogalom ne legyen).
+- [ ] ⛔ **DÖNTÉSRE VÁR** — Proposal **kapacitás-ütközés mező**: ugyanabból a detektorból kell
+      jönnie, mint az `overload` (root előírás), az viszont **valós időben** dolgozik, a
+      proposal meg munkaperceket közöl. Javaslat: additív `startUtc`/`finishUtc` az
+      `OperationPlan`-en, a mező arra épül. **Enélkül nem kezdhető el.**
+- [ ] ⛔ **DÖNTÉSRE VÁR** — `releaseThresholdFraction` a wire-on: ha kimegy és **kimarad a
+      hash-ből**, két különböző tartalom azonos hash-t kap; ha bekerül, a partial-release-es
+      tervek hash-e **egyszer mozdul** (a Doorstar visszaidézi). Javaslat: kerüljön be
+      **alapérték-kihagyással**, és a mozdulást **mondjuk ki** a Doorstarnak.
+- [x] „Erőforrásprofil-revízió" tisztázva az ADR-069 §6-ban: **nem külön fogalom**, a
+      naptár-revízió fedi.
+- [x] `lagKind` (`d63f317`) — a **wire-alakja** az 1–2. döntéssel egy körben megy ki.
 - [x] Művelet-„név" döntés kimondva: **marad a stabil kulcs**, emberi név nem megy ki; ha kell,
       additív `displayName` „csak megjelenítésre".
 

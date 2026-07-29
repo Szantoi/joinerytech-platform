@@ -1,6 +1,6 @@
 # BACKEND Terminal TODO
 
-> **Frissítve:** 2026-07-28 este (Europe/Budapest)
+> **Frissítve:** 2026-07-29 délelőtt (Europe/Budapest)
 > **Részletes állapot:** [`STATE.md`](STATE.md)
 > **Kanonikus task-státusz:** [`EPICS.yaml`](../../EPICS.yaml) — a `done` kimondása root-review joga
 
@@ -26,13 +26,19 @@
       véges kapacitás), 17 teszt.
 - [x] **ADR-070 D3 determinizmus-kapu**: azonos bemenet → azonos revision-hash; a beadási
       sorrend megfordítása sem mozdítja.
-- [ ] **CP-SAT adapter a porton** (infrastruktúra-réteg): `Google.OrTools` **9.15.6755** pin,
-      `random_seed` konfigból + `num_search_workers = 1`; a párhuzamos keresés **opt-in**, és
-      az eredménye `IsReproducible = false` — nem tehet úgy, mintha a hash stabil identitás lenne.
-- [ ] Az adapter és a referencia **ugyanazokon az eseteken** mérve (ez a port értelme).
+- [x] **CP-SAT adapter a porton** (`0efc329`): `Google.OrTools` **9.15.6755** pin, `random_seed`
+      konfigból + `num_search_workers = 1`; párhuzamos keresés **opt-in**, `IsReproducible = false`.
+      Külön assembly (`Solver.OrTools`), nem az Infrastructure — a root elé tárva.
+- [x] Az adapter és a referencia **ugyanazokon az eseteken** mérve: közös conformance-készlet,
+      mindkét oldalon leszármazott. Ez fogta meg a referencia **FF/SF finish-korlát** hibáját.
+- [x] Lockfile-ok + `--locked-mode` zöld (ADR-070 D4), minden OrTools runtime-alcsomag
+      `contentHash`-sel pinelve.
+- [ ] **Push + CI** — a **linux-x64 natív bináris** csak ott dől el (ma csak win-x64 mérve).
+      Gábor/root döntése, magamtól nem indítom.
 - [ ] Naptár-bekötés az ütemezésbe: a perc-idővonal ↔ `WorkingCalendar` (DST, kivételek) — ma a
-      solver tiszta perc-idővonalon dolgozik.
-- [ ] Lockfile-ok frissítése + `--locked-mode` zöld (ADR-070 D4), natív runtime-binárisokkal.
+      solver tiszta perc-idővonalon dolgozik. **Ez az M4 következő szelete.**
+- [ ] **Root-döntésre vár:** ütköző fix kezdéseknél az adapter dob, a referencia elhelyezi és
+      túllépi a kapacitást — a két stratégiának egyet kell mondania.
 
 ## P1 — a 4 additív kontraktus-bővítés (M3-verdikt P2-i)
 
@@ -60,7 +66,9 @@ Gábor döntéseivel már a törzsben (Tailnet-only, dedikált Keycloak-kliens a
 
 ## P3 — sorban, blokkolva
 
-- [ ] **B2B-10 F1** (inbox `010`) — root sorrend-döntése szerint az M4 mögött; addig nem indul.
+- [ ] **B2B-10 F1** (inbox `011`, a `010`-et váltja, archiválva) — indulás: **az M4 mérföldkő-
+      review APPROVED-ja után**; három szeletben, mindegyik külön `review_requested`-tel.
+      Kiírás: `docs/tasks/EPIC-B2B-COLLABORATION-2026Q3/B2B-10-F1-COLLABORATION-APPLICATION-LAYER.md`
 - [ ] Nexus MCP-tunnel visszaállása után a lokális sorban várt levelek **újrakézbesítése**.
 
 ## Nem az én sávom (jelzés szintjén követem)

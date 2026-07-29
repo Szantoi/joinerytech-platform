@@ -1,6 +1,6 @@
 # BACKEND Terminal State
 
-> **Frissítve:** 2026-07-28 este (Europe/Budapest)
+> **Frissítve:** 2026-07-29 délelőtt (Europe/Budapest)
 > **Kanonikus task-státusz:** [`EPICS.yaml`](../../EPICS.yaml) — a `done`/`APPROVED`
 > kimondása **root-review joga**, ez a fájl a végrehajtó nézete.
 > **Aktív task:** [`PLAN-03`](../../docs/tasks/EPIC-PRODUCTION-PLANNING-2026Q3/PLAN-03-SCHEDULING-IMPLEMENTATION.md)
@@ -10,7 +10,8 @@
 A `spaceos.scheduling` modul **külön repóban**: `Szantoi/spaceos-modules-scheduling`
 (lokálisan `C:\Users\szant\Documents\Development\spaceos-modules-scheduling`).
 A platform-repóban csak a task-doksik és az ADR-ek vannak — **modul-kód nem kerülhet bele**.
-Aktuális `main`: `83e403c`, **CI zöld**.
+Aktuális `main`: `0efc329` — **lokálisan mérve, még NINCS pusholva**, tehát a CI ezen a
+commiton nem futott (az előző pusholt állapot `83e403c` volt CI-zölddel).
 
 ## Mérföldkövek
 
@@ -19,14 +20,17 @@ Aktuális `main`: `83e403c`, **CI zöld**.
 | M1 — kalkulációs mag | **DONE** (root-review) | EffortCalculator, DependencyBoundResolver, DependencyGraph; hash-pinnelt Doorstar-vektorok |
 | M2 — aggregátumok + perzisztencia + RLS | **DONE** (root-review, 2026-07-28) | 9 tábla FORCE RLS, valódi migrációs proof, `CalendarException` (P1 pótolva) |
 | M3 — publikált kontraktus | **DONE** (root-review) — **kézbesítve a Doorstarnak** | `docs/openapi.yaml` 3.1, SHA-256 `3fc6c57d…` (saját méréssel igazolva a `main` blobjához) |
-| M4 — véges kapacitású ütemező | **fut**, 1. szelet kész | `ISchedulingSolver` port + determinisztikus referencia-ütemező; ADR-070 D3 kapu áll |
+| M4 — véges kapacitású ütemező | **fut**, 1–2. szelet kész (2. `review_requested`) | port + referencia-ütemező; **CP-SAT adapter** + közös conformance-készlet (`0efc329`) |
 | M5 | nem indult | — |
 
-## Mérés (2026-07-28 este, teljes suite)
+## Mérés (2026-07-29 délelőtt)
 
-**324 zöld, 0 bukás** — Domain 219 / Infrastructure 43 / Host 43 / **Integration 19**.
-Az integrációs sáv igazi PostgreSQL-en, FORCE RLS-ben, **nem-superuser** szerepen, a valódi
-`Program`-on át fut (Docker a fejlesztői gépen újra elérhető, nem csak CI-ban).
+**350 zöld, 0 bukás** — Domain **238** (+19 conformance) / **Solver.OrTools 26** /
+Infrastructure 43 / Host 43. Build 0 warning, `--locked-mode` zöld, szótár-őr OK.
+
+⚠ **Az integrációs sáv (19) ma NEM mérhető:** a Docker ezen a gépen nem fut
+(Testcontainers-hiba, igazolva) — a mai diff nem érinti (a solver nem megy DB-hez), de a
+teljes 369-es szám csak Dockerrel vagy a CI-ban mondható ki.
 
 ## Ami a helyén van (és negatív kontrollal igazolt)
 
@@ -40,10 +44,21 @@ Az integrációs sáv igazi PostgreSQL-en, FORCE RLS-ben, **nem-superuser** szer
   függetlenül.
 - **Audit append-only** DB-szinten **triggerrel** (nem REVOKE — a grantokat újraadja, aki
   provisionál).
+- **Közös solver-conformance**: egy absztrakt teszt-osztályt **mindkét** stratégia futtat.
+  Nem azonos kimenetet vár (az optimalizálónak szabad jobbat találnia), hanem invariánsokat.
+  Ez fogta meg, hogy a referencia az **FF/SF finish-korlátot** csendben eldobta — javítva.
+- **A natív bináris előbb bizonyítva, mint a kód**: OrTools 9.15.6755 betöltődik win-x64-en,
+  fix seed + 1 worker kétszer ugyanaz.
 
 ## Ismert korlátok / adósságok
 
-- A referencia-ütemező **mohó, nem lép vissza** — ezért van port; a CP-SAT adapter következik.
+- A referencia-ütemező **mohó, nem lép vissza** — ezért van port. Mérve a greedy csapdáján:
+  **referencia 160 perc → CP-SAT 110 perc**.
+- **A linux-x64 natív bináris még nincs mérve** — csak a fejlesztői win-x64. Ez a CI első
+  futásán dől el, ami **push-t igényel** (nem indítottam el magamtól).
+- **Nyitott döntés a rootnál:** ütköző fix kezdéseknél az adapter **dob**, a referencia
+  elhelyezi és **túllépi a kapacitást**. Üzleti kérdés, tesztben rögzítve.
+- A solver **tiszta perc-idővonalon** dolgozik — naptár/DST-bekötés a következő szelet.
 - `Resource` aggregátum **szándékosan nincs** (M2 scope-döntés, root elfogadta): a kapacitás és
   a naptár a `ResourceCalendarRevision`-ön él. Képesség-mátrixnál születik meg.
 - A hosting `DevelopmentAuthenticationHandler` **nem ad `enabled_modules` claimet**, így

@@ -1,6 +1,6 @@
 # BACKEND Terminal TODO
 
-> **Frissítve:** 2026-07-29 délelőtt (Europe/Budapest)
+> **Frissítve:** 2026-07-29 délután (Europe/Budapest)
 > **Részletes állapot:** [`STATE.md`](STATE.md)
 > **Kanonikus task-státusz:** [`EPICS.yaml`](../../EPICS.yaml) — a `done` kimondása root-review joga
 
@@ -44,7 +44,7 @@
 - [x] **`lagKind`** (`d63f317`) — Gábor döntése: additív mező, alapérték `working`. A valós
       idejű lagot **egyeztetés** oldja meg (solve → dátumozás → naptár-átváltás → újra),
       mert a naptár-mentes solver nem tudja kifejezni; nem konvergálás esetén jelez.
-- [ ] **Push + CI** a `d63f317`-re — Gábor engedélyére vár.
+- [x] **Push + CI** a `d63f317`-re: run `30438753129` **zöld, 398 teszt** (lokálisan is, Dockerrel).
 - [x] **ADR-070 kiegészítő jegyzet**: a külön solver-assembly indoklása (root kérte az
       APPROVED-ban) — benne a mért RID-lefedettség; ⚠ Alpine/musl továbbra sem mérve.
 - [ ] A solver **DI-bekötése** a run-folyamatba (a Host ma egyik stratégiát sem regisztrálja).

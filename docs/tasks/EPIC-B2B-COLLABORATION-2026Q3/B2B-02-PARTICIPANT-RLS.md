@@ -85,3 +85,58 @@ incidens, nem elfogadható ismert gap.
 - Tesztek: `SpaceOS.Collaboration.Tests` PASS (7/7 zöld, 0 failure).
 - Security verdict: **PASS**
 
+
+---
+
+## ⚠ ROOT-KORREKCIÓ — 2026-07-29: a „done / Security PASS" VISSZAVONVA
+
+**Ez a dokumentum `done`-t és „Security reviewer verdict PASS"-t állított hét
+kipipált kritériummal. A státusz visszavonva** (az `EPICS.yaml` már 2026-07-28
+óta `changes_requested`; ez a doksi maradt hátra — ez maga is „két igazság
+ugyanarról").
+
+Forrás: a backend F2-felmérése, root által elfogadva. **Amit a felmérés
+megerősített:** a bizonyítékok **léteznek** (`CrossTenantAuthorizationTests`,
+`ParticipantGrantTests`), és a migráció **nem papír** — mind a 8 tábla kapott
+`ENABLE` + `FORCE ROW LEVEL SECURITY`-t policy-vel. A hiba nem a hiányzó munka.
+
+### Amit a mérés mutat
+
+1. **A tesztek EF `UseInMemoryDatabase`-en futnak** — nincs integrációs
+   teszt-projekt a modulban. Ebből következik, hogy két kipipált kritérium
+   **konstrukcióból bizonyíthatatlan** ott, ahol be van pipálva: a „nem-superuser
+   szereppel, közvetlen SQL-lel is izolált" és a „connection-pool
+   tenant-context reset bizonyított". InMemory nem futtat SQL-t, nincs benne
+   szerep, policy és pool.
+
+2. **A teszt a saját szűrőjét bizonyítja.** A „támadó tenant" eset a
+   `.Where(a => a.HostTenantId == attackerTenantId ...)` szűrőt maga írja oda,
+   majd azt állítja, hogy szűr. **Ez akkor is zöld, ha a modulban semmilyen
+   izoláció nincs** — és a `CollaborationDbContext`-ben tényleg nincs sem global
+   query filter, sem interceptor.
+
+3. **A policy-k nem a baseline fail-closed alakját használják.** Mind a 8
+   policy a csupasz `current_setting('app.current_tenant_id', true)::uuid`
+   alakot viszi, `NULLIF` nélkül. A közös `SpaceOsTenantSessionInterceptor`
+   pool-visszaadáskor `''`-t ír a kulcsba, és `''::uuid` PostgreSQL-en
+   **cast-hiba**, nem NULL. A `RlsMigrationSql` épp ezért írja elő a
+   `NULLIF(...)::uuid` alakot. A hiba iránya a biztonságos oldal (leállás, nem
+   szivárgás), de **ez nem az a fail-closed, amit a baseline ígér**.
+
+### Amit ez NEM jelent
+
+**Nem kihasználható rés ma:** a modulnak nincs API-hostja (az az F3), tehát nem
+szolgál ki kérést. Nem P0-incidens — **hamis zöld egy `done`-ra állított
+biztonsági taskban**, ami a veszélyesebb fajta: aki a doksit olvassa,
+biztonságosnak hiszi.
+
+### A javítás helye: F2
+
+A grant-alapú RLS-policy, a tenant-interceptor bekötése, a `NULLIF`-alak és a
+**valódi bizonyíték** (nem-superuser szerep, Testcontainers, 3-tenant) az F2
+szelet tartalma. A `done` addig nem állítható vissza.
+
+**Tanulság a review-rezsimhez:** egy biztonsági teszt akkor ér valamit, ha
+**megbukik**, amikor a védelem hiányzik. Ha a teszt maga írja oda a szűrőt,
+akkor a saját LINQ-jét méri, nem a rendszert — ugyanaz az osztály, mint a
+státuszkód-halmazt elfogadó auth-teszt.

@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using SpaceOS.Modules.DMS.Domain.Aggregates.Document;
 using SpaceOS.Modules.DMS.Domain.Enums;
 using SpaceOS.Modules.DMS.Domain.Repositories;
+using SpaceOS.Modules.DMS.Domain.Services;
 using SpaceOS.Modules.DMS.Domain.ValueObjects;
 
 namespace SpaceOS.Modules.DMS.Infrastructure.Persistence.Repositories;
@@ -28,10 +29,22 @@ public class DocumentRepository : IDocumentRepository
             .ConfigureAwait(false);
     }
 
-    public async Task<IReadOnlyList<Document>> ListAsync(DocumentFilter filter, CancellationToken ct = default)
+    public async Task<IReadOnlyList<Document>> ListAsync(
+        DocumentFilter filter,
+        DocumentAccessContext caller,
+        CancellationToken ct = default)
     {
+        ArgumentNullException.ThrowIfNull(caller);
+
         var query = _context.Documents
-            .Where(d => d.Status != DocumentStatus.Deleted);
+            .Where(d => d.Status != DocumentStatus.Deleted)
+
+            // Access control INSIDE the query, not after it. Filtering the materialised list
+            // would return short pages (the database counted rows the caller cannot see) and
+            // would pull every document of the tenant into memory to throw most of it away.
+            // The predicate is the one in DocumentAccessSpecification — the same rule the
+            // in-memory check uses, with a parity test to keep the two from drifting.
+            .Where(DocumentAccessSpecification.Visible(caller));
 
         if (filter.Status is { } status)
             query = query.Where(d => d.Status == status);

@@ -117,12 +117,12 @@ public class DocumentHandlerTests
         DocumentFilter? captured = null;
         var repository = new Mock<IDocumentRepository>();
         repository
-            .Setup(r => r.ListAsync(It.IsAny<DocumentFilter>(), It.IsAny<CancellationToken>()))
-            .Callback((DocumentFilter filter, CancellationToken _) => captured = filter)
+            .Setup(r => r.ListAsync(It.IsAny<DocumentFilter>(), It.IsAny<DocumentAccessContext>(), It.IsAny<CancellationToken>()))
+            .Callback((DocumentFilter filter, DocumentAccessContext _, CancellationToken __) => captured = filter)
             .ReturnsAsync(Array.Empty<Document>());
 
         var options = new DmsExpiryOptions(WarnDays: 14);
-        var handler = new ListDocumentsHandler(repository.Object, options);
+        var handler = new ListDocumentsHandler(repository.Object, Caller(), options);
 
         var before = ServeDay.Today();
         await handler.Handle(new ListDocumentsQuery(ExpiringOnly: true), default);
@@ -141,11 +141,11 @@ public class DocumentHandlerTests
         DocumentFilter? captured = null;
         var repository = new Mock<IDocumentRepository>();
         repository
-            .Setup(r => r.ListAsync(It.IsAny<DocumentFilter>(), It.IsAny<CancellationToken>()))
-            .Callback((DocumentFilter filter, CancellationToken _) => captured = filter)
+            .Setup(r => r.ListAsync(It.IsAny<DocumentFilter>(), It.IsAny<DocumentAccessContext>(), It.IsAny<CancellationToken>()))
+            .Callback((DocumentFilter filter, DocumentAccessContext _, CancellationToken __) => captured = filter)
             .ReturnsAsync(Array.Empty<Document>());
 
-        var handler = new ListDocumentsHandler(repository.Object, Expiry);
+        var handler = new ListDocumentsHandler(repository.Object, Caller(), Expiry);
 
         await handler.Handle(
             new ListDocumentsQuery(Status: DocumentStatus.Released, Search: "konyha"), default);

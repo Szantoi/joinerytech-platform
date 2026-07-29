@@ -19,10 +19,15 @@ namespace SpaceOS.Modules.DMS.Application.Handlers.Queries;
 public class ListDocumentsHandler : IRequestHandler<ListDocumentsQuery, IReadOnlyList<DocumentDto>>
 {
     private readonly IDocumentRepository _repository;
+    private readonly ICallerContext _caller;
     private readonly DmsExpiryOptions _expiryOptions;
 
-    public ListDocumentsHandler(IDocumentRepository repository, DmsExpiryOptions expiryOptions)
+    public ListDocumentsHandler(
+        IDocumentRepository repository,
+        ICallerContext caller,
+        DmsExpiryOptions expiryOptions)
     {
+        _caller = caller;
         _repository = repository;
         _expiryOptions = expiryOptions;
     }
@@ -38,7 +43,10 @@ public class ListDocumentsHandler : IRequestHandler<ListDocumentsQuery, IReadOnl
             Search: request.Search,
             ExpiresOnOrBefore: request.ExpiringOnly ? today.AddDays(_expiryOptions.WarnDays) : null);
 
-        var documents = await _repository.ListAsync(filter, ct).ConfigureAwait(false);
+        // The listing is restricted in SQL, not here: post-filtering would hand back short
+        // pages and would read the whole tenant to discard most of it.
+        var caller = new DocumentAccessContext(new UserId(_caller.UserId), _caller.RoleIds);
+        var documents = await _repository.ListAsync(filter, caller, ct).ConfigureAwait(false);
 
         return documents
             .Select(d => DocumentDtoMapper.ToDto(d, today, _expiryOptions.WarnDays))

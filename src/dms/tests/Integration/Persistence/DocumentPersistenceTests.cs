@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using SpaceOS.Modules.DMS.Domain.Aggregates.Document;
 using SpaceOS.Modules.DMS.Domain.Enums;
 using SpaceOS.Modules.DMS.Domain.Repositories;
+using SpaceOS.Modules.DMS.Domain.Services;
 using SpaceOS.Modules.DMS.Domain.ValueObjects;
 using SpaceOS.Modules.DMS.Tests.Integration.Api;
 using Xunit;
@@ -30,7 +31,8 @@ public class DocumentPersistenceTests
         string name = "Doorstar ajtó sorozat — gyártási rajz",
         DocType type = DocType.Drawing,
         DocLinkType linkType = DocLinkType.Order,
-        DateOnly? validUntil = null)
+        DateOnly? validUntil = null,
+        UserId? ownerUserId = null)
         => Document.Create(
             new TenantId(ApiTestFixture.TenantId),
             name: name,
@@ -41,10 +43,20 @@ public class DocumentPersistenceTests
             owner: "Kovács Péter",
             note: null,
             fileLabel: $"{Guid.NewGuid():N}.pdf",
-            validUntil: validUntil);
+            validUntil: validUntil,
+            ownerUserId: ownerUserId);
 
     private IDocumentRepository Repository(IServiceScope scope)
         => scope.ServiceProvider.GetRequiredService<IDocumentRepository>();
+
+    /// <summary>
+    /// A caller with no special standing. These fixtures create documents WITHOUT an owner
+    /// identity, so they fall under the documented transition (readable inside the tenant) —
+    /// which is exactly what keeps these pre-existing list tests meaningful: they still measure
+    /// filtering and ordering, not access.
+    /// </summary>
+    private static readonly DocumentAccessContext AnyCaller =
+        new(new UserId(Guid.Parse("99999999-9999-4999-8999-999999999999")));
 
     [Fact]
     public async Task Document_RoundTrip_PersistsVersionChainAndReleasedFallback()
@@ -144,6 +156,55 @@ public class DocumentPersistenceTests
     }
 
     [Fact]
+    public async Task ListAsync_ReturnsOnlyWhatTheCallerMaySee_AndTheGrantOpensIt()
+    {
+        // The filtering has to happen IN SQL — this is where that is proved. It also exercises
+        // the parts most likely to break in translation: the value-object comparison on the
+        // owner column and the EXISTS over the grants table.
+        var owner = new UserId(Guid.NewGuid());
+        var colleague = new UserId(Guid.NewGuid());
+
+        var mine = NewDocument(name: "Saját terv VISIBILITYTEST", ownerUserId: owner);
+        var theirs = NewDocument(name: "Idegen terv VISIBILITYTEST", ownerUserId: colleague);
+
+        using (var scope = _fixture.CreateScope())
+        {
+            var repository = Repository(scope);
+            await repository.AddAsync(mine);
+            await repository.AddAsync(theirs);
+        }
+
+        var ownerCaller = new DocumentAccessContext(owner);
+
+        using (var scope = _fixture.CreateScope())
+        {
+            var rows = await Repository(scope).ListAsync(
+                new DocumentFilter(Search: "VISIBILITYTEST"), ownerCaller);
+
+            rows.Should().ContainSingle("a másik tulajdonos dokumentuma nem jöhet vissza")
+                .Which.Id.Should().Be(mine.Id);
+        }
+
+        // A grant must reach the listing too — otherwise a colleague could open a document by
+        // its id but never find it, which reads as data loss to the person using it.
+        using (var scope = _fixture.CreateScope())
+        {
+            var repository = Repository(scope);
+            var reloaded = await repository.GetByIdAsync(theirs.Id);
+            reloaded!.GrantPermission(PermissionType.View, owner, roleId: null, grantedBy: colleague);
+            await repository.UpdateAsync(reloaded);
+        }
+
+        using (var scope = _fixture.CreateScope())
+        {
+            var rows = await Repository(scope).ListAsync(
+                new DocumentFilter(Search: "VISIBILITYTEST"), ownerCaller);
+
+            rows.Should().HaveCount(2, "a kiadott jog a listában is megnyitja a dokumentumot");
+        }
+    }
+
+    [Fact]
     public async Task ListAsync_Filters_StatusTypeSearch()
     {
         var draft = NewDocument(name: "Belváros Café — pultsor kiviteli rajz FILTERTEST");
@@ -163,11 +224,11 @@ public class DocumentPersistenceTests
             var repository = Repository(scope);
 
             var draftRows = await repository.ListAsync(new DocumentFilter(
-                Status: DocumentStatus.Draft, Search: "FILTERTEST"));
+                Status: DocumentStatus.Draft, Search: "FILTERTEST"), AnyCaller);
             draftRows.Should().ContainSingle().Which.Id.Should().Be(draft.Id);
 
             var typeRows = await repository.ListAsync(new DocumentFilter(
-                Type: DocType.Instruction, Search: "filtertest"));
+                Type: DocType.Instruction, Search: "filtertest"), AnyCaller);
             typeRows.Should().ContainSingle("az ILike kis-nagybetű független")
                 .Which.Id.Should().Be(released.Id);
         }
@@ -206,7 +267,7 @@ public class DocumentPersistenceTests
         {
             var rows = await Repository(scope).ListAsync(new DocumentFilter(
                 Search: "EXPIRYTEST",
-                ExpiresOnOrBefore: today.AddDays(30)));
+                ExpiresOnOrBefore: today.AddDays(30)), AnyCaller);
 
             rows.Select(d => d.Id).Should().Equal(
                 new[] { expired.Id, expiring.Id },
@@ -236,7 +297,7 @@ public class DocumentPersistenceTests
         {
             var repository = Repository(scope);
             (await repository.GetByIdAsync(document.Id)).Should().BeNull();
-            (await repository.ListAsync(new DocumentFilter(Search: "DELETETEST")))
+            (await repository.ListAsync(new DocumentFilter(Search: "DELETETEST"), AnyCaller))
                 .Should().BeEmpty();
         }
     }

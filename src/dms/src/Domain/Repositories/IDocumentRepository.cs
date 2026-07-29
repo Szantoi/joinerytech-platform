@@ -1,5 +1,6 @@
 using SpaceOS.Modules.DMS.Domain.Aggregates.Document;
 using SpaceOS.Modules.DMS.Domain.Enums;
+using SpaceOS.Modules.DMS.Domain.Services;
 using SpaceOS.Modules.DMS.Domain.ValueObjects;
 
 namespace SpaceOS.Modules.DMS.Domain.Repositories;
@@ -36,10 +37,20 @@ public interface IDocumentRepository
     Task<Document?> GetByIdAsync(DocumentId id, CancellationToken ct = default);
 
     /// <summary>
-    /// Lists documents by filter. Ordering (portal contract): expiry window →
-    /// earliest ValidUntil first; otherwise most recently updated first.
+    /// Lists documents by filter, restricted to what the caller may see. Ordering (portal
+    /// contract): expiry window → earliest ValidUntil first; otherwise most recently updated
+    /// first.
     /// </summary>
-    Task<IReadOnlyList<Document>> ListAsync(DocumentFilter filter, CancellationToken ct = default);
+    /// <param name="filter">What to look for.</param>
+    /// <param name="caller">
+    /// Who is asking. REQUIRED, not optional: an omitted caller would silently return every
+    /// document in the tenant, and a listing that leaks is harder to notice than one that fails.
+    /// </param>
+    /// <param name="ct">Cancellation.</param>
+    Task<IReadOnlyList<Document>> ListAsync(
+        DocumentFilter filter,
+        DocumentAccessContext caller,
+        CancellationToken ct = default);
 
     Task AddAsync(Document document, CancellationToken ct = default);
 

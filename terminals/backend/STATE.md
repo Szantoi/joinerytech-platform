@@ -24,9 +24,9 @@ Aktuális `main`: `d63f317`, **CI zöld** (run `30438753129`); lokálisan is 398
 
 ## Mérés (2026-07-29 délután)
 
-**Scheduling `d63f317`: 398/398 zöld** — CI (run `30438753129`) **és lokálisan is**, mert a
+**Scheduling `7cd7276`: 405/405 zöld lokálisan** (a `d63f317` CI-zöld volt 398-cal) — CI (run `30438753129`) **és lokálisan is**, mert a
 Docker 2026-07-29 délutánján elindult. Domain 245 / Solver.OrTools 26 / Infrastructure 65 /
-Host 43 / **Integration 19**. Szótár-őr OK, `--locked-mode` zöld, generált TS-kliens 558 sor.
+**Host 50** / **Integration 19**. Szótár-őr OK, `--locked-mode` zöld, generált TS-kliens 558 sor.
 
 **DMS (platform-repó) `6554a09`: 99/99 zöld**, köztük **11 integrációs valódi PostgreSQL-en** —
 tehát a `DocumentOwnerIdentity` migráció és az RLS-izoláció **bizonyított**.
@@ -63,7 +63,8 @@ a determinizmus-kapuval együtt — ott is zöld, a fejlesztői win-x64 mellett.
 - **Eltérő naptárú erőforrások között a precedencia valós időben sérülhet** — a kiterítés ezt
   **kimondja** (`PrecedenceBrokenAcrossCalendars`), nem javítja csendben. A kapacitás nem
   érintett (erőforrásonként monoton a leképezés).
-- A **Host egyik stratégiát sem regisztrálja** DI-ből — a run-folyamat bekötése hátravan.
+- A run-folyamat **endpointja** hátravan (a solver DI-bekötése kész, `7cd7276`); az írás-végpontok
+  az ADR-069 szerint amúgy is a 2. fázis.
 - `Resource` aggregátum **szándékosan nincs** (M2 scope-döntés, root elfogadta): a kapacitás és
   a naptár a `ResourceCalendarRevision`-ön él. Képesség-mátrixnál születik meg.
 - A hosting `DevelopmentAuthenticationHandler` **nem ad `enabled_modules` claimet**, így

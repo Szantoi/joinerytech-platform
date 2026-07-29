@@ -47,7 +47,9 @@
 - [x] **Push + CI** a `d63f317`-re: run `30438753129` **zöld, 398 teszt** (lokálisan is, Dockerrel).
 - [x] **ADR-070 kiegészítő jegyzet**: a külön solver-assembly indoklása (root kérte az
       APPROVED-ban) — benne a mért RID-lefedettség; ⚠ Alpine/musl továbbra sem mérve.
-- [ ] A solver **DI-bekötése** a run-folyamatba (a Host ma egyik stratégiát sem regisztrálja).
+- [x] A solver **DI-bekötése** (`7cd7276`): a stratégia konfigurációs döntés (`reference` az
+      alapérték a natív bináris miatt, `cpsat` opt-in), ismeretlen név = indulási hiba, az
+      options configból, + a CalendarAwareScheduler. A run-folyamat ENDPOINTJA külön (2. fázis).
 
 ## P1 — a 4 additív kontraktus-bővítés (M3-verdikt P2-i)
 

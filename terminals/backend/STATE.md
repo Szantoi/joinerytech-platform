@@ -24,11 +24,12 @@ Aktuális `main`: `0efc329`, **CI zöld** (run `30426082492`, Gábor engedélyé
 
 ## Mérés (2026-07-29 délelőtt)
 
-**CI zöld a `b02616b`-n: 392 teszt** (run `30428183130`) — Domain 245 / Solver.OrTools 26 /
-Infrastructure 59 / Host 43 / **Integration 19**. Szótár-őr OK, generált TS-kliens 558 sor.
+**Scheduling `d63f317`: 398/398 zöld** — CI (run `30438753129`) **és lokálisan is**, mert a
+Docker 2026-07-29 délutánján elindult. Domain 245 / Solver.OrTools 26 / Infrastructure 65 /
+Host 43 / **Integration 19**. Szótár-őr OK, `--locked-mode` zöld, generált TS-kliens 558 sor.
 
-**Lokálisan a `d63f317`-en: 379 zöld** (Infrastructure 65) — build 0 warning, szótár-őr OK.
-**A `d63f317` (lagKind) még nincs pusholva**, a CI azon nem futott.
+**DMS (platform-repó) `d15f6e7`: 90/90 zöld**, köztük **11 integrációs valódi PostgreSQL-en** —
+tehát a `DocumentOwnerIdentity` migráció és az RLS-izoláció **bizonyított**.
 
 **Ezzel a linux-x64 natív OR-Tools bináris is mérve** (ubuntu-latest, glibc): a 26 solver-teszt
 — a determinizmus-kapuval együtt — ott is zöld. Lokálisan csak win-x64 volt bizonyítható, mert

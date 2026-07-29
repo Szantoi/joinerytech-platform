@@ -77,7 +77,8 @@ mind additív, a kézbesített `1.0.0-preview.1` nem törik.
 - [x] **DMS ACL 1. szelet** (`d15f6e7`): fail-closed szabály + `OwnerUserId` + migráció, 12 teszt.
 - [ ] **DMS ACL 2. szelet — A RÉS EDDIG NYITVA VAN**: caller-kontextus (userId + szerepek) a
       parancsokba/handler-ekbe, az ACL tényleges hívása, a host kinyerje a JWT-ből.
-- [ ] A migráció bizonyítása **valódi Postgresen** (Docker kell hozzá).
+- [x] A migráció bizonyítása **valódi Postgresen**: a Docker elindult, **DMS 90/90 zöld** a
+      11 integrációs teszttel együtt (migráció + RLS-izoláció nem-superuser szerepen).
 - [ ] Nem az én sávom, de követem: **P2-k** (SSE kapcsolat-korlát/backpressure,
       `costMonitoringService` nem takarított Map-jei, CRM/Kontrolling korlátlan listák) —
       **kiosztatlanok**.

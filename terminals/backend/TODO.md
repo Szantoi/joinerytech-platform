@@ -79,7 +79,10 @@ mind additív, a kézbesített `1.0.0-preview.1` nem törik.
       6 FSM-átmenetben (közös bázis), verzió-feltöltésben és az egy-dokumentumos olvasásban;
       404 a nem láthatóra / 403 a látható-de-tiltottra. **A létrehozó a tulajdonos** (saját rés,
       menet közben találva: enélkül minden új dokumentum a legacy-kivétel alá esett volna).
-- [ ] **DMS ACL 3. szelet — a LISTA szűrése**: SQL-ben kell (memóriában szűrve elromlik a
+- [x] **DMS ACL 3. szelet — a grantek PERZISZTÁLÁSA** (`ae9883b`): a navigáció Ignore()-olva volt,
+      nem volt tábla; fail-closed + nem tárolt grant = „csak a tulajdonos, örökre". Migráció +
+      szülőn átívelő RLS + integrációs round-trip bizonyíték.
+- [ ] **DMS ACL 4. szelet — a LISTA szűrése**: SQL-ben kell (memóriában szűrve elromlik a
       lapozás), és ez egyben a **Codex P2**-jének (korlátlan listák) is a helye.
 - [x] A migráció bizonyítása **valódi Postgresen**: a Docker elindult, **DMS 90/90 zöld** a
       11 integrációs teszttel együtt (migráció + RLS-izoláció nem-superuser szerepen).

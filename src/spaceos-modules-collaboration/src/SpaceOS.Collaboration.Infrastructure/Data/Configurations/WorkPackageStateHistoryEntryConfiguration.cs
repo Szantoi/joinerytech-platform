@@ -12,6 +12,12 @@ internal sealed class WorkPackageStateHistoryEntryConfiguration : IEntityTypeCon
 
         builder.HasKey(h => h.Id);
 
+        // The aggregate assigns the key itself. Left to convention EF treats a non-default Guid
+        // key on an untracked entity as an existing row and emits an UPDATE that matches nothing,
+        // surfacing as a phantom concurrency conflict when a child is added to a tracked parent.
+        builder.Property(h => h.Id)
+            .ValueGeneratedNever();
+
         builder.Property(h => h.WorkPackageId)
             .IsRequired();
 

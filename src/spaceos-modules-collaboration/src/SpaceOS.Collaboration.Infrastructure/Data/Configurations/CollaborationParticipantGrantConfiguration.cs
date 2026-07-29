@@ -12,6 +12,12 @@ internal sealed class CollaborationParticipantGrantConfiguration : IEntityTypeCo
 
         builder.HasKey(g => g.Id);
 
+        // The aggregate assigns the key itself. Left to convention EF treats a non-default Guid
+        // key on an untracked entity as an existing row and emits an UPDATE that matches nothing,
+        // surfacing as a phantom concurrency conflict when a child is added to a tracked parent.
+        builder.Property(g => g.Id)
+            .ValueGeneratedNever();
+
         builder.Property(g => g.AgreementId)
             .IsRequired();
 

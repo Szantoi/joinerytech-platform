@@ -12,6 +12,12 @@ internal sealed class AgreementAcceptanceEvidenceConfiguration : IEntityTypeConf
 
         builder.HasKey(e => e.Id);
 
+        // The aggregate assigns the key itself. Left to convention EF treats a non-default Guid
+        // key on an untracked entity as an existing row and emits an UPDATE that matches nothing,
+        // surfacing as a phantom concurrency conflict when a child is added to a tracked parent.
+        builder.Property(e => e.Id)
+            .ValueGeneratedNever();
+
         builder.Property(e => e.TermsRevisionId)
             .IsRequired();
 

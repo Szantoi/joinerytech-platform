@@ -13,6 +13,18 @@ public class CollaborationAgreement
     public Guid? CurrentTermsRevisionId { get; private set; }
     public DateTimeOffset CreatedAtUtc { get; private set; }
 
+    /// <summary>
+    /// Increments on every state transition and backs optimistic concurrency (B2B-10 F2/4).
+    /// </summary>
+    /// <remarks>
+    /// The agreement is the aggregate where a lost update is a correctness problem rather than an
+    /// inconvenience: the host may cancel while the guest is accepting, and both transitions are
+    /// legal from <c>Proposed</c>. Without a token the second write would silently overwrite the
+    /// first and the losing party would be told its action succeeded. Mapped as an EF concurrency
+    /// token, so the second writer gets <c>DbUpdateConcurrencyException</c> instead.
+    /// </remarks>
+    public int RowVersion { get; private set; }
+
     /// <summary>What proves the guest accepted; never empty once Accepted.</summary>
     public string? AcceptanceEvidence { get; private set; }
 
@@ -48,7 +60,8 @@ public class CollaborationAgreement
             GuestTenantId = guestTenantId,
             Title = title.Trim(),
             Status = AgreementStatus.Draft,
-            CreatedAtUtc = createdAtUtc
+            CreatedAtUtc = createdAtUtc,
+            RowVersion = 1
         };
     }
 
@@ -237,5 +250,9 @@ public class CollaborationAgreement
             termsRevisionId, timestampUtc));
 
         Status = newStatus;
+
+        // Every transition goes through here, so this is the one place the version can be kept
+        // honest — an increment placed in each public method would eventually miss one.
+        RowVersion++;
     }
 }

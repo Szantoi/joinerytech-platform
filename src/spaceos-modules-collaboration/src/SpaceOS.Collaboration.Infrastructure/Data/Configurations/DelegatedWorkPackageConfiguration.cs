@@ -12,6 +12,12 @@ internal sealed class DelegatedWorkPackageConfiguration : IEntityTypeConfigurati
 
         builder.HasKey(w => w.Id);
 
+        // The aggregate assigns the key itself. Left to convention EF treats a non-default Guid
+        // key on an untracked entity as an existing row and emits an UPDATE that matches nothing,
+        // surfacing as a phantom concurrency conflict when a child is added to a tracked parent.
+        builder.Property(w => w.Id)
+            .ValueGeneratedNever();
+
         builder.Property(w => w.AgreementId)
             .IsRequired();
 

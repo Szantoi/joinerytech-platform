@@ -12,6 +12,12 @@ internal sealed class CollaborationInboxMessageConfiguration : IEntityTypeConfig
 
         builder.HasKey(i => i.MessageId);
 
+        // The aggregate assigns the key itself. Left to convention EF treats a non-default Guid
+        // key on an untracked entity as an existing row and emits an UPDATE that matches nothing,
+        // surfacing as a phantom concurrency conflict when a child is added to a tracked parent.
+        builder.Property(i => i.MessageId)
+            .ValueGeneratedNever();
+
         builder.Property(i => i.IdempotencyKey)
             .HasMaxLength(256)
             .IsRequired();

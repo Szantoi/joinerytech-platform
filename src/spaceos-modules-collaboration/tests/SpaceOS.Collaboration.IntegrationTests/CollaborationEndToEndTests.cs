@@ -39,6 +39,7 @@ public sealed class CollaborationEndToEndTests : IAsyncLifetime
     private Guid _packageId;
     private Guid _revokedPackageId;
     private Guid _revokedAgreementId;
+    private Guid _expiredPackageId;
     private string _termsHash = string.Empty;
 
     private CollaborationEndToEndHost _api = null!;
@@ -94,15 +95,30 @@ public sealed class CollaborationEndToEndTests : IAsyncLifetime
             revoked.Id, _host, _guest, "Régi munka", "10 db", _now.AddDays(30), _now.AddDays(-7));
         revokedPackage.Offer(_host, _hostUser, _now.AddDays(-6));
 
-        db.Agreements.AddRange(agreement, revoked);
+        // A third agreement whose grant simply LAPSED — the other half of fail-closed. Until now
+        // only the revoked case had end-to-end evidence; the F3 doc kept the expiry item at `[~]`
+        // for exactly this reason.
+        var expired = CollaborationAgreement.Create(_host, _guest, "Lejárt keretszerződés", _now.AddDays(-10));
+        expired.AddGrant(
+            CollaborationCapability.WorkPackageExecute,
+            Guid.NewGuid(),
+            _now.AddDays(-9),
+            expiresAtUtc: DateTimeOffset.UtcNow.AddMinutes(-1));
+
+        var expiredPackage = DelegatedWorkPackage.Create(
+            expired.Id, _host, _guest, "Tavalyi tétel", "5 db", _now.AddDays(30), _now.AddDays(-7));
+        expiredPackage.Offer(_host, _hostUser, _now.AddDays(-6));
+
+        db.Agreements.AddRange(agreement, revoked, expired);
         db.TermsRevisions.Add(revision);
-        db.WorkPackages.AddRange(package, revokedPackage);
+        db.WorkPackages.AddRange(package, revokedPackage, expiredPackage);
         await db.SaveChangesAsync();
 
         _agreementId = agreement.Id;
         _packageId = package.Id;
         _revokedAgreementId = revoked.Id;
         _revokedPackageId = revokedPackage.Id;
+        _expiredPackageId = expiredPackage.Id;
         _termsHash = revision.CanonicalHash;
     }
 
@@ -292,5 +308,23 @@ public sealed class CollaborationEndToEndTests : IAsyncLifetime
 
         Assert.Equal(HttpStatusCode.NotFound, agreement.StatusCode);
         Assert.Equal(HttpStatusCode.NotFound, package.StatusCode);
+    }
+
+    [Fact]
+    public async Task An_expired_grant_closes_the_endpoint_just_as_a_revoked_one_does()
+    {
+        // The F3 acceptance list kept this at `[~]`: the expiry boundary was measured in memory
+        // (and the root's M-A mutation bit there), but nothing had ever exercised it against a
+        // real database through the API. Revoked and expired are different facts — one is an act,
+        // the other is the clock — and fail-closed has to mean both.
+        _api.As(_guest, _guestUser);
+
+        var response = await _api.PostAsync(Url($"/work-packages/{_expiredPackageId}/accept"), ifMatch: 2);
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+
+        await using var db = new CollaborationDbContext(AdminOptions);
+        var stored = await db.WorkPackages.SingleAsync(package => package.Id == _expiredPackageId);
+        Assert.Equal(WorkPackageStatus.Offered, stored.Status);
     }
 }

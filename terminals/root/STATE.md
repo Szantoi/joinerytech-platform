@@ -1,29 +1,53 @@
 # ROOT Terminal State
 
-> **Frissítve:** 2026-07-29 késő este Europe/Budapest
+> **Frissítve:** 2026-07-30 délelőtt Europe/Budapest
 > **Állapotforrás:** [`EPICS.yaml`](../../EPICS.yaml) + [`AGENT-CHANNEL.md`](../../AGENT-CHANNEL.md)
 > **Belépő:** a csatorna **eleje** („Nyitott szálak") és **vége**; a régebbi napok archívumban.
 
 ## ⛔ EGYETLEN BLOKKOLÓ: token-rotáció (Gábor-kapu)
 
-**A platform-repó PUBLIKUS, és élő hitelesítő van kint.** Mérve, három ágens
-által, többféle módszerrel.
+**A runbook KÉSZ** (2026-07-30): `docs/knowledge/deployment/TOKEN_ROTATION_RUNBOOK_2026-07-30.md`
+(`052c55c` + `b111f5d`). Végrehajtásra kész, Gábor szavára vár.
 
-**A rotáció öt eleme:**
-1. env-értékek cseréje (12 token),
-2. `bin/stdio-bridge.js` — `process.env.X || '<literál>'` **fallback-sor**
-   (a legveszélyesebb alak: a default maga a titok),
-3. `terminals/architect/CLAUDE.md` + `terminals/explorer/CLAUDE.md`,
-4. **négy PUBLIKUS submodule** `CLAUDE.md`-je: cutting · inventory ·
-   procurement · cabinet (külön repók, külön commit),
-5. két privát submodule (joinery, kernel) — kisebb sürgősség.
+**⚠ A 2026-07-29-i leltár HELYESBÍTVE — a mai mérés mást mond.**
+A `2613106` commit „EGY hitelesítő, 12 előfordulás" képe **csak az MCP master
+tokenre igaz**. `secret-scan origin/main` (2517/2517 fájl) → **72 találat**,
+literálonként osztályozva: **négy független titok-osztály, ~44 valódi
+előfordulás**, és **28 fals pozitív**.
 
-⚠ **A submodule-okban lévő hitelesítő NEM a platform hatos listájának egyike** —
-egy **leltározatlan** kulcs. Egy rotáció mind a 12 előfordulást lefedi.
+| Osztály | Db | Megjegyzés |
+|---|---|---|
+| **A** MCP master token | 1 (5 helyen) | erre igaz a tegnapi állítás |
+| **B** agent tokenek | ~10 (2-2 helyen) | **kiesés nélkül rotálható** (agents.yaml 30 s auto-reload, több bejegyzés/név) |
+| **C** beégetett, KITALÁLHATÓ alapértelmezések | 4 | ⚠ **tegnap nem volt a leltárban** |
+| **D** Google Gemini API-kulcs | 1 (3 fájlban) | ⚠ **tegnap nem volt a leltárban**; Google-konzolban kell visszavonni |
 
-**A push VISSZATARTVA (65+ commit):** a csatorna részletesen leírja a rést,
+**A C osztály kihasználhatósága MEGMÉRVE (runbook 3.0):** a négy env-változóból
+**három hiányzik** az élesen → a publikus alapértékek (`spaceos-admin-2026`,
+`spaceos-terminal-secret-2026`, `spaceos-webhook-secret-2026`) **hatályban**.
+**DE a szolgáltatás nem érhető el az internetről** (127.0.0.1-en figyel + ufw
+INPUT DROP) → **P1, nem aktív rés.** A védelem viszont **kizárólag hálózati**:
+bármilyen láb (tailnet, lokális shell, SSRF, egy kényelmi `ufw allow`) besétál,
+és a `TERMINAL_TOKEN_SECRET` **aláíró** kulcs hamisíthatóságát a hálózati gát
+nem gyengíti.
+
+**A kapuról is van lelet:** a 72-ből 28 fals pozitív, ebből **18 egyetlen
+kódmintára** (`const token = authHeader.substring(7)`) — **25% zaj**, ami a
+kapu saját tervezői kikötése szerint kikapcsoláshoz vezet. Külön teendő.
+
+**A push VISSZATARTVA (70 commit):** a csatorna részletesen leírja a rést,
 tehát pusholni annyi lenne, mint útmutatót publikálni hozzá. **A rotáció után
 azonnal mehet.**
+
+## 2026-07-30 — eddig
+
+- **Token-rotációs runbook kész** + a leltár helyesbítve (ld. fent).
+- **B2B-10 F3/1 APPROVED** — saját mérés: 144/144 + **két saját mutáció**
+  (M-A lejárat → 2 bukó, M-B visszavonás → 3 bukó), a fa visszaállítva.
+  Az F2 két nyitva hagyott tétele ezzel lezárva. A lejárat tétele `[~]`:
+  a kikötés **integrációs** tesztet kért, a mai bizonyíték InMemory → **F3/5**.
+- Root-megerősítés: a megállapodás **részvétel**-alapú, a hordozott tartalom
+  **grant**-köteles (az F2 döntésének egyenes alkalmazása).
 
 ## A nap eredménye (2026-07-29)
 

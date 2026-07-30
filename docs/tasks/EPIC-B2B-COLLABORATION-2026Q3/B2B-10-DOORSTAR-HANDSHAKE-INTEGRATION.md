@@ -4,7 +4,7 @@
 - **Prioritás:** P1 (Gábor kérése, 2026-07-28: „a doorstar rendszernek is
   tudnia kell integrálódnia a kézfogásokon keresztül az epic, task, projekt
   rendszerbe")
-- **Státusz:** pending — a B2B-RE-AUDIT eredményére vár
+- **Státusz:** `in_progress` — a REAUDIT **megvan** (2026-07-28), és a végrehajtás fut az F-szeleteken: **F1 · F2 · F3 (öt szelet) mind APPROVED** (archívumban). Nyitva: **F3X** (sorrend-bizonyítás), **F4** (OpenAPI-kontraktus + wire-szótár), **F5**, **F7**. *(A „REAUDIT-ra vár" státusz 2026-07-28 óta elavult — javítva a 2026-07-30-i root átvizsgálásban.)*
 - **Normatív alap:** ADR-068 (Collaboration ownership, terms-revision+hash,
   actor-szűrt nézetek, ProjectRef(FlowEpic.Id) horgony); ADR-066 (tipizált
   referenciák); a scheduling-kontraktus mint minta (publikált OpenAPI +

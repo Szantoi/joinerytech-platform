@@ -1,5 +1,13 @@
 # PLAN-05 — Doorstar megjelenítő-eszközök általánosítása a platformba
 
+> ## ✅ LEZÁRVA ÉS ARCHIVÁLVA — 2026-07-30 (root)
+>
+> **DONE** 2026-07-28 (root-review) — F1 `0b0dbce` · F2 `794…`. A Doorstar megjelenítő-primitívek általánosítva, a TimelineRow/ExecutionTimeline beolvasztva (nincs két versengő idősáv). Az `EPICS.yaml` PLAN-05 bejegyzése `done`.
+>
+> *Archiválás a `docs/tasks/<EPIC>/archive/` konvenció szerint. Az alábbi eredeti
+> szöveg a lezárás pillanatában érvényes állapotot tükrözi — a benne lévő*
+> *„Státusz" sor a munka közbeni állapot, nem a végső verdikt.*
+
 - **Szerep:** frontend
 - **Prioritás:** P1 (az M3 read-only scheduling-nézet UI-alapja)
 - **Státusz:** **DONE** (root-review, 2026-07-28) — F1 0b0dbce · F2 794b2c4 · F3 ed0a786 · F3+ b6f81e4+83b6f4b. EditableDataTable az M4 revízió-szerkesztés döntéséig parkolva (szándékos hiány, nem elmaradás). Nyitott átadott lelet: CatalogPanel handleDuplicate előzetes lint-hibái (külön szelet, kiadásra vár).

@@ -5,7 +5,8 @@
 - **Kiváltó ok:** Gábor kérése (2026-07-29): *„segítsétek a munkájukat"* — a
   Doorstar portál fejlesztésének támogatása.
 - **Felmérés:** `docs/knowledge/architecture/DOORSTAR_PORTAL_TOOLING_2026-07-29.md`
-- **Státusz:** kiadva (2026-07-29)
+- **Státusz:** `blocked` — **a végrehajtás APPROVED** (root-review 2026-07-29: build + 811 teszt), de az **`npm publish` GÁBOR-KAPU**. ⚠ 2026-07-30: a task „kész" definíciója a fogyasztói átvétel, ezért **nem archiválható** a publikálás előtt. A commit kint van (`47ecd29`, portál `main`) — a push nem publikálás.
+- **Licenc-előfeltétel:** a G5 eldőlt (**MIT**), tehát a publikálás jogi akadálya elhárult.
 
 ## A probléma
 

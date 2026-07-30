@@ -2,7 +2,9 @@
 
 - **Szerep:** backend/architect
 - **Prioritás:** P0
-- **Státusz:** done
+- **Státusz:** `changes_requested` — ⚠ **a korábbi `done` HAMIS VOLT.** a REAUDIT verdiktje **HAMIS**: 4×8 soros interfész + 4 Dictionary-stub; nulla HTTP-kliens, nulla kernel-referencia; az „end-to-end adapterteszt" Dictionary round-trip volt.
+>
+> Forrás: [B2B_COLLABORATION_REAUDIT_2026-07-28](../../knowledge/architecture/B2B_COLLABORATION_REAUDIT_2026-07-28.md) · Helyesbítve a 2026-07-30-i root task-átvizsgálásban; az `EPICS.yaml` már `changes_requested`-et mondott, a task-doksi lemaradt.
 - **Elkészült:** 2026-07-27 (Antigravity root)
 - **Függőség:** `B2B-01 = done`, `B2B-03 = done`, `B2B-04 = done`,
   `ERPSEP-03 = done` és ADR-066 `Accepted`

@@ -3,9 +3,9 @@
 - **Epic:** EPIC-UI-PORTAL-2026Q3 backlog follow-up
 - **Szerep:** frontend/platform
 - **Prioritás:** P1
-- **Státusz:** in_progress — a root 2026-07-23-án átvette, befejezte és
+- **Státusz:** `blocked` — **GÁBOR-KAPU.** A root 2026-07-23-án átvette, befejezte és
   fresh review után mergelte (`joinerytech-portal@1f3ca31`); a done-hoz
-  kizárólag a manuális mobil+desktop+dark vizuális QA hiányzik (Gábor)
+  kizárólag a **manuális mobil+desktop+dark vizuális QA** hiányzik (Gábor). ⚠ 2026-07-30: a fejlesztés kész, a task **nem archiválható**, amíg ez a kapu nyitva — nem „folyamatban", hanem **egy emberi ellenőrzésre vár**
 - **Cél:** a mobil EHS gyorsbejelentő teljesen magyar, akadálymentes és a valós
   `/api/ehs/events` szerződéssel idempotens legyen, félrevezető adatvédelmi
   állítás nélkül.

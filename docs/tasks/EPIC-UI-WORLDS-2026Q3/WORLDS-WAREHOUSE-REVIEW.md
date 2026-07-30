@@ -2,7 +2,9 @@
 
 - **Szerep:** designer
 - **Prioritás:** P1
-- **Státusz:** pending
+- **Státusz:** `changes_requested` — a root-review megtörtént; a leletek a
+  [`WORLDS-WAREHOUSE-REVIEW-2026-07-27`](../../knowledge/qa/WORLDS-WAREHOUSE-REVIEW-2026-07-27.md)
+  dokumentumban. *(Igazítva az `EPICS.yaml`-hoz a 2026-07-30-i root átvizsgálásban.)*
 - **Függőség:** `WORLDS-WAREHOUSE-API-GATE`
 - **Mutációs határ:** `docs/knowledge/qa/` review-riport
 

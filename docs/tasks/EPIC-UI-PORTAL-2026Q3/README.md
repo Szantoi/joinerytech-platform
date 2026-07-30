@@ -1,5 +1,21 @@
 # Task-fájlok — EPIC-UI-PORTAL-2026Q3
 
+> ## ⚠ AZ EPIC `done`, DE MÉG NEM ARCHIVÁLHATÓ — 2026-07-30 (root)
+>
+> Az `EPICS.yaml` epic-szinten `done`-t mond, és ez a **release-re** igaz: portál
+> **v1.0.0** + platform **v0.2.0** (2026-07-16). **Két task viszont utólag került
+> ide, és mindkettő Gábor-kapun áll** — ezért az epicet **nem archiváltam**:
+> egy archiválás ezt a két nyitott kaput temette volna el.
+>
+> | Task | Állapot | Mi hiányzik |
+> |---|---|---|
+> | `EHS-WIZARD-HU` | `blocked` | manuális **mobil+desktop+dark vizuális QA** (Gábor) |
+> | `PORTALUI-PUBLISH-DOORSTAR` | `blocked` | **`npm publish`** (Gábor); a végrehajtás APPROVED, licenc MIT megvan |
+>
+> **Amint ez a két kapu zárul, az epic teljesen archiválható** (a 38 task már
+> archívumban van).
+
+
 > **LEZÁRT EPIC — történeti végrehajtási jegyzőkönyv.** A portal v1.0.0 és a
 > platform v0.2.0 release 2026-07-16-án elkészült. Az alábbi modul-státusz tábla
 > a release-kori baseline; azóta az ADR-061/062 hosting-kör mind a hét modult

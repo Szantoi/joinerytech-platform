@@ -1,5 +1,13 @@
 # B2B-10 F3 — Collaboration API-host + grant-alapú authorization
 
+> ## ✅ LEZÁRVA ÉS ARCHIVÁLVA — 2026-07-30 (root)
+>
+> **AZ ÖT SZELET APPROVED** 2026-07-30 (root-review, saját mérés végig): F3/1 · F3/2 · F3/3a · F3/3b · F3/4 · F3/5. Záró mérés: **226/226 unit + 46/46 valódi PostgreSQL**, 0 warning. ⚠ **Egy tétel NEM zárult**, és külön taskot kapott: [`B2B-10-F3X-ORDERING-PROOF`](../B2B-10-F3X-ORDERING-PROOF.md) — a „jogosultság előbb" invariáns a megállapodás-úton mérés nélkül áll (az `R-MC3/agreement` mutáció mind a két suite-ot túlélte). A root háromszor vitte át, ezért lett saját taskja.
+>
+> *Archiválás a `docs/tasks/<EPIC>/archive/` konvenció szerint. Az alábbi eredeti
+> szöveg a lezárás pillanatában érvényes állapotot tükrözi — a benne lévő*
+> *„Státusz" sor a munka közbeni állapot, nem a végső verdikt.*
+
 > **Epic:** EPIC-B2B-COLLABORATION-2026Q3 · **Szülő:** B2B-10 (Doorstar-kézfogás)
 > **Szerep:** backend · **Méret:** M–L (szeletelve) · **Előfeltétel:** B2B-10 F1 + F2 (mindkettő APPROVED)
 > **Státusz:** **AZ ÖT SZELET KÉSZ** (2026-07-30) — F3/1 · F3/2 · F3/3a · F3/3b · F3/4 · F3/5 mind **APPROVED** (root-review 2026-07-30; saját mérés: 175/175 unit + **34/34 valódi PostgreSQL** + 4 saját mutáció)

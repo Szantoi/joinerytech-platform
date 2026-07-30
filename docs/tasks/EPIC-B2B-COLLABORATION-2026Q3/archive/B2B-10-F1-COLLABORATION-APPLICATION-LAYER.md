@@ -1,5 +1,13 @@
 # B2B-10 / F1 — Collaboration application-réteg
 
+> ## ✅ LEZÁRVA ÉS ARCHIVÁLVA — 2026-07-30 (root)
+>
+> **APPROVED** 2026-07-29 (root-review, 117/117 saját mérés). Három szeletben szállítva. ⚠ Utólag, az F2-ben, VALÓDI PostgreSQL-en **három F1-defektus** derült ki (hiányzó AcceptanceEvidence oszlop; az állapot-történetnek se EF-konfigurációja, se táblája; kliens-oldali Guid-kulcs miatt UPDATE INSERT helyett) — mind javítva. **Egyik sem volt látható InMemory-teszttel.** Az `EPICS.yaml` F1 és F2 bejegyzése `done`.
+>
+> *Archiválás a `docs/tasks/<EPIC>/archive/` konvenció szerint. Az alábbi eredeti
+> szöveg a lezárás pillanatában érvényes állapotot tükrözi — a benne lévő*
+> *„Státusz" sor a munka közbeni állapot, nem a végső verdikt.*
+
 - **Szerep:** backend
 - **Méret:** L (szeletelve adandó review-ra — ld. „Szelet-kadencia")
 - **Prioritás:** P1 — a Doorstar-pilot kritikus útjának első kódszelete

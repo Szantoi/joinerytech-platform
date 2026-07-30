@@ -2,7 +2,9 @@
 
 - **Szerep:** backend
 - **Prioritás:** P0
-- **Státusz:** done
+- **Státusz:** `changes_requested` — ⚠ **a korábbi `done` HAMIS VOLT.** a REAUDIT verdiktje **HAMIS (megerősítve)**: 0 endpoint/OpenAPI/host. *(Az API-host az F3/2-ben, az AgreementReadModel valódi projekciója az F3/4-ben elkészült — a lezárás tételes megfeleltetést kér, és ki kell mondani, mi maradt el.)*
+>
+> Forrás: [B2B_COLLABORATION_REAUDIT_2026-07-28](../../knowledge/architecture/B2B_COLLABORATION_REAUDIT_2026-07-28.md) · Helyesbítve a 2026-07-30-i root task-átvizsgálásban; az `EPICS.yaml` már `changes_requested`-et mondott, a task-doksi lemaradt.
 - **Elkészült:** 2026-07-27 (Antigravity root)
 - **Függőség:** `B2B-02 = done`, `B2B-03 = done`, `B2B-04 = done`,
   `B2B-05 = done`, `B2B-06 = done`

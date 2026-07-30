@@ -2,7 +2,9 @@
 
 - **Szerep:** backend
 - **Prioritás:** P0
-- **Státusz:** done
+- **Státusz:** `changes_requested` — ⚠ **a korábbi `done` HAMIS VOLT.** a REAUDIT verdiktje **RÉSZBEN**: a 7 átmenet + actor-guardok valósak, de a RowVersion nem volt concurrency-token, és nem volt ETag/idempotency. *(Ez utóbbi kettő az F3/3-ban elkészült — a task lezárása előtt tételes megfeleltetés kell.)*
+>
+> Forrás: [B2B_COLLABORATION_REAUDIT_2026-07-28](../../knowledge/architecture/B2B_COLLABORATION_REAUDIT_2026-07-28.md) · Helyesbítve a 2026-07-30-i root task-átvizsgálásban; az `EPICS.yaml` már `changes_requested`-et mondott, a task-doksi lemaradt.
 - **Elkészült:** 2026-07-27 (Antigravity root)
 - **Függőség:** `B2B-01 = done`
 - **Kimenet:** work package aggregate, FSM, policy és események

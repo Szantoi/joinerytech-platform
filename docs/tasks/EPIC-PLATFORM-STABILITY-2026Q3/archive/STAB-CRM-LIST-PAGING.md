@@ -1,5 +1,13 @@
 # STAB-CRM-LIST-PAGING — CRM listaolvasás adatbázisoldali lapozással
 
+> ## ✅ LEZÁRVA ÉS ARCHIVÁLVA — 2026-07-30 (root)
+>
+> **APPROVED** 2026-07-29 (root-review, 123/123 saját mérés). A lead/opportunity lista SQL-lapozásra állítva (Codex). Commit: `748f8e7`. ⚠ Egy tétel külön P2-ként él tovább: a lapozás-metaadat wire-re emelése.
+>
+> *Archiválás a `docs/tasks/<EPIC>/archive/` konvenció szerint. Az alábbi eredeti
+> szöveg a lezárás pillanatában érvényes állapotot tükrözi — a benne lévő*
+> *„Státusz" sor a munka közbeni állapot, nem a végső verdikt.*
+
 - **Epic:** `EPIC-PLATFORM-STABILITY-2026Q3`
 - **Szerep:** backend
 - **Prioritás:** P1

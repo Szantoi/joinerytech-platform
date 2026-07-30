@@ -2,7 +2,7 @@
 
 - **Szerep:** frontend/designer
 - **Prioritás:** P0
-- **Státusz:** in_progress
+- **Státusz:** `changes_requested` — a review **enum-alak-ütközésen** bukott, és épp ez a lelet váltotta ki a teljes B2B-REAUDIT-ot (a B2B-07 `done`-ja hamisnak bizonyult). ⚠ A collaboration wire-szókincse **F4-döntés**, tehát ez a task addig nem indulhat újra. *(Igazítva az `EPICS.yaml`-hoz a 2026-07-30-i root átvizsgálásban.)*
 - **Függőség:** `B2B-07 = done`, `MODULE-PACKAGES = done`
 - **Kimenet:** generált klienst használó, actor-specifikus B2B UI
 

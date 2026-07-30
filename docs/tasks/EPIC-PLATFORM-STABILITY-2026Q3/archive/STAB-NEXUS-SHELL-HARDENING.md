@@ -1,5 +1,13 @@
 # STAB-NEXUS-SHELL-HARDENING — a knowledge-service maradék shell-interpolációi
 
+> ## ✅ LEZÁRVA ÉS ARCHIVÁLVA — 2026-07-30 (root)
+>
+> **APPROVED** 2026-07-29 (root-review). A sessionStarter shell-injekciós felülete lezárva, és a szivárgás-kapu ugyanabban a körben élesítve. Commit: `0b1743d`.
+>
+> *Archiválás a `docs/tasks/<EPIC>/archive/` konvenció szerint. Az alábbi eredeti
+> szöveg a lezárás pillanatában érvényes állapotot tükrözi — a benne lévő*
+> *„Státusz" sor a munka közbeni állapot, nem a végső verdikt.*
+
 - **Szerep:** Codex
 - **Méret:** M
 - **Előzmény:** a Codex 2026-07-29-i P0/P1 security-auditja. A P0-t (hitelesítetlen

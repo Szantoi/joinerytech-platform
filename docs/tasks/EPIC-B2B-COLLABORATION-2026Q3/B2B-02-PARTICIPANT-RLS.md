@@ -2,7 +2,9 @@
 
 - **Szerep:** backend/security
 - **Prioritás:** P0
-- **Státusz:** done
+- **Státusz:** `changes_requested` — ⚠ **a korábbi `done` HAMIS VOLT.** a REAUDIT verdiktje **HAMIS**: a policy csak Host/GuestTenantId-t nézte, a GRANT-tábla kimaradt; a „proof" EF InMemory + kézi LINQ volt (RLS-t mérni képtelen). ⚠ **ROOT-DÖNTÉS 2026-07-29: NYITVA MARAD** — három kritériuma nem teljesül. A grant-kényszerítés az F3-ban valósult meg (nem az RLS-policyben: az RLS a **részvételt** szűrje, a grant az **engedélyt**).
+>
+> Forrás: [B2B_COLLABORATION_REAUDIT_2026-07-28](../../knowledge/architecture/B2B_COLLABORATION_REAUDIT_2026-07-28.md) · Helyesbítve a 2026-07-30-i root task-átvizsgálásban; az `EPICS.yaml` már `changes_requested`-et mondott, a task-doksi lemaradt.
 - **Elkészült:** 2026-07-27 (Antigravity root)
 - **Függőség:** `B2B-01 = done`, `STAB-RLS-PROOF = done`
 - **Kimenet:** participant-szintű persistence/authz vertical slice és threat proof

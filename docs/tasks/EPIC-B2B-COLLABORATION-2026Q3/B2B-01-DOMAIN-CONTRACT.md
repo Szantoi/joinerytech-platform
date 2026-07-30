@@ -2,7 +2,9 @@
 
 - **Szerep:** architect/backend
 - **Prioritás:** P0
-- **Státusz:** done
+- **Státusz:** `changes_requested` — ⚠ **a korábbi `done` HAMIS VOLT.** a REAUDIT verdiktje **RÉSZBEN**: a doksi §3.2 a host/guest szerepeket **fordítva** írja, mint a kód és az ADR-068 §13.
+>
+> Forrás: [B2B_COLLABORATION_REAUDIT_2026-07-28](../../knowledge/architecture/B2B_COLLABORATION_REAUDIT_2026-07-28.md) · Helyesbítve a 2026-07-30-i root task-átvizsgálásban; az `EPICS.yaml` már `changes_requested`-et mondott, a task-doksi lemaradt.
 - **Elkészült:** 2026-07-27 (Antigravity root)
 - **Függőség:** `PROJECT-CORE-ADR = done` és az ADR státusza `Accepted`
 - **Jelleg:** döntésből implementálható domain contract; ebben a taskban nincs

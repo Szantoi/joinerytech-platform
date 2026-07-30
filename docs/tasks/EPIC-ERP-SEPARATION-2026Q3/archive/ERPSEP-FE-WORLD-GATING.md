@@ -1,5 +1,11 @@
 # ERPSEP-FE-WORLD-GATING — tenant-kötött világ-láthatóság a portálon
 
+> ## ✅ LEZÁRVA ÉS ARCHIVÁLVA — 2026-07-30 (root)
+>
+> **APPROVED + commitolva** 2026-07-29 (root-review, portál `bf67ec1`). Mind a három pont zárva: a metszet visszaállt (entitlement **és** szerep), Gábor döntésével a `Joiner` → `production` + `settings`, és a fail-closed szerep-őr a helyén. ⚠ A doksi státusza `review_requested`-en maradt — a csatornán is voltak korábbi, a jóváhagyás ELŐTTI „review_requested" bejegyzések, ami könnyen félrevezet. Az `EPICS.yaml` volt a pontos.
+>
+> *A lenti eredeti szöveg „Státusz" sora a munka közbeni állapot, nem a végső verdikt.*
+
 - **Epic:** EPIC-ERP-SEPARATION-2026Q3 · **Mérföldkő:** E2-package-boundaries
 - **Szerep:** frontend-auth · **Státusz:** review_requested (végrehajtás kész, root-review vár)
 - **Kiírva:** 2026-07-27 (root), Gábor kérése: „Tudjuk tenanthoz kötni, hogy

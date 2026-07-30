@@ -1,5 +1,13 @@
 # PLAN-05 / F5 — Ütemezés: dátumválasztó
 
+> ## ✅ LEZÁRVA ÉS ARCHIVÁLVA — 2026-07-30 (root)
+>
+> **APPROVED** 2026-07-29 (root-review) — a csatorna „F6 + F4 + F5: mind APPROVED" bejegyzése. ⚠ A task-doksi státusza addig „kiadva"-n állt: a doksi lemaradt a verdikt mögött, ezért került most, a 2026-07-30-i task-átvizsgálásban archívumba.
+>
+> *Archiválás a `docs/tasks/<EPIC>/archive/` konvenció szerint. Az alábbi eredeti
+> szöveg a lezárás pillanatában érvényes állapotot tükrözi — a benne lévő*
+> *„Státusz" sor a munka közbeni állapot, nem a végső verdikt.*
+
 - **Szerep:** frontend
 - **Méret:** S–M
 - **Előzmény:** a scheduling route-bekötés APPROVED (2026-07-29). A képernyő

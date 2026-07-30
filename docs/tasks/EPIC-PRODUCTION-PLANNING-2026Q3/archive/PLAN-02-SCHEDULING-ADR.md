@@ -1,5 +1,11 @@
 # PLAN-02 — Ütemezés-domain + termékcsomag ADR
 
+> ## ✅ LEZÁRVA ÉS ARCHIVÁLVA — 2026-07-30 (root)
+>
+> **DONE** — **ADR-069 ELFOGADVA (Gábor, 2026-07-28)**, G1–G7 az ajánlás szerint + G8 névdöntés. ⚠ A task-doksi státusza „pending"-en maradt, miközben az `EPICS.yaml` már `done`-t mondott — a 2026-07-30-i root task-átvizsgálás javította és archiválta.
+>
+> *A lenti eredeti szöveg „Státusz" sora a munka közbeni állapot, nem a végső verdikt.*
+
 - **Szerep:** architect
 - **Prioritás:** P0 (a Doorstar kimondott következő kapuja)
 - **Státusz:** pending

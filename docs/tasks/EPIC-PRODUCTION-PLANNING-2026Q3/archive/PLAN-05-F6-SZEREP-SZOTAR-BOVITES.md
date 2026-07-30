@@ -1,5 +1,13 @@
 # PLAN-05 / F6 — Szerep-szótár bővítése (az ütemezés jogosultsága)
 
+> ## ✅ LEZÁRVA ÉS ARCHIVÁLVA — 2026-07-30 (root)
+>
+> **APPROVED** 2026-07-29 (root-review), és az F6/2 (üzemi szerepek rácsa) is APPROVED (37/37). Gábor szerep-szótár döntése végrehajtva. ⚠ A doksi státusza „kiadva"-n maradt — a 2026-07-30-i átvizsgálás javította és archiválta.
+>
+> *Archiválás a `docs/tasks/<EPIC>/archive/` konvenció szerint. Az alábbi eredeti
+> szöveg a lezárás pillanatában érvényes állapotot tükrözi — a benne lévő*
+> *„Státusz" sor a munka közbeni állapot, nem a végső verdikt.*
+
 - **Szerep:** frontend (portál) + a Keycloak-oldal a meglévő onboarding-scriptben
 - **Méret:** M
 - **Prioritás:** **az F4 blokkolójának feloldása** — vedd előre

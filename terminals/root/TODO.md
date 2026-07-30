@@ -50,6 +50,65 @@
 - [ ] **Idempotencia-rekordok takarítása** — üzemeltetési feladat, a pilot előtt
       ütemezés kell (a szelet szándékosan nem telepíti).
 
+## Task-átvizsgálás — 2026-07-30 (root)
+
+**9 task archiválva** (mind root-review-val igazolva, `docs/tasks/<EPIC>/archive/`):
+`STAB-NEXUS-SHELL-HARDENING` · `STAB-CRM-LIST-PAGING` ·
+`PLAN-02-SCHEDULING-ADR` · `PLAN-05-SCHEDULING-UI-GENERALIZATION` ·
+`PLAN-05-F5-SCHEDULING-DATE-PICKER` · `PLAN-05-F6-SZEREP-SZOTAR-BOVITES` ·
+`ERPSEP-FE-WORLD-GATING` · `B2B-10-F1-…-APPLICATION-LAYER` ·
+`B2B-10-F3-…-API-AUTHORIZATION`.
+
+### ⚠ 6 task `done`-t mutatott, ami BIZONYÍTOTTAN HAMIS — nem archiválva, javítva
+
+A `B2B-01/02/04/05/06/07` task-doksija `done`-on állt, miközben az **`EPICS.yaml`
+`changes_requested`-et** mondott, és a
+[REAUDIT](../../docs/knowledge/architecture/B2B_COLLABORATION_REAUDIT_2026-07-28.md)
+verdiktje: **B2B-02 · B2B-06 · B2B-07 = HAMIS**, **B2B-01 · B2B-04 · B2B-05 = RÉSZBEN**.
+**Ezek archiválása egy bizonyított adósságot temetett volna el.** Mind a hat
+státusza javítva, a verdikttel és a forrás megnevezésével.
+
+> **A tanulság a konvencióhoz:** a task-doksi „Státusz" sora **nem** hiteles
+> forrás — az `EPICS.yaml` az. Ahol a kettő ütközik, **mindig mérni kell**, és a
+> mai átvizsgálásban **mindkét irányban** volt tévedés: hat doksi hamis `done`-t
+> mutatott, négy másik pedig lemaradt egy megtörtént APPROVED mögött.
+
+### Nem archiválható: két task Gábor-kapun áll (a fejlesztés kész)
+
+- **`EHS-WIZARD-HU`** → `blocked`: csak a **manuális mobil+desktop+dark vizuális
+  QA** hiányzik (Gábor). Nem „folyamatban", hanem emberi ellenőrzésre vár.
+- **`PORTALUI-PUBLISH-DOORSTAR`** → `blocked`: a végrehajtás APPROVED, de a
+  „kész" definíciója a **fogyasztói átvétel**, és az `npm publish` Gábor-kapu.
+  *(Felvéve az `EPICS.yaml`-ba — addig hiányzott onnan.)*
+
+### ⚠ 5 fel NEM oldott státusz-eltérés (nem találgatom — gazdát kér)
+
+| Task | `EPICS.yaml` | task-doksi |
+|---|---|---|
+| `ERPSEP-05-BACKEND-PACKAGING-CONTRACT` | pending | in_progress |
+| `ERPSEP-06-INSTANCE-CONTEXT` | blocked | in_progress |
+| `ERPSEP-07-EXTENSION-PACK-CONTRACT` | pending | blocked |
+| `MODULE-PACKAGES` | in_progress | blocked |
+| `STAB-PLATFORM-ASPNET22-RCE-REMOVAL` | pending | „ready" |
+
+- [ ] Ezek az ERP-szeparációs / Codex-sáv tételei — a gazdájuk mondja meg, melyik
+      a helyes; addig **egyik sem** tekinthető késznek.
+
+### ⚠ 3 task-doksi nincs a kanonikus forrásban (és nincs is commitolva)
+
+`STAB-HTTP-ERROR-REDACTION` · `STAB-KONTROLLING-PORTFOLIO-INDEX` ·
+`STAB-MODULE-AUDIT-IDENTITY` — mindhárom **untracked**, státuszuk `review`.
+Codex friss kiírásai; nem az én sávom, de **amíg nincsenek commitolva és az
+`EPICS.yaml`-ban, addig nem létező munkaként viselkednek.**
+
+- [ ] Jelzés a Codexnek: commit + `EPICS.yaml`-bejegyzés, különben elveszik.
+
+### Új tétel az `EPICS.yaml`-ban
+
+A **`B2B-10-F3` és `B2B-10-F3X` egyáltalán nem szerepelt** a kanonikus
+státusz-forrásban, pedig az F3 öt szelete a mai nap legnagyobb backend-munkája
+volt. Felvéve (`F3` = `done`, `F3X` = `open`).
+
 ## ⚠ MÉRT LELET: a `git submodule status` NEM MŰKÖDIK ebben a repóban
 
 Mérve 2026-07-30: **14 gitlink** az indexben, **11 deklarálva** a

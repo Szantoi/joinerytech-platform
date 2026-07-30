@@ -140,6 +140,13 @@ public class AllowedActionsParityTests
     /// pretending to cover it, the suite proves it is unreachable
     /// (<see cref="No_transition_can_reach_an_excluded_state"/>). Wire a dispute in and that test
     /// goes red, which is the reminder to extend the coverage here.
+    /// </para>
+    /// <para>
+    /// <b>Root decision (2026-07-30): the enum member STAYS, and this guard may not be deleted
+    /// without a root decision.</b> The F0 decision took disputes out of the MVP, not out of the
+    /// product; removing the member would mean re-picking its numeric value later and risking a
+    /// clash with historical data, and — worse — after a deletion anyone could re-invent disputes
+    /// ad hoc. The guard turns dead code into a trap instead.
     /// </remarks>
     private static readonly WorkPackageStatus[] UnreachableStates = [WorkPackageStatus.Disputed];
 

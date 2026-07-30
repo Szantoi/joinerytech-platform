@@ -99,9 +99,20 @@ public class CollaborationAgreement
     /// True when the guest may exercise <paramref name="capability"/> at <paramref name="atUtc"/>.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// The rule of what makes a grant usable stays in <see cref="CollaborationParticipantGrant.IsActive"/>;
     /// this is only the aggregate's way of answering for the whole set, so that no caller has to
     /// iterate grants itself and invent a second definition of "active" on the way.
+    /// </para>
+    /// <para>
+    /// ⚠ <b>This does not check WHO the grant was issued to, and it is safe today only because the
+    /// agreement is bilateral</b> (root review, F3/1): <see cref="AddGrant"/> takes the host/guest
+    /// pair from this aggregate, and <see cref="CollaborationParticipantGrant.Issue"/> forbids a
+    /// self-grant, so the only possible recipient IS the guest asking. A future multi-party
+    /// agreement (3+ sides) would open that silently — a grant issued to a third participant would
+    /// satisfy this check for a different one. Add the recipient comparison BEFORE adding a third
+    /// party, not after.
+    /// </para>
     /// </remarks>
     public bool HasActiveGrantFor(string capability, DateTimeOffset atUtc)
         => _grants.Any(grant => grant.Covers(capability) && grant.IsActive(atUtc));

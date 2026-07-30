@@ -583,4 +583,27 @@ public class CollaborationEndpointTests
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
+
+    [Fact]
+    public async Task The_agreement_precondition_never_becomes_a_version_oracle()
+    {
+        // B2B-10 F3X. The work-package route has had this since F3/3; the AGREEMENT route did not,
+        // and the root review measured the gap three times: moving the precondition ahead of the
+        // guard changed no test.
+        //
+        // This test can see it because the repository here is in-memory: it hands the aggregate to
+        // ANY caller, so the guard's participation check is the only thing standing between a
+        // stranger and a 412 that would tell it "this id exists and is at version N". Against a
+        // real database the row would already be invisible (RLS + the EF filter) — which is why the
+        // end-to-end sibling of this test pins the ORDERING rather than closing an open gap.
+        var agreement = Agreement();
+        await using var host = await CollaborationEndpointTestHost.StartAsync(agreement);
+        host.As(Stranger, HostUser);
+
+        var response = await PostAsync(
+            host, $"/api/collaboration/v1/agreements/{agreement.Id}/propose", agreement.RowVersion + 99);
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        Assert.Equal(AgreementStatus.Draft, agreement.Status);
+    }
 }

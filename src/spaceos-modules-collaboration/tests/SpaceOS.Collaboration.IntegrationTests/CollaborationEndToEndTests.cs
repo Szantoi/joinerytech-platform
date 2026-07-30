@@ -272,4 +272,25 @@ public sealed class CollaborationEndToEndTests : IAsyncLifetime
             .Select(revision => revision.Id)
             .SingleAsync();
     }
+
+    [Fact]
+    public async Task A_non_party_write_with_a_wrong_tag_is_answered_404_not_412()
+    {
+        // B2B-10 F3X, point 1. Until now no end-to-end test sent a WRITE as a non-party: the
+        // cross-tenant test only issued GETs, and the stale-tag test used a real party. The two
+        // never met, so nothing here would have noticed if the precondition were checked first.
+        //
+        // ⚠ What this proves and what it does not: against this database the row is already
+        // invisible to a stranger (RLS on the app role, plus the EF tenant filter), so the 404
+        // arrives even if the ordering were wrong. The test therefore pins the CONTRACT at the
+        // wire — a non-party learns nothing about versions — while the in-memory sibling
+        // (CollaborationEndpointTests) is the one that actually fails when the order is reversed.
+        _api.As(_stranger, _hostUser);
+
+        var agreement = await _api.PostAsync(Url($"/agreements/{_agreementId}/propose"), ifMatch: 99);
+        var package = await _api.PostAsync(Url($"/work-packages/{_packageId}/accept"), ifMatch: 99);
+
+        Assert.Equal(HttpStatusCode.NotFound, agreement.StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, package.StatusCode);
+    }
 }

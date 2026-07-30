@@ -7,6 +7,16 @@
     <IsTestProject>true</IsTestProject>
   </PropertyGroup>
   <ItemGroup>
+    <!--
+      Every fixture in this project starts its own PostgreSQL container. Run in parallel, eight of
+      them at once exhausted the Docker host and five classes failed in ~1 ms with the fixture
+      never coming up — a red suite that says nothing about the code. Serialised, the same suite is
+      deterministic; the price is wall-clock, and a measurement that cannot be trusted is worth
+      less than a slow one.
+    -->
+    <None Update="xunit.runner.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+  <ItemGroup>
     <!-- F3/5 boots the real HTTP pipeline over a real database. -->
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>

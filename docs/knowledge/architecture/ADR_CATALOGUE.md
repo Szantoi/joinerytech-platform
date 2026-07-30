@@ -1,6 +1,14 @@
 # SpaceOS — Architekturális döntések katalógusa (ADR)
 
 > Kritikus arch döntések, indoklásuk és alkalmazásuk a SpaceOS fejlesztéshez.
+>
+> ⚠ **EZ A KATALÓGUS ADR-058-NÁL LEZÁRT.** Az **ADR-059 és fölötte** lévő
+> döntések indexe: **[`docs/knowledge/adr/README.md`](../adr/README.md)**.
+>
+> *Miért van kiírva: 2026-07-30-án mérve kiderült, hogy hét elfogadott ADR
+> (065–071) **egyetlen indexben sem szerepelt** — ez a katalógus 058-nál állt
+> meg, az `adr/README.md` pedig 064-ig ért. Aki csak ezt a fájlt nézi, ma is
+> azt hiheti, hogy az ADR-sor 058-nál véget ér.*
 
 ---
 

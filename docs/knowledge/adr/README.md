@@ -3,6 +3,7 @@
 > Az „első kör" (EPIC-UI-PORTAL-2026Q3) során felgyűlt architektúra-döntések.
 > **6 ADR (059–064), mind ELFOGADVA az ajánlás szerint — Gábor, 2026-07-16.**
 > Számozás a `docs/knowledge/architecture/ADR_CATALOGUE.md` folytatása (utolsó: ADR-058).
+> **Ez a fájl a 059-től kezdődő ADR-ek KANONIKUS indexe** — a katalógus nem folytatódik.
 >
 > Végrehajtási sorrend (a függőségek szerint): **① 061+062** (hosting-csomag: auth + tenant
 > JWT-ből + RLS — deploy-blokkolók) és vele párhuzamosan **② 060 + 063** (HR-taxonómia,
@@ -41,6 +42,36 @@ halasztás valójában az **ADR-059**: minden nap, amíg áll, a portal fetcher-
 | **[062](ADR-062-rls-tenant-izolacio.md)** — RLS tenant-izoláció | Egységes tenant-izolációs minta — hol, milyen kulccsal, hány réteggel? | **Közös baseline a 061 csomagjában**, kernel-minta, `app.current_tenant_id`, **`FORCE RLS`**, `HasQueryFilter` 2. rétegként — és **az interceptor soha ne nyelje el a hibát** | 🔴 **DEPLOY-BLOKKOLÓ — a csomag legmagasabb kockázata.** EHS/QA: **néma szivárgás**; CRM: **semmi izoláció**; HR: a séma sosem jött létre. *(Ma nincs kitettség.)* | Testvér: **061** — **egyik sem izolál a másik nélkül** |
 | **[063](ADR-063-qa-rework-conditional.md)** — QA rework/Conditional | Kell-e feltételes megfelelés + javítási hurok, és hol modellezzük? | **A hurok a Ticket-domainben** (már kész, reopennel); az Inspection immutable marad; újraellenőrzés = új Inspection | 🟡 **Nem élesítés-blokkoló** — de a QA fetcher-átállását blokkolja (3↔4 státusz) | **059** + **designer** |
 | **[064](ADR-064-kontraktus-reszletek.md)** — Gyűjtő (5 tétel) | Assign-identitás/`createdBy`, Maint `Reported→InProgress`, DMS archive/reopen, Kontrolling `AppliesTo`, multi-currency | Guid + **írás-idejű** név-denormalizáció · él marad törölve · **DMS lezárva** · kontraktus nyer · HUF-only kimondva | 🟢 **Egyik sem élesítés-blokkoló** — az 1. tétel a 061-re vár; a UI addig Guidot mutatna | **061** (assign) + **059** (DMS-nyelv) |
+
+
+---
+
+## Második kör — ADR-065…071 (mind ELFOGADVA)
+
+> **Miért került ide külön táblába:** a fenti tábla az „első kör" **eldöntendő**
+> kérdéseit írja le (opció · ajánlás · kockázat). Ezek már **eldöntött**
+> döntések — más az alakjuk, tehát összekeverni őket félrevezető lenne.
+>
+> ⚠ **Ez a szakasz egy MÉRT hiány pótlása** (2026-07-30, root): az
+> `ADR_CATALOGUE.md` **ADR-058-nál áll meg**, ez a README pedig **064-ig** ért,
+> tehát **hét elfogadott ADR egyetlen indexben sem szerepelt**. A leletet a
+> doc-capture terminál mérte ki; a root újramérte (a fájlok 059–071-ig léteznek).
+> **Egy döntés, amit nem lehet megtalálni, hat hónap múlva újra elő fog jönni** —
+> és akkor valaki más fogja eldönteni, máshogy.
+
+| ADR | Tárgy | Elfogadva | Mit köt meg |
+|---|---|---|---|
+| **[065](ADR-065-kernel-scope-absztrakcio.md)** | Kernel core-elemek **domain-mentessége** — `FlowEpicScope` absztrakció | Gábor, 2026-07-18 | a Kernel nem tudhat a faipari doménről; a szent mag érintetlensége |
+| **[066](ADR-066-erp-module-contract-boundaries.md)** | ERP-modulok közti **kontraktus- és semleges-referencia határok** | 2026-07-25 | modulok közt mi hivatkozhat mire; a semlegességi elv szerkezete |
+| **[067](ADR-067-module-catalog-and-lifecycle.md)** | Kanonikus **`ModuleId`**, aláírt **modul-katalógus**, modul-életciklus | Gábor, 2026-07-27 | a `RequireEnabledModule` és a világ-gating alapja |
+| **[068](ADR-068-project-core-and-b2b-collaboration-ownership.md)** | **Projekt-orchestration + B2B kézfogás** — ownership, két bounded context | Gábor, 2026-07-27 | a B2B-10 F-szeletek normatív forrása (host/guest szerepek, §13) |
+| **[069](ADR-069-planning-domain-and-product-package.md)** | **Planning** — ütemezés-domain, termékcsomag, API-kontraktus | Gábor, 2026-07-28 | a `spaceos.scheduling` M1–M5 mérföldkövek kerete |
+| **[070](ADR-070-scheduling-core-external-dependencies.md)** | A `spaceos.scheduling` **külső függőségei** (solver, naptár) | 2026-07-28 | D2: a könyvtár típusai **nem** jelennek meg a kontraktusban · D3: a nem-determinisztikus motor **kimondott** kezelése · D4: committolt lockfile |
+| **[071](ADR-071-model-reading-versus-deterministic-decision.md)** | **A modell határa** a dokumentum-befogadásban — olvasás vs. döntés | Gábor, 2026-07-30 | LLM az **olvasáshoz**, determinisztikus szabály a **könyveléshez**; a doc-capture G2-tétele |
+
+**Az ADR-070 három precedense a szigeten túl is köt** — a doc-capture ADR-071-e
+kimondottan átveszi őket (D2 teljesítve a DC-02-ben; D3 az OCR-nél élő kérdés;
+D4 nyitott, mert a Python motorban **nincs lockfile**).
 
 ---
 

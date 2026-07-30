@@ -25,11 +25,18 @@ public sealed class WorkPackageRepository(CollaborationDbContext database) : IWo
 }
 
 /// <summary>EF-backed <see cref="IAgreementRepository"/>.</summary>
+/// <remarks>
+/// Grants come along because authorization reads them (B2B-10 F3): an agreement loaded without
+/// them would report "no grant" for a guest that holds one, and fail-closed silently.
+/// The state history comes along for the reason spelled out on the work-package repository —
+/// and because the interface has promised it since F1 while the query did not deliver it.
+/// </remarks>
 public sealed class AgreementRepository(CollaborationDbContext database) : IAgreementRepository
 {
     public Task<CollaborationAgreement?> GetByIdAsync(Guid agreementId, CancellationToken cancellationToken = default)
         => database.Agreements
             .Include(agreement => agreement.Grants)
+            .Include(agreement => agreement.History)
             .FirstOrDefaultAsync(agreement => agreement.Id == agreementId, cancellationToken);
 
     public async Task AddAsync(CollaborationAgreement agreement, CancellationToken cancellationToken = default)

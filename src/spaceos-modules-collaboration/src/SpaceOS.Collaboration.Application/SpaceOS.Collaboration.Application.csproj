@@ -10,6 +10,9 @@
     <PackageReference Include="FluentValidation" Version="11.9.0" />
     <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="11.9.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />
+    <!-- Authorization decisions are logged where they are made (B2B-10 F3); a bare 403 cannot be
+         investigated afterwards. Abstractions only — the layer stays free of a logging provider. -->
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.2" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../SpaceOS.Collaboration.Domain/SpaceOS.Collaboration.Domain.csproj" />

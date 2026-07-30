@@ -84,6 +84,28 @@ public class CollaborationAgreement
         return grant;
     }
 
+    /// <summary>
+    /// Every grant issued for <paramref name="capability"/>, whatever its state (B2B-10 F3).
+    /// </summary>
+    /// <remarks>
+    /// Returns the revoked and expired ones too, because the caller needs them to say WHY access
+    /// was refused: "never granted" and "granted and then withdrawn" are different facts, and only
+    /// the log that distinguishes them can answer the question the host will ask.
+    /// </remarks>
+    public IReadOnlyList<CollaborationParticipantGrant> GrantsFor(string capability)
+        => _grants.Where(grant => grant.Covers(capability)).ToList();
+
+    /// <summary>
+    /// True when the guest may exercise <paramref name="capability"/> at <paramref name="atUtc"/>.
+    /// </summary>
+    /// <remarks>
+    /// The rule of what makes a grant usable stays in <see cref="CollaborationParticipantGrant.IsActive"/>;
+    /// this is only the aggregate's way of answering for the whole set, so that no caller has to
+    /// iterate grants itself and invent a second definition of "active" on the way.
+    /// </remarks>
+    public bool HasActiveGrantFor(string capability, DateTimeOffset atUtc)
+        => _grants.Any(grant => grant.Covers(capability) && grant.IsActive(atUtc));
+
     // ---------------------------------------------------------------------------------------
     // Lifecycle (B2B-10 F1). Until this existed the status was set to Draft by the factory and
     // never moved again: an "agreement" that could not be agreed to.

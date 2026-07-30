@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using SpaceOS.Collaboration.Application;
+using SpaceOS.Collaboration.Application.Authorization;
 using SpaceOS.Collaboration.Application.Projections;
 using SpaceOS.Collaboration.Application.Repositories;
 using SpaceOS.Collaboration.Application.WorkPackages;
@@ -9,23 +10,20 @@ using Xunit;
 namespace SpaceOS.Collaboration.Tests;
 
 /// <summary>
-/// The application layer over the work-package FSM (B2B-10 F1/2): plumbing only, with the
-/// business rules left where they belong.
+/// The application layer over the work-package FSM (B2B-10 F1/2), now behind the F3 access guard.
 /// </summary>
+/// <remarks>
+/// The handlers are built with the REAL guard over a real agreement carrying a real grant. Handing
+/// them a permissive double would leave these tests green no matter what the guard did.
+/// </remarks>
 public class WorkPackageCommandHandlerTests
 {
-    private static readonly Guid Agreement = Guid.Parse("11111111-1111-1111-1111-111111111111");
     private static readonly Guid Host = Guid.Parse("22222222-2222-2222-2222-222222222222");
     private static readonly Guid Guest = Guid.Parse("33333333-3333-3333-3333-333333333333");
     private static readonly Guid HostUser = Guid.Parse("44444444-4444-4444-4444-444444444444");
+    private static readonly Guid GuestUser = Guid.Parse("66666666-6666-6666-6666-666666666666");
     private static readonly Guid Stranger = Guid.Parse("55555555-5555-5555-5555-555555555555");
     private static readonly DateTimeOffset Now = new(2026, 7, 29, 10, 0, 0, TimeSpan.Zero);
-
-    /// <summary>A clock the test controls, so the audit trail can be asserted, not assumed.</summary>
-    private sealed class FixedClock(DateTimeOffset now) : TimeProvider
-    {
-        public override DateTimeOffset GetUtcNow() => now;
-    }
 
     private sealed class InMemoryWorkPackageRepository(DelegatedWorkPackage? seed) : IWorkPackageRepository
     {
@@ -49,16 +47,27 @@ public class WorkPackageCommandHandlerTests
         }
     }
 
-    private static DelegatedWorkPackage DraftPackage() => DelegatedWorkPackage.Create(
-        Agreement, Host, Guest, "Ajtólap gyártás", "50 db tölgy ajtólap", Now.AddDays(30), Now);
+    /// <summary>An agreement that really carries the execute grant the guard will look for.</summary>
+    private static CollaborationAgreement GrantedAgreement()
+    {
+        var agreement = CollaborationAgreement.Create(Host, Guest, "Doorstar pilot", Now);
+        agreement.AddGrant(CollaborationCapability.WorkPackageExecute, Guid.NewGuid(), Now);
+        return agreement;
+    }
+
+    private static DelegatedWorkPackage DraftPackage(CollaborationAgreement agreement) =>
+        DelegatedWorkPackage.Create(
+            agreement.Id, Host, Guest, "Ajtólap gyártás", "50 db tölgy ajtólap", Now.AddDays(30), Now);
 
     [Fact]
     public async Task The_handler_moves_the_package_and_returns_the_fresh_read_model()
     {
-        var package = DraftPackage();
+        var agreement = GrantedAgreement();
+        var package = DraftPackage(agreement);
         var repository = new InMemoryWorkPackageRepository(package);
         var handler = new OfferWorkPackageHandler(
-            repository, new CollaborationProjectionService(), new FixedClock(Now));
+            AuthKit.Guard(agreement, Host, HostUser, Now),
+            repository, new CollaborationProjectionService(), new AuthKit.FixedClock(Now));
 
         var view = await handler.Handle(
             new OfferWorkPackageCommand(package.Id, Host, HostUser), default);
@@ -71,24 +80,51 @@ public class WorkPackageCommandHandlerTests
     public async Task The_handler_does_not_swallow_the_domain_guard()
     {
         // The point of "no second truth": the actor rule lives in the aggregate, and the handler
-        // must let it through rather than re-checking (or worse, re-interpreting) it.
-        var package = DraftPackage();
-        var handler = new OfferWorkPackageHandler(
-            new InMemoryWorkPackageRepository(package), new CollaborationProjectionService(), new FixedClock(Now));
+        // must let it through rather than re-checking (or worse, re-interpreting) it. The guest is
+        // a party and holds the grant, so authorization passes and the DOMAIN is what refuses an
+        // Accept from the Draft state.
+        var agreement = GrantedAgreement();
+        var package = DraftPackage(agreement);
+        var handler = new AcceptWorkPackageHandler(
+            AuthKit.Guard(agreement, Guest, GuestUser, Now),
+            new InMemoryWorkPackageRepository(package), new CollaborationProjectionService(),
+            new AuthKit.FixedClock(Now));
 
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            handler.Handle(new OfferWorkPackageCommand(package.Id, Stranger, HostUser), default));
+            handler.Handle(new AcceptWorkPackageCommand(package.Id, Guest, GuestUser), default));
 
         Assert.Equal(WorkPackageStatus.Draft, package.Status);
     }
 
     [Fact]
+    public async Task A_tenant_outside_the_agreement_is_refused_before_the_domain_sees_it()
+    {
+        // Since F3 a stranger no longer reaches the aggregate at all: it is not a party, so it
+        // gets the same answer as for an agreement that does not exist.
+        var agreement = GrantedAgreement();
+        var package = DraftPackage(agreement);
+        var repository = new InMemoryWorkPackageRepository(package);
+        var handler = new OfferWorkPackageHandler(
+            AuthKit.Guard(agreement, Stranger, HostUser, Now),
+            repository, new CollaborationProjectionService(), new AuthKit.FixedClock(Now));
+
+        await Assert.ThrowsAsync<CollaborationResourceNotFoundException>(() =>
+            handler.Handle(new OfferWorkPackageCommand(package.Id, Stranger, HostUser), default));
+
+        Assert.Equal(WorkPackageStatus.Draft, package.Status);
+        Assert.Equal(0, repository.SaveCount);
+    }
+
+    [Fact]
     public async Task An_unknown_work_package_is_not_found()
     {
+        var agreement = GrantedAgreement();
         var handler = new OfferWorkPackageHandler(
-            new InMemoryWorkPackageRepository(null), new CollaborationProjectionService(), new FixedClock(Now));
+            AuthKit.Guard(agreement, Host, HostUser, Now),
+            new InMemoryWorkPackageRepository(null), new CollaborationProjectionService(),
+            new AuthKit.FixedClock(Now));
 
-        await Assert.ThrowsAsync<KeyNotFoundException>(() =>
+        await Assert.ThrowsAsync<CollaborationResourceNotFoundException>(() =>
             handler.Handle(new OfferWorkPackageCommand(Guid.NewGuid(), Host, HostUser), default));
     }
 
@@ -97,13 +133,15 @@ public class WorkPackageCommandHandlerTests
     {
         // A refused transition must not reach SaveChanges: a partially applied aggregate would
         // be persisted otherwise.
-        var package = DraftPackage();
+        var agreement = GrantedAgreement();
+        var package = DraftPackage(agreement);
         var repository = new InMemoryWorkPackageRepository(package);
         var handler = new AcceptWorkPackageHandler(
-            repository, new CollaborationProjectionService(), new FixedClock(Now));
+            AuthKit.Guard(agreement, Guest, GuestUser, Now),
+            repository, new CollaborationProjectionService(), new AuthKit.FixedClock(Now));
 
         await Assert.ThrowsAnyAsync<Exception>(() =>
-            handler.Handle(new AcceptWorkPackageCommand(package.Id, Guest, HostUser), default));
+            handler.Handle(new AcceptWorkPackageCommand(package.Id, Guest, GuestUser), default));
 
         Assert.Equal(0, repository.SaveCount);
     }
@@ -111,10 +149,13 @@ public class WorkPackageCommandHandlerTests
     [Fact]
     public async Task The_injected_clock_is_what_lands_in_the_audit_trail()
     {
-        var package = DraftPackage();
+        var agreement = GrantedAgreement();
+        var package = DraftPackage(agreement);
         var moment = Now.AddHours(7);
         var handler = new OfferWorkPackageHandler(
-            new InMemoryWorkPackageRepository(package), new CollaborationProjectionService(), new FixedClock(moment));
+            AuthKit.Guard(agreement, Host, HostUser, moment),
+            new InMemoryWorkPackageRepository(package), new CollaborationProjectionService(),
+            new AuthKit.FixedClock(moment));
 
         await handler.Handle(new OfferWorkPackageCommand(package.Id, Host, HostUser), default);
 
@@ -129,6 +170,9 @@ public class WorkPackageCommandHandlerTests
         using var provider = new ServiceCollection()
             .AddCollaborationApplication()
             .AddScoped<IWorkPackageRepository>(_ => new InMemoryWorkPackageRepository(null))
+            .AddScoped<IAgreementRepository>(_ => new AuthKit.InMemoryAgreementRepository(null))
+            .AddScoped<ICollaborationCallerContext>(_ => new AuthKit.TestCallerContext(Host, HostUser))
+            .AddLogging()
             .BuildServiceProvider();
 
         var mediator = provider.GetRequiredService<MediatR.IMediator>();
@@ -136,6 +180,7 @@ public class WorkPackageCommandHandlerTests
         Assert.NotNull(mediator);
         Assert.NotNull(provider.GetRequiredService<CollaborationProjectionService>());
         Assert.NotNull(provider.GetRequiredService<TimeProvider>());
+        Assert.NotNull(provider.GetRequiredService<ICollaborationAccessGuard>());
         Assert.NotNull(provider.GetRequiredService<FluentValidation.IValidator<CancelWorkPackageCommand>>());
     }
 

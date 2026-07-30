@@ -1,4 +1,5 @@
 using SpaceOS.Collaboration.Application.Agreements;
+using SpaceOS.Collaboration.Application.Authorization;
 using SpaceOS.Collaboration.Application.Repositories;
 using SpaceOS.Collaboration.Domain;
 using Xunit;
@@ -52,7 +53,8 @@ public class AgreementCommandHandlerTests
     {
         var agreement = Draft();
         var repository = new InMemoryAgreementRepository(agreement);
-        var handler = new ProposeAgreementHandler(repository, new FixedClock(Now));
+        var handler = new ProposeAgreementHandler(
+            AuthKit.Guard(agreement, Host, HostUser, Now, repository), repository, new FixedClock(Now));
 
         var status = await handler.Handle(
             new ProposeAgreementCommand(agreement.Id, Host, HostUser), default);
@@ -66,8 +68,9 @@ public class AgreementCommandHandlerTests
     {
         var agreement = Draft();
         agreement.Propose(Host, HostUser, Now);
+        var repository = new InMemoryAgreementRepository(agreement);
         var handler = new AcceptAgreementHandler(
-            new InMemoryAgreementRepository(agreement), new FixedClock(Now));
+            AuthKit.Guard(agreement, Guest, GuestUser, Now, repository), repository, new FixedClock(Now));
 
         var status = await handler.Handle(
             new AcceptAgreementCommand(agreement.Id, Guest, GuestUser, Terms, "signed:doc-1"), default);
@@ -84,7 +87,11 @@ public class AgreementCommandHandlerTests
         // aggregate rather than being re-checked here.
         var agreement = Draft();
         var repository = new InMemoryAgreementRepository(agreement);
-        var handler = new ProposeAgreementHandler(repository, new FixedClock(Now));
+        // The guest IS a party, so authorization lets it through — and the aggregate is what
+        // refuses. That order is the point: a party acting out of turn must meet the domain rule,
+        // not an access check that happens to have the same effect.
+        var handler = new ProposeAgreementHandler(
+            AuthKit.Guard(agreement, Guest, GuestUser, Now, repository), repository, new FixedClock(Now));
 
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
             handler.Handle(new ProposeAgreementCommand(agreement.Id, Guest, GuestUser), default));
@@ -96,10 +103,12 @@ public class AgreementCommandHandlerTests
     [Fact]
     public async Task An_unknown_agreement_is_not_found()
     {
+        var repository = new InMemoryAgreementRepository(null);
         var handler = new ProposeAgreementHandler(
-            new InMemoryAgreementRepository(null), new FixedClock(Now));
+            AuthKit.Guard(null, Host, HostUser, Now, repository), repository, new FixedClock(Now));
 
-        await Assert.ThrowsAsync<KeyNotFoundException>(() =>
+        // Absent and not-mine answer identically (404) so that an identifier cannot be probed.
+        await Assert.ThrowsAsync<CollaborationResourceNotFoundException>(() =>
             handler.Handle(new ProposeAgreementCommand(Guid.NewGuid(), Host, HostUser), default));
     }
 
@@ -108,8 +117,9 @@ public class AgreementCommandHandlerTests
     {
         var agreement = Draft();
         var moment = Now.AddHours(5);
+        var repository = new InMemoryAgreementRepository(agreement);
         var handler = new ProposeAgreementHandler(
-            new InMemoryAgreementRepository(agreement), new FixedClock(moment));
+            AuthKit.Guard(agreement, Host, HostUser, moment, repository), repository, new FixedClock(moment));
 
         await handler.Handle(new ProposeAgreementCommand(agreement.Id, Host, HostUser), default);
 

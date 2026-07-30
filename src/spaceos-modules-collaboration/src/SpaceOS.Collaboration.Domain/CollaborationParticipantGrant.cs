@@ -55,6 +55,17 @@ public class CollaborationParticipantGrant
         };
     }
 
+    /// <summary>
+    /// True when this grant is the one that speaks about <paramref name="capability"/>.
+    /// </summary>
+    /// <remarks>
+    /// Exact match against the normalised scope — see <see cref="CollaborationCapability"/> for why
+    /// prefix matching is deliberately absent.
+    /// </remarks>
+    public bool Covers(string capability)
+        => CapabilityScope.Length > 0
+           && string.Equals(CapabilityScope, CollaborationCapability.Normalise(capability), StringComparison.Ordinal);
+
     public bool IsActive(DateTimeOffset atUtc)
     {
         if (Status != ParticipantGrantStatus.Active)

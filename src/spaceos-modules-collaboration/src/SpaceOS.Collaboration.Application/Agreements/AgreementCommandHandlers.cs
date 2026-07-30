@@ -1,18 +1,33 @@
 using MediatR;
+using SpaceOS.Collaboration.Application.Authorization;
 using SpaceOS.Collaboration.Application.Repositories;
 using SpaceOS.Collaboration.Domain;
 
 namespace SpaceOS.Collaboration.Application.Agreements;
 
 /// <summary>
-/// Shared handling for every agreement transition: load → domain action → persist → new status.
+/// Shared handling for every agreement transition: authorize → domain action → persist → new status.
 /// </summary>
 /// <remarks>
+/// <para>
 /// As with the work packages, the handler repeats no business rule: who may act and from which
 /// state lives in <see cref="CollaborationAgreement"/>. The timestamp comes from an injected
 /// clock, so the audit trail can be asserted rather than trusted.
+/// </para>
+/// <para>
+/// <b>The guard is a constructor dependency, not a pipeline step</b> (B2B-10 F3). A MediatR
+/// behaviour would have been less intrusive and is bypassed the moment anything invokes a handler
+/// directly — a background job, a test, a future orchestrator. Authorization that can be stepped
+/// around is worth what it costs to step around it.
+/// </para>
+/// <para>
+/// The agreement itself is participation-gated rather than grant-gated: the guest may answer an
+/// agreement it is party to without holding a grant, because the grants are issued by the very
+/// agreement it would need one to accept. See <see cref="ICollaborationAccessGuard"/>.
+/// </para>
 /// </remarks>
 public abstract class AgreementCommandHandlerBase<TCommand>(
+    ICollaborationAccessGuard accessGuard,
     IAgreementRepository repository,
     TimeProvider clock) : IRequestHandler<TCommand, AgreementStatus>
     where TCommand : IAgreementCommand
@@ -22,8 +37,11 @@ public abstract class AgreementCommandHandlerBase<TCommand>(
 
     public async Task<AgreementStatus> Handle(TCommand command, CancellationToken cancellationToken)
     {
-        var agreement = await repository.GetByIdAsync(command.AgreementId, cancellationToken)
-            ?? throw new KeyNotFoundException($"Agreement {command.AgreementId} was not found.");
+        // Loads through the guard: the caller's right to see this agreement is decided before the
+        // aggregate is in hand, and the same instance is then acted on — no second query, and no
+        // window where a handler holds an aggregate it was not entitled to load.
+        var agreement = await accessGuard.EnsureParticipationAsync(
+            command.AgreementId, command.ActorTenantId, cancellationToken);
 
         Apply(agreement, command, clock.GetUtcNow());
 
@@ -34,16 +52,16 @@ public abstract class AgreementCommandHandlerBase<TCommand>(
 }
 
 /// <summary>propose — Draft → Proposed (host).</summary>
-public sealed class ProposeAgreementHandler(IAgreementRepository repository, TimeProvider clock)
-    : AgreementCommandHandlerBase<ProposeAgreementCommand>(repository, clock)
+public sealed class ProposeAgreementHandler(ICollaborationAccessGuard accessGuard, IAgreementRepository repository, TimeProvider clock)
+    : AgreementCommandHandlerBase<ProposeAgreementCommand>(accessGuard, repository, clock)
 {
     protected override void Apply(CollaborationAgreement agreement, ProposeAgreementCommand command, DateTimeOffset timestampUtc)
         => agreement.Propose(command.ActorTenantId, command.ActorUserId, timestampUtc);
 }
 
 /// <summary>accept — Proposed → Accepted (guest, with terms and evidence).</summary>
-public sealed class AcceptAgreementHandler(IAgreementRepository repository, TimeProvider clock)
-    : AgreementCommandHandlerBase<AcceptAgreementCommand>(repository, clock)
+public sealed class AcceptAgreementHandler(ICollaborationAccessGuard accessGuard, IAgreementRepository repository, TimeProvider clock)
+    : AgreementCommandHandlerBase<AcceptAgreementCommand>(accessGuard, repository, clock)
 {
     protected override void Apply(CollaborationAgreement agreement, AcceptAgreementCommand command, DateTimeOffset timestampUtc)
         => agreement.Accept(
@@ -52,24 +70,24 @@ public sealed class AcceptAgreementHandler(IAgreementRepository repository, Time
 }
 
 /// <summary>reject — Proposed → Rejected (guest, with reason).</summary>
-public sealed class RejectAgreementHandler(IAgreementRepository repository, TimeProvider clock)
-    : AgreementCommandHandlerBase<RejectAgreementCommand>(repository, clock)
+public sealed class RejectAgreementHandler(ICollaborationAccessGuard accessGuard, IAgreementRepository repository, TimeProvider clock)
+    : AgreementCommandHandlerBase<RejectAgreementCommand>(accessGuard, repository, clock)
 {
     protected override void Apply(CollaborationAgreement agreement, RejectAgreementCommand command, DateTimeOffset timestampUtc)
         => agreement.Reject(command.ActorTenantId, command.ActorUserId, command.Reason, timestampUtc);
 }
 
 /// <summary>cancel — Draft | Proposed → Cancelled (host).</summary>
-public sealed class CancelAgreementHandler(IAgreementRepository repository, TimeProvider clock)
-    : AgreementCommandHandlerBase<CancelAgreementCommand>(repository, clock)
+public sealed class CancelAgreementHandler(ICollaborationAccessGuard accessGuard, IAgreementRepository repository, TimeProvider clock)
+    : AgreementCommandHandlerBase<CancelAgreementCommand>(accessGuard, repository, clock)
 {
     protected override void Apply(CollaborationAgreement agreement, CancelAgreementCommand command, DateTimeOffset timestampUtc)
         => agreement.Cancel(command.ActorTenantId, command.ActorUserId, command.Reason, timestampUtc);
 }
 
 /// <summary>supersede — Accepted → Superseded (host, with the replacing revision).</summary>
-public sealed class SupersedeAgreementHandler(IAgreementRepository repository, TimeProvider clock)
-    : AgreementCommandHandlerBase<SupersedeAgreementCommand>(repository, clock)
+public sealed class SupersedeAgreementHandler(ICollaborationAccessGuard accessGuard, IAgreementRepository repository, TimeProvider clock)
+    : AgreementCommandHandlerBase<SupersedeAgreementCommand>(accessGuard, repository, clock)
 {
     protected override void Apply(CollaborationAgreement agreement, SupersedeAgreementCommand command, DateTimeOffset timestampUtc)
         => agreement.Supersede(

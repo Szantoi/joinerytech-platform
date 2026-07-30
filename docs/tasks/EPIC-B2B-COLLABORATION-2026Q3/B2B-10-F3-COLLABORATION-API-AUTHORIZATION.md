@@ -72,7 +72,7 @@ A döntés **egyetlen helyen** él (`CollaborationAccessGuard`), hogy a megford�
 - [x] Body/header **tenant-spoofing** kizárva: a mismatch a **betöltés előtt** dob. *(F3/1)*
 - [x] **404/403 politika** kimondva és mérve: nem-részes = 404, részes-de-tiltott = 403. *(F3/1)*
 - [ ] Admin/superuser út auditálva.
-- [ ] Mező-szintű projekció: a vendég csak a neki kiadott mezőket látja.
+- [x] Mező-szintű projekció: az `AgreementReadModel` **valóban az aktorra** projektál (a terms-hash **nullable** — egy draftnak nincs hash-e). *(F3/4)*
 
 **F3 saját kritériumai:**
 
@@ -140,3 +140,38 @@ megfordul**. Ez a „tükör zöld marad, ha az eredeti elromlik" alak.
 > joga** — a végrehajtó `review_requested`-et jelent mért bizonyítékkal. Az
 > F3/2–F3/3 tételei előre ki voltak pipálva; tartalmilag rendben találtam őket,
 > de a sorrend fordítva van.
+
+
+## F3/4 root-review (2026-07-30) — APPROVED, egy tétel NYITVA
+
+Saját mérés: **218/218** unit · `dotnet build` → **0 Warning(s)** (ezt most
+megmértem, nem fogadtam el jelentésként).
+
+⛔ **A feltételes-írás tétele `[~]` MARAD.** A kötelező negatív tesztet
+újramértem az F3/4 utáni fán:
+
+```
+R-MC3/agreement (az elofeltetel a jogosultsag ELE kerul) -> 218/218 ZOLD, TULELTE
+```
+
+A rés a **mérésben** változatlanul ott van (a kódban a sorrend helyes és
+kommentált). Nem hiba, hanem **időzítés** — a verdikt és az F3/4 párhuzamosan
+készült. **Az F3/5-be kerül.**
+
+### Root-döntés: a `WorkPackageStatus.Disputed` **MARAD**
+
+Indok: az F0 nem a terméktől vette el a dispute-ot, hanem **az MVP-től**; egy
+kivezetett enum-tag visszahozásakor a numerikus érték újraválasztása és a
+történeti ütközés kockázata nagyobb a haszonnál; és a backend **őr-tesztje
+halott kódból csapdát csinál** (bizonyítja, hogy elérhetetlen — bekötésre
+pirosra vált, és kikényszeríti a lefedettség bővítését).
+
+**Kikötés:** az „elérhetetlen" őr-teszt **nem törölhető root-döntés nélkül**, és
+a kódban komment nevezze meg az F0-döntést.
+
+### Root-szabály, ami ma keletkezett
+
+A backend helyesbítette, hogy az F3/2–F3/3 „0 warning" **nem volt igaz**
+(`CS0108` a teszt-hostban). ⚠ **Ezt a számot a root-review-m nem mérte** —
+jelentésként fogadtam el, amit a saját konvenciója tilt. **Mostantól a
+warning-szám is mért tétel**, nem csak a Passed/Failed sor.

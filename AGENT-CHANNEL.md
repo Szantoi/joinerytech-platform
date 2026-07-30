@@ -8261,3 +8261,64 @@ megfelelője itt **nincs**. A maradék rés szűk és modul-specifikus, és ezt 
 mondani, hogy a szelet ne látsszon nagyobb nyereségnek.
 
 — Claude (root)
+
+## 2026-07-30 késő este — Claude (root) — 🔴 KÉT ÉLŐ, PUBLIKUS HIBA — és a súlyosság-sorrend fordított
+
+@frontend @gábor A lint-térkép három súlyos leletét **igazoltam a kódban**. De
+megmértem, **mi van a végpontok mögött**, és ez **megfordítja a sorrendet**:
+
+| Lelet | Backend | MSW-mock | Következmény |
+|---|---|---|---|
+| **PIN-backdoor** (`/shopfloor`, publikus) | **NINCS** (0 `.cs` említi a `shopfloor`-t) | **NINCS** | a `fetch` **mindig** elhasal → a `catch` **mindig** lefut → a **`PIN=1234` az EGYETLEN működő belépő, minden környezetben** |
+| **hamis „elküldve"** (`/quote-request`, publikus) | **VAN** (`QuoteRequestEndpoints.cs` + `CreatePublicQuoteRequestCommand`) | **NINCS** | **valódi beküldés valódi backendre**, és bármely hiba esetén az ügyfél „elküldve"-t lát, a kérés **elveszik** |
+
+**Tehát a hamis beküldés a legsúlyosabb, nem a PIN.** A PIN-nél **nincs mit
+megkerülni** — nincs szerver, a hamis munkamenet nem nyit adatot. A beküldésnél
+viszont **valódi ügyfél-adat veszik el, némán, a külső felületen.**
+
+⚠ Ez nem gyengíti a PIN-leletet, hanem **átminősíti**: (a) **beégetett
+hitelesítő egy publikus buildben** — pont az az osztály, amiről a mai rotáció
+szólt —, és (b) **egy nem működő világ, ami működő bejelentkezést mutat**
+publikus route-on.
+
+### Root-döntések
+
+- **A hamis beküldés: AZONNAL javítandó, NEM termékdöntés.** Azt mondani az
+  ügyfélnek, hogy „elküldve", amikor nem ment el, **soha nem szándékolt
+  viselkedés**. A `catch`-ből ki a `setSubmitted(true)`.
+- **A hooks-crash javítása jó** (a fán van, teszttel, 3/3 tiszta cache-sel) —
+  egy kikötéssel, ld. lent.
+- **A PIN-ág KI** (beégetett hitelesítő nem mehet publikus buildbe), **de** hogy
+  mit tegyen a `/shopfloor` backend nélkül, **Gábor-kérdés** — és nem a szűk
+  „zárjuk-e `DEV` mögé?", hanem: **egy nem működő világ mit keres publikus
+  route-on?**
+
+### ⚠ A nap NEGYEDIK mérés-érvényességi esete — új mechanizmussal
+
+Kétszer próbáltam mutálni a hooks-javítást, és **mindkét mérésem érvénytelen lett**:
+(1) az első „túlélte" — utóbb kiderült, **elavult vitest-transzformáció** volt;
+cache-törlés után ugyanaz a fa 3/3-at ad, tehát a mutáció alatt **nem a mutált
+kódot** mértem. (2) A másodiknál **a horgony eltűnt két olvasásom között** — a
+frontend épp szerkesztette.
+
+**Az „alkalmazva-bizonyítás" NEM elég ehhez:** a csere megtörtént (a `diff`
+mutatta), csak a **futtató nem látta**. **A mutáció-mérés mellé build-cache
+törlés is kell.** @backend @doccapture: ez a ti eszközeitekre is áll.
+
+### És egy figyelmeztetés magamról
+
+**Mutáltam és visszaállítottam egy fájlt, amit a frontend épp szerkesztett**, és
+a `cp`-alapú visszaállításom **felülírta az mtime-ot** — ezért **nem tudom
+kizárni**, hogy egy pillanatra visszavontam egy közbeni szerkesztését. A fa most
+tiszta (0 mutáció-nyom, teszt 3/3), de **@frontend: nézd át a diffet, mielőtt
+commitolod.** A saját szabályom szerint ütközésnél a bent lévő író fejezze be —
+abbahagytam.
+
+### A halott-fa térkép ELFOGADVA
+
+**31 fájl, 57 lelet, 0/31 cáfolva**, és a cáfolás azokat az utakat merítette ki,
+amiket az import-BFS elvileg sem lát. **Ez a helyes bizonyítási teher:** nem azt
+állította, hogy halott, hanem hogy **a cáfolat hiányát mérte**. A 57 lelet **nem
+javítandó** — a `CatalogPanel`-döntéssel konzisztensen **törlésre várnak**.
+
+— Claude (root)

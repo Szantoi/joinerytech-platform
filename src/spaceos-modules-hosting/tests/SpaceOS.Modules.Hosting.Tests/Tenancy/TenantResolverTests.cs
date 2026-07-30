@@ -225,4 +225,78 @@ public sealed class TenantResolverTests
 
         Assert.Equal(TenantResolutionStatus.NoTenantClaim, result.Status);
     }
+
+    // -----------------------------------------------------------------------------------
+    // The claim shape a real Keycloak produces (measured 2026-07-30, KC 24.0.0)
+    // -----------------------------------------------------------------------------------
+
+    /// <summary>
+    /// When the realm emits <c>spaceos_tenants</c> as a JSON ARRAY attribute, the .NET JWT handler
+    /// splits it into ONE CLAIM PER ELEMENT — so each claim value is a single object.
+    /// </summary>
+    /// <remarks>
+    /// This shape reached the string-unwrapping branch and threw, and the failure was silent in the
+    /// worst way: the flat <c>tid</c> claim (priority 1) still resolved the tenant, so the request
+    /// authenticated and only the ENTITLEMENT vanished — a 403 indistinguishable from "the module
+    /// is genuinely not enabled". Measured end to end against a disposable Keycloak before this
+    /// test existed; see KERNEL_TOKEN_PATH_MEASUREMENT_2026-07-30.md.
+    /// </remarks>
+    [Fact]
+    public void An_object_shaped_tenant_claim_is_parsed_not_discarded()
+    {
+        var principal = PrincipalWith(
+            new Claim(TenancyDefaults.TenantIdClaim, TenantA.ToString()),
+            new Claim(TenancyDefaults.TenantListClaim,
+                $$"""{"tenant_id":"{{TenantA}}","enabled_modules":["spaceos.collaboration"]}"""));
+
+        var modules = TenantResolver.GetEnabledModules(principal, TenantA, null);
+
+        Assert.Contains("spaceos.collaboration", modules);
+    }
+
+    [Fact]
+    public void Several_object_shaped_claims_are_all_seen()
+    {
+        // The split produces one claim per tenant; selecting the second one must work, otherwise a
+        // multi-tenant user would silently lose every tenant but the first.
+        var principal = PrincipalWith(
+            new Claim(TenancyDefaults.TenantListClaim,
+                $$"""{"tenant_id":"{{TenantA}}","enabled_modules":["spaceos.collaboration"]}"""),
+            new Claim(TenancyDefaults.TenantListClaim,
+                $$"""{"tenant_id":"{{TenantB}}","enabled_modules":["spaceos.maintenance"]}"""));
+
+        var result = TenantResolver.Resolve(principal, TenantB.ToString());
+
+        Assert.Equal(TenantResolutionStatus.Resolved, result.Status);
+        Assert.Equal(TenantB, result.TenantId);
+        Assert.Contains("spaceos.maintenance", TenantResolver.GetEnabledModules(principal, TenantB, null));
+        Assert.DoesNotContain("spaceos.collaboration", TenantResolver.GetEnabledModules(principal, TenantB, null));
+    }
+
+    [Fact]
+    public void The_two_shapes_that_already_worked_still_do()
+    {
+        // The negative control for the change: an array claim and a stringified array claim must
+        // keep parsing. A fix that only moved the blind spot would pass the two tests above.
+        var arrayShaped = PrincipalWith(new Claim(TenancyDefaults.TenantListClaim,
+            $$"""[{"tenant_id":"{{TenantA}}","enabled_modules":["spaceos.collaboration"]}]"""));
+
+        var stringified = PrincipalWith(new Claim(TenancyDefaults.TenantListClaim,
+            System.Text.Json.JsonSerializer.Serialize(
+                $$"""[{"tenant_id":"{{TenantA}}","enabled_modules":["spaceos.collaboration"]}]""")));
+
+        Assert.Contains("spaceos.collaboration", TenantResolver.GetEnabledModules(arrayShaped, TenantA, null));
+        Assert.Contains("spaceos.collaboration", TenantResolver.GetEnabledModules(stringified, TenantA, null));
+    }
+
+    [Fact]
+    public void A_claim_that_is_neither_shape_is_still_treated_as_absent()
+    {
+        // Fail-closed stays fail-closed: garbage must not become an entitlement.
+        var principal = PrincipalWith(
+            new Claim(TenancyDefaults.TenantIdClaim, TenantA.ToString()),
+            new Claim(TenancyDefaults.TenantListClaim, "not json at all"));
+
+        Assert.Empty(TenantResolver.GetEnabledModules(principal, TenantA, null));
+    }
 }

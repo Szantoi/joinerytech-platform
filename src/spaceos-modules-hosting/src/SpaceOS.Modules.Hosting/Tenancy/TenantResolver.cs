@@ -185,11 +185,28 @@ public static class TenantResolver
     {
         try
         {
-            // Kernel BE-01 guard: the Keycloak Script Mapper may JSON.stringify() the array,
-            // wrapping it in a string — unwrap before deserializing.
-            var json = claimValue.TrimStart().StartsWith('[')
-                ? claimValue
-                : JsonSerializer.Deserialize<string>(claimValue, JsonOptions) ?? claimValue;
+            var trimmed = claimValue.TrimStart();
+
+            // Three shapes reach this method, and only the first two were handled before
+            // (measured against a real Keycloak 24 on 2026-07-30 — see
+            // KERNEL_TOKEN_PATH_MEASUREMENT_2026-07-30.md):
+            //
+            //   [ …    the whole array in one claim value;
+            //   " …    the Keycloak Script Mapper JSON.stringify()-ed the array (kernel BE-01 guard);
+            //   { …    the realm emits spaceos_tenants as a JSON ARRAY attribute, and the .NET JWT
+            //          handler then splits it into ONE CLAIM PER ELEMENT — so each value is a
+            //          single object. This fell into the string branch and threw.
+            //
+            // The third shape failed SILENTLY in the worst possible way: tenant resolution kept
+            // working (the flat `tid` claim is priority 1), so the request authenticated and the
+            // tenant resolved — only the ENTITLEMENT disappeared, and the caller got a 403 that is
+            // indistinguishable from "this module is genuinely not enabled".
+            var json = trimmed switch
+            {
+                _ when trimmed.StartsWith('[') => claimValue,
+                _ when trimmed.StartsWith('{') => $"[{claimValue}]",
+                _ => JsonSerializer.Deserialize<string>(claimValue, JsonOptions) ?? claimValue
+            };
 
             return JsonSerializer.Deserialize<List<TenantClaimEntry>>(json, JsonOptions) ?? [];
         }

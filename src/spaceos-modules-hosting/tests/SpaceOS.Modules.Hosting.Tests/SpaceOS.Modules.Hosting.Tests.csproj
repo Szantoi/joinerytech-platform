@@ -21,6 +21,13 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\SpaceOS.Modules.Hosting\SpaceOS.Modules.Hosting.csproj" />
+    <!--
+      RlsFixtures is referenced so the interceptor↔mirror conformance test can drive BOTH paths
+      against one real PostgreSQL session. Without it the mirror (NonSuperuserRlsFixture
+      .SetTenantAsync), on which all seven modules' RLS proofs rest, has nothing pinning it to
+      the interceptor it claims to mirror. Brings Npgsql + Testcontainers.PostgreSql transitively.
+    -->
+    <ProjectReference Include="..\SpaceOS.Modules.Hosting.RlsFixtures\SpaceOS.Modules.Hosting.RlsFixtures.csproj" />
   </ItemGroup>
 
 </Project>

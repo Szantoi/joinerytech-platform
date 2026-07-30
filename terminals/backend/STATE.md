@@ -1,130 +1,122 @@
 # BACKEND Terminal State
 
-> **Frissítve:** 2026-07-30 délelőtt (Europe/Budapest)
+> **Frissítve:** 2026-07-30 este (Europe/Budapest)
 > **Kanonikus task-státusz:** [`EPICS.yaml`](../../EPICS.yaml) — a `done`/`APPROVED`
 > kimondása **root-review joga**, ez a fájl a végrehajtó nézete.
-> **Aktív task:** [`B2B-10 F3`](../../docs/tasks/EPIC-B2B-COLLABORATION-2026Q3/B2B-10-F3-COLLABORATION-API-AUTHORIZATION.md)
-> — a scheduling M4 mérföldkő APPROVED, a B2B-10 F1/F2 APPROVED; a kritikus út az F3-on megy tovább.
-
-## B2B-10 F5 — projekt-horgony feloldása (2026-07-30, fut)
-
-| Szelet | Állapot | Bizonyíték |
-|---|---|---|
-| F5/0 mérési szelet (token-út) | **`review_requested`** | eldobható KC+kernel: egy token két API-t szolgál ki; A bérlő 200 / B bérlő 404 |
-| F5/1 create-út | nem indult | Gábor: a hiány **kimaradás** volt, az F5 hozza |
-| F5/2 `HttpProjectAdapter` | nem indult | a hitelesítési út (on-behalf-of) root-jóváhagyásra vár |
-
-**Kernel-kapu: NEM kell kernel-módosítás** — kódra és **működésre** is mérve.
-⛔ **Menet közben javított platform-hiba:** a `spaceos_tenants` claim harmadik alakján a
-`TenantResolver` elhasalt → a modul-kapu **csendben 403**-at adott, **mind a 7 modulon**.
-
-## B2B-10 F3 — Collaboration API + authorization (2026-07-30, fut)
-
-| Szelet | Állapot | Bizonyíték |
-|---|---|---|
-| F3/1 grant-alapú authorization | **APPROVED** (root, `0b555f0`) | 144/144 zöld, 6/6 saját + 2 root-mutáció megfogva |
-| F3/2 API-host + `RequireEnabledModule` | **`review_requested`** | végpont-tesztek valódi pipeline-on |
-
-**Mérés 2026-07-30 este:** **227/227 unit + 47/47 integrációs** (valódi PostgreSQL), 0 warning.
-**F3X (sorrend-bizonyíték) kész** — a root háromszor átvitt tétele lezárva.
-
-⚠ **A mérőeszköz javítva:** az integrációs suite párhuzamos konténer-indítástól bukdácsolt
-(1 ms-os fixture-hibák); `parallelizeTestCollections=false` → 5 m 31 s, de determinisztikus.
-60 bennragadt teszt-konténer kitakarítva (a `doorstar-production-db` érintetlen).
-**Az F3 mind az öt szelete kész.**
-
-⚠ **Saját baleset (javítva):** az F3/5 commitba bekerült egy mutáció (a munkacsomag
-query-filtere kikapcsolva) — a rétegvizsgálat visszaállítója ugyanazt a fájlt kétszer mentette.
-A teljes suite ZÖLD MARADT vele, mert a rétegek fedezik egymást → új **szerkezeti** teszt
-(`TenantQueryFilterPresenceTests`) nézi, hogy a szűrők egyáltalán ott vannak-e.
-
-⚠ **Helyesbítés:** az F3/2 és F3/3 jelentésemben „0 warning" szerepelt — tévesen, a teszt-hostban
-végig ott volt egy CS0108. Javítva.
-
-⛔ **Root-döntést kér:** a `WorkPackageStatus.Disputed` állapotba egyetlen átmenet sem vezet
-(F0: a dispute kikerült az MVP-ből). Bekötés vagy kivezetés — addig a paritás-suite névvel kizárja
-és bizonyítja, hogy elérhetetlen.
-| F3/3a ETag / `If-Match` | **`review_requested`** | 9/9 mutáció megfogva (F3/3a+b együtt) |
-| F3/3b `Idempotency-Key` tartós tárral | **`review_requested`** | tábla + unique index + RLS, valódi DB-n mérve |
-| F3/4 `AgreementReadModel` + allowedActions-paritás | **`review_requested`** | 5/5 mutáció; a B2B-07-es drift ÉLT a dróton, javítva |
-| F3/5 végpont-bizonyíték valódi Postgresen | **`review_requested`** | ME1: interceptor nélkül 6/7 E2E bukik; ME4 negatív kontroll |
-
-**Root-döntés MEGVAN (Gábor, 2026-07-30):** a részvétel-alapú modell marad — a vendég grant nélkül is elfogadhatja a
-megállapodást, mert a granteket maga a megállapodás adja ki; enélkül körkörös. Amit a megállapodás hordoz, az grant-köteles. Egy helyen él, a megfordítása egysoros.
-
-✅ **A jelzett drift ZÁRVA (F3/4):** az `AllowedActionsPolicy` törölve, a lista a domainből jön,
-paritás-teszttel. ⚠ A drift **nem volt ártalmatlan**: az F3/2 óta a `GET /work-packages/{id}` és
-minden átmenet-válasz kiadta az `allowedActions`-t — élt a dróton.
+> **Aktív task:** [`B2B-10 F5`](../../docs/tasks/EPIC-B2B-COLLABORATION-2026Q3/B2B-10-F5-PROJECT-ANCHOR-RESOLUTION.md)
+> (a doksi **tervezet**, root-kiadásra vár; az F5/0 mérési szelet viszont már lefutott)
 
 ## Hol van a kód
 
-A `spaceos.scheduling` modul **külön repóban**: `Szantoi/spaceos-modules-scheduling`
-(lokálisan `C:\Users\szant\Documents\Development\spaceos-modules-scheduling`).
-A platform-repóban csak a task-doksik és az ADR-ek vannak — **modul-kód nem kerülhet bele**.
-Aktuális `main`: `d63f317`, **CI zöld** (run `30438753129`); lokálisan is 398/398, mert a Docker elindult.
+| Sáv | Hely |
+|---|---|
+| **Collaboration** (B2B-10) | a platform-repóban: `src/spaceos-modules-collaboration` |
+| **Scheduling** (PLAN-03) | **külön repó**: `Szantoi/spaceos-modules-scheduling` — a platform-fába modul-kód nem kerülhet |
+| **Hosting** (ADR-061/062) | `src/spaceos-modules-hosting` — közös csomag, **mind a 7 modul** függ tőle |
 
-## Mérföldkövek
+---
 
-| Mérföldkő | Állapot | Bizonyíték |
+## 1. B2B-10 F3 + F3X — **LEZÁRVA, mind APPROVED**
+
+Öt szelet + a root által nevesített XS-task. A task-doksi archiválva
+(`docs/tasks/EPIC-B2B-COLLABORATION-2026Q3/archive/`).
+
+| Szelet | Verdikt | Mit hozott |
 |---|---|---|
-| M1 — kalkulációs mag | **DONE** (root-review) | EffortCalculator, DependencyBoundResolver, DependencyGraph; hash-pinnelt Doorstar-vektorok |
-| M2 — aggregátumok + perzisztencia + RLS | **DONE** (root-review, 2026-07-28) | 9 tábla FORCE RLS, valódi migrációs proof, `CalendarException` (P1 pótolva) |
-| M3 — publikált kontraktus | **DONE** (root-review) — **kézbesítve a Doorstarnak** | `docs/openapi.yaml` 3.1, SHA-256 `3fc6c57d…` (saját méréssel igazolva a `main` blobjához) |
-| M4 — véges kapacitású ütemező | **a belső hatókör KIMERÜLT** (6 szelet); a kontraktus-bővítés root-döntésre vár | port + referencia + CP-SAT + conformance; naptár-bekötés; `lagKind`; solver DI-bekötés; **shadow-diff** (`5cf9e7a`) |
-| M5 | nem indult | — |
+| F3/1 grant-alapú authorization | **APPROVED** | képesség-szótár; egy döntési hely; spoofing-kapu a betöltés ELŐTT; 404 a nem-részesnek / 403 a részes-de-tiltottnak |
+| F3/2 API-host | **APPROVED** | `/api/collaboration/v1`, csoport-szintű `RequireAuthorization` + `RequireEnabledModule`, ProblemDetails + correlation ID |
+| F3/3a ETag / `If-Match` | **APPROVED** | 412 ≠ 409 ≠ 428 ≠ 400 elkülönítve; az előfeltétel a jogosultság UTÁN (verzió-orákulum kizárva) |
+| F3/3b `Idempotency-Key` | **APPROVED** | tartós tár: tábla + unique index + RLS; az ujjlenyomat tartalmazza a törzset |
+| F3/4 projekció + paritás | **APPROVED** | `allowedActions` a **domainből** (a B2B-07-es táblázat törölve); `AgreementReadModel` valódi projekciója; `GET /agreements/{id}` |
+| F3/5 E2E valódi Postgresen | **APPROVED** | a teljes verem NOSUPERUSER/NOBYPASSRLS szerepen |
+| **F3X** sorrend-bizonyíték | **APPROVED** | a root háromszor átvitt tétele lezárva |
 
-## Mérés (2026-07-29 délután)
+**Mérés (2026-07-30 este):** **227/227 unit + 47/47 integrációs** (valódi PostgreSQL), **0 warning**.
 
-**Scheduling `5cf9e7a`: 414/414 zöld lokálisan** (a `d63f317` CI-zöld volt 398-cal) — CI (run `30438753129`) **és lokálisan is**, mert a
-Docker 2026-07-29 délutánján elindult. Domain **254** / Solver.OrTools 26 / Infrastructure 65 /
-**Host 50** / **Integration 19**. Szótár-őr OK, `--locked-mode` zöld, generált TS-kliens 558 sor.
+### Amit az F3 mérései kimondtak (átvihető)
 
-**DMS (platform-repó) `6554a09`: 99/99 zöld**, köztük **11 integrációs valódi PostgreSQL-en** —
-tehát a `DocumentOwnerIdentity` migráció és az RLS-izoláció **bizonyított**.
+- **ME1:** interceptor nélkül **6/7 E2E bukik** → az ADR-062 interceptor bizonyítottan lefut a
+  kérés útján. A platform-lelet **erre a modulra** lezárva.
+- **ME3/ME4:** ahol rétegek fedezik egymást, egy kieső réteg **viselkedésben láthatatlan** —
+  ezért kell szerkezeti teszt (`TenantQueryFilterPresenceTests`, `EndpointDataSource`-kapu).
+- **F3X:** valódi adaton nem az alkalmazás-sorrend tart, hanem a DB-réteg; a **sorrendet** az
+  in-memory teszt szögezi le. A teszt a **szerződést** rögzíti, nem aktív rést zár.
 
-**A linux-x64 natív OR-Tools bináris is mérve** (CI, ubuntu-latest/glibc): a 26 solver-teszt —
-a determinizmus-kapuval együtt — ott is zöld, a fejlesztői win-x64 mellett.
+---
 
-## Ami a helyén van (és negatív kontrollal igazolt)
+## 2. B2B-10 F5 — projekt-horgony feloldása (FUT)
 
-- ADR-067 **szótár-őr** — a magban nincs iparági szókincs (a saját kommentjeimet is megfogta).
-- **Hash-pinnelt** Doorstar input-pack **v1 + v2**, mindkét kapu külön fut.
-- EF-modell ↔ **RLS szinkron-őr** mindkét irányban (új tábla policy nélkül = build-bukás).
-- OpenAPI **route- és alak-drift őr** mindkét irányban + **CI-ben generált TS-kliens**.
-- **Wire-kód őrök**: minden warning-kód szerepel a specben, és a v2-fixture stringjeit a
-  projekció állítja elő (a másolat-drift ezzel kizárva).
-- **ADR-070 D3 determinizmus**: azonos bemenet → azonos revision-hash, a beadási sorrendtől is
-  függetlenül.
-- **Audit append-only** DB-szinten **triggerrel** (nem REVOKE — a grantokat újraadja, aki
-  provisionál).
-- **Közös solver-conformance**: egy absztrakt teszt-osztályt **mindkét** stratégia futtat.
-  Nem azonos kimenetet vár (az optimalizálónak szabad jobbat találnia), hanem invariánsokat.
-  Ez fogta meg, hogy a referencia az **FF/SF finish-korlátot** csendben eldobta — javítva.
-- **A natív bináris előbb bizonyítva, mint a kód**: OrTools 9.15.6755 betöltődik win-x64-en,
-  fix seed + 1 worker kétszer ugyanaz.
+| Szelet | Állapot | Bizonyíték / megjegyzés |
+|---|---|---|
+| **F5/0** mérési szelet | **`review_requested`** | eldobható KC24 + kernel + collaboration host |
+| **F5/1** create-út | **következik** | Gábor döntése: a hiány **kimaradás** volt, az F5 hozza |
+| **F5/2** `HttpProjectAdapter` | pending | a hitelesítési útra **on-behalf-of** a javaslatom |
+| **F5/3** negatív kontroll | pending | idegen bérlő tokenjével a feloldás semmit ne adjon |
 
-## Ismert korlátok / adósságok
+### Az F5/0 négy mért válasza
 
-- A referencia-ütemező **mohó, nem lép vissza** — ezért van port. Mérve a greedy csapdáján:
-  **referencia 160 perc → CP-SAT 110 perc**.
-- **RID-mátrix:** linux-x64 (CI, glibc) és win-x64 (fejlesztői) mérve. **Alpine/musl NEM** —
-  az ADR-070 nyitott pontja marad, deploy előtt a tényleges base image-en mérendő.
-- **Nyitott döntés (üzleti):** a **lag mértékegysége** — ma munkaperc, de a száradás/kötés
-  típusú lag valós eltelt idő. Javaslat: additív `lagKind` (`working` | `elapsed`).
-- **Eltérő naptárú erőforrások között a precedencia valós időben sérülhet** — a kiterítés ezt
-  **kimondja** (`PrecedenceBrokenAcrossCalendars`), nem javítja csendben. A kapacitás nem
-  érintett (erőforrásonként monoton a leképezés).
-- A run-folyamat **endpointja** hátravan (a solver DI-bekötése kész, `7cd7276`); az írás-végpontok
-  az ADR-069 szerint amúgy is a 2. fázis.
-- `Resource` aggregátum **szándékosan nincs** (M2 scope-döntés, root elfogadta): a kapacitás és
-  a naptár a `ResourceCalendarRevision`-ön él. Képesség-mátrixnál születik meg.
-- ~~A hosting `DevelopmentAuthenticationHandler` nem ad `enabled_modules` claimet~~ —
-  **MEGOLDVA**: a Codex ERPSEP-06 szelete **root-APPROVED** (2026-07-29 délután). A claim
-  konfigurálható, az üres alapérték szándékosan fail-closed marad.
-- **Nexus MCP-tunnel nem él** — a mailbox-kézbesítés a lokális sorban vár.
+Jegyzőkönyv: [`KERNEL_TOKEN_PATH_MEASUREMENT_2026-07-30.md`](../../docs/knowledge/architecture/KERNEL_TOKEN_PATH_MEASUREMENT_2026-07-30.md)
 
-## Kapuk, amik NEM az enyémek
+1. **A Kernel elérhető és hitelesíthető** — token nélkül 401, friss felhasználói tokennel 404/200.
+2. **EGY token, KÉT API**: `aud=['kernel-api','collaboration-api']` → Kernel **200** +
+   Collaboration **404** ugyanazzal a tokennel. **Kernel-módosítás nem kell** — most már
+   **működésre** is mérve, nem csak kódra.
+3. **A Kernel bérlő-szűkítését a token `tid` claimje hajtja**: A bérlő **200**, B bérlő **404**
+   ugyanarra a sorra. A fail-closed tulajdonságot tehát **a Kernel tartja**, nem az adapter.
+4. **A gép-gép identitás nem tud bérlőt hordozni** — a `client_credentials` tokenben nincs `tid`.
 
-Élesítés, VPS-művelet, éles DB-migráció, sandbox-kitettség: **Gábor-kapu**. A sandbox terve
-végrehajtásra kész (Tailnet-only, dedikált Keycloak-kliens az éles realmben), de a VPS-en
-**semmi nem futott**.
+**Következmény:** a `ProjectOwnerTenantId` mező elhagyható (a bérlő-bizonyíték a kernel 404-je),
+és ezzel a **kernel-kaput nyitó ág elkerülhető**.
+
+### ⛔ Menet közben talált és javított platform-hiba
+
+A `TenantResolver.ParseTenantListClaim` **két** claim-alakot ismert; a **harmadikon** elhasalt
+(a .NET a tömb-claimet **elemenként** bontja, így a claim egy objektum). A tenant-feloldás közben
+végig működik, ezért **csak az entitlement tűnt el** → **csendes 403**, megkülönböztethetetlen
+attól, hogy a modul tényleg nincs engedélyezve. **Mind a 7 modult érintette.**
+Javítva; A/B bizonyíték ugyanazzal a tokennel: javítás nélkül **403**, javítással **404**.
+Hosting: **89/89 zöld**, mutáció 2 bukással.
+
+⚠ Azt **nem** állítom, hogy az **éles** realm ilyen alakot ad — abba nem néztem bele (Gábor-kapu).
+
+---
+
+## 3. Scheduling (PLAN-03) — M4 APPROVED, M5 nem indult
+
+`5cf9e7a..e22687a`, CI-mérés a pusholt állapoton (run `30482853132`): **430 zöld, 0 bukás**
+(Domain 263 / Infrastructure 52 / Host 70 / Solver.OrTools 26 / Integration 19).
+A kontraktus-kör lezárva, `1.0.0-preview.2` kézbesítve. **Következik az M5** (írási irány).
+
+---
+
+## 4. Új a platformon, ami az én munkafolyamatomat érinti
+
+**Van .NET CI-kapu** (`.github/workflows/dotnet-build-gate.yml`, root, 2026-07-30) — a platform
+**első** automatikus .NET-kapuja. Amit tudni kell róla:
+
+- **build-kapu, nem teszt-kapu**: a 15 platform-saját teszt-projektből **14 igényel Dockert**.
+- **6/15 projektet mér**; a többi 9 tranzitívan a privát `spaceos-kernel` submodule-ra hivatkozik
+  → PAT kellene, az **Gábor-döntés**. A kihagyottakat a script **nevesítve** kiírja.
+- Pont azt fogja meg, ami 2026-07-30-án átcsúszott a root-review-n: egy **hamis „0 warning"**.
+
+---
+
+## 5. Ismert korlátok és adósságok (backend-sáv)
+
+- **Idempotencia-rekordok takarítása nincs telepítve** — üzemeltetési feladat, a pilot előtt kell.
+- **A wire-enumok alakja** (`"Proposed"`) **F4-döntés** — szándékosan nem találtam ki előre.
+- **`WorkPackageStatus.Disputed`**: root döntött — **marad**; az „elérhetetlen" őr-teszt
+  root-döntés nélkül **nem törölhető**, és a komment megnevezi az F0-döntést.
+- **Scheduling RID-mátrix**: linux-x64 + win-x64 mérve; **Alpine/musl nem** — ma nem blokkoló
+  (nincs Dockerfile, a VPS Debian/glibc), konténeresítéskor mérendő.
+- **Jelzés a Kernel csapatának** (nem javítottam — Kernel-kapu): friss klónon a kernel **nem
+  fordul**, amíg a `SpaceOS.Kernel.Api/keys/dev-private-key.pem` nem létezik — a csproj
+  build-időben másolja azt, amit a `DevRsaKeyManager` csak futásidőben hozna létre, és amit a
+  `.gitignore` kizár.
+- **A kernel working tree-jében más sávjának commitolatlan munkája van** (`TenantHandshakeAllowlist`
+  + migráció + tesztek) — hozzá nem nyúltam.
+
+## 6. Kapuk, amik NEM az enyémek
+
+Élesítés, VPS-művelet, éles DB-migráció, éles Keycloak-realm, sandbox-kitettség, **Kernel-módosítás**:
+**Gábor-kapu**. A `done`/`APPROVED` kimondása **root-review joga**.

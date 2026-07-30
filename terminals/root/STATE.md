@@ -4,40 +4,50 @@
 > **Állapotforrás:** [`EPICS.yaml`](../../EPICS.yaml) + [`AGENT-CHANNEL.md`](../../AGENT-CHANNEL.md)
 > **Belépő:** a csatorna **eleje** („Nyitott szálak") és **vége**; a régebbi napok archívumban.
 
-## ⛔ EGYETLEN BLOKKOLÓ: token-rotáció (Gábor-kapu)
+## ✅ A BLOKKOLÓ MEGSZŰNT — a rotáció végrehajtva (2026-07-30)
 
-**A runbook KÉSZ** (2026-07-30): `docs/knowledge/deployment/TOKEN_ROTATION_RUNBOOK_2026-07-30.md`
-(`052c55c` + `b111f5d`). Végrehajtásra kész, Gábor szavára vár.
+Gábor jóváhagyásával végrehajtva. **79 commit kipusholva.** Minden új titok a
+**VPS-en generálva** — egy sem került ágens-kontextusba vagy naplóba.
+Runbook + végrehajtási napló: `docs/knowledge/deployment/TOKEN_ROTATION_RUNBOOK_2026-07-30.md`.
 
-**⚠ A 2026-07-29-i leltár HELYESBÍTVE — a mai mérés mást mond.**
-A `2613106` commit „EGY hitelesítő, 12 előfordulás" képe **csak az MCP master
-tokenre igaz**. `secret-scan origin/main` (2517/2517 fájl) → **72 találat**,
-literálonként osztályozva: **négy független titok-osztály, ~44 valódi
-előfordulás**, és **28 fals pozitív**.
+**Füstpróba három elkülönülő státusszal** (nem megengedő halmaz):
+régi (publikus) token → **403** · új → **400** (auth átment) · token nélkül → **401**.
+`secret-scan origin/main`: **72 → 28** találat (a 28 tételesen fals pozitív).
 
-| Osztály | Db | Megjegyzés |
+**A leltár ÖT osztály volt, nem egy** — a tegnapi „EGY hitelesítő, 12
+előfordulás" csak az **A** osztályra igaz:
+
+| | Osztály | Állapot |
 |---|---|---|
-| **A** MCP master token | 1 (5 helyen) | erre igaz a tegnapi állítás |
-| **B** agent tokenek | ~10 (2-2 helyen) | **kiesés nélkül rotálható** (agents.yaml 30 s auto-reload, több bejegyzés/név) |
-| **C** beégetett, KITALÁLHATÓ alapértelmezések | 4 | ⚠ **tegnap nem volt a leltárban** |
-| **D** Google Gemini API-kulcs | 1 (3 fájlban) | ⚠ **tegnap nem volt a leltárban**; Google-konzolban kell visszavonni |
+| **A** | MCP master token — az élő érték **bizonyítottan azonos** volt a publikussal (`sha1 = 8a9d691f9f` mindkét oldalon) | ✅ rotálva |
+| **B** | ~10 agent token | ✅ az `agents.yaml` kivezetve hitelesítő-forrásként |
+| **C** | 4 beégetett, **kitalálható** alapérték (`spaceos-<szerep>-<ev>`), egyikük terminál-tokent **ír alá** | ✅ env-be, literál kivéve |
+| **D** | Google Gemini API-kulcs | kód env-re állítva · **visszavonás: Gábor** |
+| **E** | **Brave Search API-kulcs** — ⚠ **a kapu nem fogta meg** | literál kivéve · **visszavonás: Gábor** |
 
-**A C osztály kihasználhatósága MEGMÉRVE (runbook 3.0):** a négy env-változóból
-**három hiányzik** az élesen → a publikus alapértékek (`spaceos-admin-2026`,
-`spaceos-terminal-secret-2026`, `spaceos-webhook-secret-2026`) **hatályban**.
-**DE a szolgáltatás nem érhető el az internetről** (127.0.0.1-en figyel + ufw
-INPUT DROP) → **P1, nem aktív rés.** A védelem viszont **kizárólag hálózati**:
-bármilyen láb (tailnet, lokális shell, SSRF, egy kényelmi `ufw allow`) besétál,
-és a `TERMINAL_TOKEN_SECRET` **aláíró** kulcs hamisíthatóságát a hálózati gát
-nem gyengíti.
+**Három csapda, amit rögzíteni kell:**
 
-**A kapuról is van lelet:** a 72-ből 28 fals pozitív, ebből **18 egyetlen
-kódmintára** (`const token = authHeader.substring(7)`) — **25% zaj**, ami a
-kapu saját tervezői kikötése szerint kikapcsoláshoz vezet. Külön teendő.
+1. A `.gitignore`-ban **már ott volt** az `agents.yaml` (40. sor) — a fájl mégis
+   **követve** volt: a gitignore nem hat a már követett fájlokra. A bejegyzés
+   **hamis biztonságot** adott. Bizonyíték: `git ls-files`, nem `git check-ignore`.
+2. **A mérőeszköz hagyta ki az E osztályt.** A kapu 1. szabálya két alakra vak
+   (izoláltan megmérve): **idézőjeles kulcs** (`"api_key": "…"` → minden
+   JSON-konfig) és **prefixelt kulcsnév** (`BRAVE_API_KEY=` → a legelterjedtebb
+   env-elnevezés). @frontend-nek jelezve.
+3. A **„72 → 28" fejszám teljességnek látszott**: a 28-ban **három kimaradás**
+   volt, és kettőt a kapu sem jelzett — `git grep` találta meg.
 
-**A push VISSZATARTVA (70 commit):** a csatorna részletesen leírja a rést,
-tehát pusholni annyi lenne, mint útmutatót publikálni hozzá. **A rotáció után
-azonnal mehet.**
+**Pontosítás a saját reggeli állításomhoz:** „nem érhető el az internetről" a
+**szivárgó** szolgáltatásra (3458, `127.0.0.1`) igaz — de az **nginx a 443-on
+publikusan kiszolgál**, és a `/api/telegram/webhook` a **3456**-ra megy (fut,
+token nélkül **403**, fail-closed). A 3456 más kódbázis (`/opt/nexus/…`) →
+jelzés a Nexus-projektnek.
+
+**Nem pusholtam a 3 submodule-t** (cutting · inventory · procurement): a
+javítás commitolva, de mindhárom `main`-en van és **2–3 committal előrébb más
+sáv pusholatlan munkájával** — azt nem viszem ki át nem nézve. *(A
+submodule-okban amúgy sem külön kulcs volt, hanem ugyanaz a
+dashboard-alapérték — ez is helyesbítés a tegnapi képhez.)*
 
 ## 2026-07-30 — eddig
 

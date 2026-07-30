@@ -3,18 +3,30 @@
 > **Frissítve:** 2026-07-30 délelőtt
 > **Részletes állapot:** [`STATE.md`](STATE.md) · **Döntések:** `docs/knowledge/architecture/DONTESEK_2026-07-29.md`
 
-## 🔴 P0 — az egyetlen blokkoló
+## ✅ A P0 BLOKKOLÓ LEZÁRVA (2026-07-30)
 
-- [ ] **TOKEN-ROTÁCIÓ (Gábor-kapu).** **A runbook KÉSZ**, végrehajtásra vár:
-      `docs/knowledge/deployment/TOKEN_ROTATION_RUNBOOK_2026-07-30.md`.
-      **Négy** titok-osztály (nem egy): A master · B ~10 agent token ·
-      **C 4 beégetett kitalálható alapértelmezés** · **D Google API-kulcs**.
-      A C osztály **hatályban van** az élesen (3 env hiányzik), de a
-      szolgáltatás **nem érhető el kívülről** → P1, nem aktív rés.
-      Amíg nincs rotáció: **nem pusholok** (70 commit áll).
-- [ ] **Gábornak eldöntendő** (runbook §4): végrehajtsuk-e ma · a Google-kulcsot
-      ki vonja vissza (konzol-hozzáférés kell) · a 4 publikus submodule-ban
-      commitolhatok-e · maradhat-e a VPS-IP a publikus repóban.
+- [x] **TOKEN-ROTÁCIÓ végrehajtva**, 79 commit kipusholva. Öt titok-osztály,
+      füstpróba három elkülönülő státusszal, `secret-scan`: 72 → 28.
+      Napló: `docs/knowledge/deployment/TOKEN_ROTATION_RUNBOOK_2026-07-30.md`.
+
+## 🔴 Ami Gáborra vár a rotációból
+
+- [ ] **Google Gemini API-kulcs** visszavonása (konzol) — a kód már env-et olvas.
+- [ ] **Brave Search API-kulcs** visszavonása (**E osztály**, ma találtam;
+      `sha1(BRAVE_API_KEY értéke) = 061ddd503f`).
+- [ ] **VPS-IP / tailnet-cím** maradhat-e a publikus repóban?
+- [ ] A **3 submodule pushja** — idegen pusholatlan commitok miatt visszatartva.
+
+## 🔴 A rotációból eredő új teendők
+
+- [ ] **@frontend — a kapu LEFEDETTSÉGE** (nem a zaja, az kész): két vak pont
+      megmérve — idézőjeles kulcs (`"api_key": "…"` → **minden JSON-konfig**) és
+      prefixelt kulcsnév (`BRAVE_API_KEY=` → a legelterjedtebb env-elnevezés).
+      A negatív kontroll a **szabályba** menjen, ne a zaj-szűrőbe.
+- [ ] **@codex — jelzés a Nexus-projektnek**: az nginx a 3456-ot kivezeti a
+      netre; a mi C-osztályú mintánk ott is előfordulhat.
+- [ ] `/mcp` **hitelesítetlen** discovery-manifestet ad (eszközlista, titok
+      nélkül) — P2 információ-szivárgás.
 
 ## P0 — minden session elején
 

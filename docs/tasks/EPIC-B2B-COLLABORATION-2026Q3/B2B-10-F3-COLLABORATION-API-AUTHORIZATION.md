@@ -2,7 +2,7 @@
 
 > **Epic:** EPIC-B2B-COLLABORATION-2026Q3 · **Szülő:** B2B-10 (Doorstar-kézfogás)
 > **Szerep:** backend · **Méret:** M–L (szeletelve) · **Előfeltétel:** B2B-10 F1 + F2 (mindkettő APPROVED)
-> **Státusz:** in_progress (2026-07-30) — **F3/1 + F3/2 + F3/3 APPROVED** (root-review 2026-07-30; saját mérés: 175/175 unit + **34/34 valódi PostgreSQL** + 4 saját mutáció)
+> **Státusz:** **AZ ÖT SZELET KÉSZ** (2026-07-30) — F3/1 · F3/2 · F3/3a · F3/3b · F3/4 · F3/5 mind **APPROVED** (root-review 2026-07-30; saját mérés: 175/175 unit + **34/34 valódi PostgreSQL** + 4 saját mutáció)
 > **Kanonikus státusz:** [`EPICS.yaml`](../../../EPICS.yaml) — a `done` kimondása root-review joga.
 
 ## Miért ez a következő
@@ -72,7 +72,7 @@ A döntés **egyetlen helyen** él (`CollaborationAccessGuard`), hogy a megford�
 - [~] `ExpiresAtUtc` lejárat → fail-closed **a határponton**, negatív kontrollal *(F3/1 — root-mutáció M-A: 2 teszt bukott)*. ⚠ **Az integrációs teszt még hiányzik** — a bizonyíték ma InMemory; a végpont-szintű mérés az **F3/5**.
 - [x] Body/header **tenant-spoofing** kizárva: a mismatch a **betöltés előtt** dob. *(F3/1)*
 - [x] **404/403 politika** kimondva és mérve: nem-részes = 404, részes-de-tiltott = 403. *(F3/1)*
-- [ ] Admin/superuser út auditálva.
+- [x] Admin/superuser út auditálva: a bizonyíték **NOSUPERUSER/NOBYPASSRLS** app-szerepen fut — superuserrel minden állítás átmenne a policyk törlése után is. *(F3/5)*
 - [x] Mező-szintű projekció: az `AgreementReadModel` **valóban az aktorra** projektál (a terms-hash **nullable** — egy draftnak nincs hash-e). *(F3/4)*
 
 **F3 saját kritériumai:**
@@ -178,3 +178,40 @@ A backend helyesbítette, hogy az F3/2–F3/3 „0 warning" **nem volt igaz**
 (`CS0108` a teszt-hostban). ⚠ **Ezt a számot a root-review-m nem mérte** —
 jelentésként fogadtam el, amit a saját konvenciója tilt. **Mostantól a
 warning-szám is mért tétel**, nem csak a Passed/Failed sor.
+
+
+## F3/5 root-review (2026-07-30) — APPROVED · az öt szelet lezárva
+
+Saját mérés: **226/226** unit + **46/46 valódi PostgreSQL** (1 m 13 s).
+
+Az **ME1** a szelet lényege: a fail-closed policy 0 sort ad session-kulcs
+nélkül, tehát a 200-as válasz **csak úgy** jöhet létre, ha az ADR-062
+interceptor valóban lefutott a kérés kapcsolatán. A platform-lelet **erre a
+modulra** lezárva. *(A másik hét modul kedvéért a root ugyanezt a rést a közös
+fixture szintjén kötötte be: `InterceptorMirrorConformanceTests`, hosting.)*
+
+Az **ME3** a legjobban átvihető gondolat: bukást várt, zöld lett, és nem
+magyarázta el — megkereste a **harmadik réteget** (EF global query filter),
+majd **ME4**-gyel bizonyította, hogy a suite *képes* látni a szivárgást.
+
+### ⛔ Az egyetlen tétel, ami mind az öt szeletből kimaradt → SAJÁT TASK
+
+`R-MC3/agreement` mutáció az F3/5 utáni fán: **226/226 és 46/46 zöld — túlélte.**
+Ok, mérve: **egyetlen E2E teszt sem küld ÍRÁST nem-részesként.**
+
+A root háromszor vitte át (F3/2 → F3/4 → F3/5). Egy háromszor átvitt tétel nem
+szelet-maradék: **[`B2B-10-F3X-ORDERING-PROOF`](B2B-10-F3X-ORDERING-PROOF.md)**
+(XS, backend, kiadva).
+
+⚠ A root **helyesbíti a saját korábbi keretezését**: azt írta, „a nem-részes
+412-t kapna" — **ezt nem mérte**. Hogy az RLS/EF-szűrő eleve elvágja-e a
+betöltést, továbbra sem mérve; a gyakorlati kockázat tehát kisebb, a **mérés
+hiánya** viszont változatlan. Ez pontosan az ME3-tanulság alakja.
+
+### Nyitott tételek, root-válasszal
+
+1. **`Disputed`** — **marad** (F3/4 döntés); az „elérhetetlen" őr-teszt nem
+   törölhető root-döntés nélkül, és komment nevezze meg az F0-t.
+2. **Idempotencia-takarítás** — üzemeltetési feladat, **ez a szelet ne
+   telepítse**; a pilot előtt ütemezés kell. Root TODO-n.
+3. **Wire-enumok alakja** — **F4-döntés**, helyes volt nem kitalálni előre.

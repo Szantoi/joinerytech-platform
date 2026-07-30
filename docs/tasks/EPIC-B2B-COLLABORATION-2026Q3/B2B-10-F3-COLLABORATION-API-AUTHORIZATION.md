@@ -34,12 +34,14 @@ Ehhez jön két örökség, amit a root **kifejezetten ide utalt**:
 | Szelet | Tartalom | Állapot |
 |---|---|---|
 | **F3/1** | Grant-alapú authorization-mag az application rétegben + hívó-identitás + spoofing-kapu | **APPROVED** (`0b555f0`) |
-| **F3/2** | `SpaceOS.Collaboration.Api` + host: hosting-minta, `RequireEnabledModule`, `/api/collaboration/v1`, ProblemDetails + correlation ID | **`review_requested`** — 158/158 unit + 25/25 integrációs |
-| **F3/3** | ETag / `If-Match` az állapotátmeneteken (a `RowVersion` concurrency-tokenre), `Idempotency-Key` a létrehozáson | pending |
+| **F3/2** | `SpaceOS.Collaboration.Api` + host: hosting-minta, `RequireEnabledModule`, `/api/collaboration/v1`, ProblemDetails + correlation ID | **`review_requested`** |
+| **F3/3a** | ETag / `If-Match` a `RowVersion` concurrency-tokenre + a 412/409/428/400 elkülönítése | **`review_requested`** |
+| **F3/3b** | `Idempotency-Key` **tartós tárral** (tábla + unique index + RLS), middleware-ben | **`review_requested`** |
 | **F3/4** | `AgreementReadModel` valódi projekciója (F1 ide utalta) + lista-végpontok + **allowedActions↔domain paritás-teszt** | pending |
 | **F3/5** | Végpont-szintű bizonyíték **valódi PostgreSQL-en** (Testcontainers): cross-tenant, spoofing, revoked/expired, 404/403 | pending |
 
 Mindegyik szelet külön `review_requested`-tel megy fel.
+**Aktuális mérés (2026-07-30):** `175/175` unit + `34/34` integrációs (valódi PostgreSQL), 0 warning.
 
 ## F3/1 — a hozott döntés, amit a root erősítsen meg
 
@@ -80,7 +82,13 @@ A döntés **egyetlen helyen** él (`CollaborationAccessGuard`), hogy a megford�
 - [x] Hibaformátum: ProblemDetails + correlation ID (a Doorstar biztonsági szerződésének tétele).
       *(F3/2 — a 403 semmit nem mond az indokról; mutációval igazolva.)*
 - [ ] Az `allowedActions` a **domainből** származik, nem külön táblázatból — paritás-teszttel.
-- [ ] A bizonyíték **valódi PostgreSQL-en** fut, nem InMemory-n (az F2 tanulsága).
+- [~] A bizonyíték **valódi PostgreSQL-en** fut, nem InMemory-n (az F2 tanulsága). *(F3/3: az
+      idempotencia-tár, a unique index, az RLS és a concurrency-fordítás valódi DB-n mérve; a
+      **végpont**-szintű sáv még in-memory repositoryval fut → F3/5.)*
+- [x] Feltételes írás: `If-Match` a munkacsomagon **kötelező**, az előfeltétel a jogosultság UTÁN
+      fut (verzió-orákulum kizárva), és a 412/409/428/400 el van különítve. *(F3/3a)*
+- [x] `Idempotency-Key` **tartós** tárral, bérlőnkénti kulcstérrel; a versenyt a unique index dönti.
+      *(F3/3b)* ⚠ A befejezett rekordok takarítása üzemeltetési feladat — nincs telepítve.
 
 ## Amit ez a task NEM csinál
 

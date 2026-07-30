@@ -30,7 +30,11 @@ Kiírás: [`B2B-10-F3-COLLABORATION-API-AUTHORIZATION.md`](../../docs/tasks/EPIC
 - [x] **F3/2** — API-projekt + host, csoport-szintű `RequireAuthorization` + `RequireEnabledModule`,
       caller-context a tokenből, ProblemDetails + correlation ID, olvasás külön képességgel.
       **158/158 unit + 25/25 integrációs zöld.** `review_requested`.
-- [ ] **F3/3** — `If-Match` az átmeneteken (a `RowVersion` concurrency-tokenre), `Idempotency-Key`.
+- [x] **F3/3a** — `If-Match`/ETag: kötelező a munkacsomagon (428), a jogosultság UTÁN ellenőrizve
+      (verzió-orákulum kizárva), 412/409/428/400 elkülönítve, EF-kivétel lefordítva a repositoryban.
+- [x] **F3/3b** — `Idempotency-Key` **tartós tárral**: tábla + unique index + RLS + megakadt foglalás
+      újrahasznosítása; az ujjlenyomat tartalmazza a törzset. ⚠ A rekord-takarítás nincs telepítve.
+      **175/175 unit + 34/34 integrációs zöld, 9/9 mutáció.** `review_requested`.
 - [ ] **F3/4** — `AgreementReadModel` valódi projekciója + **allowedActions↔domain paritás-teszt**
       (⚠ a mai `AllowedActionsPolicy` eltér a domaintől — a lelet a STATE.md-ben).
 - [ ] **F3/5** — végpont-szintű bizonyíték **valódi PostgreSQL-en** (a Docker 2026-07-30-tól fut,

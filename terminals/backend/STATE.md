@@ -11,8 +11,11 @@
 | Szelet | Állapot | Bizonyíték |
 |---|---|---|
 | F3/1 grant-alapú authorization | **APPROVED** (root, `0b555f0`) | 144/144 zöld, 6/6 saját + 2 root-mutáció megfogva |
-| F3/2 API-host + `RequireEnabledModule` | **`review_requested`** | **158/158 unit + 25/25 integrációs** (valódi PostgreSQL) |
-| F3/3 ETag / Idempotency-Key | nem indult | — |
+| F3/2 API-host + `RequireEnabledModule` | **`review_requested`** | végpont-tesztek valódi pipeline-on |
+
+**Mérés 2026-07-30 este:** **175/175 unit + 34/34 integrációs** (valódi PostgreSQL), 0 warning.
+| F3/3a ETag / `If-Match` | **`review_requested`** | 9/9 mutáció megfogva (F3/3a+b együtt) |
+| F3/3b `Idempotency-Key` tartós tárral | **`review_requested`** | tábla + unique index + RLS, valódi DB-n mérve |
 | F3/4 `AgreementReadModel` + allowedActions-paritás | nem indult | — |
 | F3/5 végpont-bizonyíték valódi Postgresen | nem indult | ✅ a Docker 2026-07-30 délelőtt elindult (Gábor), 25/25 zöld |
 

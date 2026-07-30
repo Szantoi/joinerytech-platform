@@ -35,10 +35,15 @@ Kiírás: [`B2B-10-F3-COLLABORATION-API-AUTHORIZATION.md`](../../docs/tasks/EPIC
 - [x] **F3/3b** — `Idempotency-Key` **tartós tárral**: tábla + unique index + RLS + megakadt foglalás
       újrahasznosítása; az ujjlenyomat tartalmazza a törzset. ⚠ A rekord-takarítás nincs telepítve.
       **175/175 unit + 34/34 integrációs zöld, 9/9 mutáció.** `review_requested`.
-- [ ] **F3/4** — `AgreementReadModel` valódi projekciója + **allowedActions↔domain paritás-teszt**
-      (⚠ a mai `AllowedActionsPolicy` eltér a domaintől — a lelet a STATE.md-ben).
-- [ ] **F3/5** — végpont-szintű bizonyíték **valódi PostgreSQL-en** (a Docker 2026-07-30-tól fut,
-      a meglévő 25 integrációs teszt zöld — a végpont-szintű sáv még hátravan).
+- [x] **F3/4** — `allowedActions` a **domainből** + paritás-teszt (próbálgatásos orákulum), a
+      B2B-07-es táblázat törölve; `AgreementReadModel` valódi projekciója + `GET /agreements/{id}`
+      + ETag → az `If-Match` a megállapodáson is kötelező. Gábor döntése: a lezárt állapot lezárt.
+      **218/218 unit + 39/39 integrációs zöld, 5/5 mutáció.** `review_requested`.
+- [ ] ⛔ **Root-döntés:** `WorkPackageStatus.Disputed` — bekötés vagy kivezetés? (Ma egyetlen
+      átmenet sem vezet bele; a paritás-suite névvel kizárja és bizonyítja, hogy elérhetetlen.)
+- [ ] **F3/5** — végpont-szintű bizonyíték **valódi PostgreSQL-en** (a tár, az RLS, a
+      concurrency-fordítás és a read-oldali lekérdezések már valódi DB-n mérve; a **végpont-sáv**
+      fut még in-memory repositoryval).
 
 ## P1 — M4: véges kapacitású ütemező (a BELSŐ hatókör kimerült)
 

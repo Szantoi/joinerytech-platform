@@ -62,10 +62,10 @@ Ez a **legveszélyesebb** osztály, és tegnap nem volt a leltárban.
 
 | Érték-minta | Env-változó | Hol | Mit nyit |
 |---|---|---|---|
-| `dev-token-spaceos-dashboard-2026` | `DASHBOARD_AUTH_TOKEN` | `auth.routes.ts:11`, `server.legacy.ts:2051`, `missionControl.ts:103` (`DATAHAVEN_TOKEN`), `agent.config.ts:15`, `api.config.ts:8` | dashboard-hozzáférés |
-| `spaceos-terminal-secret-2026` | `TERMINAL_TOKEN_SECRET` | `epic-router.routes.ts:55` | ⚠ **terminál-tokent ÍR ALÁ** → tetszőleges terminál-identitás hamisítható |
-| `spaceos-admin-2026` | `ADMIN_SECRET` | `epic-router.routes.ts:126` | ⚠ **admin-művelet** |
-| `spaceos-webhook-secret-2026` | `TELEGRAM_WEBHOOK_SECRET` | `telegramBot.ts:96` | Telegram webhook-hitelesítés |
+| `dev-token-…-dashboard-<ev>` (a teljes érték a git-történetben) | `DASHBOARD_AUTH_TOKEN` | `auth.routes.ts:11`, `server.legacy.ts:2051`, `missionControl.ts:103` (`DATAHAVEN_TOKEN`), `agent.config.ts:15`, `api.config.ts:8` | dashboard-hozzáférés |
+| `spaceos-terminal-secret-<ev>` | `TERMINAL_TOKEN_SECRET` | `epic-router.routes.ts:55` | ⚠ **terminál-tokent ÍR ALÁ** → tetszőleges terminál-identitás hamisítható |
+| `spaceos-admin-<ev>` | `ADMIN_SECRET` | `epic-router.routes.ts:126` | ⚠ **admin-művelet** |
+| `spaceos-webhook-secret-<ev>` | `TELEGRAM_WEBHOOK_SECRET` | `telegramBot.ts:96` | Telegram webhook-hitelesítés |
 
 **Miért ez a legrosszabb alak** (a `beegetett-fallback-titok` tanulság):
 
@@ -141,8 +141,8 @@ együtt eldönti a kérdést, exploit nélkül.
 |---|---|---|
 | `DASHBOARD_AUTH_TOKEN` | ✅ beállítva | a publikus alapérték **nincs** hatályban |
 | `TERMINAL_TOKEN_SECRET` | ❌ **hiányzik** | ⚠ a terminál-tokenek **publikus konstanssal vannak aláírva** |
-| `ADMIN_SECRET` | ❌ **hiányzik** | ⚠ `spaceos-admin-2026` **hatályban** |
-| `TELEGRAM_WEBHOOK_SECRET` | ❌ **hiányzik** | `spaceos-webhook-secret-2026` hatályban |
+| `ADMIN_SECRET` | ❌ **hiányzik** | ⚠ a kitalálható admin-alapérték **hatályban** |
+| `TELEGRAM_WEBHOOK_SECRET` | ❌ **hiányzik** | a kitalálható webhook-alapérték hatályban |
 | `MCP_AUTH_TOKEN` | ❌ hiányzik | a master token a **publikus** `agents.yaml`-ból jön |
 
 **3. Elérhető-e a szolgáltatás kívülről?** — **NEM.** Két független gát:
@@ -162,7 +162,7 @@ Ezért ez **P1** — a rotációval egy körben javítandó, de nem előzi meg:
 
 - bárki, aki **bármilyen** lábat betesz — tailnet-hozzáférés, egy kompromittált
   tailnet-eszköz, lokális shell, SSRF a gép bármely másik szolgáltatásában —
-  az `spaceos-admin-2026`-tal **egyenesen besétál**;
+  a kitalálható admin-alapértékkel **egyenesen besétál**;
 - a `TERMINAL_TOKEN_SECRET` **aláíró** kulcs: publikus konstanssal aláírt
   terminál-token **hamisítható**, és ezt a hálózati gát nem gyengíti;
 - egyetlen kényelmi `ufw allow 3458` bármikor eltünteti az egyetlen gátat —

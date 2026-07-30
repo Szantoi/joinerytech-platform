@@ -12,7 +12,7 @@
 
 export const API_CONFIG = {
   baseUrl: process.env.TEST_API_URL || 'http://localhost:3456',
-  authToken: process.env.TEST_AUTH_TOKEN || 'dev-token-spaceos-dashboard-2026',
+  authToken: process.env.TEST_AUTH_TOKEN,
   timeout: 30000, // Agent operations can be slow
 };
 

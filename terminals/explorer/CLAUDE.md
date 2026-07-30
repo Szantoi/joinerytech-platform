@@ -255,7 +255,7 @@ curl -X POST "http://localhost:3456/api/epic-router/ack/explorer/MSG-EXPLORER-NN
 **Státusz regisztráció (opcionális):**
 ```bash
 curl -X POST https://datahaven.joinerytech.hu/api/terminal/status \
-  -H "Authorization: Bearer dev-token-spaceos-dashboard-2026" \
+  -H "Authorization: Bearer <DASHBOARD_AUTH_TOKEN>" \
   -H "Content-Type: application/json" \
   -d '{"terminal":"explorer","status":"working","currentTask":"MSG-EXPLORER-NNN"}'
 ```
@@ -277,7 +277,7 @@ Ez automatikusan:
 **Idle regisztráció:**
 ```bash
 curl -X POST https://datahaven.joinerytech.hu/api/terminal/status \
-  -H "Authorization: Bearer dev-token-spaceos-dashboard-2026" \
+  -H "Authorization: Bearer <DASHBOARD_AUTH_TOKEN>" \
   -H "Content-Type: application/json" \
   -d '{"terminal":"explorer","status":"idle"}'
 ```

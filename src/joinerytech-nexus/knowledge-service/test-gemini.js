@@ -1,6 +1,11 @@
+if (!process.env.GEMINI_API_KEY) {
+  // Rotalva 2026-07-30: a kulcs korabban BEEGETVE volt egy PUBLIKUS repoban.
+  // Szandekosan hangos hiba: nema fallback pont ezt a szivargast tartotta eletben.
+  throw new Error('GEMINI_API_KEY nincs beallitva -- allitsd be a kornyezetben.');
+}
 const { GoogleGenerativeAIEmbeddings } = require('@langchain/google-genai');
 
-const apiKey = 'AIzaSyAmVVu7TvjuZiAII2kYZkgVKhGHmhUH1Xk';
+const apiKey = process.env.GEMINI_API_KEY;
 
 const embeddings = new GoogleGenerativeAIEmbeddings({
   apiKey,

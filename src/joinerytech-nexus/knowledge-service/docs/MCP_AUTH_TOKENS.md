@@ -40,27 +40,26 @@ A Knowledge Service MCP API token-alapú hitelesítést és jogosultság-kezelé
 
 ## Configuration Files
 
-### 1. agents.yaml — Token → Terminal mapping
+### 1. agents.yaml — ⛔ MÁR NEM hitelesítő-forrás (2026-07-30)
 
-**Location:** `config/agents.yaml`
+**Ez a szakasz korábban a VALÓDI tokeneket tartalmazta, és ez a repó PUBLIKUS.**
+Mérve: az éles `master_token` **azonos volt** a kint lévővel, tehát élő
+root-hitelesítő volt publikusan olvasható. Rotálva 2026-07-30.
 
-```yaml
-version: "1.1"
-updated: "2026-06-24"
+A `config/agents.yaml` **kikerült a verziókövetésből** (`.gitignore`), és a
+futásidejű hitelesítő-forrás **kizárólag** a service-manager környezete:
 
-# Master token (root access)
-master_token: "IoUpLUgr4v6Mj5lt4u2XD1JOy5iGmVdxne473srMl2o="
-
-# Terminal tokens (token → terminal_name)
-agents:
-  "6ozohLp1ESnTWhWhlkUiyxTwh3cm3Ia+yGT/5YXgqhs=": "conductor"
-  "DAP3+yV6SIQo9PH9zcoDYzLp3/XGpP1hFpiOjVO8ru4=": "architect"
-  "luBZgBbnTwLKsQ1HKmVMYo+j3Cwul64QVxOVb5/7wYE=": "librarian"
-  "aT/iZsIUyNY94CjuHChyGVgv5MFES5/l3V99gorrxcQ=": "explorer"
-  "jKB4yyFknSgwRiC8ewLbdFuPxEo8Vgi157lW5QBsmsY=": "backend"
-  "hsS4SbZGWWljJ8VNTkG18ys2X40BPbl2bH33h6+WIqk=": "frontend"
-  "gZnKTnAZ2pgRrkee1EQ7qvcMKBCJ4tDsFgCId5oFGzw=": "designer"
 ```
+MCP_AUTH_TOKEN=<master token>        # root hozzáférés
+MCP_TOKEN_<NAME>=<agent token>       # pl. MCP_TOKEN_CONDUCTOR
+```
+
+Szerkezeti referencia (token-mentes, **ez** a követett fájl):
+`config/agents.example.yaml` — v2.0, `credential_source: environment-or-service-manager`.
+
+> ⚠ Dokumentációba **soha** ne kerüljön valódi tokenérték, még példaként sem.
+> A 2026-07-29-i szivárgásnál pont a doksi-példák voltak a leltározatlan
+> előfordulások: a rendszer env-alapú volt, a doksi meg beégetve mutatta.
 
 ### 2. tool-permissions.yaml — Tool → Terminal mapping
 

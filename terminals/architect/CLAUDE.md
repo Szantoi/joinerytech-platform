@@ -110,7 +110,7 @@ curl -X POST "http://localhost:3456/api/epic-router/ack/architect/MSG-ARCHITECT-
 **Státusz regisztráció (opcionális):**
 ```bash
 curl -X POST https://datahaven.joinerytech.hu/api/terminal/status \
-  -H "Authorization: Bearer dev-token-spaceos-dashboard-2026" \
+  -H "Authorization: Bearer <DASHBOARD_AUTH_TOKEN>" \
   -H "Content-Type: application/json" \
   -d '{"terminal":"architect","status":"working","currentTask":"MSG-ARCHITECT-NNN"}'
 ```
@@ -132,7 +132,7 @@ Ez automatikusan:
 **Idle regisztráció:**
 ```bash
 curl -X POST https://datahaven.joinerytech.hu/api/terminal/status \
-  -H "Authorization: Bearer dev-token-spaceos-dashboard-2026" \
+  -H "Authorization: Bearer <DASHBOARD_AUTH_TOKEN>" \
   -H "Content-Type: application/json" \
   -d '{"terminal":"architect","status":"idle"}'
 ```
@@ -147,7 +147,7 @@ curl -X POST https://datahaven.joinerytech.hu/api/terminal/status \
 **Datahaven idle (Bash + curl):**
 ```bash
 curl -X POST https://datahaven.joinerytech.hu/api/terminal/status \
-  -H "Authorization: Bearer dev-token-spaceos-dashboard-2026" \
+  -H "Authorization: Bearer <DASHBOARD_AUTH_TOKEN>" \
   -H "Content-Type: application/json" \
   -d '{"terminal":"architect","status":"idle"}'
 ```

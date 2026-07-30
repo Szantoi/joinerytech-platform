@@ -100,7 +100,7 @@ const TERMINAL_DEFINITIONS: Array<{ id: string; name: string; type: Agent['type'
 
 const DEFAULT_CONFIG: MissionControlConfig = {
   datehavenUrl: process.env.DATAHAVEN_URL || 'https://datahaven.joinerytech.hu',
-  datehavenToken: process.env.DATAHAVEN_TOKEN || 'dev-token-spaceos-dashboard-2026',
+  datehavenToken: process.env.DATAHAVEN_TOKEN,
   syncInterval: 30000, // 30 seconds
   enableCrossSync: false,
 };

@@ -375,7 +375,7 @@ describe('Tool Error Handling', () => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: 'Bearer dev-token-spaceos-dashboard-2026',
+        Authorization: 'Bearer <TEST_AUTH_TOKEN>',
       },
       body: 'not valid json',
     });

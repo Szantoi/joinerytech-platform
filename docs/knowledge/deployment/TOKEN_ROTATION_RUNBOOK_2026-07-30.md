@@ -77,9 +77,9 @@ Ez a **legveszélyesebb** osztály, és tegnap nem volt a leltárban.
    `|| '<literál>'` sor bent marad, egy elfelejtett env-változó bármikor
    visszaállítja a rést. **A sort ki kell venni.**
 
-> ⚠ **Mérve: a kódban lévő tény.** Hogy az **éles** telepítéseken be van-e
-> állítva mind a négy env-változó, **nem mértük** — enélkül nem tudjuk, hogy a
-> rés ma kihasználható-e. Ez a rotáció **első lépése** (ld. 3.0).
+> ✅ **MEGMÉRVE — ld. 3.0.** A négyből **három nincs beállítva** az élesen,
+> tehát a publikus alapértékek **hatályban vannak**. A szolgáltatás viszont
+> **nem érhető el az internetről** — a súlyosság ezért **P1, nem aktív rés**.
 
 ### D osztály — Google Gemini API-kulcs (1 db, 3 helyen) ⚠ ÚJ
 
@@ -123,27 +123,53 @@ mint a kivételt (`kapu-epites-precedencia`).
 
 ## 3. Végrehajtás
 
-### 3.0 ELŐSZÖR: mérjük meg, kihasználható-e (5 perc, nem destruktív)
+### 3.0 A kihasználhatóság mérése — ✅ ELVÉGEZVE 2026-07-30
 
-A C osztály tétjét ez dönti el. **Csak olvasó hívások, semmi mutáció.**
+Olvasó SSH-hívások, maszkolt kimenettel, semmi mutáció. **Hitelesítést nem
+kíséreltem meg** a kitalálható értékekkel: a kötöttség és az elérhetőség
+együtt eldönti a kérdést, exploit nélkül.
 
-```bash
-# Fut-e a tunnel / a szolgáltatás
-ssh joinerytech-vps 'sudo ss -tlnp | grep 3458'
+**1. Melyik unit futtatja a szivárgó kódot?**
 
-# El van-e szeparálva a négy env-változó az élő unitban?
-ssh joinerytech-vps 'sudo systemctl show <nexus-unit> -p Environment' \
-  | tr ' ' '\n' | grep -E 'DASHBOARD_AUTH_TOKEN|TERMINAL_TOKEN_SECRET|ADMIN_SECRET|TELEGRAM_WEBHOOK_SECRET' \
-  | sed -E 's/=.*/=<BEALLITVA>/'
-```
+`spaceos-knowledge.service` → `/opt/joinerytech/src/joinerytech-nexus/knowledge-service`,
+`EnvironmentFile=…/.env`. *(A `nexus-ks.service` egy **másik** kódbázis
+— `/opt/nexus/src/nexus-core/…` —, az nem a mi szivárgásunk.)*
 
-- **Ha mind a négy be van állítva** → a C osztály „csak" publikus alapérték:
-  komoly, de nem aktív rés. A `||` sorok akkor is kiveendők.
-- **Ha bármelyik hiányzik** → **aktív, kitalálható belépő az élesen.**
-  Ez a rotáció sorrendjét megfordítja: a C osztály megy előre, nem az A.
+**2. Be van-e állítva a négy env-változó?** (kulcsnevek olvasva, értékek nem)
 
-> ⚠ A kimenetet **maszkolva** kérjük (`=<BEALLITVA>`) — egy runbook-lépés se
-> írja ki a titkot (`ne dumpolj titkot`).
+| Változó | Éles `.env` | Következmény |
+|---|---|---|
+| `DASHBOARD_AUTH_TOKEN` | ✅ beállítva | a publikus alapérték **nincs** hatályban |
+| `TERMINAL_TOKEN_SECRET` | ❌ **hiányzik** | ⚠ a terminál-tokenek **publikus konstanssal vannak aláírva** |
+| `ADMIN_SECRET` | ❌ **hiányzik** | ⚠ `spaceos-admin-2026` **hatályban** |
+| `TELEGRAM_WEBHOOK_SECRET` | ❌ **hiányzik** | `spaceos-webhook-secret-2026` hatályban |
+| `MCP_AUTH_TOKEN` | ❌ hiányzik | a master token a **publikus** `agents.yaml`-ból jön |
+
+**3. Elérhető-e a szolgáltatás kívülről?** — **NEM.** Két független gát:
+
+- `spaceos-knowledge` (3458) **`127.0.0.1`-en figyel**, nem `0.0.0.0`-n;
+- `ufw` aktív, `INPUT policy DROP`, és **sem a 3456-ra, sem a 3458-ra nincs
+  allow-szabály** (a nyitott portok: 22, 80, 443, 5050, 19132, 25565).
+
+### 3.0/b Amit ez a mérés jelent — és amit NEM
+
+**NEM jelenti**, hogy „aktív, kihasználható rés az interneten". Az nincs.
+Ha ezt írtam volna a mérés előtt, túlállítás lett volna.
+
+**Azt jelenti**, hogy a védelem **kizárólag hálózati szintű**. Alkalmazás-
+szinten a beléptetés három ponton egy **publikus, kitalálható konstans**.
+Ezért ez **P1** — a rotációval egy körben javítandó, de nem előzi meg:
+
+- bárki, aki **bármilyen** lábat betesz — tailnet-hozzáférés, egy kompromittált
+  tailnet-eszköz, lokális shell, SSRF a gép bármely másik szolgáltatásában —
+  az `spaceos-admin-2026`-tal **egyenesen besétál**;
+- a `TERMINAL_TOKEN_SECRET` **aláíró** kulcs: publikus konstanssal aláírt
+  terminál-token **hamisítható**, és ezt a hálózati gát nem gyengíti;
+- egyetlen kényelmi `ufw allow 3458` bármikor eltünteti az egyetlen gátat —
+  és aki azt beírja, nem fogja tudni, hogy közben ezt is kinyitotta.
+
+> **A hálózati gát nem helyettesíti az alkalmazás-szintű hitelesítést** —
+> csak elhalasztja a következményt.
 
 ### 3.1 Sorrend és miért
 

@@ -39,7 +39,35 @@ export const RULES = [
   {
     name: 'token-kulcs literál értékkel',
     // `master_token: "…"`, `token = '…'`, `apiKey: …` — legalább 16 karakter.
-    pattern: /\b(master_token|auth_?token|api_?key|secret|password|passwd|token)\b\s*[:=]\s*["']?[A-Za-z0-9+/=_.\-]{16,}["']?/i,
+    //
+    // ZAJ-HANGOLÁS (2026-07-30, @root kérése): az `origin/main` 72 találatából
+    // **21 fals pozitív** volt, mind ugyanabban az osztályban — az értékadás
+    // jobb oldala HÍVÁS, nem literál (`const token = authHeader.substring(7)`
+    // egymaga 18 sor). Ez 25% zaj, a kapu saját kikötése szerint pedig egy
+    // hangos kapu egy héten belül ki lesz kapcsolva.
+    //
+    // A kivétel a ZÁRÓJELRE szól, NEM a pontra. Egy JWT pontokat tartalmaz
+    // (`eyJ….eyJ….sig`), tehát alakra megtévesztésig hasonlít egy
+    // `objektum.metódus` hivatkozásra — a pontra írt kivétel pont a JWT-kre
+    // vakította volna meg a kaput. Zárójel viszont a titkok ábécéjében
+    // elvileg sem fordul elő.
+    //
+    // A `(?![A-Za-z0-9+/=_.\-])` a maximális falást kényszeríti ki: nélküle a
+    // motor visszalépne egy rövidebb futamra, amit már nem követ zárójel, és a
+    // kivétel hatástalan lenne.
+    //
+    // ⚠ A kivétel a SZABÁLYON belül van, NEM a negatív kontrollban. A
+    // `SAFE_PATTERNS` az egész SORT mentesíti — ott ugyanaz a hiba jött volna
+    // vissza, ami tegnap a `process.env.`-vel: egy hívás a sorban elnyomta
+    // volna a mellette álló valódi titkot is. Ld. az `ALWAYS_UNSAFE` alatti
+    // „hívás + beégetett alapérték" szabályt, ami épp ezt az utat zárja.
+    pattern: new RegExp(
+      String.raw`\b(master_token|auth_?token|api_?key|secret|password|passwd|token)\b\s*[:=]\s*` +
+      String.raw`(?:"[A-Za-z0-9+/=_.\-]{16,}"` +          // idézőjeles literál
+      String.raw`|'[A-Za-z0-9+/=_.\-]{16,}'` +
+      String.raw`|[A-Za-z0-9+/=_.\-]{16,}(?![A-Za-z0-9+/=_.\-])(?!\s*\())`, // csupasz, de nem hívás
+      'i',
+    ),
   },
   {
     // A `config/agents.yaml` alakja: a TOKEN a kulcs, az agent neve az érték.
@@ -112,6 +140,28 @@ export const ALWAYS_UNSAFE = [
     // alapértékeket is fogta. A megkülönböztetés a NÉV: token/key/secret/
     // password/auth/credential — vagy a célváltozóban, vagy az env-kulcsban.
     pattern: /(?:[A-Za-z_][A-Za-z0-9_]*(?:TOKEN|KEY|SECRET|PASSWORD|PASSWD|AUTH|CREDENTIAL)[A-Za-z0-9_]*\s*=\s*)?process\.env\.[A-Za-z_]*(?:TOKEN|KEY|SECRET|PASSWORD|PASSWD|AUTH|CREDENTIAL)[A-Za-z0-9_]*\s*(?:\|\||\?\?)\s*["'][^"']{8,}["']/i,
+  },
+  {
+    // A ZAJ-HANGOLÁS PÁRJA (2026-07-30). A fenti szabály csak a `process.env.`
+    // alakot ismeri, ezért a `const token = fetchToken() || '<literál>'` sort
+    // ma SEM fogja meg senki — ezt az öntesztem pozitív korpusza mérte ki,
+    // MIELŐTT a kivételt megírtam volna.
+    //
+    // Miért kötelező ez a szabály a kivétel mellé: a „hívás nem literál"
+    // kivétel enélkül nyitott hátsó ajtó lenne — pont a hívás mögé lehetne
+    // beégetni a titkot. A kivétel és az őre EGYÜTT megy be.
+    //
+    // Zaj ellen két szűkítés: a CÉL neve titok-gyanús kell legyen (különben
+    // `const mode = getMode() || 'development'` is bukna), és az alapérték
+    // legalább 16 karakter, SZÁMJEGGYEL — a `'development'` így kiesik, egy
+    // base64-token viszont gyakorlatilag mindig tartalmaz számjegyet.
+    name: 'hardcoded-fallback (hívás literál alapértékkel)',
+    // A célnév „TARTALMAZZA a kulcsszót" alakja előretekintéssel megy, nem
+    // előtag+kulcsszó összefűzéssel: az utóbbi a CSUPASZ `token`/`secret`
+    // nevet kihagyta (előtagot követelt elé), és az öntesztem `||`-ös esete
+    // pont ezen bukott — miközben a `??`-es, `apiKey` nevű párja átment.
+    // Ugyanaz a hiba két alakban: egy zöld eset nem igazolja a másikat.
+    pattern: /\b(?=[A-Za-z0-9_]*(?:TOKEN|KEY|SECRET|PASSWORD|PASSWD|AUTH|CREDENTIAL))[A-Za-z_][A-Za-z0-9_]*\s*[:=]\s*[^"'\n]*?\)\s*(?:\|\||\?\?)\s*["'](?=[A-Za-z0-9+/=_.\-]*[0-9])[A-Za-z0-9+/=_.\-]{16,}["']/i,
   },
 ]
 

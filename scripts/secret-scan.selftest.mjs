@@ -31,6 +31,20 @@ const POSITIVE = [
   ['const t = process.env.API_KEY ?? "AbCdEf0123456789AbCd"', 'beégetett fallback (??)'],
   ['ssh gabor@109.122.222.198', 'VPS IP'],
   ['tailnet: 100.82.133.87', 'tailnet cím'],
+  // ── A zaj-hangolás ŐREI (2026-07-30) ────────────────────────────────────
+  // A kivétel „a hívás nem literál" — ezek bizonyítják, hogy nem lett tág.
+  //
+  // A JWT PONTOT tartalmaz, tehát alakra megtévesztésig hasonlít egy
+  // `objektum.metódus` hivatkozásra. Ha a kivételt a pontra írnám (és nem a
+  // zárójelre), a kapu pont a JWT-kre vakulna meg.
+  ['const token = eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0In0.AbCdEf0123456789',
+    'JWT literál (pontokkal!) — a kivétel NEM szólhat a pontra'],
+  // A kivétel legkézenfekvőbb megkerülése: hívás UTÁN beégetett alapérték.
+  // Enélkül a „hívást nem nézünk" szabály egy nyitott hátsó ajtó lenne.
+  ["const token = fetchToken() || 'AbCdEf0123456789AbCd'",
+    'hívás + beégetett fallback — a kivétel NEM nyelheti el'],
+  ['const apiKey = loadKey() ?? "AbCdEf0123456789AbCd"',
+    'hívás + beégetett fallback (??)'],
 ]
 
 const NEGATIVE = [
@@ -42,6 +56,20 @@ const NEGATIVE = [
   ['SpaceOS portál UI-primitívek, design-system tokenekkel.', 'a „token" szó prózában'],
   ['Authorization: Bearer <YOUR_TOKEN>', 'placeholder'],
   ['token: import.meta.env.VITE_TOKEN', 'vite env'],
+  // ── Zaj-hangolás: a MÉRT fals pozitívok (2026-07-30) ────────────────────
+  // Mind a hét alak az `origin/main` 72 találatából való, összesen 21 sor.
+  // A közös nevező: az értékadás jobb oldala HÍVÁS, nem literál. A `.substring`
+  // /`.slice` család egymaga 18 sor — a 72-ből 25% zaj, és a kapu saját
+  // kikötése szerint egy hangos kapu egy héten belül ki lesz kapcsolva.
+  ['const token = authHeader.substring(7);', 'Bearer-levágás (15 sor ugyanígy)'],
+  ['const token = authHeader.slice(7); // Remove "Bearer "', 'Bearer-levágás slice-szal'],
+  ["const token = localStorage.getItem('accessToken');", 'olvasás localStorage-ból'],
+  ['const token = generateTerminalToken(terminal);', 'pont NÉLKÜLI hívás'],
+  ['var token = tokenHandler.CreateToken(tokenDescriptor);', 'C# metódushívás'],
+  // Testvér-alakok: a mért hetes lista mellé grep-elt minta, hogy a kivétel a
+  // családra szóljon, ne a konkrét sorokra.
+  ["const apiKey = req.headers.get('x-api-key');", 'testvér: header-olvasás'],
+  ['const password = await bcrypt.compare(input, stored);', 'testvér: await-es hívás'],
 ]
 
 let failed = 0

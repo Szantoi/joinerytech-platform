@@ -17,6 +17,45 @@
 - [ ] **VPS-IP / tailnet-cím** maradhat-e a publikus repóban?
 - [ ] A **3 submodule pushja** — idegen pusholatlan commitok miatt visszatartva.
 
+## Ma zárt review-k (2026-07-30, mind saját méréssel)
+
+- [x] **B2B-10 F3/1** — 144/144 + 2 mutáció (lejárat 2, visszavonás 3 bukó).
+- [x] **B2B-10 F3/2 + F3/3** — 175/175 + **34/34 valódi PostgreSQL**.
+      ⚠ Kötelező az F3/4-be: negatív teszt a **megállapodás**-úton (nem-részes
+      hibás `If-Match`-csel is **404**, ne 412 — verzió-orákulum). Az MC3
+      mutációm ott **túlélte**.
+- [x] **doccapture DC-01b** — 154/154 · **141/141 függőség nélkül, 0 kihagyás** ·
+      semlegességi kapu TISZTA · saját R-G4 mutáció 4 bukó. Commitolva
+      mind a 3 repóban (MIT licenc a G5 szerint).
+- [x] **szivárgás-kapu zaj-hangolás** — 0 FAIL önteszt, minden pozitív/negatív
+      kontroll helyes. A frontend **javította a javaslatomat** (zárójel, nem
+      pont — a pont a JWT-kre vakított volna).
+- [x] **CatalogPanel lint-szelet** — 28/28 + saját R-M1 mutáció 5/5 bukó.
+      Három valódi defekt egy lint-figyelmeztetés mögött.
+- [x] **portál submodule pusholva** (11 APPROVED commit) + pointer-bump.
+
+## Új teendők a mai review-kból
+
+- [ ] **@frontend — a kapu LEFEDETTSÉGE** (új szelet, nem a zaj javítása):
+      JSON-idézőjeles kulcs (`"api_key": "…"`) és prefixelt kulcsnév
+      (`BRAVE_API_KEY=`) → mérve **vak** a hangolás után is. ⚠ A naiv javítás
+      **37 hamis pozitívot** ad (doccapture mérése), köztük a
+      `credential_env: MCP_TOKEN_CONDUCTOR`-t — vagyis a helyes referencia-fájlt.
+      **A negatív kontroll a valódi kódbázison fusson**, ne szintetikus eseteken.
+- [ ] **G2-ADR kiosztatlan** (LLM az olvasáshoz, szabály a könyveléshez).
+      A döntés megvan, az írásba foglalás nincs — ADR nélkül hat hónap múlva
+      vitatható.
+- [ ] **`EditableDataTable` átvételi feltétel:** a zár-ütközés mintájának
+      `portal-ui`-ba emelésekor a demo-fa **törlésre kerül** (**3346 sor** halott
+      felület, amit ma csak tesztek tartanak zölden). Vele megy a `catalog/` fa
+      négy senkinek-nem-kellő eleme is (`CatalogFilterBar`,
+      `CatalogVersionView`, `VirtualizedCatalogGrid`, `ProductCard`).
+- [ ] **DC-04 root-kötelező:** a lépésszámot a mai Excel-úthoz képest **MEG KELL
+      MÉRNI** — enélkül a G3 (portál-UI) kockázata nem mérhető, csak vitatható.
+- [ ] **doccapture CI-javaslat:** az 1. kör végén egy sor, ami **elbukik, ha a
+      kihagyás nem nulla** — ma a „0 kihagyva" az explicit modul-listán múlik,
+      és egy `discover`-re csere csendben elrontja.
+
 ## 🔴 A rotációból eredő új teendők
 
 - [ ] **@frontend — a kapu LEFEDETTSÉGE** (nem a zaja, az kész): két vak pont

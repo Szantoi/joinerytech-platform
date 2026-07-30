@@ -2,7 +2,7 @@
 
 > **Epic:** EPIC-B2B-COLLABORATION-2026Q3 · **Szülő:** B2B-10 (Doorstar-kézfogás)
 > **Szerep:** backend · **Méret:** M–L (szeletelve) · **Előfeltétel:** B2B-10 F1 + F2 (mindkettő APPROVED)
-> **Státusz:** in_progress (2026-07-30) — **F3/1 APPROVED** (root-review 2026-07-30, saját mérés: 144/144 + 2 mutáció)
+> **Státusz:** in_progress (2026-07-30) — **F3/1 + F3/2 + F3/3 APPROVED** (root-review 2026-07-30; saját mérés: 175/175 unit + **34/34 valódi PostgreSQL** + 4 saját mutáció)
 > **Kanonikus státusz:** [`EPICS.yaml`](../../../EPICS.yaml) — a `done` kimondása root-review joga.
 
 ## Miért ez a következő
@@ -76,7 +76,7 @@ A döntés **egyetlen helyen** él (`CollaborationAccessGuard`), hogy a megford�
 
 **F3 saját kritériumai:**
 
-- [x] Minden üzleti route `RequireAuthorization()` + `RequireEnabledModule("spaceos.collaboration")`.
+- [x] Minden üzleti route `RequireAuthorization()` + `RequireEnabledModule("spaceos.collaboration")` — a route-**csoporton**, és egy **szerkezeti teszt** (`EndpointDataSource`) őrzi a csoporton kívül fölvett route-ot is. *(F3/2, root-review 2026-07-30)*
       *(F3/2 — viselkedés-teszt + **szerkezeti** teszt az `EndpointDataSource`-ból; az MA2 mutáció
       túlélte, mert a modul-kapu maga is hitelesítést követel — a szerkezeti teszt ezért kellett.)*
 - [x] Hibaformátum: ProblemDetails + correlation ID (a Doorstar biztonsági szerződésének tétele).
@@ -85,7 +85,7 @@ A döntés **egyetlen helyen** él (`CollaborationAccessGuard`), hogy a megford�
 - [~] A bizonyíték **valódi PostgreSQL-en** fut, nem InMemory-n (az F2 tanulsága). *(F3/3: az
       idempotencia-tár, a unique index, az RLS és a concurrency-fordítás valódi DB-n mérve; a
       **végpont**-szintű sáv még in-memory repositoryval fut → F3/5.)*
-- [x] Feltételes írás: `If-Match` a munkacsomagon **kötelező**, az előfeltétel a jogosultság UTÁN
+- [~] Feltételes írás: `If-Match` a munkacsomagon **kötelező**, az előfeltétel a jogosultság UTÁN
       fut (verzió-orákulum kizárva), és a 412/409/428/400 el van különítve. *(F3/3a)*
 - [x] `Idempotency-Key` **tartós** tárral, bérlőnkénti kulcstérrel; a versenyt a unique index dönti.
       *(F3/3b)* ⚠ A befejezett rekordok takarítása üzemeltetési feladat — nincs telepítve.
@@ -95,3 +95,43 @@ A döntés **egyetlen helyen** él (`CollaborationAccessGuard`), hogy a megford�
 - Nem publikál OpenAPI-kontraktust a Doorstarnak — az az **F4**.
 - Nem nyúl a portál-UI-hoz (B2B-08) — az az F4 generált kliensére vár.
 - Nem old fel `changes_requested`-et B2B-02/04/05/06/07-en: azt a root mondja ki.
+
+
+---
+
+## ⚠ ROOT-KÖTELEZŐ AZ F3/4-BE (root-review 2026-07-30)
+
+**A „jogosultság előbb, előfeltétel utána" invariáns fél lábon áll.** A root
+lefuttatta ugyanazt az MC3-mutációt **mindkét** úton:
+
+| Az invariáns megsértése | Bukó teszt |
+|---|---|
+| **munkacsomag**-út | **2** — mérve |
+| **megállapodás**-út | **0** — ⚠ **TÚLÉLTE, tehát nincs mérés** |
+
+Ezért került a feltételes-írás tétele `[x]`-ről `[~]`-re: a kódban a sorrend
+**helyes** és kommentált, de a megállapodás-úton **semmi nem fogná meg, ha
+megfordul**. Ez a „tükör zöld marad, ha az eredeti elromlik" alak.
+
+**Kötelező tétel:** negatív teszt a megállapodás-úton — nem-részes hívó **hibás
+`If-Match`-csel is 404-et** kapjon, ne **412**-t (különben verzió-orákulum).
+
+> Amit a root **nem** állít: hogy ez ma kihasználható. Hogy az RLS a közvetlen
+> repository-betöltést elvágja-e, **nem mérve** — a unit-suite elvileg sem tudja
+> megmutatni. Ez az **F3/5** tartalma.
+
+**Egyéb rögzített tételek:**
+
+- A `HasActiveGrantFor` ma azért biztonságos, mert az agreement **kétoldalú** —
+  egy jövőbeli 3+ fél csendben kinyitná. Magyarázó sor kérve. *(F3/1 review)*
+- Az `allowedActions`↔domain paritásnál **a DOMAIN a forrás**. Ha a policy
+  szűkítése szándékos üzleti szabály, az **a domainbe való**, nem külön táblába.
+- A **megállapodás-átmenet `If-Match`-e itt szigorítandó** kötelezőre (az F3/3
+  óta van rá ok: lesz olvasó végpontja).
+- **Ismert korlát, elfogadva:** a befejezett idempotencia-rekordokat semmi nem
+  takarítja — üzemeltetési feladat, ez a szelet ne telepítse.
+
+> **Konvenció-emlékeztető:** a kritériumok `[x]`-re billentése **root-review
+> joga** — a végrehajtó `review_requested`-et jelent mért bizonyítékkal. Az
+> F3/2–F3/3 tételei előre ki voltak pipálva; tartalmilag rendben találtam őket,
+> de a sorrend fordítva van.

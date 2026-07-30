@@ -1,6 +1,6 @@
 # BACKEND Terminal TODO
 
-> **Frissítve:** 2026-07-29 délután (Europe/Budapest)
+> **Frissítve:** 2026-07-30 délelőtt (Europe/Budapest)
 > **Részletes állapot:** [`STATE.md`](STATE.md)
 > **Kanonikus task-státusz:** [`EPICS.yaml`](../../EPICS.yaml) — a `done` kimondása root-review joga
 
@@ -18,6 +18,23 @@
 - [ ] Commit után `git show --stat` a **teljes** fájllistára — a `git status | grep` szűrt
       kimenete pont azt rejti el, amit ellenőrizni akarok.
 - [ ] Mérés előtt Docker-állapot ellenőrzése, ha integrációs sáv is kell.
+
+## P1 — B2B-10 F3: Collaboration API + grant-alapú authorization (FUT)
+
+Kiírás: [`B2B-10-F3-COLLABORATION-API-AUTHORIZATION.md`](../../docs/tasks/EPIC-B2B-COLLABORATION-2026Q3/B2B-10-F3-COLLABORATION-API-AUTHORIZATION.md)
+
+- [x] **F3/1 — authorization-mag** (`0b555f0`): képesség-szótár, egyetlen döntési hely, spoofing-kapu
+      a betöltés ELŐTT, 404 a nem-részesnek / 403 a részes-de-tiltottnak. 144/144 zöld, **6/6 mutáció**.
+      `review_requested`.
+- [ ] ⛔ **Root-megerősítést kér:** a megállapodás maga részvétel-alapú maradt (körkörösség);
+      ha szigorúbb kell, az F3/2 endpointjai ELŐTT szóljon a root.
+- [ ] **F3/2** — `SpaceOS.Collaboration.Api` + host: hosting-minta, `RequireEnabledModule("spaceos.collaboration")`,
+      `/api/collaboration/v1`, ProblemDetails + correlation ID, `ICollaborationCallerContext` implementáció.
+- [ ] **F3/3** — `If-Match` az átmeneteken (a `RowVersion` concurrency-tokenre), `Idempotency-Key`.
+- [ ] **F3/4** — `AgreementReadModel` valódi projekciója + **allowedActions↔domain paritás-teszt**
+      (⚠ a mai `AllowedActionsPolicy` eltér a domaintől — a lelet a STATE.md-ben).
+- [ ] **F3/5** — végpont-szintű bizonyíték **valódi PostgreSQL-en** — ⚠ **Docker kell hozzá**
+      (2026-07-30-án nem futott, ezért a 25 integrációs teszt sincs ma mérve).
 
 ## P1 — M4: véges kapacitású ütemező (a BELSŐ hatókör kimerült)
 

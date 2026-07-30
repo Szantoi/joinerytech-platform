@@ -1,9 +1,28 @@
 # BACKEND Terminal State
 
-> **Frissítve:** 2026-07-29 délután (Europe/Budapest)
+> **Frissítve:** 2026-07-30 délelőtt (Europe/Budapest)
 > **Kanonikus task-státusz:** [`EPICS.yaml`](../../EPICS.yaml) — a `done`/`APPROVED`
 > kimondása **root-review joga**, ez a fájl a végrehajtó nézete.
-> **Aktív task:** [`PLAN-03`](../../docs/tasks/EPIC-PRODUCTION-PLANNING-2026Q3/PLAN-03-SCHEDULING-IMPLEMENTATION.md)
+> **Aktív task:** [`B2B-10 F3`](../../docs/tasks/EPIC-B2B-COLLABORATION-2026Q3/B2B-10-F3-COLLABORATION-API-AUTHORIZATION.md)
+> — a scheduling M4 mérföldkő APPROVED, a B2B-10 F1/F2 APPROVED; a kritikus út az F3-on megy tovább.
+
+## B2B-10 F3 — Collaboration API + authorization (2026-07-30, fut)
+
+| Szelet | Állapot | Bizonyíték |
+|---|---|---|
+| F3/1 grant-alapú authorization | **`review_requested`** (`0b555f0`) | 144/144 zöld (126→+18), **6/6 mutáció megfogva** |
+| F3/2 API-host + `RequireEnabledModule` | nem indult | — |
+| F3/3 ETag / Idempotency-Key | nem indult | — |
+| F3/4 `AgreementReadModel` + allowedActions-paritás | nem indult | — |
+| F3/5 végpont-bizonyíték valódi Postgresen | **blokkolva** | a Docker nem futott 2026-07-30-án |
+
+**Root-döntésre vár:** a grant-kényszerítés hatóköre. A megállapodás MAGA részvétel-alapú maradt
+(a vendég grant nélkül is elfogadhatja), mert a granteket maga a megállapodás adja ki — enélkül
+körkörös. Amit a megállapodás hordoz, az grant-köteles. Egy helyen él, a megfordítása egysoros.
+
+⚠ **F3/4-re előre jelzett drift:** az `AllowedActionsPolicy` (B2B-07 örökség) eltér a domaintől
+(Draft-ban a vendégnek `Offer`-t ad, `Cancel`-t nem — a domain mindkettőt engedi). Ma ártalmatlan,
+de a portál gombjai ebből épülnének.
 
 ## Hol van a kód
 

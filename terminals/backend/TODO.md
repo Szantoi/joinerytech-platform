@@ -39,8 +39,12 @@ Kiírás: [`B2B-10-F3-COLLABORATION-API-AUTHORIZATION.md`](../../docs/tasks/EPIC
       B2B-07-es táblázat törölve; `AgreementReadModel` valódi projekciója + `GET /agreements/{id}`
       + ETag → az `If-Match` a megállapodáson is kötelező. Gábor döntése: a lezárt állapot lezárt.
       **218/218 unit + 39/39 integrációs zöld, 5/5 mutáció.** `review_requested`.
-- [ ] ⛔ **Root-döntés:** `WorkPackageStatus.Disputed` — bekötés vagy kivezetés? (Ma egyetlen
-      átmenet sem vezet bele; a paritás-suite névvel kizárja és bizonyítja, hogy elérhetetlen.)
+- [x] ✅ **Root döntött:** a `Disputed` **marad**; az „elérhetetlen" őr-teszt root-döntés nélkül
+      **nem törölhető**, és a komment megnevezi az F0-döntést. Kész.
+- [x] **F3X — sorrend-bizonyíték** (a root háromszor átvitt tétele): nem-részes írás hibás
+      `If-Match`-csel → 404 mindkét úton. **A mérés lényege:** valódi adaton a DB-réteg tart
+      (RLS + EF-szűrő elvágja a betöltést, az E2E mutációval is zöld), a **sorrendet** az
+      in-memory teszt szögezi le — az fogja a mutációt (1 bukás). `review_requested`.
 - [x] **F3/5** — végpont-szintű bizonyíték **valódi PostgreSQL-en**: E2E host a produkciós
       infrastruktúra-regisztrációval, NOSUPERUSER/NOBYPASSRLS szerepen. **ME1: interceptor nélkül
       6/7 E2E bukik** → az ADR-062 interceptor bizonyítottan lefut a kérés útján (a platform-lelet

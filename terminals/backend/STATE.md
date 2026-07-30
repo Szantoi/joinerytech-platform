@@ -13,7 +13,12 @@
 | F3/1 grant-alapú authorization | **APPROVED** (root, `0b555f0`) | 144/144 zöld, 6/6 saját + 2 root-mutáció megfogva |
 | F3/2 API-host + `RequireEnabledModule` | **`review_requested`** | végpont-tesztek valódi pipeline-on |
 
-**Mérés 2026-07-30 este:** **226/226 unit + 46/46 integrációs** (valódi PostgreSQL), 0 warning.
+**Mérés 2026-07-30 este:** **227/227 unit + 47/47 integrációs** (valódi PostgreSQL), 0 warning.
+**F3X (sorrend-bizonyíték) kész** — a root háromszor átvitt tétele lezárva.
+
+⚠ **A mérőeszköz javítva:** az integrációs suite párhuzamos konténer-indítástól bukdácsolt
+(1 ms-os fixture-hibák); `parallelizeTestCollections=false` → 5 m 31 s, de determinisztikus.
+60 bennragadt teszt-konténer kitakarítva (a `doorstar-production-db` érintetlen).
 **Az F3 mind az öt szelete kész.**
 
 ⚠ **Saját baleset (javítva):** az F3/5 commitba bekerült egy mutáció (a munkacsomag

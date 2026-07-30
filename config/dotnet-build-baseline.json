@@ -1,0 +1,200 @@
+{
+  "_comment": [
+    "A platform-saját .NET teszt-projektek MÉRT alapállapota (2026-07-30, root).",
+    "",
+    "Miért ratchet és nem 'nulla warning' kapu: a mérés szerint ma 13/15 projekt",
+    "fordul, 2 nem, és 15 warning van a fordulókban. Egy 'legyen nulla' kapu az",
+    "első naptól piros lenne — és egy piros kapu, amit senki nem tud zöldre",
+    "hozni, egy héten belül ki lesz kapcsolva. Ezért a kapu a ROMLÁST fogja meg:",
+    "ha egy forduló projekt elromlik, ha a warning-szám NŐ, vagy ha egy projekt",
+    "megjelenik a listán kívül.",
+    "",
+    "Miért config és nem beégetett lista: a projekt-készlet nő, és egy kódba írt",
+    "listánál minden új modul PR-je a scriptet módosítaná — ott pedig senki nem",
+    "nézi át, mi került ki a mérésből. Így a változás külön, olvasható diff.",
+    "",
+    "⚠ SUBMODULE-OK KIMARADNAK. A 27 teszt-projektből 12 külön repóban él",
+    "(kernel, cutting, inventory, procurement, joinery, contracts, nesting) —",
+    "azoknak saját CI-jük van vagy kell. Ez a kapu a platform-repó SAJÁT",
+    "projektjeit méri, és ezt kimondja, hogy a '15 projekt lefut' ne látsszon",
+    "'minden projekt lefut'-nak."
+  ],
+  "version": "1.0",
+  "measured": "2026-07-30",
+  "toolchain": "dotnet 8",
+  "projects": [
+    {
+      "path": "src/SpaceOS.Modules.CRM/tests/Lead.Tests/SpaceOS.Modules.CRM.Tests.csproj",
+      "builds": true,
+      "maxWarnings": 0,
+      "ciRunnable": true
+    },
+    {
+      "path": "src/dms/tests/SpaceOS.Modules.DMS.Tests.csproj",
+      "builds": true,
+      "maxWarnings": 0,
+      "ciRunnable": false,
+      "ciWhy": "NEM futtathato CI-ben submodule nelkul: tranzitivan a `spaceos-kernel` submodule-ra hivatkozik (merve 2026-07-30, ProjectReference-zarvany). A kernel PRIVAT repo -> a CI-nek PAT kell hozza. Ez GABOR-DONTES, addig kimarad."
+    },
+    {
+      "path": "src/ehs/tests/Infrastructure.Tests/SpaceOS.Modules.Ehs.Infrastructure.Tests.csproj",
+      "builds": true,
+      "maxWarnings": 10,
+      "why": "10 ismert warning. NEM nulla, mert a mérés szerint ennyi van — a csökkentés külön szelet, de innentől nem NŐHET.",
+      "ciRunnable": false,
+      "ciWhy": "NEM futtathato CI-ben submodule nelkul: tranzitivan a `spaceos-kernel` submodule-ra hivatkozik (merve 2026-07-30, ProjectReference-zarvany). A kernel PRIVAT repo -> a CI-nek PAT kell hozza. Ez GABOR-DONTES, addig kimarad."
+    },
+    {
+      "path": "src/ehs/tests/SpaceOS.Modules.Ehs.Domain.Tests.csproj",
+      "builds": true,
+      "maxWarnings": 0,
+      "ciRunnable": false,
+      "ciWhy": "NEM futtathato CI-ben submodule nelkul: tranzitivan a `spaceos-kernel` submodule-ra hivatkozik (merve 2026-07-30, ProjectReference-zarvany). A kernel PRIVAT repo -> a CI-nek PAT kell hozza. Ez GABOR-DONTES, addig kimarad."
+    },
+    {
+      "path": "src/hr/tests/SpaceOS.Modules.HR.Tests.csproj",
+      "builds": true,
+      "maxWarnings": 0,
+      "ciRunnable": false,
+      "ciWhy": "NEM futtathato CI-ben submodule nelkul: tranzitivan a `spaceos-kernel` submodule-ra hivatkozik (merve 2026-07-30, ProjectReference-zarvany). A kernel PRIVAT repo -> a CI-nek PAT kell hozza. Ez GABOR-DONTES, addig kimarad."
+    },
+    {
+      "path": "src/maintenance/tests/SpaceOS.Modules.Maintenance.Tests.csproj",
+      "builds": true,
+      "maxWarnings": 0,
+      "ciRunnable": false,
+      "ciWhy": "NEM futtathato CI-ben submodule nelkul: tranzitivan a `spaceos-kernel` submodule-ra hivatkozik (merve 2026-07-30, ProjectReference-zarvany). A kernel PRIVAT repo -> a CI-nek PAT kell hozza. Ez GABOR-DONTES, addig kimarad."
+    },
+    {
+      "path": "src/qa/tests/SpaceOS.Modules.QA.Tests.csproj",
+      "builds": true,
+      "maxWarnings": 2,
+      "why": "2 ismert warning.",
+      "ciRunnable": false,
+      "ciWhy": "NEM futtathato CI-ben submodule nelkul: tranzitivan a `spaceos-kernel` submodule-ra hivatkozik (merve 2026-07-30, ProjectReference-zarvany). A kernel PRIVAT repo -> a CI-nek PAT kell hozza. Ez GABOR-DONTES, addig kimarad."
+    },
+    {
+      "path": "src/spaceos-modules-collaboration/tests/SpaceOS.Collaboration.Tests/SpaceOS.Collaboration.Tests.csproj",
+      "builds": true,
+      "maxWarnings": 0,
+      "ciRunnable": true
+    },
+    {
+      "path": "src/spaceos-modules-collaboration/tests/SpaceOS.Collaboration.IntegrationTests/SpaceOS.Collaboration.IntegrationTests.csproj",
+      "builds": true,
+      "maxWarnings": 0,
+      "ciRunnable": true
+    },
+    {
+      "path": "src/spaceos-modules-hosting/tests/SpaceOS.Modules.Hosting.Tests/SpaceOS.Modules.Hosting.Tests.csproj",
+      "builds": true,
+      "maxWarnings": 0,
+      "ciRunnable": true
+    },
+    {
+      "path": "src/spaceos-modules-joinerytech/SpaceOS.Modules.JoineryTech.Tests/SpaceOS.Modules.JoineryTech.Tests.csproj",
+      "builds": true,
+      "maxWarnings": 0,
+      "ciRunnable": true
+    },
+    {
+      "path": "src/spaceos-modules/spaceos-modules-hr/tests/SpaceOS.Modules.HR.Tests.csproj",
+      "builds": true,
+      "maxWarnings": 0,
+      "ciRunnable": false,
+      "ciWhy": "NEM futtathato CI-ben submodule nelkul: tranzitivan a `spaceos-kernel` submodule-ra hivatkozik (merve 2026-07-30, ProjectReference-zarvany). A kernel PRIVAT repo -> a CI-nek PAT kell hozza. Ez GABOR-DONTES, addig kimarad."
+    },
+    {
+      "path": "src/spaceos-modules/spaceos-modules-kontrolling/tests/SpaceOS.Modules.Kontrolling.Tests.csproj",
+      "builds": true,
+      "maxWarnings": 0,
+      "ciRunnable": false,
+      "ciWhy": "NEM futtathato CI-ben submodule nelkul: tranzitivan a `spaceos-kernel` submodule-ra hivatkozik (merve 2026-07-30, ProjectReference-zarvany). A kernel PRIVAT repo -> a CI-nek PAT kell hozza. Ez GABOR-DONTES, addig kimarad."
+    },
+    {
+      "path": "src/spaceos-modules-ehs/Ehs.Tests/Ehs.Tests.csproj",
+      "builds": false,
+      "maxWarnings": 0,
+      "why": "NEM FORDUL — és ez lelet, nem konfiguráció. Az `Ehs.Application` az `Ehs.Infrastructure`-t és a `Microsoft.EntityFrameworkCore`-t hivatkozza, de a projekt-/csomag-hivatkozás hiányzik (CS0234). Ez az ORPHAN EHS-fa: saját .sln-je van, de 0 systemd-unit, nincs `bin/` a VPS-en, és a futó service-ek közt nincs EHS. Az ÉLŐ EHS a `src/ehs`. Scope-döntés: törlés vagy javítás — ld. docs/knowledge/architecture/ORPHAN_EHS_FA_ES_KONTROLLING_TENANCY_2026-07-30.md",
+      "ciRunnable": true
+    },
+    {
+      "path": "src/spaceos-modules-production/Production.Tests/Production.Tests.csproj",
+      "builds": false,
+      "maxWarnings": 3,
+      "why": "NEM FORDUL — KERESZT-REPÓ KONTRAKTUS-SODRÓDÁS. A `Production.Application` a `SpaceOS.Modules.Contracts.Maintenance` névteret és az `AssetDowntimeEvent` típust hivatkozza, de a `spaceos-modules-contracts` submodule MAI PINJÉN ezek nincsenek meg (CS0234 + CS0246). Ez pontosan az az osztály, amit a doc-capture hash-pinje őriz a saját szerződésén — itt viszont semmi nem őrzi.",
+      "ciRunnable": false,
+      "ciWhy": "NEM futtathato CI-ben submodule nelkul: a `spaceos-modules-contracts` submodule-ra hivatkozik -- es a mai pinjen a hivatkozott tipus (AssetDowntimeEvent) nem is letezik, ezert lokalisan sem fordul."
+    }
+  ],
+  "_selftest": {
+    "_comment": [
+      "A kapu öntesztje: bizonyítsa, hogy HARAP, és hogy NEM vaklárma.",
+      "Enélkül egy mindig-zöld kapu megkülönböztethetetlen attól, amelyik el sem indul."
+    ],
+    "mustFail": [
+      {
+        "case": "egy forduló projekt elromlik",
+        "path": "src/dms/tests/SpaceOS.Modules.DMS.Tests.csproj",
+        "builds": false,
+        "warnings": 0
+      },
+      {
+        "case": "a warning-szam NO",
+        "path": "src/qa/tests/SpaceOS.Modules.QA.Tests.csproj",
+        "builds": true,
+        "warnings": 3
+      },
+      {
+        "case": "a nem-fordulo projekt tovabbra sem fordul, DE uj warninggal",
+        "path": "src/spaceos-modules-production/Production.Tests/Production.Tests.csproj",
+        "builds": false,
+        "warnings": 9
+      },
+      {
+        "case": "listan kivuli projekt jelenik meg",
+        "path": "src/valami/uj/Nincs.A.Listan.Tests.csproj",
+        "builds": true,
+        "warnings": 0
+      }
+    ],
+    "mustPass": [
+      {
+        "case": "valtozatlan alapallapot",
+        "path": "src/qa/tests/SpaceOS.Modules.QA.Tests.csproj",
+        "builds": true,
+        "warnings": 2
+      },
+      {
+        "case": "a warning-szam CSOKKEN (javulas sosem bukhat)",
+        "path": "src/qa/tests/SpaceOS.Modules.QA.Tests.csproj",
+        "builds": true,
+        "warnings": 0
+      },
+      {
+        "case": "a nem-fordulo projekt HIRTELEN FORDUL (javulas)",
+        "path": "src/spaceos-modules-ehs/Ehs.Tests/Ehs.Tests.csproj",
+        "builds": true,
+        "warnings": 0
+      }
+    ]
+  },
+  "_ciComment": [
+    "⚠ MERVE 2026-07-30: a 15 platform-sajat teszt-projektbol 9 TRANZITIVAN submodule-ban",
+    "elo projektre hivatkozik (8 a spaceos-kernel-re, 1 a contracts-ra). A kernel PRIVAT repo,",
+    "tehat a CI-nek PAT kell hozza -- ez GABOR-DONTES.",
+    "",
+    "Ezert a kapu ket modban fut:",
+    "  node scripts/dotnet-build-gate.mjs        -> mind a 15 (lokalisan, ahol a submodule-ok megvannak)",
+    "  node scripts/dotnet-build-gate.mjs --ci   -> csak a ciRunnable projektek (6, ebbol 5 fordul)",
+    "",
+    "A --ci mod SZANDEKOSAN kisebb, es ezt KIMONDJA a kimenetben. Egy kapu, ami 6-ot mer",
+    "es 15-nek latszik, rosszabb, mint a kapu nelkuli allapot -- pontosan az a hamis zold,",
+    "amit ez a szelet zarni akar.",
+    "",
+    "⚠ A harom ARVA gitlink (joinerytech-keycloak-theme, spaceos-modules-identity,",
+    "spaceos-modules-sales) nincs a .gitmodules-ban, ezert egy `submodules: recursive`",
+    "checkout viselkedese rajtuk BIZONYITATLAN -- es a `git submodule status` mar ma is",
+    "elhasal rajtuk. Ezert a CI NEM hasznal recursive checkoutot."
+  ]
+}

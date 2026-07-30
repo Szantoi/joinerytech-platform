@@ -1,0 +1,62 @@
+name: dotnet-build-gate
+
+# .NET build-kapu — a platform ELSŐ automatikus .NET-kapuja.
+#
+# KIVÁLTÓ OK (mérve 2026-07-30, STAB-CI-DOTNET-GATE):
+#   .github/workflows/ a platform-repóban : CSAK secret-scan.yml
+#   `grep -rl "dotnet test" .github/`     : 0 találat, SEHOL
+#   .NET teszt-projekt a repóban          : 27
+# Vagyis minden zöld szám, amit leírtunk, csak azért volt zöld, mert valaki
+# kézzel elindította. Ugyanaz a hibaosztály, mint a kézzel írt RLS-tükör, egy
+# szinttel feljebb: a tükör zöld marad, ha az eredeti elromlik — egy suite, amit
+# semmi nem futtat, még ennyit sem mond, NINCS IS ÁLLAPOTA.
+#
+# MIÉRT BUILD ÉS NEM TESZT (mérve, nem választva):
+# a 15 platform-saját teszt-projektből 14 igényel Dockert (Testcontainers,
+# közvetlenül vagy tranzitívan a RlsFixtures-ön át). A „Docker-mentes teszt-kör"
+# tehát 15-ből 1-et futtatna, és a lefedettség látszatát adná. A build-kapu
+# Docker nélkül fut, gyors, és pont azt fogja meg, ami 2026-07-30-án átcsúszott
+# a root-review-n: egy HAMIS „0 warning" állítás.
+#
+# ⚠ AMIT EZ A KAPU NEM CSINÁL, és amit ezért ki kell mondani:
+#   * NEM futtat tesztet. A teszt-kapu külön döntés (Docker + a 13 perces
+#     collaboration integrációs suite költsége).
+#   * 6/15 projektet mér. A másik 9 tranzitívan a PRIVÁT `spaceos-kernel`
+#     submodule-ra (8) vagy a `contracts`-ra (1) hivatkozik → PAT kell hozzá,
+#     az Gábor-döntés. A script a kihagyottakat NEVESÍTVE kiírja.
+#   * NEM használ `submodules: recursive` checkoutot: három gitlink ÁRVA
+#     (nincs `.gitmodules`-bejegyzés), és a `git submodule status` már ma is
+#     elhasal rajtuk — a recursive checkout viselkedése rajtuk bizonyítatlan.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        # Szándékosan submodule NÉLKÜL — ld. a fenti indoklást.
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      # 1. A KAPU ÖNELLENŐRZÉSE fut előbb — a secret-scan.yml mintájára.
+      #    Egy kapu, ami nem tud pirosra váltani, ugyanaz a hamis zöld, amit ez
+      #    a szelet zárni akar. A negatív korpusz ugyanilyen fontos: ha a kapu a
+      #    JAVULÁSRA (kevesebb warning) bukna, egy héten belül kikapcsolnák.
+      - name: A kapu önellenőrzése (4 romlás-eset + 3 javulás-eset)
+        run: node scripts/dotnet-build-gate.mjs --selftest
+
+      # 2. A ratchet: a ROMLÁST fogja meg (elromlott build · nőtt warning-szám ·
+      #    listán kívüli vagy eltűnt projekt). A javulás sosem bukhat.
+      - name: Build-ratchet a CI-ben futtatható projekteken
+        run: node scripts/dotnet-build-gate.mjs --ci

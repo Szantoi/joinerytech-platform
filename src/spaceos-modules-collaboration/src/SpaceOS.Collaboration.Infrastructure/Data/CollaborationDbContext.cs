@@ -89,7 +89,9 @@ public class CollaborationDbContext : DbContext
                 || g.GuestTenantId == CurrentTenantId);
 
         modelBuilder.Entity<DelegatedWorkPackage>()
-            .HasQueryFilter(w => true);
+            .HasQueryFilter(w => CurrentTenantId == null
+                || w.HostTenantId == CurrentTenantId
+                || w.GuestTenantId == CurrentTenantId);
 
         modelBuilder.Entity<AgreementAcceptanceEvidence>()
             .HasQueryFilter(e => CurrentTenantId == null || e.TenantId == CurrentTenantId);

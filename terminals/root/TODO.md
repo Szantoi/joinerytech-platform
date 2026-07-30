@@ -81,6 +81,10 @@
       ⚠ Kérve: magyarázó sor a `HasActiveGrantFor`-hoz (3+ fél esetén kinyílna).
 - [ ] **backend B2B-10 F3/5** — a végpont-szintű bizonyíték **valódi
       PostgreSQL-en**. ⚠ Ne csússzon el: az F3/1 lejárat-bizonyítéka InMemory.
+      ⚠ **ÁTVITT KÖTELEZŐ TÉTEL (F3/2→F3/4→F3/5):** negatív teszt a
+      **megállapodás**-úton — nem-részes hívó hibás `If-Match`-csel is **404**-et
+      kapjon, ne 412-t. Az `R-MC3/agreement` mutációm **az F3/4 utáni fán is
+      túlélte** (218/218 zöld). Egy teszt, egy sor — ne csússzon tovább.
 - [ ] **doccapture DC-01b** (Excel/CSV betöltő) — a G4 után.
 
 ## Kiadható / kiosztatlan
@@ -108,7 +112,10 @@
 ## Állandó szabályok
 
 1. Done/APPROVED **kizárólag root-review, saját méréssel** — a jelentés
-   elfogadása nem review.
+   elfogadása nem review. ⚠ **2026-07-30: a WARNING-SZÁM is mért tétel**, nem
+   csak a Passed/Failed sor. A backend helyesbítette, hogy az F3/2–F3/3
+   „0 warning"-ja hamis volt (`CS0108`) — a hiba az övé volt, de **át kellett
+   volna mennie a kapumon, és nem ment át.**
 2. **Review-nként commitolj**, ne nap végén.
 3. Nincs `git add -A` vegyes fán; taskonkénti fájllista.
 4. **Idegen repóban nincs destruktív parancs** — `revert`, nem `reset --hard`.

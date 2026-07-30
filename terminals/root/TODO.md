@@ -50,6 +50,44 @@
 - [ ] **Idempotencia-rekordok takarítása** — üzemeltetési feladat, a pilot előtt
       ütemezés kell (a szelet szándékosan nem telepíti).
 
+## Ma zárt, 3. kör (2026-07-30 este)
+
+- [x] **B2B-10 F3X APPROVED** — az F3 utolsó `[~]` tétele `[x]`-re, F3X archiválva.
+- [x] **DC-02 APPROVED** (a `.NET` oldal először mérve) + **ADR-071 APPROVED**
+      (23/23 mutáció, élő kereszt-repó hash bájtra) — mindkettő pusholva.
+- [x] **scheduling lint APPROVED**, pusholva.
+- [x] **lint élő/halott térkép elfogadva** (31 halott fájl, **0/31 cáfolva**).
+- [x] **Szerep-jogosultság kapu** megírva + az **éles állapot megmérve**.
+- [x] **ADR-index javítva**: hét elfogadott ADR (065–071) nem szerepelt egyetlen
+      indexben sem; mind a 13 link ellenőrizve, hogy létező fájlra oldódik.
+
+## 🔴 Gábor előtt — sürgősségi sorrendben
+
+- [ ] **`/quote-request` hamis „elküldve"** — a javítás **kiadva** (nem
+      termékdöntés), de tudnod kell: **valódi backend van mögötte** (mérve), tehát
+      eddig **minden hibás beküldés némán elveszett** a publikus ügyfél-felületen.
+- [ ] **`/shopfloor`**: a beégetett `PIN=1234` ág **ki** (nem kérdés). A kérdés:
+      **egy nem működő világ mit keres publikus route-on?** (Mérve: se backend,
+      se MSW-mock → a PIN az egyetlen működő belépő minden környezetben.)
+- [ ] **CI-hatókör** (`STAB-CI-DOTNET-GATE`): mind a 27 projekt vs. előbb a
+      Docker-mentes rész · PR-kapu vs. éjszakai. Kapu-költség mérve: a
+      collaboration integrációs suite **13 m 19 s** szerializálva.
+- [ ] A korábbi négy kulcs-visszavonás + VPS-IP + a 3 submodule pushja + `npm publish`.
+
+## Root-tételek, amiket ma átvettem
+
+- [ ] **ADR-070 D4**: a Python doc-capture motorban **nincs lockfile**. Publikus,
+      telepíthető csomagnál a supply-chain rögzítés nem stílus-kérdés — a **G4
+      telepítési alak** eldőlése előtt meg kell lennie.
+- [ ] **Orphan `spaceos-modules-ehs` fa**: törlés vagy fenntartott build-cél?
+      (Mérve: nem fut, nincs unit, nincs `bin/` — **halott kód lappangó
+      csapdával**: a `Program.cs` az interceptor nélküli DI-t hívja.)
+- [ ] **Kontrolling**: az `AddSpaceOsModuleTenancy()` az **API-rétegben** van,
+      nem az Infrastructure-ben. Nem hiba (fail-loud), de **döntés kell**, és ha
+      marad, az előfeltétel a metódus doksijába.
+- [ ] **`Invoke-DbRolePrivilegeGuard.ps1` bekötése** ütemezett futásba — ma
+      kézi indításra vár, mint minden más mai kapu.
+
 ## Task-átvizsgálás — 2026-07-30 (root)
 
 **9 task archiválva** (mind root-review-val igazolva, `docs/tasks/<EPIC>/archive/`):

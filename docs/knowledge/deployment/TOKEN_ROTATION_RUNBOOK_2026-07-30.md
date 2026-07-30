@@ -1,0 +1,222 @@
+# Token-rotációs runbook — 2026-07-30
+
+> **Státusz:** végrehajtásra kész, **Gábor-kapura vár**.
+> **Készítette:** root (Claude), 2026-07-30.
+> **Kiváltó ok:** élő hitelesítők a **PUBLIKUS** `joinerytech-platform` repóban.
+> **Mérés:** `node scripts/secret-scan.mjs origin/main` — 2517/2517 fájl,
+> **72 találat**, majd literálonkénti osztályozás (`sha1(a soron talált
+> leghosszabb titok-gyanús literál)` első 10 hex jegye alapján).
+
+---
+
+## 0. Amit ez a runbook helyesbít a tegnapi képhez képest
+
+A `terminals/root/STATE.md` és a `2613106` commit azt rögzítette:
+**„EGY hitelesítő, 12 előfordulás, nem három halmaz."**
+
+**Ez a mai méréssel nem áll meg.** A mai mérés szerint a publikált
+`origin/main`-en **legalább négy, egymástól független titok-osztály** van kint,
+összesen ~44 valódi előfordulással. A tegnapi „egy hitelesítő" megállapítás
+**az MCP master tokenre igaz**, de a leltár nem terjedt ki a többi osztályra.
+
+⚠ **Két osztály tegnap egyáltalán nem szerepelt a leltárban:**
+a **beégetett, kitalálható alapértelmezett jelszavak** és a **Google API-kulcs**.
+
+Ezért a rotáció **nem** 12 érték cseréje. A pontos lista alább.
+
+---
+
+## 1. A leltár — mit kell rotálni
+
+### A osztály — MCP master token (1 db, 5 helyen)
+
+`sha1(literál) = 8a9d691f9f` · 44 karakter · base64-szerű
+
+| Fájl | Sor | Szerep |
+|---|---|---|
+| `src/joinerytech-nexus/knowledge-service/config/agents.yaml` | 19 | `master_token:` — a forrás |
+| `src/joinerytech-nexus/knowledge-service/docs/MCP_AUTH_TOKENS.md` | 52 | dokumentáció-példa **valódi értékkel** |
+| `src/joinerytech-nexus/knowledge-service/bin/stdio-bridge.js` | 14 | ⚠ **`process.env.MCP_AUTH_TOKEN \|\| '<literál>'` fallback** |
+| `terminals/architect/.mcp.json` | 7 | `Bearer` fejléc |
+| `terminals/explorer/.mcp.json` | 7 | `Bearer` fejléc |
+
+**Root/admin jogosultság minden MCP-eszközhöz.** Ez a legmagasabb tétű érték.
+
+### B osztály — agent (terminál) tokenek (~10 db, egyenként 2 helyen)
+
+`agents.yaml` `agents:` térkép + a `MCP_AUTH_TOKENS.md` **ugyanazokat az
+értékeket** megismétli. Érintett identitások:
+
+`conductor` · `architect` · `librarian` · `explorer` · `backend` · `frontend` ·
+`designer` · `cabinet-bridge` · `marketing-content` · `marketing-analyst`
+
+> A `marketing-pm` értéke (`mkt-pm-token-abc123`) láthatóan **példa**, nem élő
+> titok — de a rotációval együtt ki kell venni, mert ma **működő** bejegyzés.
+
+> A `cabinet-bridge` sorhoz a fájl saját megjegyzése: *„ROTATED 2026-07-11
+> (security incident)"* — **ez már a második kör ugyanabban a fájlban.**
+
+### C osztály — beégetett, KITALÁLHATÓ alapértelmezések (4 db) ⚠ ÚJ
+
+Ez a **legveszélyesebb** osztály, és tegnap nem volt a leltárban.
+
+| Érték-minta | Env-változó | Hol | Mit nyit |
+|---|---|---|---|
+| `dev-token-spaceos-dashboard-2026` | `DASHBOARD_AUTH_TOKEN` | `auth.routes.ts:11`, `server.legacy.ts:2051`, `missionControl.ts:103` (`DATAHAVEN_TOKEN`), `agent.config.ts:15`, `api.config.ts:8` | dashboard-hozzáférés |
+| `spaceos-terminal-secret-2026` | `TERMINAL_TOKEN_SECRET` | `epic-router.routes.ts:55` | ⚠ **terminál-tokent ÍR ALÁ** → tetszőleges terminál-identitás hamisítható |
+| `spaceos-admin-2026` | `ADMIN_SECRET` | `epic-router.routes.ts:126` | ⚠ **admin-művelet** |
+| `spaceos-webhook-secret-2026` | `TELEGRAM_WEBHOOK_SECRET` | `telegramBot.ts:96` | Telegram webhook-hitelesítés |
+
+**Miért ez a legrosszabb alak** (a `beegetett-fallback-titok` tanulság):
+
+1. **Néma visszaesés.** Ha az env-változó nincs beállítva, a szolgáltatás
+   **hiba nélkül** elfogadja a publikus alapértéket. Semmi nem jelzi.
+2. **Kitalálható a repó nélkül is.** A minta `spaceos-<szerep>-2026` —
+   ehhez nem kell megtalálni a szivárgást, elég megtippelni.
+3. **A rotáció önmagában nem elég**: ha csak az env-értéket cseréljük és a
+   `|| '<literál>'` sor bent marad, egy elfelejtett env-változó bármikor
+   visszaállítja a rést. **A sort ki kell venni.**
+
+> ⚠ **Mérve: a kódban lévő tény.** Hogy az **éles** telepítéseken be van-e
+> állítva mind a négy env-változó, **nem mértük** — enélkül nem tudjuk, hogy a
+> rés ma kihasználható-e. Ez a rotáció **első lépése** (ld. 3.0).
+
+### D osztály — Google Gemini API-kulcs (1 db, 3 helyen) ⚠ ÚJ
+
+`sha1(literál) = 425f4852f4` · 39 karakter · `AIzaSy…` alak
+
+`test-gemini.js:3` · `test-gemini-raw.js:1` · `test-google-embed-v2.js:2`
+
+**Nem MCP-token: külső szolgáltatói kulcs, ami pénzbe kerül.** A Google Cloud
+konzoljában kell visszavonni — a repó-takarítás önmagában nem rotáció.
+
+### Nem titok, de kint van (4 találat)
+
+`CLAUDE.md:116-117` és `SCHEDULING_SANDBOX_PLAN.md:31,99` — VPS-IP és
+tailnet-cím. **Nem hitelesítő**, rotálni nem kell; a rotációs körben viszont
+érdemes eldönteni, publikus repóban akarjuk-e tartani őket.
+
+---
+
+## 2. A kapu zaja — amit NEM kell rotálni
+
+A 72 találatból **28 fals pozitív**. Ezeket megnéztem soronként:
+
+| Minta | Db | Miért nem titok |
+|---|---|---|
+| `const token = authHeader.substring(7)` / `.slice(7)` | 18 | maga a **kód**; a szabály a `substring(7)`-et vette literálnak |
+| `const token = tokenHandler.CreateToken(...)` | 1 | kód |
+| `const token = generateTerminalToken(terminal)` | 1 | kód |
+| `Password = request.Password` | 1 | mezőértékadás |
+| `localStorage.getItem('accessToken')` | 1 | doksi-kódrészlet |
+| `test-master-token-abc123`, `invalid-token-xyz` | 2 | teszt-fixture, szándékosan érvénytelen |
+| VPS/tailnet cím | 4 | nem hitelesítő |
+
+⚠ **Ez a kapura nézve lelet, nem mellékes:** a `token-kulcs literál értékkel`
+szabály **egyetlen kódmintára 18 találatot ad — a zaj 25%**. A kapu saját
+tervezői kikötése az volt, hogy *„egy hangos kapu egy héten belül ki lesz
+kapcsolva"*. **Külön teendő** (nem blokkolja a rotációt): a szabály zárja ki a
+`= <azonosító>.<metódus>(` alakot. A negatív kontrollt előbb kell megírni,
+mint a kivételt (`kapu-epites-precedencia`).
+
+---
+
+## 3. Végrehajtás
+
+### 3.0 ELŐSZÖR: mérjük meg, kihasználható-e (5 perc, nem destruktív)
+
+A C osztály tétjét ez dönti el. **Csak olvasó hívások, semmi mutáció.**
+
+```bash
+# Fut-e a tunnel / a szolgáltatás
+ssh joinerytech-vps 'sudo ss -tlnp | grep 3458'
+
+# El van-e szeparálva a négy env-változó az élő unitban?
+ssh joinerytech-vps 'sudo systemctl show <nexus-unit> -p Environment' \
+  | tr ' ' '\n' | grep -E 'DASHBOARD_AUTH_TOKEN|TERMINAL_TOKEN_SECRET|ADMIN_SECRET|TELEGRAM_WEBHOOK_SECRET' \
+  | sed -E 's/=.*/=<BEALLITVA>/'
+```
+
+- **Ha mind a négy be van állítva** → a C osztály „csak" publikus alapérték:
+  komoly, de nem aktív rés. A `||` sorok akkor is kiveendők.
+- **Ha bármelyik hiányzik** → **aktív, kitalálható belépő az élesen.**
+  Ez a rotáció sorrendjét megfordítja: a C osztály megy előre, nem az A.
+
+> ⚠ A kimenetet **maszkolva** kérjük (`=<BEALLITVA>`) — egy runbook-lépés se
+> írja ki a titkot (`ne dumpolj titkot`).
+
+### 3.1 Sorrend és miért
+
+A **fallback-sorok kivétele ELŐBB vagy EGYSZERRE** megy a csere mellett.
+Indok: ha a `|| '<literál>'` bent marad, a rotáció **sikeresnek látszik**, míg
+a régi token továbbra is működik — a fallback **elrejti a hibát**.
+
+| # | Lépés | Leáll-e valami? |
+|---|---|---|
+| 1 | **C osztály:** 4 fallback-sor `|| '<literál>'` → hiba dobása hiányzó env esetén; új értékek az élő env-be | Nexus újraindul |
+| 2 | **D osztály:** Google-kulcs **visszavonása a konzolban**, új kulcs env-be, a 3 teszt-fájl literáljának kivétele | csak a 3 teszt-szkript |
+| 3 | **B osztály:** agent tokenek — **duplázva** (ld. 3.2) | **semmi** |
+| 4 | **A osztály:** master token (ld. 3.3) | rövid MCP-kiesés minden terminálon |
+| 5 | `MCP_AUTH_TOKENS.md`: valódi értékek → `<TOKEN>` helyőrző | — |
+| 6 | `terminals/{architect,explorer}/{CLAUDE.md,.mcp.json}`: env-hivatkozás | az a két terminál |
+| 7 | **Push** (67 commit) — a rotáció után **azonnal** | — |
+| 8 | **4 publikus submodule** `CLAUDE.md`-je (cutting · inventory · procurement · cabinet) — külön repó, külön commit | — |
+
+### 3.2 Agent tokenek — kiesés NÉLKÜL
+
+Mérve az `agents.yaml` fejlécéből: **„Changes are auto-reloaded every 30
+seconds (no restart needed)"**, és a térkép **több bejegyzést** enged
+ugyanahhoz a névhez. Ezért:
+
+1. Új token **hozzáadása** a régi mellé, ugyanazzal az agent-névvel.
+2. ~30 s várakozás (auto-reload), majd a fogyasztó átállítása az újra.
+3. Ellenőrzés: az új tokennel megy egy hívás.
+4. **Csak ezután** a régi sor törlése.
+
+Így egyetlen futó ágens sem szakad meg — ez a tegnapi „12 token cseréje futó
+ágenseket szakít meg" aggály **feloldva** a B osztályra.
+
+### 3.3 Master token — a rövid kiesés kezelése
+
+A fájl saját megjegyzése: *„This must match the `MCP_AUTH_TOKEN` in
+`~/.claude/settings.json`."* Tehát a master token cseréje **minden terminál**
+MCP-kapcsolatát érinti, és a `settings.json` **nincs** verziókövetve.
+
+Sorrend:
+1. Előkészítés: az új érték **legyen már a kézben** minden gépen/terminálon.
+2. `agents.yaml` `master_token:` csere → 30 s auto-reload.
+3. `~/.claude/settings.json` `MCP_AUTH_TOKEN` csere **minden** terminálnál.
+4. `bin/stdio-bridge.js:14` fallback **kivétele** (hiányzó env → hangos hiba).
+5. Füst: egy `search_knowledge` hívás terminálonként.
+
+**Visszaút:** a régi master token **ne kerüljön törlésre a jegyzetből**, amíg a
+4. lépés füstpróbája le nem futott mindenhol. Ha egy terminál kiesik, a
+visszaút a régi érték visszaírása az `agents.yaml`-ba (30 s), **nem** a
+fallback visszatétele.
+
+### 3.4 A rotáció után — a bizonyítás
+
+```bash
+node scripts/secret-scan.mjs origin/main   # push UTÁN: a publikált állapoton
+```
+
+**Elvárt eredmény:** a 44 valódi találat eltűnik; a ~28 fals pozitív **marad**,
+amíg a kapu-szabály zaja külön nem javul. **Ne a találatszám csökkenése legyen
+a siker mércéje** — tételesen a négy osztály eltűnése.
+
+⚠ **Amit a takarítás NEM old meg:** a git-történet publikus marad. A régi
+értékek bárki számára visszanyerhetők a korábbi commitokból. **Ezért a
+rotáció (= a régi érték érvénytelenítése) az egyetlen valódi javítás**, a
+fájl-takarítás csak azt akadályozza meg, hogy újra kiszivárogjon.
+
+---
+
+## 4. Nyitott kérdések Gábornak
+
+1. **Végrehajtjuk-e ma?** A runbook kész; a 3.0 mérés 5 perc, és az dönti el a
+   sorrendet.
+2. **Google Cloud konzol-hozzáférés** — a D osztály kulcsát csak ott lehet
+   visszavonni; ez nálam nincs.
+3. **A 4 publikus submodule** külön repó — ott is commitolhatok, vagy csak
+   jelezzem?
+4. **VPS-IP és tailnet-cím** maradhat-e a publikus repóban?

@@ -26,5 +26,6 @@
     <ProjectReference Include="..\..\src\SpaceOS.Collaboration.Infrastructure\SpaceOS.Collaboration.Infrastructure.csproj" />
     <ProjectReference Include="..\..\src\SpaceOS.Collaboration.Contracts\SpaceOS.Collaboration.Contracts.csproj" />
     <ProjectReference Include="..\..\src\SpaceOS.Collaboration.Api\SpaceOS.Collaboration.Api.csproj" />
+    <ProjectReference Include="..\SpaceOS.Collaboration.TestSupport\SpaceOS.Collaboration.TestSupport.csproj" />
   </ItemGroup>
 </Project>

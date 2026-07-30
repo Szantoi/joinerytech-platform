@@ -1,5 +1,3 @@
-using System.Security.Claims;
-using System.Text.Encodings.Web;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -7,12 +5,12 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using SpaceOS.Collaboration.Api;
 using SpaceOS.Collaboration.Application.Idempotency;
 using SpaceOS.Collaboration.Application.Projections;
 using SpaceOS.Collaboration.Application.Repositories;
 using SpaceOS.Collaboration.Domain;
+using SpaceOS.Collaboration.TestSupport;
 using SpaceOS.Modules.Hosting.Tenancy;
 
 namespace SpaceOS.Collaboration.Tests;
@@ -36,9 +34,9 @@ namespace SpaceOS.Collaboration.Tests;
 internal sealed class CollaborationEndpointTestHost : IAsyncDisposable
 {
     /// <summary>Test-only headers the synthetic token is built from.</summary>
-    public const string TenantHeader = "X-Test-Tenant";
-    public const string UserHeader = "X-Test-User";
-    public const string ModulesHeader = "X-Test-Modules";
+    public const string TenantHeader = HeaderTokenAuthenticationHandler.TenantHeader;
+    public const string UserHeader = HeaderTokenAuthenticationHandler.UserHeader;
+    public const string ModulesHeader = HeaderTokenAuthenticationHandler.ModulesHeader;
 
     private readonly IHost _host;
 
@@ -69,8 +67,8 @@ internal sealed class CollaborationEndpointTestHost : IAsyncDisposable
                     services.AddRouting();
                     services.AddLogging(logging => logging.SetMinimumLevel(LogLevel.Warning));
 
-                    services.AddAuthentication(HeaderTokenHandler.SchemeName)
-                        .AddScheme<AuthenticationSchemeOptions, HeaderTokenHandler>(HeaderTokenHandler.SchemeName, _ => { });
+                    services.AddAuthentication(HeaderTokenAuthenticationHandler.SchemeName)
+                        .AddScheme<AuthenticationSchemeOptions, HeaderTokenAuthenticationHandler>(HeaderTokenAuthenticationHandler.SchemeName, _ => { });
 
                     // ADR-061 tenancy: ITenantContext + the resolution middleware below.
                     services.AddSpaceOsModuleTenancy();
@@ -134,55 +132,5 @@ internal sealed class CollaborationEndpointTestHost : IAsyncDisposable
 
         public Task SaveChangesAsync(CancellationToken cancellationToken = default)
             => Task.CompletedTask;
-    }
-
-    /// <summary>
-    /// Stands in for Keycloak: turns the test headers into the same CLAIMS a real token carries.
-    /// </summary>
-    /// <remarks>
-    /// Deliberately produces the claim shapes the hosting package parses (<c>tid</c>, <c>sub</c> and
-    /// the <c>spaceos_tenants</c> JSON array with <c>enabled_modules</c>) rather than short-cutting
-    /// to a resolved tenant. The tenant resolution and the module gate are part of what these tests
-    /// are here to measure.
-    /// </remarks>
-    private sealed class HeaderTokenHandler(
-        IOptionsMonitor<AuthenticationSchemeOptions> options,
-        ILoggerFactory logger,
-        UrlEncoder encoder) : AuthenticationHandler<AuthenticationSchemeOptions>(options, logger, encoder)
-    {
-        public const string SchemeName = "CollaborationTestScheme";
-
-        protected override Task<AuthenticateResult> HandleAuthenticateAsync()
-        {
-            if (!Request.Headers.TryGetValue(TenantHeader, out var tenant)
-                || !Request.Headers.TryGetValue(UserHeader, out var user))
-            {
-                return Task.FromResult(AuthenticateResult.NoResult());
-            }
-
-            var modules = Request.Headers.TryGetValue(ModulesHeader, out var raw) && !string.IsNullOrWhiteSpace(raw)
-                ? raw.ToString().Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                : [];
-
-            var tenantList = System.Text.Json.JsonSerializer.Serialize(new[]
-            {
-                new Dictionary<string, object>
-                {
-                    ["tenant_id"] = tenant.ToString(),
-                    ["enabled_modules"] = modules
-                }
-            });
-
-            var identity = new ClaimsIdentity(
-                [
-                    new Claim(TenancyDefaults.TenantIdClaim, tenant.ToString()),
-                    new Claim("sub", user.ToString()),
-                    new Claim(TenancyDefaults.TenantListClaim, tenantList, "JSON")
-                ],
-                SchemeName);
-
-            return Task.FromResult(AuthenticateResult.Success(
-                new AuthenticationTicket(new ClaimsPrincipal(identity), SchemeName)));
-        }
     }
 }

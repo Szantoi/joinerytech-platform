@@ -29,6 +29,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SpaceOS.Collaboration.Integ
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SpaceOS.Modules.Hosting.RlsFixtures", "..\spaceos-modules-hosting\tests\SpaceOS.Modules.Hosting.RlsFixtures\SpaceOS.Modules.Hosting.RlsFixtures.csproj", "{4576542F-1E48-44CE-B131-ADC4E2997711}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SpaceOS.Collaboration.TestSupport", "tests\SpaceOS.Collaboration.TestSupport\SpaceOS.Collaboration.TestSupport.csproj", "{470F9614-D87E-4A34-B93B-87C61F18C479}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -159,6 +161,18 @@ Global
 		{4576542F-1E48-44CE-B131-ADC4E2997711}.Release|x64.Build.0 = Release|Any CPU
 		{4576542F-1E48-44CE-B131-ADC4E2997711}.Release|x86.ActiveCfg = Release|Any CPU
 		{4576542F-1E48-44CE-B131-ADC4E2997711}.Release|x86.Build.0 = Release|Any CPU
+		{470F9614-D87E-4A34-B93B-87C61F18C479}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{470F9614-D87E-4A34-B93B-87C61F18C479}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{470F9614-D87E-4A34-B93B-87C61F18C479}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{470F9614-D87E-4A34-B93B-87C61F18C479}.Debug|x64.Build.0 = Debug|Any CPU
+		{470F9614-D87E-4A34-B93B-87C61F18C479}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{470F9614-D87E-4A34-B93B-87C61F18C479}.Debug|x86.Build.0 = Debug|Any CPU
+		{470F9614-D87E-4A34-B93B-87C61F18C479}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{470F9614-D87E-4A34-B93B-87C61F18C479}.Release|Any CPU.Build.0 = Release|Any CPU
+		{470F9614-D87E-4A34-B93B-87C61F18C479}.Release|x64.ActiveCfg = Release|Any CPU
+		{470F9614-D87E-4A34-B93B-87C61F18C479}.Release|x64.Build.0 = Release|Any CPU
+		{470F9614-D87E-4A34-B93B-87C61F18C479}.Release|x86.ActiveCfg = Release|Any CPU
+		{470F9614-D87E-4A34-B93B-87C61F18C479}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -167,5 +181,6 @@ Global
 		{C2EF1BC9-856D-46A9-9A66-3B7E85735256} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{F1E1AE8D-AA18-4088-AF0B-7943CE2AFE41} = {7226ABEA-787E-1D09-10EA-A2ECF996D6A6}
 		{F3497C6E-F92D-4CBD-B9A4-4FFD3F54937B} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
+		{470F9614-D87E-4A34-B93B-87C61F18C479} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 	EndGlobalSection
 EndGlobal

@@ -7,6 +7,11 @@
     <IsTestProject>true</IsTestProject>
   </PropertyGroup>
   <ItemGroup>
+    <!-- F3/5 boots the real HTTP pipeline over a real database. -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.TestHost" Version="8.0.11" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
     <PackageReference Include="xunit" Version="2.9.2" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2">
@@ -24,6 +29,8 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\SpaceOS.Collaboration.Domain\SpaceOS.Collaboration.Domain.csproj" />
     <ProjectReference Include="..\..\src\SpaceOS.Collaboration.Infrastructure\SpaceOS.Collaboration.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\SpaceOS.Collaboration.Api\SpaceOS.Collaboration.Api.csproj" />
+    <ProjectReference Include="..\SpaceOS.Collaboration.TestSupport\SpaceOS.Collaboration.TestSupport.csproj" />
     <!--
       The STAB-RLS-PROOF fixture: a real PostgreSQL container plus a NOSUPERUSER/NOBYPASSRLS
       application role. Without the non-superuser role every assertion here would pass even with

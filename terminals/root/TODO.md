@@ -34,6 +34,41 @@
       Három valódi defekt egy lint-figyelmeztetés mögött.
 - [x] **portál submodule pusholva** (11 APPROVED commit) + pointer-bump.
 
+## Ma zárt, 2. kör (2026-07-30 délután)
+
+- [x] **B2B-10 F3/4 + F3/5 APPROVED** — 226/226 unit + **46/46 valódi
+      PostgreSQL**. **Az F3 öt szelete kész.**
+- [x] **szivárgás-kapu — a két vak pont bezárva** (frontend): önteszt 40/40,
+      **10/10 saját kontroll**, fa-diff **+3/−0**, a naiv alak ugyanott **84**-et
+      adna. A `ENTERPRISE_GOVERNANCE_PATTERNS.md:705`-öt átnéztem: `abc123...xyz789==`,
+      **szó szerinti pontokkal írt helykitöltő** — nem szivárgás.
+- [x] **RLS-tükör konformancia** (root önmérés) — `InterceptorMirrorConformanceTests`.
+- [ ] **`B2B-10-F3X-ORDERING-PROOF`** (XS, backend, **kiadva**) — a háromszor
+      átvitt tétel saját taskot kapott. Az `R-MC3/agreement` mutáció az F3/5
+      utáni fán is **túlélte** (226/226 és 46/46 zöld); az ok mérve: **egyetlen
+      E2E teszt sem küld ÍRÁST nem-részesként.**
+- [ ] **Idempotencia-rekordok takarítása** — üzemeltetési feladat, a pilot előtt
+      ütemezés kell (a szelet szándékosan nem telepíti).
+
+## ⚠ MÉRT LELET: a `git submodule status` NEM MŰKÖDIK ebben a repóban
+
+Mérve 2026-07-30: **14 gitlink** az indexben, **11 deklarálva** a
+`.gitmodules`-ban → **3 árva**: `src/joinerytech-keycloak-theme` ·
+`src/spaceos-modules-identity` · `src/spaceos-modules-sales`.
+
+A `git submodule status` **az első árván elhasal** (`fatal: no submodule mapping
+found`) és **semmit nem ír ki** — tehát aki így ellenőrzi az állapotot, üres
+választ kap, és „nincs submodule"-ra következtethet. **Engem is majdnem
+félrevitt ma.** Az adósság tehát nem „3 útvonal törött", hanem **a submodule-
+eszköz jelentése használhatatlan**.
+
+- [ ] A 3 árva gitlink rendezése: deklaráció a `.gitmodules`-ba **vagy**
+      `git rm --cached` az indexből. ⚠ A `sales` repó a jegyzetek szerint
+      GitHubon nem létezik → ott a törlés a valószínű helyes válasz, de ez
+      **scope-döntés**, nem karbantartás.
+- [ ] A `secret-scan` ezt megkerüli (a `.gitmodules`-t és az indexet olvassa) —
+      **ne** álljunk át `git submodule`-alapú ellenőrzésre, amíg ez nyitva van.
+
 ## Új teendők a mai review-kból
 
 - [ ] **@frontend — a kapu LEFEDETTSÉGE** (új szelet, nem a zaj javítása):

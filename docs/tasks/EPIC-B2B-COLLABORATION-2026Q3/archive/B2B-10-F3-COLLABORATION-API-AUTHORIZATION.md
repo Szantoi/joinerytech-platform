@@ -101,7 +101,7 @@ A döntés **egyetlen helyen** él (`CollaborationAccessGuard`), hogy a megford�
       kérés útján tényleg lefut az ADR-062 interceptor: nélküle 6/7 E2E teszt bukik.)* *(F3/3: az
       idempotencia-tár, a unique index, az RLS és a concurrency-fordítás valódi DB-n mérve; a
       **végpont**-szintű sáv még in-memory repositoryval fut → F3/5.)*
-- [~] Feltételes írás: `If-Match` a munkacsomagon **kötelező**, az előfeltétel a jogosultság UTÁN
+- [x] Feltételes írás: `If-Match` a munkacsomagon **kötelező**, az előfeltétel a jogosultság UTÁN
       fut (verzió-orákulum kizárva), és a 412/409/428/400 el van különítve. *(F3/3a)*
 - [x] `Idempotency-Key` **tartós** tárral, bérlőnkénti kulcstérrel; a versenyt a unique index dönti.
       *(F3/3b)* ⚠ A befejezett rekordok takarítása üzemeltetési feladat — nincs telepítve.
@@ -223,3 +223,26 @@ hiánya** viszont változatlan. Ez pontosan az ME3-tanulság alakja.
 2. **Idempotencia-takarítás** — üzemeltetési feladat, **ez a szelet ne
    telepítse**; a pilot előtt ütemezés kell. Root TODO-n.
 3. **Wire-enumok alakja** — **F4-döntés**, helyes volt nem kitalálni előre.
+
+
+---
+
+## 2026-07-31 utáni olvasónak: az F3X lezárta a `[~]` tételt
+
+A feltételes-írás tétele **`[x]`** (root-review 2026-07-30, `B2B-10-F3X`):
+saját mérés **227/227 unit + 47/47 valódi PostgreSQL**.
+
+A mérés **helyesbítette a root korábbi keretezését** is: valódi adaton **nem az
+alkalmazás-sorrend tart, hanem a DB-réteg** (RLS + EF tenant-szűrő már a
+betöltést elvágja), tehát az `R-MC3/agreement` mutáció az E2E-suite-ot
+**mutációval és nélküle is** zölden hagyja. Ezért a két teszt két különböző
+dolgot rögzít, és mindkettő kell:
+
+- az **E2E** a **dróton** szögezi le a szerződést (nem-részes semmit nem tud meg
+  a verzióról);
+- a **sorrendet** az **in-memory** teszt szögezi le, mert ott a repository
+  mindenkinek odaadja a sort, tehát a guard az egyetlen döntő.
+
+⚠ **Ami nyitva van, és nem ezen a taskon**: a 27 .NET teszt-projekt közül
+**egy sem fut CI-ből** ([`STAB-CI-DOTNET-GATE`](../../EPIC-PLATFORM-STABILITY-2026Q3/STAB-CI-DOTNET-GATE.md)).
+Amíg az nyitva van, ezek az őrök **nem őriznek automatikusan semmit**.

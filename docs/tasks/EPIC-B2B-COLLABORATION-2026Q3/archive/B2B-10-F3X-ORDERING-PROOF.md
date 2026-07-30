@@ -1,5 +1,21 @@
 # B2B-10 F3X — a „jogosultság előbb" sorrend bizonyítása
 
+> ## ✅ LEZÁRVA ÉS ARCHIVÁLVA — 2026-07-30 (root)
+>
+> **APPROVED** ugyanazon a napon, amikor kiadtam. Saját mérés: **227/227 unit +
+> 47/47 valódi PostgreSQL**. A backend mindkét kikötést teljesítette, és a
+> `HasActiveGrantFor` kommentje **többet ad, mint a kérésem** (kimondja, hogy a
+> címzett-összevetést a harmadik fél bevezetése ELŐTT kell megtenni).
+>
+> **A task fő eredménye egy MÉRT válasz a kérdésre, amit feltettem:** valódi
+> adaton **nem az alkalmazás-sorrend tart, hanem a DB-réteg** (RLS + EF
+> tenant-szűrő már a betöltést elvágja), tehát az `R-MC3/agreement` mutáció az
+> E2E-suite-ot mutációval és nélküle is zölden hagyja. A két teszt ezért két
+> különböző dolgot rögzít: az **E2E** a drótot, az **in-memory** a **sorrendet**.
+>
+> ⚠ Ez helyesbíti a root korábbi keretezését („a nem-részes 412-t kapna") —
+> **azt nem mértem**, a backend megmérte, és a helyesbítést elfogadtam.
+
 > **Epic:** EPIC-B2B-COLLABORATION-2026Q3 · **Szülő:** B2B-10 · **Szerep:** backend
 > **Méret:** XS · **Státusz:** kiadva (2026-07-30, root)
 > **Előzmény:** F3/1–F3/5 mind APPROVED; ez az egyetlen tétel, ami mindből kimaradt.

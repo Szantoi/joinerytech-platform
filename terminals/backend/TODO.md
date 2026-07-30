@@ -41,9 +41,20 @@ Kiírás: [`B2B-10-F3-COLLABORATION-API-AUTHORIZATION.md`](../../docs/tasks/EPIC
       **218/218 unit + 39/39 integrációs zöld, 5/5 mutáció.** `review_requested`.
 - [ ] ⛔ **Root-döntés:** `WorkPackageStatus.Disputed` — bekötés vagy kivezetés? (Ma egyetlen
       átmenet sem vezet bele; a paritás-suite névvel kizárja és bizonyítja, hogy elérhetetlen.)
-- [ ] **F3/5** — végpont-szintű bizonyíték **valódi PostgreSQL-en** (a tár, az RLS, a
-      concurrency-fordítás és a read-oldali lekérdezések már valódi DB-n mérve; a **végpont-sáv**
-      fut még in-memory repositoryval).
+- [x] **F3/5** — végpont-szintű bizonyíték **valódi PostgreSQL-en**: E2E host a produkciós
+      infrastruktúra-regisztrációval, NOSUPERUSER/NOBYPASSRLS szerepen. **ME1: interceptor nélkül
+      6/7 E2E bukik** → az ADR-062 interceptor bizonyítottan lefut a kérés útján (a platform-lelet
+      ERRE a modulra lezárva). ME4 a negatív kontroll: mind a három réteg nélkül a suite bukik.
+      **226/226 unit + 46/46 integrációs zöld.** `review_requested`.
+- [x] ⚠ **Saját baleset javítva:** a rétegvizsgálat visszaállítója bent hagyott egy mutációt (a
+      munkacsomag query-filtere kikapcsolva) — és a TELJES suite zöld maradt vele, mert a rétegek
+      fedezik egymást. Új szerkezeti teszt nézi, hogy a szűrők ott vannak-e.
+
+## P1 — B2B-10 F3 KÉSZ, ami utána jön
+
+- [ ] **F4** (nem az én kiírásom): publikált OpenAPI a Doorstarnak + generált kliens. A wire-enumok
+      alakja (`"Proposed"`) itt dől el — szándékosan nem találtam ki előre.
+- [ ] Az F3 öt szeletéből négy **root-review-ra vár** (F3/1 már APPROVED).
 
 ## P1 — M4: véges kapacitású ütemező (a BELSŐ hatókör kimerült)
 

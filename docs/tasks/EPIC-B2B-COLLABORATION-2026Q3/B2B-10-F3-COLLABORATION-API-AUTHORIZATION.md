@@ -38,10 +38,11 @@ Ehhez jön két örökség, amit a root **kifejezetten ide utalt**:
 | **F3/3a** | ETag / `If-Match` a `RowVersion` concurrency-tokenre + a 412/409/428/400 elkülönítése | **`review_requested`** |
 | **F3/3b** | `Idempotency-Key` **tartós tárral** (tábla + unique index + RLS), middleware-ben | **`review_requested`** |
 | **F3/4** | `AgreementReadModel` valódi projekciója + agreement olvasó végpont + **allowedActions↔domain paritás** | **`review_requested`** |
-| **F3/5** | Végpont-szintű bizonyíték **valódi PostgreSQL-en** (Testcontainers): cross-tenant, spoofing, revoked/expired, 404/403 | pending |
+| **F3/5** | Végpont-szintű bizonyíték **valódi PostgreSQL-en** + rétegvizsgálat | **`review_requested`** |
 
 Mindegyik szelet külön `review_requested`-tel megy fel.
-**Aktuális mérés (2026-07-30):** `218/218` unit + `39/39` integrációs (valódi PostgreSQL), 0 warning.
+**Aktuális mérés (2026-07-30):** `226/226` unit + `46/46` integrációs (valódi PostgreSQL), 0 warning.
+**Az F3 mind az öt szelete kész**; F3/1 APPROVED, a többi `review_requested`.
 
 ## F3/1 — a hozott döntés, amit a root erősítsen meg
 
@@ -87,7 +88,9 @@ A döntés **egyetlen helyen** él (`CollaborationAccessGuard`), hogy a megford�
 - [ ] ⛔ **Root-döntés kell:** a `WorkPackageStatus.Disputed` állapotba egyetlen átmenet sem vezet
       (az F0 kivette a dispute-ot az MVP-ből). Bekötjük vagy kivezetjük? A paritás-suite addig
       névvel kizárja és bizonyítja, hogy elérhetetlen.
-- [~] A bizonyíték **valódi PostgreSQL-en** fut, nem InMemory-n (az F2 tanulsága). *(F3/3: az
+- [x] A bizonyíték **valódi PostgreSQL-en** fut, nem InMemory-n (az F2 tanulsága). *(F3/5 — a
+      végpont a NOSUPERUSER/NOBYPASSRLS app-szerepen felel; az ME1 kísérlet bizonyítja, hogy a
+      kérés útján tényleg lefut az ADR-062 interceptor: nélküle 6/7 E2E teszt bukik.)* *(F3/3: az
       idempotencia-tár, a unique index, az RLS és a concurrency-fordítás valódi DB-n mérve; a
       **végpont**-szintű sáv még in-memory repositoryval fut → F3/5.)*
 - [~] Feltételes írás: `If-Match` a munkacsomagon **kötelező**, az előfeltétel a jogosultság UTÁN

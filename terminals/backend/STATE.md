@@ -13,7 +13,13 @@
 | F3/1 grant-alapú authorization | **APPROVED** (root, `0b555f0`) | 144/144 zöld, 6/6 saját + 2 root-mutáció megfogva |
 | F3/2 API-host + `RequireEnabledModule` | **`review_requested`** | végpont-tesztek valódi pipeline-on |
 
-**Mérés 2026-07-30 este:** **218/218 unit + 39/39 integrációs** (valódi PostgreSQL), 0 warning.
+**Mérés 2026-07-30 este:** **226/226 unit + 46/46 integrációs** (valódi PostgreSQL), 0 warning.
+**Az F3 mind az öt szelete kész.**
+
+⚠ **Saját baleset (javítva):** az F3/5 commitba bekerült egy mutáció (a munkacsomag
+query-filtere kikapcsolva) — a rétegvizsgálat visszaállítója ugyanazt a fájlt kétszer mentette.
+A teljes suite ZÖLD MARADT vele, mert a rétegek fedezik egymást → új **szerkezeti** teszt
+(`TenantQueryFilterPresenceTests`) nézi, hogy a szűrők egyáltalán ott vannak-e.
 
 ⚠ **Helyesbítés:** az F3/2 és F3/3 jelentésemben „0 warning" szerepelt — tévesen, a teszt-hostban
 végig ott volt egy CS0108. Javítva.
@@ -24,7 +30,7 @@ végig ott volt egy CS0108. Javítva.
 | F3/3a ETag / `If-Match` | **`review_requested`** | 9/9 mutáció megfogva (F3/3a+b együtt) |
 | F3/3b `Idempotency-Key` tartós tárral | **`review_requested`** | tábla + unique index + RLS, valódi DB-n mérve |
 | F3/4 `AgreementReadModel` + allowedActions-paritás | **`review_requested`** | 5/5 mutáció; a B2B-07-es drift ÉLT a dróton, javítva |
-| F3/5 végpont-bizonyíték valódi Postgresen | nem indult | ✅ a Docker 2026-07-30 délelőtt elindult (Gábor), 25/25 zöld |
+| F3/5 végpont-bizonyíték valódi Postgresen | **`review_requested`** | ME1: interceptor nélkül 6/7 E2E bukik; ME4 negatív kontroll |
 
 **Root-döntés MEGVAN (Gábor, 2026-07-30):** a részvétel-alapú modell marad — a vendég grant nélkül is elfogadhatja a
 megállapodást, mert a granteket maga a megállapodás adja ki; enélkül körkörös. Amit a megállapodás hordoz, az grant-köteles. Egy helyen él, a megfordítása egysoros.

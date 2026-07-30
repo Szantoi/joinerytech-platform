@@ -2,7 +2,7 @@
 
 > **Epic:** EPIC-B2B-COLLABORATION-2026Q3 · **Szülő:** B2B-10 (Doorstar-kézfogás)
 > **Szerep:** backend · **Méret:** M–L (szeletelve) · **Előfeltétel:** B2B-10 F1 + F2 (mindkettő APPROVED)
-> **Státusz:** in_progress (2026-07-30)
+> **Státusz:** in_progress (2026-07-30) — **F3/1 APPROVED** (root-review 2026-07-30, saját mérés: 144/144 + 2 mutáció)
 > **Kanonikus státusz:** [`EPICS.yaml`](../../../EPICS.yaml) — a `done` kimondása root-review joga.
 
 ## Miért ez a következő
@@ -64,11 +64,11 @@ A döntés **egyetlen helyen** él (`CollaborationAccessGuard`), hogy a megford�
 
 **Örökölt B2B-02-tételek (a task addig `changes_requested` marad):**
 
-- [ ] Grant nélküli vendég a megállapodás **hordozott** tartalmához nem fér hozzá.
-- [ ] `Revoked` grant → azonnal fail-closed.
-- [ ] `ExpiresAtUtc` lejárat → fail-closed, **integrációs teszttel** (ma erre nincs mérés).
-- [ ] Body/header **tenant-spoofing** kizárva: az actor a hitelesített identitásból jön.
-- [ ] **404/403 politika** kimondva és mérve (nem-részes ≠ nem-engedélyezett).
+- [x] Grant nélküli vendég a megállapodás **hordozott** tartalmához nem fér hozzá. *(F3/1, root-review 2026-07-30)*
+- [x] `Revoked` grant → azonnal fail-closed. *(F3/1 — root-mutáció M-B: 3 teszt bukott)*
+- [~] `ExpiresAtUtc` lejárat → fail-closed **a határponton**, negatív kontrollal *(F3/1 — root-mutáció M-A: 2 teszt bukott)*. ⚠ **Az integrációs teszt még hiányzik** — a bizonyíték ma InMemory; a végpont-szintű mérés az **F3/5**.
+- [x] Body/header **tenant-spoofing** kizárva: a mismatch a **betöltés előtt** dob. *(F3/1)*
+- [x] **404/403 politika** kimondva és mérve: nem-részes = 404, részes-de-tiltott = 403. *(F3/1)*
 - [ ] Admin/superuser út auditálva.
 - [ ] Mező-szintű projekció: a vendég csak a neki kiadott mezőket látja.
 

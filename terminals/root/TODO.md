@@ -74,6 +74,9 @@
 
 ## Rám váró review
 
+- [ ] **backend B2B-10 F3/5** — ⚠ **BEFUTOTT** (`07c0323`, „a végpont valódi
+      PostgreSQL-en"). Ebben kell lennie az **átvitt kötelező tételnek**:
+      nem-részes hívó hibás `If-Match`-csel is **404**, ne 412.
 - [ ] **backend M5** (írási irány: import/foglalás/publikálás), ha elindult.
 - [x] ~~**backend B2B-10 F3/1**~~ — **APPROVED** 2026-07-30 (144/144 + 2 saját
       mutáció). A visszavont/lejárt grant kikötése **teljesült és mérve**.
@@ -89,10 +92,21 @@
 
 ## Kiadható / kiosztatlan
 
-- [ ] **Platform-task:** „valódi interceptor" változat a `NonSuperuserRlsFixture`-ben,
-      és mind a hét modul RLS-suite-ja arra álljon át. Ma a bizonyíték egy
-      kézzel írt **tükrön** áll — a tükör zöld marad, ha az eredeti elromlik.
-      Referencia: a Collaboration `InterceptorEndToEndTests`-e.
+- [x] **Platform-task, 1. szelet KÉSZ (root, 2026-07-30):** a tükör **hozzákötve
+      az igazi interceptorhoz** — `InterceptorMirrorConformanceTests` a hosting
+      teszt-projektben (`5c464fe`). 85/85 zöld (81→+4), 0 warning.
+      **Érzékenység mérve:** M1 (kulcs-paraméter) 5 bukó · M2 (scope-flag) 4 bukó ·
+      **M3 (a `PgSessionKey` KONSTANS érvénytelen GUC-névre) → mind a 4 új teszt
+      bukik, és NULLA meglévő** — ezt csak ez a fájl fogja, mert a unit-teszt és
+      minden modul-tükör **ugyanahhoz a konstanshoz** mér.
+      ⚠ **Ez root-önmérés, nem független review** — a mutáció-bizonyíték a
+      helyettesítője. Ha valaki átnézi, szívesen fogadom.
+      ⚠ **NEM pusholva:** a hosting `main` a backend át nem nézett **F3/5**
+      commitját is tartalmazza (`07c0323`).
+- [ ] **Platform-task, 2. szelet:** a hét modul RLS-suite-ja **álljon át** a
+      valódi interceptorra (ma a konformancia-teszt őrzi a tükröt, de a modulok
+      továbbra is a tükrön mérnek). Modulonkénti szelet, referencia: a
+      Collaboration `InterceptorEndToEndTests`-e.
 - [ ] **Szivárgás-kapu zaj-hangolás** (@frontend): a `token-kulcs literál
       értékkel` szabály **18 találatot ad egyetlen kódmintára**
       (`= <azonosító>.<metódus>(`) — a zaj 25%. A negatív kontroll ELŐBB.

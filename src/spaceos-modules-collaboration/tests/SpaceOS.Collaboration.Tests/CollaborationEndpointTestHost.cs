@@ -9,6 +9,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using SpaceOS.Collaboration.Api;
+using SpaceOS.Collaboration.Application.Idempotency;
 using SpaceOS.Collaboration.Application.Repositories;
 using SpaceOS.Collaboration.Domain;
 using SpaceOS.Modules.Hosting.Tenancy;
@@ -55,7 +56,8 @@ internal sealed class CollaborationEndpointTestHost : IAsyncDisposable
     public static async Task<CollaborationEndpointTestHost> StartAsync(
         CollaborationAgreement? agreement = null,
         DelegatedWorkPackage? workPackage = null,
-        TimeProvider? clock = null)
+        TimeProvider? clock = null,
+        IIdempotencyStore? idempotencyStore = null)
     {
         var host = await new HostBuilder()
             .ConfigureWebHost(web => web
@@ -75,6 +77,7 @@ internal sealed class CollaborationEndpointTestHost : IAsyncDisposable
 
                     services.AddScoped<IAgreementRepository>(_ => new AuthKit.InMemoryAgreementRepository(agreement));
                     services.AddScoped<IWorkPackageRepository>(_ => new SingleWorkPackageRepository(workPackage));
+                    services.AddSingleton<IIdempotencyStore>(idempotencyStore ?? new InMemoryIdempotencyStore());
 
                     if (clock is not null)
                     {
@@ -88,6 +91,7 @@ internal sealed class CollaborationEndpointTestHost : IAsyncDisposable
                     app.UseAuthentication();
                     app.UseAuthorization();
                     app.UseSpaceOsModuleTenancy();
+                    app.UseCollaborationIdempotency();
                     app.UseEndpoints(endpoints => endpoints.MapCollaborationEndpoints());
                 }))
             .StartAsync()

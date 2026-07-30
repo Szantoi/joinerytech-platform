@@ -47,6 +47,9 @@ app.UseAuthorization();
 // Tenant from the JWT; X-Tenant-Id only as an allowlist-validated selection (ADR-061 T1).
 app.UseSpaceOsModuleTenancy();
 
+// After tenancy on purpose: idempotency keys are scoped per tenant (B2B-10 F3/3).
+app.UseCollaborationIdempotency();
+
 app.MapCollaborationEndpoints();
 
 // Liveness only — deliberately anonymous and deliberately saying nothing about tenants.

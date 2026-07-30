@@ -46,6 +46,7 @@ public class CollaborationDbContext : DbContext
     public DbSet<WorkPackageStateHistoryEntry> WorkPackageHistory => Set<WorkPackageStateHistoryEntry>();
     public DbSet<CollaborationOutboxMessage> OutboxMessages => Set<CollaborationOutboxMessage>();
     public DbSet<CollaborationInboxMessage> InboxMessages => Set<CollaborationInboxMessage>();
+    public DbSet<CollaborationIdempotencyRecord> IdempotencyRecords => Set<CollaborationIdempotencyRecord>();
 
     /// <summary>
     /// Creates the context without a tenant context — design-time tooling, migrations and tests
@@ -102,5 +103,10 @@ public class CollaborationDbContext : DbContext
 
         modelBuilder.Entity<CollaborationInboxMessage>()
             .HasQueryFilter(m => CurrentTenantId == null || m.ReceiverTenantId == CurrentTenantId);
+
+        // Idempotency keys belong to whoever sent them (B2B-10 F3/3): one owning side, and a key
+        // space shared between tenants would let one customer's retry answer another's request.
+        modelBuilder.Entity<CollaborationIdempotencyRecord>()
+            .HasQueryFilter(r => CurrentTenantId == null || r.TenantId == CurrentTenantId);
     }
 }

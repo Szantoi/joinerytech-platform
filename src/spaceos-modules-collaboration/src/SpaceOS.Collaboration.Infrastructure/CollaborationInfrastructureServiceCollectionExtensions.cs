@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using SpaceOS.Collaboration.Application.Idempotency;
 using SpaceOS.Collaboration.Application.Repositories;
 using SpaceOS.Collaboration.Infrastructure.Data;
 using SpaceOS.Modules.Hosting.Persistence;
@@ -83,6 +84,12 @@ public static class CollaborationInfrastructureServiceCollectionExtensions
 
         services.AddScoped<IWorkPackageRepository, WorkPackageRepository>();
         services.AddScoped<IAgreementRepository, AgreementRepository>();
+
+        // Durable idempotency (B2B-10 F3/3). Registered next to the repositories because it is the
+        // same kind of thing — a store on the module's own database — and because a host that
+        // composed the API without it would advertise the Idempotency-Key header and quietly not
+        // honour it.
+        services.AddScoped<IIdempotencyStore, EfIdempotencyStore>();
 
         return services;
     }

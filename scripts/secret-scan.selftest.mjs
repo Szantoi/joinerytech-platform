@@ -11,7 +11,8 @@
  * önellenőrzésből + a doc-capture kikötései. Ezeknek zöldnek KELL lenniük.
  * A pozitív korpusz a valódi szivárgás ALAKJA, valódi érték nélkül.
  */
-import { violationOf } from './secret-scan.mjs'
+import { readFileSync } from 'node:fs'
+import { violationOf, ratchetSelfTest } from './secret-scan.mjs'
 
 const POSITIVE = [
   ['master_token: "AbCdEf0123456789AbCdEf0123456789AbCd="', 'yaml master token literállal'],
@@ -126,6 +127,20 @@ for (const [line, why] of NEGATIVE) {
   console.log(`  [${ok ? 'PASS' : 'FAIL'}] ${why}${ok ? '' : ` → tévesen bukott: ${rule}`}`)
   if (!ok) failed++
 }
+
+// ---------------------------------------------------------------------------
+// A RATCHET ontesztje. A kapu 2026-07-30 elott BARMELY talalatra exit 1-et
+// adott, es ezert a CI-ben a letrehozasa ota PIROS volt -- 39 ismert,
+// joindulatu talalat mellett. A ratchet ezt oldja fel, DE egy titok-szkennernel
+// az allowlist pontosan az, ahogy egy valodi szivargast el lehet rejteni --
+// ezert a ratchetnek is bizonyitania kell, hogy HARAP.
+// ---------------------------------------------------------------------------
+console.log('')
+console.log('RATCHET-korpusz (a config/secret-scan-allowlist.json _selftest-jebol):')
+const allowlist = JSON.parse(
+  readFileSync(new URL('../config/secret-scan-allowlist.json', import.meta.url), 'utf8'),
+)
+failed += ratchetSelfTest(allowlist)
 
 console.log(failed ? `\n${failed} BUKOTT — a kapu nem megbízható` : '\nMinden PASS')
 process.exit(failed ? 1 : 0)

@@ -23,6 +23,7 @@
  *   node scripts/secret-scan.mjs <ref>           # tetszőleges ref (pl. HEAD)
  */
 import { execFileSync } from 'node:child_process'
+import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import process from 'node:process'
 
@@ -250,7 +251,13 @@ function main() {
   // Bináris és lock-fájlok kihagyása — zajt hoznak, titkot nem.
   // A lock-fájlok integritás-hash-ei szerkezetileg megkülönböztethetetlenek a
   // titkoktól, viszont sosem azok — és 290 hamis találatot adtak.
-  const skip = /\.(png|jpe?g|gif|svg|ico|woff2?|ttf|pdf|zip|tgz)$|(^|\/)(package-lock\.json|yarn\.lock|pnpm-lock\.yaml)$|(^|\/)dist\//i
+  // ⚠ A KAPU SAJÁT ÖNTESZT-KORPUSZA is kimarad, és ez nem kényelmi kivétel:
+  // az a fájl SZÁNDÉKOSAN tartalmaz titok-alakú pozitív példákat, tehát
+  // szkennelni kategória-hiba. 2026-07-30-án a 39 találatból 15 ott volt, és
+  // emiatt a kapu a CI-ben a létrehozása óta PIROS volt. Egy tartósan piros
+  // kapu megtanítja mindenkit, hogy a CI-t figyelmen kívül hagyja — ez rosszabb,
+  // mint a kapu nélküli állapot.
+  const skip = /\.(png|jpe?g|gif|svg|ico|woff2?|ttf|pdf|zip|tgz)$|(^|\/)(package-lock\.json|yarn\.lock|pnpm-lock\.yaml)$|(^|\/)dist\/|(^|\/)secret-scan\.selftest\.mjs$/i
   const scanned = files.filter((f) => !skip.test(f))
 
   const findings = []
@@ -321,12 +328,154 @@ function main() {
     if (unreadable.length === 0) console.log('Nincs találat.')
     return
   }
-  // ÉRTÉK NÉLKÜL. Aki javítja, nyissa meg a fájlt.
-  console.error(`\n${findings.length} SZIVÁRGÁS-GYANÚ (az értéket szándékosan nem írjuk ki):\n`)
+
+  // A TALÁLATOKAT MINDIG kiírjuk — ÉRTÉK NÉLKÜL. A láthatóság nem a verdikt
+  // függvénye: aki javítja, nyissa meg a fájlt.
+  console.error('')
+  console.error(`${findings.length} SZIVÁRGÁS-GYANÚ (az értéket szándékosan nem írjuk ki):`)
+  console.error('')
   for (const f of findings) console.error(`  ${f.file}:${f.line}  — ${f.rule}`)
-  console.error('\nA rotáció ELŐBBRE való a fájltörlésnél: a történet publikus marad.')
+
+  // A VERDIKT viszont a RATCHET: az alapállapothoz képest van-e ROMLÁS.
+  const allow = loadAllowlist()
+  const r = ratchet(findings, allow)
+
+  if (r.shrinkable.length > 0) {
+    console.error('')
+    console.error('Szukitheto allowlist-bejegyzesek (JAVULAS — nem bukas):')
+    for (const x of r.shrinkable) console.error(`  ${x.file} — ${x.rule}: ${x.from} -> ${x.to}`)
+  }
+
+  if (r.ok) {
+    console.error('')
+    console.error(`TISZTA a ratchet szerint: mind a ${findings.length} talalat ismert es indokolt`)
+    console.error('(config/secret-scan-allowlist.json). Nincs UJ szivargas-gyanu.')
+    console.error('⚠ Ez NEM azt jelenti, hogy a repo titok-mentes — azt jelenti, hogy nem ROMLOTT.')
+    return
+  }
+
+  console.error('')
+  console.error(`${r.failures.length} ROMLAS az alapallapothoz kepest:`)
+  console.error('')
+  for (const f of r.failures) {
+    console.error(`  [${f.kind}] ${f.file} — ${f.rule}`)
+    console.error(`      ${f.detail}`)
+  }
+  console.error('')
+  console.error('A rotáció ELŐBBRE való a fájltörlésnél: a történet publikus marad.')
+  console.error('Es a javitas NEM az, hogy az allowlistat igazitjuk a valosaghoz — eloszor el kell')
+  console.error('donteni, hogy a valosag jo-e. Indoklas nelkuli allowlist-bejegyzes nem megy at.')
   process.exit(1)
+}
+
+/** Az allowlist beolvasasa. Hianyzo fajl NEM „engedj at mindent". */
+function loadAllowlist() {
+  const path = new URL('../config/secret-scan-allowlist.json', import.meta.url)
+  try {
+    return JSON.parse(readFileSync(path, 'utf8'))
+  } catch (err) {
+    // FAIL-CLOSED: ha az allowlist nem olvashato, a kapu NEM enged at semmit.
+    // A megengedo ag itt csendben kikapcsolna a ratchetet — pontosan az a nema
+    // visszaeses, amirol a mai nap szolt.
+    console.error(`Az allowlist nem olvashato (${path}): ${err.message}`)
+    console.error('FAIL-CLOSED: allowlist nelkul minden talalat romlasnak szamit.')
+    return { entries: [] }
+  }
 }
 
 // Csak közvetlen futtatáskor scanneljünk — teszt importálhatja a szabályokat.
 if (process.argv[1] && process.argv[1].endsWith('secret-scan.mjs')) main()
+
+// ---------------------------------------------------------------------------
+// RATCHET — a kapu verdiktje
+//
+// A kapu korabban BARMELY talalatra `exit 1`-et adott, a repoban pedig 39 ismert,
+// joindulatu talalat van (teszt-fixturak, a sajat dokumentaciónk, VPS-cimek,
+// falsz pozitivok). Ezert a CI-ben a letrehozasa ota PIROS volt -- es senki nem
+// nezett ra.
+//
+// ⚠⚠ Egy titok-szkennernel az allowlist PONTOSAN az, ahogy egy valodi szivargast
+// el lehet rejteni. Ezert a ratchet SZANDEKOSAN szuk:
+//   * a bejegyzes FAJL + SZABALY + DARABSZAM (nem sor -- a sorok csusznak);
+//   * NEM listazott fajl+szabaly barmely talalata AZONNAL bukik;
+//   * a NOVEKEDES bukik, akkor is, ha a fajl "ismerten zajos";
+//   * a CSOKKENES (javulas) sosem bukhat, csak jelezzuk, hogy szukitheto.
+// ---------------------------------------------------------------------------
+
+/**
+ * @param {Array<{file:string,line:number,rule:string}>} findings
+ * @param {{entries:Array<{file:string,rule:string,count:number,reason:string}>}} allow
+ */
+export function ratchet(findings, allow) {
+  const key = (f, r) => f + '\u0000' + r
+  const expected = new Map(allow.entries.map((e) => [key(e.file, e.rule), e]))
+
+  const actual = new Map()
+  for (const f of findings) {
+    const k = key(f.file, f.rule)
+    actual.set(k, (actual.get(k) || 0) + 1)
+  }
+
+  const failures = []
+  const shrinkable = []
+
+  for (const [k, n] of actual) {
+    const [file, rule] = k.split('\u0000')
+    const exp = expected.get(k)
+    if (!exp) {
+      failures.push({
+        kind: 'uj-talalat',
+        file,
+        rule,
+        detail: `${n} talalat, es ez a fajl+szabaly NINCS az allowlistan. Ha joindulatu, vedd fel INDOKLASSAL a config/secret-scan-allowlist.json-be; ha nem, ez szivargas.`,
+      })
+      continue
+    }
+    if (n > exp.count) {
+      failures.push({
+        kind: 'nott-a-talalatszam',
+        file,
+        rule,
+        detail: `${n} > alapallapot ${exp.count}. Egy ismerten zajos fajlban is UJ talalat. Alapallapot indoka: ${exp.reason}`,
+      })
+    } else if (n < exp.count) {
+      shrinkable.push({ file, rule, from: exp.count, to: n })
+    }
+  }
+
+  for (const [k, e] of expected) {
+    if (!actual.has(k)) shrinkable.push({ file: e.file, rule: e.rule, from: e.count, to: 0 })
+  }
+
+  return { ok: failures.length === 0, failures, shrinkable }
+}
+
+/** A ratchet ontesztje az allowlist `_selftest` korpuszan. */
+export function ratchetSelfTest(allow) {
+  const st = allow._selftest
+  if (!st) throw new Error('Az allowlistban nincs `_selftest` korpusz — a ratchet nem bizonyithato.')
+  let bad = 0
+  const mk = (c) => Array.from({ length: c.count }, (_, i) => ({ file: c.file, line: i + 1, rule: c.rule }))
+
+  for (const c of st.mustFail) {
+    const v = ratchet(mk(c), allow)
+    const own = v.failures.filter((f) => f.file === c.file && f.rule === c.rule)
+    if (own.length === 0) {
+      console.error(`  [FAIL] ATENGEDTE, pedig bukni kellett volna: ${c.case}`)
+      bad++
+    } else {
+      console.log(`  [PASS] harap: ${c.case} -> ${own.map((f) => f.kind).join(',')}`)
+    }
+  }
+  for (const c of st.mustPass) {
+    const v = ratchet(mk(c), allow)
+    const own = v.failures.filter((f) => f.file === c.file && f.rule === c.rule)
+    if (own.length > 0) {
+      console.error(`  [FAIL] VAKLARMA: ${c.case} -> ${own.map((f) => f.kind).join(',')}`)
+      bad++
+    } else {
+      console.log(`  [PASS] nem vaklarma: ${c.case}`)
+    }
+  }
+  return bad
+}

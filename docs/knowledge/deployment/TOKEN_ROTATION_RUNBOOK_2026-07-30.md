@@ -1,6 +1,7 @@
 # Token-rotációs runbook — 2026-07-30
 
-> **Státusz:** végrehajtásra kész, **Gábor-kapura vár**.
+> **Státusz:** ✅ **VÉGREHAJTVA 2026-07-30** (Gábor jóváhagyásával) — a
+> végrehajtási napló és a maradék tételek az 5. szakaszban.
 > **Készítette:** root (Claude), 2026-07-30.
 > **Kiváltó ok:** élő hitelesítők a **PUBLIKUS** `joinerytech-platform` repóban.
 > **Mérés:** `node scripts/secret-scan.mjs origin/main` — 2517/2517 fájl,
@@ -246,3 +247,90 @@ fájl-takarítás csak azt akadályozza meg, hogy újra kiszivárogjon.
 3. **A 4 publikus submodule** külön repó — ott is commitolhatok, vagy csak
    jelezzem?
 4. **VPS-IP és tailnet-cím** maradhat-e a publikus repóban?
+
+
+---
+
+## 5. Végrehajtási napló — 2026-07-30
+
+Gábor jóváhagyta a teljes kört. **Minden új titok a VPS-en generálva**
+(`openssl rand -base64 33`), tehát egyetlen új érték sem került az ágens
+kontextusába, sem parancssorba, sem naplóba.
+
+### Ami elkészült
+
+| # | Lépés | Bizonyíték |
+|---|---|---|
+| 1 | **C osztály** — 3 hiányzó env beállítva | `PID = MainPID`, port figyel, mind a 3 érték a `/proc/<pid>/environ`-ban |
+| 2 | **A osztály** — új master token `MCP_AUTH_TOKEN`-ként | füstpróba lent |
+| 3 | **`agents.yaml` kivezetve** hitelesítő-forrásként (élesen és a repóból) | `git rm --cached` + `.gitignore` |
+| 4 | **Repó-takarítás** 20 fájlban | `secret-scan origin/main`: **72 → 28** |
+| 5 | **Push** — 78 + 1 commit | `301424c..eb22407` |
+| 6 | **3 publikus submodule** `CLAUDE.md` javítva, commitolva | ld. „Nem pusholtam" |
+
+### A füstpróba — három elkülönülő státusz
+
+Nem státuszkód-**halmazt** fogadtam el (`megengedo-teszt-elrejti-a-rest`):
+
+| Bemenet | `/api/knowledge/search` | Jelentés |
+|---|---|---|
+| **régi** (publikus) master token | **403** | ✅ visszavonva |
+| **új** master token | **400** | ✅ auth átment, a kérés-paraméter bukott |
+| token nélkül | **401** | ✅ fail-closed |
+
+### ⚠ Amit a végrehajtás közben találtam — új tételek
+
+**E osztály — Brave Search API-kulcs.** `sha1(BRAVE_API_KEY értéke) =
+061ddd503f`, 31 karakter, **mindkét** `.mcp.json`-ban, kint az `origin/main`-en.
+**A kapu ezt nem fogta meg**, ezért három ágens három leltárából is kimaradt.
+A literál kivezetve; a **visszavonás Gábor-kapu** (Brave-konzol).
+
+**A kapunak két vak pontja van** — izoláltan megmérve, nem feltételezve:
+
+| Alak | Példa | Kapu |
+|---|---|---|
+| idézőjeles **kulcs** (JSON) | `"api_key": "…"` | ❌ **VAK** |
+| **prefixelt** kulcsnév | `BRAVE_API_KEY=…`, `GITHUB_TOKEN=…`, `DB_PASSWORD=…` | ❌ **VAK** |
+| csupasz kulcs | `api_key=…`, `apiKey: '…'` | ✅ fog |
+
+Ok: a szabály `(…|api_?key|…)\s*[:=]` — (1) a záró `"` beékelődik a kulcs
+és a `:` közé; (2) a `` elbukik a `_`-on, mert az szóalkotó karakter. Ez a
+**legelterjedtebb env-elnevezést** hagyja ki.
+
+**Az nginx kivezet a netre.** A 3.0-ban azt mértem, hogy a **szivárgó**
+szolgáltatás (3458) csak `127.0.0.1`-en figyel — **ez igaz, de nem jelenti, hogy
+semmi nincs kint.** Az nginx a 443-on publikusan kiszolgál:
+`datahaven.joinerytech.hu` → `127.0.0.1:3457` (**ma nem fut** → 502) és
+`/api/telegram/webhook` → `127.0.0.1:3456` (**fut**, és token nélkül **403** —
+fail-closed). A 3456 egy **másik** kódbázis (`/opt/nexus/…`), nem a mi
+szivárgásunk — **jelezni kell a Nexus-projektnek**.
+
+**A saját takarításom nem volt teljes.** A „72 → 28" után a 28-at tételesen
+átnézve **három** olyan maradt, ami nem fals pozitív, hanem kimaradás
+(`server.legacy.ts:2051`, `ADR-048`, `planningRoutes.test.ts`). Kettőt a
+**kapu sem** jelzett erre a literálra — `git grep` találta meg. Javítva
+(`eb22407`).
+
+### Nem pusholtam — és miért
+
+A három publikus submodule (`cutting` · `inventory` · `procurement`) mind
+`main`-en van és **2–3 committal előrébb** más sáv pusholatlan munkájával. A
+push azokat is kivinné, át nem nézve — **nem az én döntésem.** A javításom
+commitolva, a push a sávok gazdáira vár. *(Az érték amúgy is halott: a
+submodule-okban ugyanaz a dashboard-alapértelmezés volt, nem külön kulcs.)*
+
+### Ami Gáborra vár
+
+1. **Google Gemini API-kulcs** visszavonása (konzol) — a kód már env-et olvas,
+   hangos hibával.
+2. **Brave Search API-kulcs** visszavonása (E osztály, ma találtam).
+3. **VPS-IP / tailnet-cím**: maradhat a publikus repóban?
+4. A **3 submodule** pushja (idegen commitok miatt visszatartva).
+
+### Amit a rotáció NEM oldott meg
+
+A **git-történet publikus marad** — minden régi érték visszanyerhető a korábbi
+commitokból. Ezért volt a rotáció (az érvénytelenítés) az egyetlen valódi
+javítás, és ezért nem elég a fájl-takarítás. A publikált történetben az
+átmeneti commitjaim (`052c55c`) még idézték a C-osztályú literálokat — azok
+**rotálva, halottak**.

@@ -120,7 +120,17 @@ function measureProject(path) {
     builds = false
   }
   const w = parseWarnings(output)
-  return { path, builds, warnings: w ?? 0, warningsReadable: w !== null }
+  // Bukasnal a HIBA-SOROKAT is visszaadjuk. Egy kapu, ami csak annyit mond,
+  // hogy "BUKOTT", mindenkit lokalis reprodukciora kenyszerit -- a
+  // hasznalhatatlan kimenet egyenlo a kimenet hianyaval. (Ez sajat lelet:
+  // a CI elso futasan pontosan ez tortent.)
+  const errors = builds
+    ? []
+    : output
+        .split('\n')
+        .filter((l) => /error [A-Z]+\d+|error :/i.test(l))
+        .slice(0, 4)
+  return { path, builds, warnings: w ?? 0, warningsReadable: w !== null, errors }
 }
 
 function selfTest(baseline) {
@@ -199,6 +209,7 @@ for (const p of selected) {
   const flag = r.builds ? 'OK    ' : 'BUKOTT'
   const wtxt = r.warningsReadable ? String(r.warnings) : '?'
   console.log(`  ${flag}  w=${wtxt.padEnd(3)}  ${p.path}`)
+  for (const e of r.errors || []) console.log(`          ${e.trim().slice(0, 160)}`)
 }
 
 const unreadable = measured.filter((m) => !m.warningsReadable)

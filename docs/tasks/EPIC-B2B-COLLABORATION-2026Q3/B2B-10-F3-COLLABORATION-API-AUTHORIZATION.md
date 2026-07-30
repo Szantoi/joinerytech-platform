@@ -37,11 +37,11 @@ Ehhez jön két örökség, amit a root **kifejezetten ide utalt**:
 | **F3/2** | `SpaceOS.Collaboration.Api` + host: hosting-minta, `RequireEnabledModule`, `/api/collaboration/v1`, ProblemDetails + correlation ID | **`review_requested`** |
 | **F3/3a** | ETag / `If-Match` a `RowVersion` concurrency-tokenre + a 412/409/428/400 elkülönítése | **`review_requested`** |
 | **F3/3b** | `Idempotency-Key` **tartós tárral** (tábla + unique index + RLS), middleware-ben | **`review_requested`** |
-| **F3/4** | `AgreementReadModel` valódi projekciója (F1 ide utalta) + lista-végpontok + **allowedActions↔domain paritás-teszt** | pending |
+| **F3/4** | `AgreementReadModel` valódi projekciója + agreement olvasó végpont + **allowedActions↔domain paritás** | **`review_requested`** |
 | **F3/5** | Végpont-szintű bizonyíték **valódi PostgreSQL-en** (Testcontainers): cross-tenant, spoofing, revoked/expired, 404/403 | pending |
 
 Mindegyik szelet külön `review_requested`-tel megy fel.
-**Aktuális mérés (2026-07-30):** `175/175` unit + `34/34` integrációs (valódi PostgreSQL), 0 warning.
+**Aktuális mérés (2026-07-30):** `218/218` unit + `39/39` integrációs (valódi PostgreSQL), 0 warning.
 
 ## F3/1 — a hozott döntés, amit a root erősítsen meg
 
@@ -81,7 +81,12 @@ A döntés **egyetlen helyen** él (`CollaborationAccessGuard`), hogy a megford�
       túlélte, mert a modul-kapu maga is hitelesítést követel — a szerkezeti teszt ezért kellett.)*
 - [x] Hibaformátum: ProblemDetails + correlation ID (a Doorstar biztonsági szerződésének tétele).
       *(F3/2 — a 403 semmit nem mond az indokról; mutációval igazolva.)*
-- [ ] Az `allowedActions` a **domainből** származik, nem külön táblázatból — paritás-teszttel.
+- [x] Az `allowedActions` a **domainből** származik, nem külön táblázatból — paritás-teszttel.
+      *(F3/4 — próbálgatásos orákulum; a B2B-07-es táblázat törölve. ⚠ A paritás egyezést bizonyít,
+      nem helyességet: a `Cancel` szigorítása külön, explicit teszttel van kikötve.)*
+- [ ] ⛔ **Root-döntés kell:** a `WorkPackageStatus.Disputed` állapotba egyetlen átmenet sem vezet
+      (az F0 kivette a dispute-ot az MVP-ből). Bekötjük vagy kivezetjük? A paritás-suite addig
+      névvel kizárja és bizonyítja, hogy elérhetetlen.
 - [~] A bizonyíték **valódi PostgreSQL-en** fut, nem InMemory-n (az F2 tanulsága). *(F3/3: az
       idempotencia-tár, a unique index, az RLS és a concurrency-fordítás valódi DB-n mérve; a
       **végpont**-szintű sáv még in-memory repositoryval fut → F3/5.)*

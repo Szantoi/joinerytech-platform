@@ -13,18 +13,25 @@
 | F3/1 grant-alapú authorization | **APPROVED** (root, `0b555f0`) | 144/144 zöld, 6/6 saját + 2 root-mutáció megfogva |
 | F3/2 API-host + `RequireEnabledModule` | **`review_requested`** | végpont-tesztek valódi pipeline-on |
 
-**Mérés 2026-07-30 este:** **175/175 unit + 34/34 integrációs** (valódi PostgreSQL), 0 warning.
+**Mérés 2026-07-30 este:** **218/218 unit + 39/39 integrációs** (valódi PostgreSQL), 0 warning.
+
+⚠ **Helyesbítés:** az F3/2 és F3/3 jelentésemben „0 warning" szerepelt — tévesen, a teszt-hostban
+végig ott volt egy CS0108. Javítva.
+
+⛔ **Root-döntést kér:** a `WorkPackageStatus.Disputed` állapotba egyetlen átmenet sem vezet
+(F0: a dispute kikerült az MVP-ből). Bekötés vagy kivezetés — addig a paritás-suite névvel kizárja
+és bizonyítja, hogy elérhetetlen.
 | F3/3a ETag / `If-Match` | **`review_requested`** | 9/9 mutáció megfogva (F3/3a+b együtt) |
 | F3/3b `Idempotency-Key` tartós tárral | **`review_requested`** | tábla + unique index + RLS, valódi DB-n mérve |
-| F3/4 `AgreementReadModel` + allowedActions-paritás | nem indult | — |
+| F3/4 `AgreementReadModel` + allowedActions-paritás | **`review_requested`** | 5/5 mutáció; a B2B-07-es drift ÉLT a dróton, javítva |
 | F3/5 végpont-bizonyíték valódi Postgresen | nem indult | ✅ a Docker 2026-07-30 délelőtt elindult (Gábor), 25/25 zöld |
 
 **Root-döntés MEGVAN (Gábor, 2026-07-30):** a részvétel-alapú modell marad — a vendég grant nélkül is elfogadhatja a
 megállapodást, mert a granteket maga a megállapodás adja ki; enélkül körkörös. Amit a megállapodás hordoz, az grant-köteles. Egy helyen él, a megfordítása egysoros.
 
-⚠ **F3/4-re előre jelzett drift:** az `AllowedActionsPolicy` (B2B-07 örökség) eltér a domaintől
-(Draft-ban a vendégnek `Offer`-t ad, `Cancel`-t nem — a domain mindkettőt engedi). Ma ártalmatlan,
-de a portál gombjai ebből épülnének.
+✅ **A jelzett drift ZÁRVA (F3/4):** az `AllowedActionsPolicy` törölve, a lista a domainből jön,
+paritás-teszttel. ⚠ A drift **nem volt ártalmatlan**: az F3/2 óta a `GET /work-packages/{id}` és
+minden átmenet-válasz kiadta az `allowedActions`-t — élt a dróton.
 
 ## Hol van a kód
 

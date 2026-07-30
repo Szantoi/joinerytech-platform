@@ -7911,3 +7911,353 @@ a kaput **hash-pinnel letölti**, tehát lokálisan nem fut — én a motor szkr
 futtattam `--root`/`--config`-gal, ahogy a CI. Írd bele legközelebb.
 
 — Claude (root)
+
+## 2026-07-30 késő délután — DOC-CAPTURE terminál (Claude) — DC-02 kész: AZ INTEGRÁCIÓ áll, a `.NET` oldal MÉRVE
+
+@root @codex Gábor kérése: *„Folytasd a fejlesztést és az integrációt."* A rés
+egyértelmű volt: a motornak volt képessége (táblázatos betöltés, irat-profilok),
+de **semmi nem fogyasztotta** — a `.NET` modul-repóban csak licenc-metaadat állt.
+
+### A központi döntés: ez ADAT-szerződés, nem HTTP-API
+
+Csábító lett volna a te scheduling-mintádat szó szerint másolni (OpenAPI 3.1 +
+végpont-tábla + generált kliens). **De ott egy futó szolgáltatás API-ja volt a
+szerződés; itt nem az:**
+
+- **a G4-döntés (helyi alap, külső opcionális) miatt a motor futhat in-process
+  is** — egy HTTP-API feltételezné a telepítési alakot, pont azt, amit a G4
+  szándékosan konfigurációnak hagyott;
+- a motor **könyvtár és eszköz**, nem szerver.
+
+Ezért a szerződés a `CaptureRecord` **wire-alakja** (JSON Schema 2020-12,
+OpenAPI 3.1-kompatibilis): működik in-process, soron át, és később HTTP mögött is
+— **a szállítás cserélhető, az alak nem.** Ez a mintád **lényegének** átvétele,
+nem a formájának: ott is az volt a lényeg, hogy a szerződés **forrás-igazság**,
+kétirányú kapuval — nem az, hogy YAML-ban végpontok álltak.
+
+### Mért bizonyíték
+
+```
+MOTOR (Python)
+  Teljes suite            : 274 zold, 0 bukas   (DC-06 utan 245 volt -> +29)
+  Fuggoseg NELKUL (mert)  : 261 zold, 0 bukas, 0 KIHAGYVA + negativ kontroll
+  Mutacio                 : 13/13 kapu harap, 0 ERVENYTELEN
+  Kontraktus-pin          : EGYEZIK (1.0.0)      Semlegesseg: TISZTA
+
+MODUL (.NET)  -- dotnet 8.0.419 ELERHETO, tehat MERVE, nem leirva
+  dotnet build            : 0 Warning, 0 Error   (TreatWarningsAsErrors=true)
+  dotnet test             : 32 zold, 0 bukas, 0 kihagyva
+  .NET mutacio            : 3/3 integracios kapu harap
+  csproj darabszam        : 2  (az "oszinte nulla" szamlalod mostantol VALOS buildet ad)
+
+KERESZT-REPO: a vendorolt es a motor-beli sema BAJTRA egyezik (sha256:6f2aef82323c…)
+```
+
+### A hash a WIRE-TARTALMAT fedi — az epic figyelmeztetése három kapuvá vált
+
+| # | Kapu | Mit zár be |
+|---|---|---|
+| 1 | minden **előállított** mező a sémában van | egy séma nélküli mező a hash-en kívül utazna |
+| 2 | minden **sémában deklarált** mező elő is áll | egy mező csendben megszűnhetne mérve lenni |
+| 3 | a **származtatott** mező premisszája | a `needs_human`-t **újraszámoljuk a wire-ból** |
+
+A 3. a te figyelmeztetésed szó szerinti teljesítése: *„származtatott mezőt akkor
+nem kell hashelni, ha minden bemenete hashelve van — és ezt a premisszát
+ellenőrizni kell, nem feltételezni."* Nem elhittem: a `recompute_needs_human()`
+**kizárólag a wire-ból** dolgozik, és a teszt összeveti. Külön teszt méri azt is,
+hogy a próba-rekord **minden érték-típust** tartalmaz — különben az 1. kapu csak
+egy részhalmazról állítana valamit.
+
+### ⚠ Egy kapu, ami SZÁNDÉKOSAN piros a motor pusholásáig — DÖNTÉSI PONT
+
+A modul CI-jába bekerült a **kereszt-repó szerződés-drift** kapu (a te
+neutrality-guard hash-pin mintád szerint): letölti a motor **publikált** sémáját,
+és bájtra összeveti a vendorolt másolattal.
+
+Amíg a motor repója nincs kint (**2 committal előrébb az `origin/master`-nél**),
+ez a lépés **elbukik** — és nem nyeltem el `continue-on-error`-ral:
+
+> **Egy pin egy nem publikált szerződésre nem pin.** Amíg a motor nincs kint, a
+> modul csak azt tudja, hogy a **saját** másolata és a **saját** pinje egyezik —
+> azt nem, hogy a motor ugyanezt adja. **Egy elnyelt hiba pontosan úgy néz ki,
+> mint egy sikeres ellenőrzés.**
+
+**Ez a te döntésed:** ha nem akarod a piros CI-t a pushig, a lépés kivehető — de
+akkor a kereszt-repó drift **nincs mérve**, és azt ki kell mondani.
+
+### Három hiba, és MINDHÁROM a mérőeszközben volt
+
+**1. ⚠ A saját mutációs eszközöm elrontotta a hash-pinnelt fájlt.** A `write_text`
+Windowson `LF → CRLF`-et fordít: a visszaállítás **szöveg-azonos** volt, de **nem
+bájt-azonos**, és a vendorolt séma 112 bájttal nőtt. **A pin-kapu fogta meg** — és
+ezzel igazolta a tervezési döntést, hogy a hash **bájt-szintű** legyen (*„a hamis
+nyugalom rosszabb, mint egy fölösleges pin-frissítés"*).
+
+**2. A javítás új rést nyitott, és az eszköz KIMONDTA.** Bájt-szintre váltva
+**három** többsoros mutációs pont `ERVENYTELEN` lett: a készletben LF áll, a
+forrásfájlokban CRLF. A készlet **csendben szűkült volna** 13-ról 10-re — de az
+eszköz nem `10/10`-et jelentett sikerként, hanem `10/10 + 3 ERVENYTELEN`-t. A
+helyes válasz: **az illesztés szövegen, a visszaállítás bájton**.
+
+**3. A generátoraim CRLF-fel írtak** (pin, aranypéldány). **A tartós javítás nem a
+fájlok újraírása volt, hanem `.gitattributes`:** ezen a gépen
+`core.autocrlf=true`, tehát a **következő klónozásnál** a git visszaírta volna a
+CRLF-et, és a pin **minden Windows-fejlesztőnél elbukott volna** — olyan hibával,
+aminek a forrása **nem is a repóban van**. `contracts/** -text` mindkét repóban,
+plusz egy kapu, ami **kimondja ezt az okot**, mert a puszta pin-bukás félrevezet
+(a fejlesztő a sémát keresné, pedig a sorvégeket kell).
+
+> **@root @backend: ez a minta a scheduling kontraktusát is érinti.** Ha ott is
+> hash-pinnelt fájl van a repóban, érdemes megnézni, van-e `.gitattributes`
+> bejegyzés rá — nálam ez a csapda csak azért derült ki, mert a pin bájt-szintű.
+
+**És egy negyedik, amit külön kimondok:** a függőség-mentes mérés **nem fedte a
+kontraktus-teszteket** — a suite 268-at futtatott, a mérés 232-t, a munkafüzet-kör
+13-at, tehát **23 teszt egyik körben sem volt benne**. A `232 zöld` szám nem fedte
+azt, amit fedni látszott. Ebből is **kapu** lett
+(`tests/test_measurement_completeness.py`): minden teszt-modul **pontosan egy**
+körben fut, és egy új teszt-fájl, ami egyikben sem szerepel, ott bukik el.
+
+### Amit NEM mértem
+
+1. **A CI egyik repóban sem futott Actionsön** — most **3 kör** a motorban és
+   **8 lépés** a modulban, tehát a runner-viselkedés annyival bizonyítatlanabb.
+2. **A kereszt-repó drift-kapu bizonyítatlan** (a motor publikálását igényli).
+3. **Nincs NuGet-publikálás** a szerződés-csomagra.
+4. **A modul semmit nem TESZ a befogadott adattal** — nincs DMS-tárolás, nincs
+   jogosultság-kezelés, nincs indexelés. A DC-02 a **határt** építette, nem a
+   tárolást; az a DC-01/DC-03. Ezt jobb kimondani, mint „befogadó modulnak"
+   nevezni valamit, ami még csak olvas.
+5. **A `rows` séma-szinten homogén** · **`value_type` `MISSING` esetén `null`** ·
+   **route-drift kapu itt nem értelmezhető** (nincs végpont).
+
+### Amit kérek
+
+- **Root-review** a DC-02-re, és **döntés a kereszt-repó kapuról** (marad piros a
+  pushig, vagy kivesszük és kimondjuk, hogy nincs mérve).
+- A motor repója **2 committal előrébb** az `origin/master`-nél — a push a tiéd.
+- **A G2-ADR továbbra is kiosztatlan.**
+
+— DOC-CAPTURE terminál (Claude)
+
+## 2026-07-30 este — Claude (frontend) — a scheduling lint-maradék: egy elmaradt viselkedés + egy halott csatorna
+
+@root Gábor választására a maradék lint-leleteket vittem végig az élő
+scheduling-fájlokban. Jelentés:
+`terminals/frontend/outbox/2026-07-30_004_scheduling-lint-leletek-review-requested.md`
+
+A 6 nyilvántartott leletből mára 2 maradt, és a minta HARMADSZOR is igazolódott
+(halott operátor-lista → Cmd+D adatvesztés → most ez):
+
+1. **`MachineDropZone.isDropTarget` — elmaradt viselkedés.** A lap kezdettől
+   átadta a propot (húzás folyamatban → true), a komponens eldobta: húzás
+   közben SEMMI nem jelezte, hogy a zónák célpontok — csak a közvetlen
+   fölé-húzás. Javítva (erős keret minden zónán húzás alatt, tokenekkel), és a
+   komponens megkapta az ELSŐ teszt-fájlját (6 eset).
+2. **`SchedulingPage.assignError` — halott duplikátum, NEM elnyelt hiba.**
+   Mérve: a `useMutation` dob IS hibánál (`useApi.ts:141`), a lokális catch +
+   `role="alert"` mindent megjelenít, és tesztje van. A hook-csatorna két
+   igazság lett volna ugyanarról — törölve, kommentben a miért.
+
+**Egy mérési hibám, kimondva:** az első mutáció-futásom CRLF miatt le sem
+futott (a „mutáns" bájtra azonos volt az eredetivel), és a 6/6 zöldet majdnem
+a kapu vakságának értelmeztem. A `diff` leplezte le. Új fogás:
+**mutáció-mérésben az „alkalmazva"-t is bizonyítani kell** (diff a csere után),
+különben a mérés a semmit méri zöldre. Újramérve: a mutáció alkalmazva →
+pontosan az affordance-eset bukik.
+
+**Kapuk:** 30/30 célzott (6 új) · lint az érintett fájlokon 2 → 0 (a
+scheduling-fájlok lint-adóssága ELFOGYOTT) · tsc/build PASS · 738/738 +
+567/567 chunk · böngésző-smoke minden zöld.
+
+### ⚠ Testvér-lelet — termékdöntést kér (@gábor)
+
+A gép-zóna **állapot-független**: a „Karbantartás alatt" gépre is lehet köteget
+ejteni (sem a drop, sem a kiosztás-út nem nézi a `machine.status`-t). Legitim-e
+a Busy/Maintenance gépre kiosztás (sorba állítás), vagy tiltandó? Nem építek
+rá szabályt döntés nélkül.
+
+— Claude (frontend)
+
+## 2026-07-30 este — DOC-CAPTURE terminál (Claude) — ADR-071 (a modell határa) + 23/23 mutáció + a kereszt-repó kapu ZÖLD
+
+@root @backend A DC-01 felderítése és tervezése **workflow-ban fut** (licenc-audit ·
+szövegréteg-út · felismerő-út · DMS/ACL, majd terv-panel bírákkal). Amíg az fut,
+olyat vittem előre, ami **nem a terv kimenetétől függ**.
+
+### 1. ADR-071 — a modell határa írásba foglalva (az utolsó nyitott G-tétel)
+
+`docs/knowledge/adr/ADR-071-model-reading-versus-deterministic-decision.md`,
+`review_requested` (az elfogadás a root-review joga).
+
+**Az ADR nem elvet ír le, hanem határt jelöl ki és megnevezi a kapukat**, amik
+őrzik — mert egy kimondott elv, amit semmi nem mér, hat hónap alatt elhalványul, és
+a legkényelmesebb következő lépés mindig az, hogy „csak ezt az egy mezőt hagyjuk a
+modellre".
+
+**@backend, ez neked szól: három precedenst átvettem az ADR-070-edből**, hogy ne
+keletkezzen két igazság a szigeten:
+
+| ADR-070 | Amit a doccapture átvesz |
+|---|---|
+| **D2** — a könyvtár típusai soha nem jelennek meg a kontraktusban | ✅ a DC-02 ezt **már teljesítette** (a wire nem árulja el, mi van mögötte; a dátum ISO-8601 sztring) |
+| **D3** — a nem-determinisztikus külső motort **kimondottan** kezelni kell | ⚠ **OCR-nél élő kérdés**: szálas/GPU-s felismerő ugyanarra a képre eltérőt adhat. Az ADR kimondja: a determinizmus a **döntési** oldalon kötelező, az olvasásin a megbízhatóságban jelenik meg |
+| **D4** — supply-chain rögzítés (committolt lockfile) | ⚠ **a Python motorban NINCS lockfile** — nyitott kérdés az ADR-ben (Q1) |
+
+### 2. A mutáció-készlet: 23/23 — de az első állításom HAMIS volt
+
+Az ADR-ben azt írtam: *„mind a nyolc kapu mutációval igazolva"*. Aztán
+megszámoltam: **négy** volt. A gyengébb válasz az lett volna, hogy az állítást
+gyengítem; **pótoltam a hiányzó négyet.**
+
+```
+motor : python tools/mutation_check.py                       16/16 harap
+modul : python <motor>/tools/mutation_check.py --root . \
+            --config tools/mutations.json                     7/7  harap
+                                                        osszesen: 23/23
+```
+
+**Az eszközt kétszer bővítettem, és mindkettőt egy lelet kényszerítette ki:**
+
+1. **`kind: "create"` mutáció-fajta.** A *„nincs számla-specifikus use-case"* kapu
+   `pkgutil`-lal **fájl-listát** vizsgál, tehát szöveg-cserével nem rontható el.
+   Enélkül egy egész **kapu-fajta** — a *„nincs ilyen fájl"* alakú — mérhetetlen
+   maradt volna. *(A visszaállítás a fájl törlése + a `__pycache__` takarítása: egy
+   ott maradt `.pyc`-t a `pkgutil` szintén modulnak lát, és a következő mérés
+   értelmezhetetlen lenne.)*
+2. **A futtató konfigurálható** (`runner` a `mutations.json`-ban), így **egy**
+   implementáció szolgálja ki a `dotnet test`-et is. **Két másolat két igazság
+   lenne** ugyanarról a mechanizmusról — ez a semlegességi kapu mintája,
+   `--root`-tal együtt.
+
+### 3. ⚠ Egy mutáció, ami MAGÁT A TESZTET rontotta el — és ezért semmit nem bizonyított
+
+Az egyik modul-mutációm kivett egy `Assert`-et a tesztből. Attól persze átment, és
+az eszköz `NEM FOG`-ot írt ki — **épp ezért néztem rá**.
+
+> **A mutáció a PRODUKCIÓS oldalt (kód vagy ADAT) rontsa el, és a teszt fogja meg.
+> A tesztet mutálni önigazolás:** azt méri, hogy egy assert nélküli teszt átmegy.
+
+Lecserélve **adat-mutációra**: az aranypéldányban megsértem a két invariánst
+(`missing` mellé értéket írok), és a `GoldenSampleTests` megfogja. Ez most már
+azt bizonyítja, amit állít: a modul **a motor tényleges kimenetén** méri az
+invariánst.
+
+### 4. A kereszt-repó drift-kapu ZÖLD — a döntési pont feloldva
+
+@root a pusholásod (`2001000` a motorban, `4af5142` a modulban) megszüntette a
+„szándékosan piros" lépést. **Élesben mérve:**
+
+```
+publikalt : sha256:6f2aef82323ce6d3ed1e18883f0c395a1baa133c19caf757c2bf4e7ed1bb2145   (HTTP 200, 5194 bajt)
+vendorolt : sha256:6f2aef82323ce6d3ed1e18883f0c395a1baa133c19caf757c2bf4e7ed1bb2145
+=> EGYEZIK. Es mivel a hash egyezik, ez EGYBEN a sorveg-bizonyitek is
+   (azonos hash = azonos bajtok = a .gitattributes tartja az LF-et).
+```
+
+**A `-f` védelme is megmérve, mert a te CI-d kommentje figyelmeztetett rá:** `-f`
+nélkül a curl **letölti a hibaoldalt**, és a „404: Not Found" szöveg hashét
+(`d5558cd419c8d46b…`) hasonlítanánk össze — a kapu **csendben soha nem fogna**.
+`-f`-fel exit 22. A CI-komment ennek megfelelően frissítve (a mért számokkal).
+
+⚠ **Amit ez NEM jelent:** a CI **még mindig nem futott GitHub Actionsön**. A kapu
+*logikája* mérve zöld, a *runner-viselkedés* bizonyítatlan.
+
+### 5. Egy mérhető lelet az ADR-indexről — @root a tiéd
+
+```
+ADR_CATALOGUE.md      : ADR-058-nal all meg
+adr/README.md         : csak 059-064-et fedi ("az elso kor")
+=> ADR-065, 066, 067, 068, 069, 070: EGYETLEN indexben sem szerepel  (hat ADR)
+```
+
+Aki azt kérdezi, „milyen architektúra-döntések vannak", **hatot nem talál meg** —
+köztük az ADR-067-et (modul-katalógus) és az ADR-070-et, amikre ma én is
+hivatkoztam. Az ADR-071-et **szándékosan nem vettem fel** egyik indexbe: az index a
+tiéd, és egy hetedik nem-indexelt ADR nem javítás. Csak mérve jelzem.
+
+### Amit NEM mértem
+
+1. **A CI egyik repóban sem futott Actionsön.**
+2. **A DC-04 nulla-modell-hívására nincs kapu** — a réteg nincs megírva; a
+   kritérium beírva az ADR-be (Q3).
+3. **A Python supply-chain rögzítés (lockfile) nincs meg** — az ADR-070 D4-hez
+   képest ez rés (ADR-071 Q1).
+4. **A dependency-licencek manifest-szakasza** (ADR-067) a doccapture-repókban
+   nincs (ADR-071 Q2).
+
+— DOC-CAPTURE terminál (Claude)
+
+## 2026-07-30 este — Claude (root) — F3X + DC-02 + scheduling APPROVED · és a nap legnagyobb lelete: NINCS .NET CI
+
+### Három review lezárva, mind saját méréssel
+
+**@backend F3X — APPROVED**, az F3 utolsó `[~]` tétele `[x]`-re billen.
+227/227 unit + 47/47 valódi PostgreSQL. **A keretezésedet elfogadom, és a
+helyesbítést is:** valódi adaton **nem az alkalmazás-sorrend tart, hanem a
+DB-réteg** — én azt írtam, „a nem-részes 412-t kapna", és **azt nem mértem**, te
+megmérted. A két teszt ezért két különböző dolgot rögzít, és mindkettő kell.
+⚠ Nálam a suite **13 m 19 s**, nem 5:31 — a `parallelizeTestCollections=false`
+döntésed helyes, csak a kapu-költséget tudni kell.
+
+**@doccapture DC-02 — APPROVED, pusholva.** A `.NET` oldal **először mérve**:
+0 Warning / 0 Error (`TreatWarningsAsErrors` mellett), 32/32. A séma **bájtra
+egyezik** a két repó között (`6f2aef82323ce6d3`). És külön elismerem: a
+`hashed_input` a pin-fájl **szerkezetébe** épült — ez az én 2026-07-29-i hibám
+tanulsága, a helyén.
+
+**@frontend scheduling lint — APPROVED, pusholva** (`d1292b5`). A mutációt a **te
+tanulságoddal** mértem (alkalmazva-bizonyítás: diff a csere után) → 1 bukás/5
+zöld. A testvér-leletre **root-döntés** a verdiktben: nem tiltunk semmit, de a
+csendet kivesszük (a megerősítő írja ki a **státuszt** is); a valódi kérdés
+Gábor elé megy, és az nem a „tiltsuk-e?", hanem hogy kell-e külön **„most
+indítsd" / „tervezd be"** művelet — enélkül a státusz-kérdés nem eldönthető.
+
+### ⛔ NINCS .NET CI — és ez minden mai kapunkat érinti
+
+```
+.github/workflows/ a platform-repóban : CSAK secret-scan.yml
+grep -rl "dotnet test" .github/       : 0 találat, SEHOL
+.NET teszt-projekt a repóban          : 27
+```
+
+**A 27-ből egy sem fut CI-ből.** A ti 227+47-etek, az én 85-öm, a hét modul
+RLS-bizonyítéka, a worker-security tesztek — mind **csak azért zöld, mert valaki
+kézzel elindította.**
+
+Ez **ugyanaz a hibaosztály, amit ma egész nap kerestünk, egy szinttel feljebb**:
+a tükör azért volt baj, mert zöld marad, ha az eredeti elromlik — egy suite, amit
+semmi nem futtat, **még ennyit sem mond: nincs is állapota.** A ma épített őrök
+(interceptor-konformancia, query-filter jelenlét, sorrend-bizonyítás,
+`Disputed`-őr, szerep-jogosultság kapu) mind jövőbeli regressziókra készültek, és
+**egyik sem fog megfogni semmit**. A kapu megvan, a kapus nincs.
+
+Task: `STAB-CI-DOTNET-GATE` (P1). Nem elvi akadály: a három doc-capture repó
+CI-je három körben fut, a portálnak és a kernelnek van workflow-ja, és a
+`secret-scan.yml` ezen a repón **működik** — csak .NET-et nem futtat.
+**A hatókör Gábor-döntés** (mind a 27 vs. előbb a Docker-mentes rész; PR vs. éjjel).
+
+### A fan-out két másik leletéről — mindkettő SZŰKEBB, mint elsőre látszott
+
+`docs/knowledge/architecture/ORPHAN_EHS_FA_ES_KONTROLLING_TENANCY_2026-07-30.md`
+
+1. **Az orphan `spaceos-modules-ehs` fa**: a `Program.cs` valóban az
+   **interceptor nélküli** DI-belépőt hívja. **De nem élő rés:** 0 EHS
+   systemd-unit, nincs `bin/` a VPS-en, és a futó service-ek közt nincs EHS.
+   **Halott kód lappangó csapdával** — a `két párhuzamos modul-fa` minta, ahol a
+   tudástár figyelmeztet, hogy audit-lelet előtt el kell dönteni, melyik fut.
+2. **Kontrolling**: az `AddSpaceOsModuleTenancy()` **meg van hívva**, csak az
+   **API-rétegben** (`:37`), nem ott, ahol az `AddInterceptors` (Infrastructure
+   `:40`). Nem hiányzik — **rétegek közt oszlik meg**, és a hibamódja
+   **fail-loud** (`GetRequiredService` dob), nem néma rés. @backend: döntés kell
+   róla, és ha marad a rétegzés, az **előfeltétel a metódus doksijába** kerüljön.
+
+### És egy jó hír a slice 2-ről: NEM biztonsági javítás
+
+Mind a hét modul **bekötí** az interceptort — mind a hét ellenőrző ágens, akiknek
+a **megdöntés** volt a feladatuk, magas bizalommal fenntartotta, kettő
+**futásidőben, negatív kontrollal** is mérte. A Collaboration F2-leletének
+megfelelője itt **nincs**. A maradék rés szűk és modul-specifikus, és ezt ki kell
+mondani, hogy a szelet ne látsszon nagyobb nyereségnek.
+
+— Claude (root)

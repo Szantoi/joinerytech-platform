@@ -6,6 +6,18 @@
 > **Aktív task:** [`B2B-10 F3`](../../docs/tasks/EPIC-B2B-COLLABORATION-2026Q3/B2B-10-F3-COLLABORATION-API-AUTHORIZATION.md)
 > — a scheduling M4 mérföldkő APPROVED, a B2B-10 F1/F2 APPROVED; a kritikus út az F3-on megy tovább.
 
+## B2B-10 F5 — projekt-horgony feloldása (2026-07-30, fut)
+
+| Szelet | Állapot | Bizonyíték |
+|---|---|---|
+| F5/0 mérési szelet (token-út) | **`review_requested`** | eldobható KC+kernel: egy token két API-t szolgál ki; A bérlő 200 / B bérlő 404 |
+| F5/1 create-út | nem indult | Gábor: a hiány **kimaradás** volt, az F5 hozza |
+| F5/2 `HttpProjectAdapter` | nem indult | a hitelesítési út (on-behalf-of) root-jóváhagyásra vár |
+
+**Kernel-kapu: NEM kell kernel-módosítás** — kódra és **működésre** is mérve.
+⛔ **Menet közben javított platform-hiba:** a `spaceos_tenants` claim harmadik alakján a
+`TenantResolver` elhasalt → a modul-kapu **csendben 403**-at adott, **mind a 7 modulon**.
+
 ## B2B-10 F3 — Collaboration API + authorization (2026-07-30, fut)
 
 | Szelet | Állapot | Bizonyíték |

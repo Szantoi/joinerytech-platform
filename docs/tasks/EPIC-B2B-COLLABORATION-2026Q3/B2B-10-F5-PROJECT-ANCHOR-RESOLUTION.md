@@ -58,7 +58,9 @@ Nulla `HttpClient` a hosting-csomagban és a 7 modul éles kódjában; nulla Pol
 
 1. **Hatókör-kimondás:** elfogadja-e a root, hogy az F5 első fele az F1-gyel le van tudva, és a
    maradék kizárólag a feloldó adapter?
-2. **A `ProjectOwnerTenantId` sorsa** — ez a **kernel-kapu billenő pontja**:
+2. **A `ProjectOwnerTenantId` sorsa** — ez a **kernel-kapu billenő pontja**. ⚠ Az F5/0 mérés után
+   a **(a) törlés** a javaslatom: on-behalf-of úton a bérlő-bizonyíték maga a kernel 404-je, tehát
+   a mező redundáns — és így a kernel-kapu **elkerülhető**. Lehetőségek:
    (a) töröljük a mezőt · (b) a `requestingTenantId`-val töltjük (**tautológia lesz**) ·
    (c) kernel-DTO bővítés → **Gábor-jóváhagyás kell**.
 3. **Hitelesítési út:** a hívó **felhasználó tokenjét** visszük tovább (on-behalf-of), vagy
@@ -72,18 +74,31 @@ Nulla `HttpClient` a hosting-csomagban és a 7 modul éles kódjában; nulla Pol
 6. **B2B-06 könyvelése:** a doksiban mind a nyolc kritérium ki van pipálva, miközben a státusz
    `changes_requested`. Melyiket állítja igazra az F5?
 
-## 3. Méretlen előfeltétel — enélkül az F5 nem indítható
+## 3. ~~Méretlen előfeltétel~~ — ✅ **MEGMÉRVE (F5/0, 2026-07-30)**
 
-**Elérhető-e a Kernel API a Collaboration-host környezetéből, és kapható-e hozzá érvényes token?**
-Ezt **senki nem mérte**. A saját tudástárunk csapdája: *audience-mapper nélkül minden modul-API
-401-et ad*. Amíg ez nincs megmérve, a „nem kell kernel-módosítás" verdikt a **kód** szintjére
-érvényes, a **működésre nem**.
+Jegyzőkönyv: [`KERNEL_TOKEN_PATH_MEASUREMENT_2026-07-30.md`](../../knowledge/architecture/KERNEL_TOKEN_PATH_MEASUREMENT_2026-07-30.md)
+
+| Kérdés | Mért válasz |
+|---|---|
+| Elérhető és hitelesíthető a Kernel? | **igen** — token nélkül 401, friss felhasználói tokennel 404/200 |
+| Egy token kiszolgálja mindkét API-t? | **igen** — `aud=['kernel-api','collaboration-api','account']`; Kernel **200** + Collaboration **404** ugyanazzal a tokennel |
+| A Kernel bérlő-szűkítése a tokenből jön? | **igen** — A bérlő **200**, B bérlő **404** ugyanarra a sorra |
+| Tud-e a gép-gép identitás bérlőt hordozni? | **nem** — a `client_credentials` tokenben nincs `tid` |
+
+**Következmény:** a **kernel-módosítás nem kell** verdikt immár a **működésre** is érvényes, és a
+javasolt hitelesítési út az **on-behalf-of** (a hívó tokenjének továbbadása).
+
+⛔ **Menet közben talált, javított platform-hiba:** a `spaceos_tenants` claim harmadik alakján
+(objektum, mert a .NET a tömb-claimet elemenként bontja) a `TenantResolver` elhasalt, és a
+modul-kapu **csendben 403**-at adott. Javítva, végponttól végpontig bizonyítva (javítás nélkül
+403, javítással 404, ugyanazzal a tokennel), 89/89 zöld + mutáció 2 bukással. **Mind a 7 modult
+érintette.**
 
 ## 4. Javasolt szeletelés (a döntések után)
 
 | Szelet | Tartalom | Kernel-kapu? |
 |---|---|---|
-| **F5/0** | **Mérési szelet**: elérhetőség + token-út bizonyítása eldobható Keycloak-konténerrel és a kernel-hosttal. Ha csak kernel-változtatással megy, a munka **itt megáll** és felmegy Gáborhoz. | mérés: nem |
+| **F5/0** | ✅ **KÉSZ** — elérhetőség + token-út mérve; a platform `spaceos_tenants`-hibája javítva | mérés: nem kellett |
 | **F5/1** | A **create-út**: munkacsomag-létrehozás parancs + végpont, ami **feltölti a horgonyt** — ezzel a horgony és az adapter is valós hívót kap. | nem |
 | **F5/2** | `HttpProjectAdapter` a porton: typed `HttpClient`, **fail-fast** base-URL options (`ValidateOnStart`, üres alapérték — nem néma fallback), explicit hibatérkép (404 → nincs ilyen projekt; 401/403 → **fail-closed**; timeout → külön), per-hívás timeout. | a 2. döntéstől függ |
 | **F5/3** | Negatív kontroll **mérve**: idegen tenant tokenjével a feloldás **semmit** nem ad vissza — és kimondva, **melyik réteg** tartja (a kernel 404-je vagy az adapter ellenőrzése). | nem |

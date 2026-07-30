@@ -70,6 +70,46 @@ export const RULES = [
     ),
   },
   {
+    // A LEFEDETTSÉG két vak pontja (root-kiosztás, 2026-07-30): az előző
+    // szabály `\b`-je elbukik a `_`-on, és a JSON-kulcs záró `"`-je beékelődik
+    // a kulcsnév és a `:` közé — tehát a PREFIXELT kulcsnév (`GITHUB_TOKEN`,
+    // `"BRAVE_API_KEY"`) SOSEM illeszkedett. Ez a legelterjedtebb
+    // env-elnevezés és minden JSON-konfig; két valódi Brave-kulcs volt kint
+    // emiatt, amit három kézi leltár hagyott ki.
+    //
+    // ⚠ A NAIV javítás túlkorrigál — a doccapture mérte a platform követett
+    // fáján: 37 hamis pozitív (köztük a `credential_env: MCP_TOKEN_CONDUCTOR`,
+    // vagyis PONT a helyes, token-mentes referencia-fájl bukott volna). Ezért
+    // két érték-őr:
+    //   1. SZÁMJEGY kötelező az értékben (base64/API-kulcs gyakorlatilag
+    //      mindig tartalmaz; az `MCP_TOKEN_CONDUCTOR`, az
+    //      `environment-or-service-manager` és az `IEntityTypeConfiguration`
+    //      nem — mindhárom valódi, mért fals pozitív volt);
+    //   2. env-VÁLTOZÓNÉV kizárva: csupa-nagybetű + `_` (pl. az 1. őrön
+    //      átcsúszó `MCP_TOKEN_V2` alak). Ez az ellenőrzés KÖTELEZŐEN
+    //      case-sensitive — egy `/i`-s regexben a [A-Z] a `ghp_…`-t is
+    //      "env-névnek" látná, és pont a GitHub-tokenre vakulna vissza.
+    //      Ezért ez a szabály függvény, nem regex.
+    // A hívás-kivétel (zárójel az érték után) a zaj-hangolás örököse.
+    // A `token` után az `iz|is` kizárva: a `tokenizer/tokenize` konfig-nevek
+    // nem titok-kulcsok.
+    name: 'prefixelt titok-kulcs literál értékkel (JSON/env/YAML)',
+    pattern: {
+      test(line) {
+        const m = line.match(
+          /["']?[A-Za-z0-9_]*(?:token(?!i[zs])|api_?key|secret|passw(?:or)?d)[A-Za-z0-9_]*["']?\s*[:=]\s*["']?([A-Za-z0-9+/=_.\-]{16,})["']?/i,
+        )
+        if (!m) return false
+        const value = m[1]
+        if (!/[0-9]/.test(value)) return false                    // 1. őr
+        if (/^[A-Z0-9]+(?:_[A-Z0-9]+)+$/.test(value)) return false // 2. őr (case-sensitive!)
+        const rest = line.slice(m.index + m[0].length)
+        if (rest.startsWith('(')) return false                     // hívás-kivétel
+        return true
+      },
+    },
+  },
+  {
     // A `config/agents.yaml` alakja: a TOKEN a kulcs, az agent neve az érték.
     // Az önteszt hozta ki, hogy az érték-oldali szabályok ezt nem fogják meg —
     // vagyis a kapu pont a legfontosabb fájlt hagyta volna ki.

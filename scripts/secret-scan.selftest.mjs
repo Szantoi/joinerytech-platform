@@ -45,6 +45,24 @@ const POSITIVE = [
     'hívás + beégetett fallback — a kivétel NEM nyelheti el'],
   ['const apiKey = loadKey() ?? "AbCdEf0123456789AbCd"',
     'hívás + beégetett fallback (??)'],
+  // ── A LEFEDETTSÉG két vak pontja (root-kiosztás, 2026-07-30) ────────────
+  // A root mérte ki a hangolt kapun: (1) a JSON-idézőjeles kulcs záró `"`-je
+  // beékelődik a kulcs és a `:` közé; (2) a `\b` elbukik a `_`-on, tehát a
+  // PREFIXELT kulcsnév (GITHUB_TOKEN, BRAVE_API_KEY) sosem illeszkedik.
+  // Ez a legelterjedtebb env-elnevezés és minden JSON-konfig — két valódi
+  // Brave-kulcs volt kint emiatt, amit HÁROM leltár hagyott ki.
+  // Az alakok a VALÓDI szerkezetről mintázva (rotáció előtti .mcp.json,
+  // appsettings.json, CI-YAML, .env), nem elképzelt formákról.
+  ['      "BRAVE_API_KEY": "BSAAbCdEf0123456789AbCdEf01234"',
+    '.mcp.json env-blokk: prefixelt kulcs + literál (a Brave-kulcs alakja)'],
+  ['GITHUB_TOKEN=ghp_AbCdEf0123456789AbCdEf0123456789AbCd',
+    '.env alak: prefixelt env-név + literál'],
+  ['  "ApiKey": "AbCdEf0123456789AbCdEf01"',
+    'appsettings.json: camelCase kulcs idézőjelben'],
+  ['      GITHUB_TOKEN: ghp_AbCdEf0123456789AbCdEf0123456789AbCd',
+    'CI-YAML env-mapping: prefixelt kulcs + literál'],
+  ['  "AWS_SECRET_ACCESS_KEY": "wJalrXUtnFEMI4K7MDENG2bPxRfiCY0"',
+    'közbenső kulcsszó (SECRET a név belsejében)'],
 ]
 
 const NEGATIVE = [
@@ -70,6 +88,26 @@ const NEGATIVE = [
   // családra szóljon, ne a konkrét sorokra.
   ["const apiKey = req.headers.get('x-api-key');", 'testvér: header-olvasás'],
   ['const password = await bcrypt.compare(input, stored);', 'testvér: await-es hívás'],
+  // ── A vak-pont-javítás NAIV alakjának ismert áldozatai ──────────────────
+  // A doccapture mérte a platform követett fáján: a naiv prefixelt szabály
+  // 37 hamis pozitívot ad (30 egyedi érték), és köztük van PONT A HELYES,
+  // token-mentes referencia-fájl (`agents.example.yaml`). Ezek a sorok a
+  // valódi fáról származnak — a szabály SOSEM foghatja meg őket.
+  ['credential_env: MCP_TOKEN_CONDUCTOR',
+    'a LEGITIM minta: env-VÁLTOZÓNÉV értékként (nincs számjegye)'],
+  ['credential_source: "environment-or-service-manager"',
+    'konfig-kulcsszó szöveges értékkel (nincs számjegye)'],
+  ['public class RefreshTokenConfiguration : IEntityTypeConfiguration<RefreshToken>',
+    'C# osztálynév TOKEN-nel a belsejében'],
+  ['  "BRAVE_API_KEY": "${BRAVE_API_KEY}"',
+    'a rotáció UTÁNI helyes alak: env-referencia a .mcp.json-ban'],
+  ['      AUTH_TOKEN: ${{ secrets.MCP_AUTH_TOKEN }}',
+    'CI-YAML: secrets-referencia prefixelt kulcson'],
+  ['SPACEOS_PACKAGES_TOKEN=xxx', 'doksi-helykitöltő prefixelt néven'],
+  ['  "AUTH_TOKEN_TIMEOUT_MS": "1800000"',
+    'számjegyes, de RÖVID konfig-érték (nem éri el a 16-ot)'],
+  ['cache_key: node-modules-v2-lock-2026-07-30',
+    'CI cache-kulcs: számjegyes érték, de a kulcsnév önmagában álló "key" — nem titok-gyanús összetétel'],
 ]
 
 let failed = 0

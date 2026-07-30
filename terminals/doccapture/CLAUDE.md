@@ -53,12 +53,32 @@ igen.** A `Bevetelezes` ma ezért használható — a könyvelési úton nulla L
 
 Termékként ez **eladási érv**, nem korlát: a vevő könyvelése auditálható marad.
 
-### 3. A jóváhagyási hurok a termék magja — nem az OCR
+### 3. A jóváhagyási hurok a termék magja — nem az OCR, és nem a felület
 
-A `Bevetelezes` Excelben javasol, az ember **`x`-szel** jóváhagy, és a
-megfeleltetési tábla **nő**. Ez adja, hogy a napi rutin alig változik — és ez a
-bevezethetőség kulcsa. **Ha ezt egy „szép UI" kedvéért felborítjuk, a bevezetés
-meg fog állni az első ügyfélnél.**
+A **mechanika** a lényeg: a rendszer **javasol**, az ember **egy mozdulattal**
+jóváhagy, és a megfeleltetési tábla **nő**. Ez adja, hogy a napi rutin alig
+változik — és ez a bevezethetőség kulcsa.
+
+> **FRISSÍTVE 2026-07-30 (G3-döntés, Gábor).** Ez a szabály korábban azt írta,
+> hogy a jóváhagyás **Excelben** történik, és hogy „ha ezt egy szép UI kedvéért
+> felborítjuk, a bevezetés meg fog állni az első ügyfélnél". **Gábor a
+> kockázat ismeretében a portál-UI-t választotta** (a kockázat benne volt az
+> opció szövegében), tehát a felület **portál**, nem Excel.
+>
+> **Amit a döntés NEM változtatott meg — ez a szabály maradék éle:**
+>
+> 1. **A mechanika nem cserélhető, csak a felület.** Javaslat → **egy
+>    mozdulattal** jóváhagyás → a tábla **nő**. Ha a portál ebből több lépést
+>    csinál, az a szabály megsértése, nem a szabály fejlesztése.
+> 2. **A jóváhagyó felület a forrás-igazság (M9).** Nem lehet két helyen
+>    jóváhagyni — se Excelben *és* portálon.
+> 3. **A lépésszámot a mai Excel-úthoz képest MEG KELL MÉRNI, nem érezni.**
+>    *(root-kötelező: a DC-04 enélkül nem zárható le.)* Ez az egyetlen dolog,
+>    ami a G3 kockázatát mérhetővé teszi ahelyett, hogy vitatkoznánk róla.
+>
+> A szabály tehát **nem** esett el — az **indoka** maradt, a **hordozója**
+> változott. Ezt a különbséget tartsd meg: „a rutin ne boruljon fel" ≠ „a
+> felület legyen Excel".
 
 ---
 

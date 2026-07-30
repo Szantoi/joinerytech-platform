@@ -25,16 +25,16 @@ Kiírás: [`B2B-10-F3-COLLABORATION-API-AUTHORIZATION.md`](../../docs/tasks/EPIC
 
 - [x] **F3/1 — authorization-mag** (`0b555f0`): képesség-szótár, egyetlen döntési hely, spoofing-kapu
       a betöltés ELŐTT, 404 a nem-részesnek / 403 a részes-de-tiltottnak. 144/144 zöld, **6/6 mutáció**.
-      `review_requested`.
-- [ ] ⛔ **Root-megerősítést kér:** a megállapodás maga részvétel-alapú maradt (körkörösség);
-      ha szigorúbb kell, az F3/2 endpointjai ELŐTT szóljon a root.
-- [ ] **F3/2** — `SpaceOS.Collaboration.Api` + host: hosting-minta, `RequireEnabledModule("spaceos.collaboration")`,
-      `/api/collaboration/v1`, ProblemDetails + correlation ID, `ICollaborationCallerContext` implementáció.
+      **ROOT-REVIEW: APPROVED** (2026-07-30, root-mutációk M-A/M-B is megfogva).
+- [x] ⛔→✅ **Gábor döntött (2026-07-30):** a megállapodás **részvétel-alapú marad**; amit hordoz, az grant-köteles.
+- [x] **F3/2** — API-projekt + host, csoport-szintű `RequireAuthorization` + `RequireEnabledModule`,
+      caller-context a tokenből, ProblemDetails + correlation ID, olvasás külön képességgel.
+      **158/158 unit + 25/25 integrációs zöld.** `review_requested`.
 - [ ] **F3/3** — `If-Match` az átmeneteken (a `RowVersion` concurrency-tokenre), `Idempotency-Key`.
 - [ ] **F3/4** — `AgreementReadModel` valódi projekciója + **allowedActions↔domain paritás-teszt**
       (⚠ a mai `AllowedActionsPolicy` eltér a domaintől — a lelet a STATE.md-ben).
-- [ ] **F3/5** — végpont-szintű bizonyíték **valódi PostgreSQL-en** — ⚠ **Docker kell hozzá**
-      (2026-07-30-án nem futott, ezért a 25 integrációs teszt sincs ma mérve).
+- [ ] **F3/5** — végpont-szintű bizonyíték **valódi PostgreSQL-en** (a Docker 2026-07-30-tól fut,
+      a meglévő 25 integrációs teszt zöld — a végpont-szintű sáv még hátravan).
 
 ## P1 — M4: véges kapacitású ütemező (a BELSŐ hatókör kimerült)
 

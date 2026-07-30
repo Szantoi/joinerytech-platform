@@ -33,8 +33,8 @@ Ehhez jön két örökség, amit a root **kifejezetten ide utalt**:
 
 | Szelet | Tartalom | Állapot |
 |---|---|---|
-| **F3/1** | Grant-alapú authorization-mag az application rétegben + hívó-identitás + spoofing-kapu | in_progress |
-| **F3/2** | `SpaceOS.Collaboration.Api` + host: hosting-minta, `RequireEnabledModule`, `/api/collaboration/v1`, ProblemDetails + correlation ID | pending |
+| **F3/1** | Grant-alapú authorization-mag az application rétegben + hívó-identitás + spoofing-kapu | **APPROVED** (`0b555f0`) |
+| **F3/2** | `SpaceOS.Collaboration.Api` + host: hosting-minta, `RequireEnabledModule`, `/api/collaboration/v1`, ProblemDetails + correlation ID | **`review_requested`** — 158/158 unit + 25/25 integrációs |
 | **F3/3** | ETag / `If-Match` az állapotátmeneteken (a `RowVersion` concurrency-tokenre), `Idempotency-Key` a létrehozáson | pending |
 | **F3/4** | `AgreementReadModel` valódi projekciója (F1 ide utalta) + lista-végpontok + **allowedActions↔domain paritás-teszt** | pending |
 | **F3/5** | Végpont-szintű bizonyíték **valódi PostgreSQL-en** (Testcontainers): cross-tenant, spoofing, revoked/expired, 404/403 | pending |
@@ -74,8 +74,11 @@ A döntés **egyetlen helyen** él (`CollaborationAccessGuard`), hogy a megford�
 
 **F3 saját kritériumai:**
 
-- [ ] Minden üzleti route `RequireAuthorization()` + `RequireEnabledModule("spaceos.collaboration")`.
-- [ ] Hibaformátum: ProblemDetails + correlation ID (a Doorstar biztonsági szerződésének tétele).
+- [x] Minden üzleti route `RequireAuthorization()` + `RequireEnabledModule("spaceos.collaboration")`.
+      *(F3/2 — viselkedés-teszt + **szerkezeti** teszt az `EndpointDataSource`-ból; az MA2 mutáció
+      túlélte, mert a modul-kapu maga is hitelesítést követel — a szerkezeti teszt ezért kellett.)*
+- [x] Hibaformátum: ProblemDetails + correlation ID (a Doorstar biztonsági szerződésének tétele).
+      *(F3/2 — a 403 semmit nem mond az indokról; mutációval igazolva.)*
 - [ ] Az `allowedActions` a **domainből** származik, nem külön táblázatból — paritás-teszttel.
 - [ ] A bizonyíték **valódi PostgreSQL-en** fut, nem InMemory-n (az F2 tanulsága).
 

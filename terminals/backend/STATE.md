@@ -10,15 +10,14 @@
 
 | Szelet | Állapot | Bizonyíték |
 |---|---|---|
-| F3/1 grant-alapú authorization | **`review_requested`** (`0b555f0`) | 144/144 zöld (126→+18), **6/6 mutáció megfogva** |
-| F3/2 API-host + `RequireEnabledModule` | nem indult | — |
+| F3/1 grant-alapú authorization | **APPROVED** (root, `0b555f0`) | 144/144 zöld, 6/6 saját + 2 root-mutáció megfogva |
+| F3/2 API-host + `RequireEnabledModule` | **`review_requested`** | **158/158 unit + 25/25 integrációs** (valódi PostgreSQL) |
 | F3/3 ETag / Idempotency-Key | nem indult | — |
 | F3/4 `AgreementReadModel` + allowedActions-paritás | nem indult | — |
-| F3/5 végpont-bizonyíték valódi Postgresen | **blokkolva** | a Docker nem futott 2026-07-30-án |
+| F3/5 végpont-bizonyíték valódi Postgresen | nem indult | ✅ a Docker 2026-07-30 délelőtt elindult (Gábor), 25/25 zöld |
 
-**Root-döntésre vár:** a grant-kényszerítés hatóköre. A megállapodás MAGA részvétel-alapú maradt
-(a vendég grant nélkül is elfogadhatja), mert a granteket maga a megállapodás adja ki — enélkül
-körkörös. Amit a megállapodás hordoz, az grant-köteles. Egy helyen él, a megfordítása egysoros.
+**Root-döntés MEGVAN (Gábor, 2026-07-30):** a részvétel-alapú modell marad — a vendég grant nélkül is elfogadhatja a
+megállapodást, mert a granteket maga a megállapodás adja ki; enélkül körkörös. Amit a megállapodás hordoz, az grant-köteles. Egy helyen él, a megfordítása egysoros.
 
 ⚠ **F3/4-re előre jelzett drift:** az `AllowedActionsPolicy` (B2B-07 örökség) eltér a domaintől
 (Draft-ban a vendégnek `Offer`-t ad, `Cancel`-t nem — a domain mindkettőt engedi). Ma ártalmatlan,

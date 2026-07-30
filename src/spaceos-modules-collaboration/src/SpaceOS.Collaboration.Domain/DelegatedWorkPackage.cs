@@ -29,6 +29,30 @@ public class DelegatedWorkPackage
     /// </remarks>
     public CollaborationWorkScope? WorkScope { get; private set; }
 
+    /// <summary>
+    /// The states a package never leaves — one place, so "closed" cannot mean two things.
+    /// </summary>
+    /// <remarks>
+    /// Read by the cancel guard and by <see cref="AllowedActionsFor"/>; the parity test drives the
+    /// real methods and compares, so the two cannot drift apart unnoticed.
+    /// </remarks>
+    public bool IsClosed => ClosedStatuses.Contains(Status);
+
+    /// <summary>
+    /// The closed states as data, so a database query can ask the same question.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="IsClosed"/> is a computed property and no SQL provider can translate it; a read
+    /// model counting "open packages" would otherwise have to spell the list out again in a
+    /// <c>Where</c>, and that copy is what drifts.
+    /// </remarks>
+    public static readonly IReadOnlyList<WorkPackageStatus> ClosedStatuses =
+    [
+        WorkPackageStatus.Completed,
+        WorkPackageStatus.Rejected,
+        WorkPackageStatus.Cancelled
+    ];
+
     private readonly List<WorkPackageStateHistoryEntry> _history = new();
     public IReadOnlyList<WorkPackageStateHistoryEntry> History => _history.AsReadOnly();
 
@@ -171,17 +195,85 @@ public class DelegatedWorkPackage
         TransitionTo(WorkPackageStatus.Completed, actorTenantId, actorUserId, "Complete", null, timestampUtc);
     }
 
+    /// <summary>Withdraws a package that is still in play; either party may.</summary>
+    /// <remarks>
+    /// <b>A closed package stays closed</b> (Gábor's decision, 2026-07-30). Until F3/4 the only
+    /// refusal here was <c>Completed</c>, so an already rejected or cancelled package could be
+    /// cancelled again: the audit trail would gain a second entry about the same fact, and
+    /// cancelling a REJECTED package would overwrite the guest's stated reason with the host's —
+    /// between two companies that is not a detail.
+    /// </remarks>
     public void Cancel(Guid actorTenantId, Guid actorUserId, string reason, DateTimeOffset timestampUtc)
     {
         EnsureActorIsParty(actorTenantId);
-        if (Status == WorkPackageStatus.Completed)
-            throw new InvalidOperationException("Cannot cancel a completed work package.");
+        if (IsClosed)
+            throw new InvalidOperationException(
+                $"Cannot cancel a work package in {Status}: it is already closed.");
 
         if (string.IsNullOrWhiteSpace(reason))
             throw new ArgumentException("Cancellation reason is required.", nameof(reason));
 
         RejectionOrChangeReason = reason.Trim();
         TransitionTo(WorkPackageStatus.Cancelled, actorTenantId, actorUserId, "Cancel", reason, timestampUtc);
+    }
+
+    /// <summary>
+    /// Which transitions <paramref name="actorTenantId"/> could make right now (B2B-10 F3/4).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// This moved into the aggregate from a projection table that had drifted from it. The table
+    /// withheld <c>Cancel</c> from the guest in <c>Draft</c> — an action the domain allows — so the
+    /// portal built from it would have hidden a legal move; and it listed actions per state in a
+    /// switch that nothing compared against the guards below.
+    /// </para>
+    /// <para>
+    /// <b>The guards are still the enforcing side.</b> They stay as they are, because each one
+    /// explains its own refusal ("only the guest…", "required state Offered…") and a single
+    /// boolean could not. That leaves two statements of the same rule, so the parity test drives
+    /// every action in every state through the REAL methods and compares the outcome with this
+    /// list, cell by cell. The list is advice; the guards decide; the test keeps them equal.
+    /// </para>
+    /// </remarks>
+    public IReadOnlyList<string> AllowedActionsFor(Guid actorTenantId)
+    {
+        if (actorTenantId != HostTenantId && actorTenantId != GuestTenantId)
+        {
+            // Not a party: no actions, and the projection turns the whole package into a 404
+            // before this list is ever read.
+            return [];
+        }
+
+        var isHost = actorTenantId == HostTenantId;
+        var isGuest = actorTenantId == GuestTenantId;
+        var actions = new List<string>();
+
+        if (Status == WorkPackageStatus.Draft)
+            actions.Add("Offer");
+
+        if (isGuest && Status == WorkPackageStatus.Offered)
+        {
+            actions.Add("Accept");
+            actions.Add("Reject");
+        }
+
+        if (isGuest && Status is WorkPackageStatus.Accepted or WorkPackageStatus.ChangesRequested)
+            actions.Add("StartProgress");
+
+        if (isGuest && Status == WorkPackageStatus.InProgress)
+            actions.Add("Submit");
+
+        if (isHost && Status == WorkPackageStatus.Submitted)
+        {
+            actions.Add("RequestChanges");
+            actions.Add("Complete");
+        }
+
+        // Either party, as long as the package is still in play.
+        if (!IsClosed)
+            actions.Add("Cancel");
+
+        return actions;
     }
 
     private void EnsureActorIsParty(Guid actorTenantId)

@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using SpaceOS.Collaboration.Application.Idempotency;
+using SpaceOS.Collaboration.Application.Projections;
 using SpaceOS.Collaboration.Application.Repositories;
 using SpaceOS.Collaboration.Infrastructure.Data;
 using SpaceOS.Modules.Hosting.Persistence;
@@ -90,6 +91,9 @@ public static class CollaborationInfrastructureServiceCollectionExtensions
         // composed the API without it would advertise the Idempotency-Key header and quietly not
         // honour it.
         services.AddScoped<IIdempotencyStore, EfIdempotencyStore>();
+
+        // Read-side queries for the agreement view (B2B-10 F3/4).
+        services.AddScoped<IAgreementViewQueries, AgreementViewQueries>();
 
         return services;
     }

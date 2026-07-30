@@ -237,6 +237,51 @@ public class CollaborationAgreement
             null, supersedingTermsRevisionId, timestampUtc);
     }
 
+    /// <summary>
+    /// Which transitions <paramref name="actorTenantId"/> could make on this agreement (F3/4).
+    /// </summary>
+    /// <remarks>
+    /// The counterpart of the work package's list, and kept honest the same way: a parity test
+    /// drives every transition from every state through the real methods and compares. The guards
+    /// below remain the enforcing side, because each explains its own refusal.
+    /// </remarks>
+    public IReadOnlyList<string> AllowedActionsFor(Guid actorTenantId)
+    {
+        if (actorTenantId != HostTenantId && actorTenantId != GuestTenantId)
+        {
+            return [];
+        }
+
+        var isHost = actorTenantId == HostTenantId;
+        var isGuest = actorTenantId == GuestTenantId;
+        var actions = new List<string>();
+
+        if (isHost && Status == AgreementStatus.Draft)
+            actions.Add("Propose");
+
+        if (isGuest && Status == AgreementStatus.Proposed)
+        {
+            actions.Add("Accept");
+            actions.Add("Reject");
+        }
+
+        if (isHost && Status is AgreementStatus.Draft or AgreementStatus.Proposed)
+            actions.Add("Cancel");
+
+        if (isHost && Status == AgreementStatus.Accepted)
+            actions.Add("Supersede");
+
+        return actions;
+    }
+
+    /// <summary>When this agreement last moved — its own creation if it never has.</summary>
+    /// <remarks>
+    /// Read from the recorded history rather than kept as a field: a stored "last modified" is a
+    /// second truth that only stays right as long as everyone remembers to update it.
+    /// </remarks>
+    public DateTimeOffset LastChangedAtUtc =>
+        _history.Count == 0 ? CreatedAtUtc : _history[^1].TimestampUtc;
+
     private void EnsureActorIsHost(Guid actorTenantId)
     {
         if (actorTenantId != HostTenantId)

@@ -30,8 +30,8 @@ public sealed class CollaborationReadModelTests
         wp.Accept(GuestTenantId, GuestUserId, Now);
         wp.StartProgress(GuestTenantId, GuestUserId, Now);
 
-        var guestActions = AllowedActionsPolicy.CalculateForWorkPackage(wp, GuestTenantId);
-        var hostActions = AllowedActionsPolicy.CalculateForWorkPackage(wp, HostTenantId);
+        var guestActions = wp.AllowedActionsFor(GuestTenantId);
+        var hostActions = wp.AllowedActionsFor(HostTenantId);
 
         Assert.Contains("Submit", guestActions);
         Assert.DoesNotContain("Submit", hostActions);
@@ -55,8 +55,8 @@ public sealed class CollaborationReadModelTests
         wp.StartProgress(GuestTenantId, GuestUserId, Now);
         wp.Submit(GuestTenantId, GuestUserId, "QA-PROOF-101", Now);
 
-        var hostActions = AllowedActionsPolicy.CalculateForWorkPackage(wp, HostTenantId);
-        var guestActions = AllowedActionsPolicy.CalculateForWorkPackage(wp, GuestTenantId);
+        var hostActions = wp.AllowedActionsFor(HostTenantId);
+        var guestActions = wp.AllowedActionsFor(GuestTenantId);
 
         Assert.Contains("Complete", hostActions);
         Assert.Contains("RequestChanges", hostActions);

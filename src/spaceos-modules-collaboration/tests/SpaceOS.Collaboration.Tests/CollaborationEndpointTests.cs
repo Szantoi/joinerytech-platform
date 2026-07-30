@@ -157,8 +157,8 @@ public class CollaborationEndpointTests
         await using var host = await CollaborationEndpointTestHost.StartAsync(agreement);
         host.As(Host, HostUser);
 
-        var response = await host.Client.PostAsync(
-            $"/api/collaboration/v1/agreements/{agreement.Id}/propose", content: null);
+        var response = await PostAsync(
+            host, $"/api/collaboration/v1/agreements/{agreement.Id}/propose", agreement.RowVersion);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
@@ -475,16 +475,20 @@ public class CollaborationEndpointTests
     [Fact]
     public async Task An_agreement_transition_carries_a_tag_and_honours_a_stale_one()
     {
-        // The agreement routes accept If-Match but do not demand it: they have no read endpoint yet
-        // (F3/4), so requiring a tag nobody can obtain would make them unusable. What is present is
-        // enforced, and the response always hands back the next one.
+        // Since F3/4 the agreement routes demand If-Match too — the read endpoint below is where a
+        // client gets the tag, which is the reason F3/3 had left them optional.
         var agreement = Agreement();
         await using var host = await CollaborationEndpointTestHost.StartAsync(agreement);
         host.As(Host, HostUser);
 
         var blind = await PostAsync(host, $"/api/collaboration/v1/agreements/{agreement.Id}/propose", ifMatch: null);
-        Assert.Equal(HttpStatusCode.OK, blind.StatusCode);
-        Assert.Equal(ConditionalRequests.Format(agreement.RowVersion), blind.Headers.ETag?.ToString());
+        Assert.Equal(HttpStatusCode.PreconditionRequired, blind.StatusCode);
+        Assert.Equal(AgreementStatus.Draft, agreement.Status);
+
+        var proposed = await PostAsync(
+            host, $"/api/collaboration/v1/agreements/{agreement.Id}/propose", agreement.RowVersion);
+        Assert.Equal(HttpStatusCode.OK, proposed.StatusCode);
+        Assert.Equal(ConditionalRequests.Format(agreement.RowVersion), proposed.Headers.ETag?.ToString());
 
         var stale = await PostAsync(
             host, $"/api/collaboration/v1/agreements/{agreement.Id}/cancel",
@@ -493,5 +497,90 @@ public class CollaborationEndpointTests
 
         Assert.Equal(HttpStatusCode.PreconditionFailed, stale.StatusCode);
         Assert.Equal(AgreementStatus.Proposed, agreement.Status);
+    }
+
+    // ---------------------------------------------------------------------------------------
+    // F3/4 — the agreement view
+    // ---------------------------------------------------------------------------------------
+
+    [Fact]
+    public async Task The_agreement_view_carries_every_field_or_says_it_has_none()
+    {
+        // F1 refused to return this from a command because two fields come from outside the
+        // aggregate. Here they are fetched, so each is either true or explicitly absent — a draft
+        // agreement reports a null terms hash rather than an empty string that reads like one.
+        var agreement = Agreement();
+        agreement.Propose(Host, HostUser, Now.AddDays(-1));
+
+        await using var host = await CollaborationEndpointTestHost.StartAsync(
+            agreement, viewQueries: new StubAgreementViewQueries(termsHash: null, openWorkPackages: 3));
+        host.As(Guest, GuestUser);
+
+        var response = await host.Client.GetAsync($"/api/collaboration/v1/agreements/{agreement.Id}");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(ConditionalRequests.Format(agreement.RowVersion), response.Headers.ETag?.ToString());
+
+        using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        var root = document.RootElement;
+
+        Assert.Equal(agreement.Id, root.GetProperty("agreementId").GetGuid());
+        Assert.Equal(nameof(AgreementStatus.Proposed), root.GetProperty("status").GetString());
+        Assert.Equal(JsonValueKind.Null, root.GetProperty("currentRevisionHash").ValueKind);
+        Assert.Equal(3, root.GetProperty("activeWorkPackageCount").GetInt32());
+        Assert.Equal(agreement.RowVersion, root.GetProperty("rowVersion").GetInt32());
+    }
+
+    [Fact]
+    public async Task The_agreement_view_advertises_what_the_asking_party_may_do()
+    {
+        // Actor-filtered, and taken from the aggregate: from Proposed the guest may answer and the
+        // host may only withdraw.
+        var agreement = Agreement();
+        agreement.Propose(Host, HostUser, Now.AddDays(-1));
+
+        await using var host = await CollaborationEndpointTestHost.StartAsync(agreement);
+
+        host.As(Guest, GuestUser);
+        var guestView = await host.Client.GetFromJsonAsync<JsonElement>(
+            $"/api/collaboration/v1/agreements/{agreement.Id}");
+
+        host.As(Host, HostUser);
+        var hostView = await host.Client.GetFromJsonAsync<JsonElement>(
+            $"/api/collaboration/v1/agreements/{agreement.Id}");
+
+        var guestActions = guestView.GetProperty("allowedActions")
+            .EnumerateArray().Select(action => action.GetString()).ToList();
+        var hostActions = hostView.GetProperty("allowedActions")
+            .EnumerateArray().Select(action => action.GetString()).ToList();
+
+        Assert.Equal(new[] { "Accept", "Reject" }, guestActions);
+        Assert.Equal(new[] { "Cancel" }, hostActions);
+    }
+
+    [Fact]
+    public async Task An_outside_tenant_cannot_read_the_agreement_either()
+    {
+        var agreement = Agreement();
+        await using var host = await CollaborationEndpointTestHost.StartAsync(agreement);
+        host.As(Stranger, HostUser);
+
+        var response = await host.Client.GetAsync($"/api/collaboration/v1/agreements/{agreement.Id}");
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task The_guest_reads_the_agreement_without_holding_any_grant()
+    {
+        // Gábor's decision (2026-07-30): the agreement itself is participation-based, because the
+        // grants are issued BY it. This is the endpoint that has to honour that.
+        var agreement = Agreement(withExecuteGrant: false);
+        await using var host = await CollaborationEndpointTestHost.StartAsync(agreement);
+        host.As(Guest, GuestUser);
+
+        var response = await host.Client.GetAsync($"/api/collaboration/v1/agreements/{agreement.Id}");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 }

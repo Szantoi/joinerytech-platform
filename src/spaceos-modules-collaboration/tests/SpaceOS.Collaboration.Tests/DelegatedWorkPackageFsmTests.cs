@@ -130,4 +130,86 @@ public sealed class DelegatedWorkPackageFsmTests
         wp.Complete(HostTenantId, HostUserId, "FINAL-PROOF", Now.AddHours(4));
         Assert.Equal(WorkPackageStatus.Completed, wp.Status);
     }
+
+    [Theory]
+    [InlineData(WorkPackageStatus.Rejected)]
+    [InlineData(WorkPackageStatus.Cancelled)]
+    [InlineData(WorkPackageStatus.Completed)]
+    public void A_closed_package_cannot_be_cancelled_again(WorkPackageStatus closed)
+    {
+        // Gábor's decision (2026-07-30). NOT covered by the parity suite: that one proves the
+        // advertised list and the guards AGREE, which they would even if both were wrong. What is
+        // right is a product rule, and a product rule has to be stated somewhere.
+        var package = InState(closed);
+
+        var refusal = Assert.Throws<InvalidOperationException>(
+            () => package.Cancel(HostTenantId, HostUserId, "meggondoltuk", Now));
+
+        Assert.Contains("already closed", refusal.Message, StringComparison.Ordinal);
+        Assert.Equal(closed, package.Status);
+    }
+
+    [Fact]
+    public void An_open_package_can_still_be_cancelled_by_either_party()
+    {
+        // The negative control: if the guard had simply become "never cancel", the theory above
+        // would pass just as well.
+        var byHost = InState(WorkPackageStatus.Offered);
+        byHost.Cancel(HostTenantId, HostUserId, "elállunk", Now);
+        Assert.Equal(WorkPackageStatus.Cancelled, byHost.Status);
+
+        var byGuest = InState(WorkPackageStatus.InProgress);
+        byGuest.Cancel(GuestTenantId, HostUserId, "nem fér bele", Now);
+        Assert.Equal(WorkPackageStatus.Cancelled, byGuest.Status);
+    }
+
+    /// <summary>Drives the FSM to the requested state with the real transitions.</summary>
+    private static DelegatedWorkPackage InState(WorkPackageStatus status)
+    {
+        var package = DelegatedWorkPackage.Create(
+            Guid.NewGuid(), HostTenantId, GuestTenantId, "Ajtólap", "50 db", Now.AddDays(30), Now.AddDays(-1));
+
+        if (status == WorkPackageStatus.Cancelled)
+        {
+            package.Cancel(HostTenantId, HostUserId, "elállunk", Now);
+            return package;
+        }
+
+        package.Offer(HostTenantId, HostUserId, Now);
+
+        if (status == WorkPackageStatus.Offered)
+        {
+            return package;
+        }
+
+        if (status == WorkPackageStatus.Rejected)
+        {
+            package.Reject(GuestTenantId, HostUserId, "nem fér bele", Now);
+            return package;
+        }
+
+        package.Accept(GuestTenantId, HostUserId, Now);
+
+        if (status == WorkPackageStatus.Accepted)
+        {
+            return package;
+        }
+
+        package.StartProgress(GuestTenantId, HostUserId, Now);
+
+        if (status == WorkPackageStatus.InProgress)
+        {
+            return package;
+        }
+
+        package.Submit(GuestTenantId, HostUserId, "DMS:1", Now);
+
+        if (status == WorkPackageStatus.Submitted)
+        {
+            return package;
+        }
+
+        package.Complete(HostTenantId, HostUserId, "QA:1", Now);
+        return package;
+    }
 }

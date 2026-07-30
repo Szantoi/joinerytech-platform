@@ -19,6 +19,12 @@ namespace SpaceOS.Collaboration.Api.Endpoints;
 /// the request records have no such field (see <see cref="AcceptAgreementRequest"/>).
 /// </para>
 /// <para>
+/// <b>Since F3/4 every transition here demands <c>If-Match</c></b> as well. F3/3 had left it
+/// optional for one reason only — there was no way to obtain a tag — and the read endpoint above
+/// removes that excuse. The Doorstar contract is published in F4, so tightening now costs nobody
+/// a migration.
+/// </para>
+/// <para>
 /// Transitions are <c>POST</c>s on a named action rather than a <c>PATCH</c> of a status field. A
 /// status one can write is a status a client can invent: "accept" and "reject" are different
 /// events with different evidence requirements, and flattening them into one writable field would
@@ -34,12 +40,26 @@ public static class AgreementEndpoints
 
         var agreements = group.MapGroup("/agreements").WithTags("Collaboration agreements");
 
+        agreements.MapGet("/{agreementId:guid}", async (
+            Guid agreementId, HttpContext http, ICollaborationCallerContext callers,
+            IMediator mediator, CancellationToken cancellationToken) =>
+        {
+            var caller = callers.Current;
+            var view = await mediator.Send(
+                new GetAgreementQuery(agreementId, caller.TenantId, caller.UserId), cancellationToken);
+
+            ConditionalRequests.SetETag(http.Response, view.RowVersion);
+
+            return Results.Ok(view);
+        })
+        .WithName("GetAgreement");
+
         agreements.MapPost("/{agreementId:guid}/propose", async (
             Guid agreementId, HttpContext http, ICollaborationCallerContext callers,
             IMediator mediator, CancellationToken cancellationToken) =>
         {
             var caller = callers.Current;
-            var expected = ConditionalRequests.ReadIfMatch(http.Request, required: false);
+            var expected = ConditionalRequests.ReadIfMatch(http.Request, required: true);
             var result = await mediator.Send(
                 new ProposeAgreementCommand(agreementId, caller.TenantId, caller.UserId, expected), cancellationToken);
 
@@ -52,7 +72,7 @@ public static class AgreementEndpoints
             IMediator mediator, CancellationToken cancellationToken) =>
         {
             var caller = callers.Current;
-            var expected = ConditionalRequests.ReadIfMatch(http.Request, required: false);
+            var expected = ConditionalRequests.ReadIfMatch(http.Request, required: true);
             var result = await mediator.Send(
                 new AcceptAgreementCommand(
                     agreementId, caller.TenantId, caller.UserId,
@@ -68,7 +88,7 @@ public static class AgreementEndpoints
             IMediator mediator, CancellationToken cancellationToken) =>
         {
             var caller = callers.Current;
-            var expected = ConditionalRequests.ReadIfMatch(http.Request, required: false);
+            var expected = ConditionalRequests.ReadIfMatch(http.Request, required: true);
             var result = await mediator.Send(
                 new RejectAgreementCommand(agreementId, caller.TenantId, caller.UserId, request.Reason, expected),
                 cancellationToken);
@@ -82,7 +102,7 @@ public static class AgreementEndpoints
             IMediator mediator, CancellationToken cancellationToken) =>
         {
             var caller = callers.Current;
-            var expected = ConditionalRequests.ReadIfMatch(http.Request, required: false);
+            var expected = ConditionalRequests.ReadIfMatch(http.Request, required: true);
             var result = await mediator.Send(
                 new CancelAgreementCommand(agreementId, caller.TenantId, caller.UserId, request.Reason, expected),
                 cancellationToken);
@@ -96,7 +116,7 @@ public static class AgreementEndpoints
             IMediator mediator, CancellationToken cancellationToken) =>
         {
             var caller = callers.Current;
-            var expected = ConditionalRequests.ReadIfMatch(http.Request, required: false);
+            var expected = ConditionalRequests.ReadIfMatch(http.Request, required: true);
             var result = await mediator.Send(
                 new SupersedeAgreementCommand(
                     agreementId, caller.TenantId, caller.UserId, request.SupersedingTermsRevisionId, expected),

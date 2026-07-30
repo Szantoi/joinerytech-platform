@@ -10,6 +10,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using SpaceOS.Collaboration.Api;
 using SpaceOS.Collaboration.Application.Idempotency;
+using SpaceOS.Collaboration.Application.Projections;
 using SpaceOS.Collaboration.Application.Repositories;
 using SpaceOS.Collaboration.Domain;
 using SpaceOS.Modules.Hosting.Tenancy;
@@ -57,7 +58,8 @@ internal sealed class CollaborationEndpointTestHost : IAsyncDisposable
         CollaborationAgreement? agreement = null,
         DelegatedWorkPackage? workPackage = null,
         TimeProvider? clock = null,
-        IIdempotencyStore? idempotencyStore = null)
+        IIdempotencyStore? idempotencyStore = null,
+        IAgreementViewQueries? viewQueries = null)
     {
         var host = await new HostBuilder()
             .ConfigureWebHost(web => web
@@ -67,8 +69,8 @@ internal sealed class CollaborationEndpointTestHost : IAsyncDisposable
                     services.AddRouting();
                     services.AddLogging(logging => logging.SetMinimumLevel(LogLevel.Warning));
 
-                    services.AddAuthentication(HeaderTokenHandler.Scheme)
-                        .AddScheme<AuthenticationSchemeOptions, HeaderTokenHandler>(HeaderTokenHandler.Scheme, _ => { });
+                    services.AddAuthentication(HeaderTokenHandler.SchemeName)
+                        .AddScheme<AuthenticationSchemeOptions, HeaderTokenHandler>(HeaderTokenHandler.SchemeName, _ => { });
 
                     // ADR-061 tenancy: ITenantContext + the resolution middleware below.
                     services.AddSpaceOsModuleTenancy();
@@ -78,6 +80,7 @@ internal sealed class CollaborationEndpointTestHost : IAsyncDisposable
                     services.AddScoped<IAgreementRepository>(_ => new AuthKit.InMemoryAgreementRepository(agreement));
                     services.AddScoped<IWorkPackageRepository>(_ => new SingleWorkPackageRepository(workPackage));
                     services.AddSingleton<IIdempotencyStore>(idempotencyStore ?? new InMemoryIdempotencyStore());
+                    services.AddSingleton<IAgreementViewQueries>(viewQueries ?? new StubAgreementViewQueries());
 
                     if (clock is not null)
                     {
@@ -147,7 +150,7 @@ internal sealed class CollaborationEndpointTestHost : IAsyncDisposable
         ILoggerFactory logger,
         UrlEncoder encoder) : AuthenticationHandler<AuthenticationSchemeOptions>(options, logger, encoder)
     {
-        public const string Scheme = "CollaborationTestScheme";
+        public const string SchemeName = "CollaborationTestScheme";
 
         protected override Task<AuthenticateResult> HandleAuthenticateAsync()
         {
@@ -176,10 +179,10 @@ internal sealed class CollaborationEndpointTestHost : IAsyncDisposable
                     new Claim("sub", user.ToString()),
                     new Claim(TenancyDefaults.TenantListClaim, tenantList, "JSON")
                 ],
-                Scheme);
+                SchemeName);
 
             return Task.FromResult(AuthenticateResult.Success(
-                new AuthenticationTicket(new ClaimsPrincipal(identity), Scheme)));
+                new AuthenticationTicket(new ClaimsPrincipal(identity), SchemeName)));
         }
     }
 }

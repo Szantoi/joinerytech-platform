@@ -1,0 +1,176 @@
+{
+  "_comment": [
+    "A VÁRT adatbázis-szerep jogosultságok. A STAB-RLS-WORKER-BYPASS zárótétele:",
+    "egy jövőbeli `ALTER ROLE … BYPASSRLS` ne maradhasson némán.",
+    "",
+    "Miért config és nem beégetett lista: a szerep-készlet modulonként nő, és egy",
+    "kódba írt lista mellett minden új modul PR-je a scriptet módosítaná — ott",
+    "pedig senki nem nézi át a biztonsági következményt. Így a változás egy",
+    "külön, olvasható diff.",
+    "",
+    "SZABÁLY: aki ide `allowBypassRls: true`-t ír, annak a `why` mezőt is ki kell",
+    "töltenie. Indoklás nélküli kivétel a kapun NEM megy át — mert pont az",
+    "indoklás nélküli BYPASSRLS volt az eredeti lelet (2026-07-25: a repóban",
+    "SEHOL nem volt dokumentálva, hogy a két worker miért kapta meg)."
+  ],
+  "version": "1.0",
+  "updated": "2026-07-30",
+  "roles": [
+    {
+      "name": "spaceos",
+      "allowBypassRls": false,
+      "allowSuperuser": false,
+      "mustExist": true,
+      "why": "alkalmazás-szerep, RLS alatt kell futnia"
+    },
+    {
+      "name": "identity_app",
+      "allowBypassRls": false,
+      "allowSuperuser": false,
+      "mustExist": true,
+      "why": "alkalmazás-szerep"
+    },
+    {
+      "name": "spaceos_sales_app",
+      "allowBypassRls": false,
+      "allowSuperuser": false,
+      "mustExist": true,
+      "why": "alkalmazás-szerep"
+    },
+    {
+      "name": "spaceos_sales_worker",
+      "allowBypassRls": false,
+      "allowSuperuser": false,
+      "mustExist": true,
+      "why": "háttér-worker; helyesen NOBYPASSRLS már a lelet előtt is"
+    },
+    {
+      "name": "spaceos_freetier",
+      "allowBypassRls": false,
+      "allowSuperuser": false,
+      "mustExist": true,
+      "why": "alkalmazás-szerep"
+    },
+    {
+      "name": "spaceos_keycloak_user",
+      "allowBypassRls": false,
+      "allowSuperuser": false,
+      "mustExist": true,
+      "why": "Keycloak séma-szerep"
+    },
+    {
+      "name": "spaceos_inventory_worker",
+      "allowBypassRls": false,
+      "allowSuperuser": false,
+      "mustExist": true,
+      "why": "A 2026-07-25-i LELET tárgya: BYPASSRLS volt. Gábor 2026-07-27-i döntése (2. irány) szerint NOBYPASSRLS, és a keresztbérlős részműveletek szűk SECURITY DEFINER függvényekbe kerültek. Ha ez a szerep újra BYPASSRLS-t kap, a kapunak BUKNIA kell."
+    },
+    {
+      "name": "spaceos_procurement_worker",
+      "allowBypassRls": false,
+      "allowSuperuser": false,
+      "mustExist": true,
+      "why": "Ugyanaz a lelet és ugyanaz a döntés, mint az inventory workernél."
+    },
+    {
+      "name": "spaceos_inventory_routine_owner",
+      "allowBypassRls": true,
+      "allowSuperuser": false,
+      "mustExist": false,
+      "why": "SZÁNDÉKOS és korlátozott: NOLOGIN NOINHERIT routine-owner. A BYPASSRLS kizárólag a nevesített SECURITY DEFINER függvények futása alatt hat, mert a szerep nem tud bejelentkezni. A függvényeken `SET search_path = pg_catalog, spaceos_inventory, pg_temp` és `REVOKE ALL … FROM PUBLIC` van. ⚠ Ha ez a szerep valaha LOGIN-t kap, az a kapunak külön bukás (ld. requireNoLogin)."
+    },
+    {
+      "name": "spaceos_procurement_routine_owner",
+      "allowBypassRls": true,
+      "allowSuperuser": false,
+      "mustExist": false,
+      "why": "Ugyanaz a minta, mint az inventory routine-owner."
+    },
+    {
+      "name": "postgres",
+      "allowBypassRls": true,
+      "allowSuperuser": true,
+      "mustExist": true,
+      "why": "a cluster tulajdonosa. A SUPERUSER az RLS-t a bypass-flagtol fuggetlenul megkeruli -- ezert NEM alkalmazas-szerep, es soha nem szabad alkalmazasbol ezzel csatlakozni."
+    },
+    {
+      "name": "gabor",
+      "allowBypassRls": false,
+      "allowSuperuser": false,
+      "mustExist": false,
+      "why": "Gabor szemelyes admin-belepoje. Szandekosan NOSUPERUSER/NOBYPASSRLS: igy az RLS rá is ervenyes, es egy kezi lekerdezes nem lat at a berlok kozott."
+    },
+    {
+      "name": "spaceos_freetier_share_reader",
+      "allowBypassRls": false,
+      "allowSuperuser": false,
+      "mustExist": false,
+      "why": "NOLOGIN jogosultsag-gyujto szerep."
+    },
+    {
+      "name": "spaceos_schema_owner",
+      "allowBypassRls": false,
+      "allowSuperuser": false,
+      "mustExist": false,
+      "why": "NOLOGIN sema-tulajdonos."
+    }
+  ],
+  "requireNoLogin": [
+    "spaceos_inventory_routine_owner",
+    "spaceos_procurement_routine_owner"
+  ],
+  "_selftest": {
+    "_comment": [
+      "A kapu ÖNTESZTJÉNEK korpusza. A pozitív kontroll a 2026-07-25-i VALÓDI",
+      "incidens: ha a kapu ezen nem bukik, akkor nem őrzi azt, amiért készült.",
+      "(Ez a `szűrő tesztelése tegnapi eseményekkel` szabály: nem az a kérdés,",
+      "hogy a szabályok működnek-e, hanem hogy a MÚLTBELI fontos jelzés átmegy-e.)"
+    ],
+    "mustFail": [
+      {
+        "name": "spaceos_inventory_worker",
+        "rolsuper": false,
+        "rolbypassrls": true,
+        "rolcanlogin": true
+      },
+      {
+        "name": "spaceos_procurement_worker",
+        "rolsuper": false,
+        "rolbypassrls": true,
+        "rolcanlogin": true
+      },
+      {
+        "name": "spaceos",
+        "rolsuper": true,
+        "rolbypassrls": false,
+        "rolcanlogin": true
+      },
+      {
+        "name": "spaceos_inventory_routine_owner",
+        "rolsuper": false,
+        "rolbypassrls": true,
+        "rolcanlogin": true
+      }
+    ],
+    "mustPass": [
+      {
+        "name": "spaceos_inventory_worker",
+        "rolsuper": false,
+        "rolbypassrls": false,
+        "rolcanlogin": true
+      },
+      {
+        "name": "spaceos_inventory_routine_owner",
+        "rolsuper": false,
+        "rolbypassrls": true,
+        "rolcanlogin": false
+      }
+    ]
+  },
+  "_liveMeasurement": {
+    "when": "2026-07-30",
+    "cluster": "PostgreSQL 17, port 5433 (a `spaceos` NEVU adatbazis NEM letezik; a szerepek amugy is cluster-globalisak, tehat a `pg_roles` barmelyik adatbazisbol ugyanaz)",
+    "finding": "spaceos_inventory_worker es spaceos_procurement_worker MA IS rolbypassrls=t. A ket routine-owner szerep az elesen NEM letezik -- a SECURITY DEFINER migraciok nincsenek telepitve.",
+    "meaning": "A javitas KODBAN kesz (modul-tesztek zoldek valodi PostgreSQL-en), de az ELES kockazat VALTOZATLAN. Az ALTER ROLE es a migracio-telepites Gabor-kapu."
+  }
+}

@@ -2,7 +2,9 @@
 
 - **Szerep:** backend-security / infra
 - **Prioritás:** P1
-- **Státusz:** review_requested
+- **Státusz:** `in_progress` — ⚠ **a KÓD kész és root-review-val mérve, de az ÉLES
+  kockázat VÁLTOZATLAN.** Ld. a 2026-07-30-i root-mérést lent. A záró lépés
+  (`ALTER ROLE` + migráció-telepítés) **Gábor-kapu.**
 - **Forrás:** [`LIVE_AUTH_AND_RLS_ASSESSMENT_2026-07-25.md`](../../knowledge/architecture/LIVE_AUTH_AND_RLS_ASSESSMENT_2026-07-25.md) 3. pont
 - **Mutációs határ:** a két érintett modul (`spaceos-modules-inventory`,
   `spaceos-modules-procurement`) worker-kódja és a VPS szerep-jogosultságai.
@@ -60,10 +62,11 @@ addig a „több cég egy adatbázisban" ígéret nem teljes.
       (külön Gábor-jóváhagyással az élesítés pillanatában), végül a záró mérés.
       Előfeltétel: a root szúrópróbás ellenőrzése az Antigravity
       bizonyíték-fázisán (még nyitott).
-- [ ] A végállapot mérve: `SELECT rolname, rolsuper, rolbypassrls …` kimenete a
-      task naplójában, elvárt értékkel.
-- [ ] A `STAB-RLS-PROOF` bizonyítéka kiegészítve az ÉLŐ szerepekkel (eddig csak
-      Testcontainers-környezetre állt).
+- [~] A végállapot mérve: **MEGMÉRVE 2026-07-30 (root)** — de a végállapot
+      **nincs elérve**: mindkét worker **ma is `rolbypassrls=t`**. Ld. lent.
+- [x] A `STAB-RLS-PROOF` bizonyítéka kiegészítve az ÉLŐ szerepekkel:
+      `scripts/Invoke-DbRolePrivilegeGuard.ps1` a **futó** cluster `pg_roles`
+      katalógusát olvassa (2026-07-30, root).
 
 ## 2026-07-27 — Codex végrehajtási memento
 
@@ -72,8 +75,9 @@ addig a „több cég egy adatbázisban" ígéret nem teljes.
 - A procurement worker a claimelt entitásokat használja újraolvasás helyett, completion és failure előtt tranzakciós tenant-scope-ot állít. A retention job a szűk definer cleanup függvényt hívja, így RLS mellett nem marad néma no-op.
 - A procurement forrás-policyk egységesen `app.current_tenant_id` kulcsot használnak; a migráció a korábban telepített régi kulcsos policykat is normalizálja.
 - Bizonyíték: valódi PostgreSQL/Testcontainers teszt zöld inventory oldalon (1/1) és procurement oldalon (3/3): NOBYPASSRLS, tenant-A/B izoláció, claim/finalize és retention cleanup. Az infrastructure build mindkét modulban zöld (2026-07-27); éles szerep-átállítás és VPS-művelet nem történt.
-- [ ] Visszatérő ellenőrzés: a szerep-jogosultság mérés bekerül egy
-      health/smoke scriptbe, hogy egy jövőbeli `ALTER ROLE` ne maradjon némán.
+- [x] Visszatérő ellenőrzés: **KÉSZ (root, 2026-07-30)** —
+      `scripts/Invoke-DbRolePrivilegeGuard.ps1` + `config/db-role-privileges.json`
+      + `scripts/Invoke-DbRolePrivilegeGuard.Tests.ps1`. Ld. lent.
 
 ## Stop / eszkaláció
 
@@ -249,3 +253,95 @@ A kódbázis auditja alapján a `spaceos_inventory_worker` és `spaceos_procurem
 Éles adatbázison szerep- vagy jogosultságmódosítás nem történt. A task ezért
 `review_requested`, nem `done`: a független review és a Gábor által végzett
 éles szerepváltás még kötelező kapu.
+
+
+---
+
+## 2026-07-30 — ROOT-REVIEW és a visszatérő kapu (root)
+
+### 1. Szúrópróba a végrehajtáson — a Codex-memento állításai állnak
+
+A doksi szerint a root szúrópróbája volt a nyitott előfeltétel. Elvégezve:
+
+| Amit ellenőriztem | Eredmény |
+|---|---|
+| `NOBYPASSRLS` a futtatható worker-szerepekre | ✅ migrációban és tesztben is |
+| dedikált **`NOLOGIN NOINHERIT`** routine-owner szerep, mindkét modulban | ✅ |
+| `SECURITY DEFINER` + **pinelt `search_path = pg_catalog, <séma>, pg_temp`** | ✅ mind az 5 függvényen |
+| `REVOKE ALL ON FUNCTION … FROM PUBLIC` | ✅ mind az 5-ön |
+| a worker **közvetlen tábla-joga visszavonva** (csak függvényen át ér el bármit) | ✅ |
+| `dotnet test` inventory `WorkerSecurity` | **1/1 zöld** (root-mérés) |
+| `dotnet test` procurement `WorkerSecurity` | **3/3 zöld, valódi PostgreSQL** (root-mérés) |
+
+A migrációban egy külön kiemelendő megjegyzés is ott van: *„SECURITY DEFINER
+functions must not be owned by a FORCE-RLS table owner"* — ez finom és helyes.
+
+### 2. ⛔ AZ ÉLES ÁLLAPOT MEGMÉRVE — és a kockázat VÁLTOZATLAN
+
+`pg_roles`, PostgreSQL 17 cluster, port **5433** (a `spaceos` **nevű** adatbázis
+nem is létezik; a szerepek amúgy is cluster-globálisak):
+
+```
+spaceos_inventory_worker    | rolsuper=f | rolbypassrls=t | rolcanlogin=t
+spaceos_procurement_worker  | rolsuper=f | rolbypassrls=t | rolcanlogin=t
+```
+
+**Mindkét worker MA IS `BYPASSRLS`**, és a két `*_routine_owner` szerep az élesen
+**nem is létezik** — a `SECURITY DEFINER` migrációk nincsenek telepítve.
+
+> **Amit ez jelent:** a javítás **kódban kész és mérve**, de az élesen **semmi
+> nem változott** a 2026-07-25-i lelet óta. A modul-tesztek egy eldobható
+> konténerben a *migráció* eredményét bizonyítják — az éles szerep állapotáról
+> semmit nem mondanak. Ez a különbség eddig **nem volt mérve**, és a task
+> „review_requested" állapota könnyen úgy olvasható volt, mintha a rés zárva
+> lenne. **Nincs zárva.**
+
+A záró lépés (`ALTER ROLE … NOBYPASSRLS` + a migrációk telepítése) a doksi
+Stop/eszkaláció szakasza szerint **Gábor-kapu** — a root nem nyúlt hozzá.
+
+### 3. A visszatérő kapu — megírva és bizonyítva
+
+`scripts/Invoke-DbRolePrivilegeGuard.ps1` (+ `config/db-role-privileges.json`
++ Pester-teszt). Szerkezet szándékosan két rétegben: **tiszta kiértékelő
+függvény** (nincs I/O → adatbázis nélkül tesztelhető) és külön I/O.
+
+Amit megfog: `bypassrls-not-allowed` · `superuser-not-allowed` (külön, mert a
+superuser a bypass-flag állásától **függetlenül** megkerüli az RLS-t) ·
+`routine-owner-can-login` (a `BYPASSRLS` csak `NOLOGIN` mellett volt
+elfogadható) · `unknown-role` · `missing-role` (átnevezés esetén a kapu csendben
+semmit nem őrizne).
+
+**Bizonyítás:**
+
+| Kapu | Eredmény |
+|---|---|
+| `-SelfTest` (a policy `_selftest` korpuszán) | **6/6 PASS** — a pozitív kontroll a **2026-07-25-i VALÓDI incidens** |
+| Pester (`Invoke-DbRolePrivilegeGuard.Tests.ps1`) | **12/12 PASS** |
+| **mutáció**: a `bypassrls`-ellenőrzés kikapcsolva | az önteszt **2 esetet bukott** |
+| éles futás | **exit 1, 2 lelet** — pontosan a két worker |
+
+⚠ **A mutáció egy finomságot is kihozott:** az önteszt első változata a két esetet
+`PASS`-ként jelentette volna, mert az eset *más* okból (`missing-role`) is
+bukott. Javítva: az önteszt megköveteli, hogy a bukás **a vizsgált szerepre**
+szóljon. Enélkül a kapu öntesztje hamis zöldet adott volna a saját mutációjára.
+
+### 4. Két kódolási csapda, kimondva (mindkettő valóban előfordult)
+
+1. A policy-t `Get-Content -Raw` **ANSI-ként** olvasta (Windows PowerShell 5.1
+   alapértelmezés) → a magyar indoklások mojibake-ként kerültek a kimenetbe.
+   Egy kapu, aminek az indoklása olvashatatlan, nem tudja elmondani, **miért**
+   bukott. Javítva: `-Encoding UTF8` + `[Console]::OutputEncoding`.
+2. A Pester-tesztben egy **ékezetes literál** (`'*tárgya*'`) magától elromlott,
+   mert a `.ps1` BOM nélkül van (ez a házi konvenció — mérve: a többi script
+   sem BOM-os). Így a teszt a **saját** kódolási hibáját mérte volna. Javítva:
+   az ékezet **kódpontból** épül (`[char]0x00E1`), plusz külön ellenőrzés a
+   `U+FFFD` helyettesítő karakterre.
+
+### 5. Ami még nyitva van
+
+- [ ] **Gábor-kapu:** `ALTER ROLE … NOBYPASSRLS` mindkét workerre + a
+      `SECURITY DEFINER` migrációk telepítése az élesre. **Ez az egyetlen lépés,
+      ami az éles kockázatot csökkenti.**
+- [ ] A kapu bekötése a `Invoke-VpsHealthSmoke.ps1`-be vagy egy ütemezett
+      futásba, hogy ne csak kézzel induljon el.
+- [ ] Az `ALTER ROLE` **után** a záró mérés a kapuval: elvárt kimenet **TISZTA**.

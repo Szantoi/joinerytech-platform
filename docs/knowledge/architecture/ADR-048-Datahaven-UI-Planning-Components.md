@@ -252,7 +252,7 @@ async function writeEpicsYaml(path: string, data: EpicsYaml) {
 
 ### Authentication
 - **Requirement:** All API endpoints require `Authorization: Bearer <token>`
-- **Token:** `dev-token-spaceos-dashboard-2026` (development)
+- **Token:** `<DASHBOARD_AUTH_TOKEN>` (development)
 - **Production:** TODO: Implement token rotation (90-day expiry)
 
 ### Input Validation

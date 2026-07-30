@@ -13,7 +13,7 @@ describe('Planning Focus API', () => {
   let app: Express;
   const testFocusPath = path.join(process.cwd(), '../../docs/planning/domain-focus.md');
   let originalContent: string | null = null;
-  const testToken = 'dev-token-spaceos-dashboard-2026'; // Valid dashboard token
+  const testToken = 'test-dashboard-token'; // Valid dashboard token
 
   beforeEach(() => {
     // Setup Express app with router for each test

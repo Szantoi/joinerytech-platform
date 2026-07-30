@@ -2048,7 +2048,11 @@ app.get('/api/digest/:terminal/:date', async (req: Request, res: Response) => {
 // ─── Auth API (for React Dashboard) ──────────────────────────────────────────
 
 // Simple auth token (no database, just static token from env)
-const DASHBOARD_TOKEN = process.env.DASHBOARD_AUTH_TOKEN || 'dev-token-spaceos-dashboard-2026';
+// Rotalva 2026-07-30. A korabbi `|| '<literal>'` fallback egy PUBLIKUS repoban
+// beegetett, kitalalhato alapertelmezes volt: ha az env hianyzott, a szolgaltatas
+// NEMA visszaesessel elfogadta. Ez a fajl halott kod (semmi nem importalja), de a
+// literal akkor is publikalt volt -- ezert kerult ki.
+const DASHBOARD_TOKEN = process.env.DASHBOARD_AUTH_TOKEN?.trim() || '';
 
 // Support both GET and POST for auth verification
 const verifyAuthToken = (req: Request, res: Response) => {

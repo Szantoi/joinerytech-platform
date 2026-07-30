@@ -1,4 +1,5 @@
 using MediatR;
+using SpaceOS.Collaboration.Application.Concurrency;
 using SpaceOS.Collaboration.Domain;
 
 namespace SpaceOS.Collaboration.Application.Agreements;
@@ -14,7 +15,7 @@ namespace SpaceOS.Collaboration.Application.Agreements;
 /// worse than returning less: the caller could not tell which parts are real. The full view
 /// belongs to F3, together with the projection that feeds it.
 /// </remarks>
-public interface IAgreementCommand : IRequest<AgreementStatus>
+public interface IAgreementCommand : IRequest<AgreementTransitionResult>, IConditionalCommand
 {
     /// <summary>The agreement to move.</summary>
     Guid AgreementId { get; }
@@ -27,25 +28,33 @@ public interface IAgreementCommand : IRequest<AgreementStatus>
 }
 
 /// <summary>Host puts the drafted agreement in front of the guest.</summary>
-public sealed record ProposeAgreementCommand(Guid AgreementId, Guid ActorTenantId, Guid ActorUserId)
+public sealed record ProposeAgreementCommand(
+    Guid AgreementId, Guid ActorTenantId, Guid ActorUserId, int? ExpectedRowVersion = null)
     : IAgreementCommand;
 
 /// <summary>Guest accepts, naming the terms revision and the evidence behind it.</summary>
 public sealed record AcceptAgreementCommand(
-    Guid AgreementId, Guid ActorTenantId, Guid ActorUserId, Guid TermsRevisionId, string AcceptanceEvidence)
+    Guid AgreementId, Guid ActorTenantId, Guid ActorUserId, Guid TermsRevisionId,
+    string AcceptanceEvidence, int? ExpectedRowVersion = null)
     : IAgreementCommand;
 
 /// <summary>Guest refuses, with the reason the host will read.</summary>
 public sealed record RejectAgreementCommand(
-    Guid AgreementId, Guid ActorTenantId, Guid ActorUserId, string Reason)
+    Guid AgreementId, Guid ActorTenantId, Guid ActorUserId, string Reason, int? ExpectedRowVersion = null)
     : IAgreementCommand;
 
 /// <summary>Host withdraws an agreement the guest has not accepted yet.</summary>
 public sealed record CancelAgreementCommand(
-    Guid AgreementId, Guid ActorTenantId, Guid ActorUserId, string? Reason)
+    Guid AgreementId, Guid ActorTenantId, Guid ActorUserId, string? Reason, int? ExpectedRowVersion = null)
     : IAgreementCommand;
 
 /// <summary>Host replaces the accepted terms with a newer revision.</summary>
 public sealed record SupersedeAgreementCommand(
-    Guid AgreementId, Guid ActorTenantId, Guid ActorUserId, Guid SupersedingTermsRevisionId)
+    Guid AgreementId, Guid ActorTenantId, Guid ActorUserId, Guid SupersedingTermsRevisionId,
+    int? ExpectedRowVersion = null)
     : IAgreementCommand;
+
+/// <summary>What an agreement transition reports back: the new state and its concurrency token.</summary>
+/// <param name="Status">The state the agreement is now in.</param>
+/// <param name="RowVersion">The version to send as the next <c>If-Match</c>.</param>
+public sealed record AgreementTransitionResult(AgreementStatus Status, int RowVersion);

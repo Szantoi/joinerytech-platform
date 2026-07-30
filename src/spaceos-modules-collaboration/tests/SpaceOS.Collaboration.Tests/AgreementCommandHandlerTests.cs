@@ -59,8 +59,12 @@ public class AgreementCommandHandlerTests
         var status = await handler.Handle(
             new ProposeAgreementCommand(agreement.Id, Host, HostUser), default);
 
-        Assert.Equal(AgreementStatus.Proposed, status);
+        Assert.Equal(AgreementStatus.Proposed, status.Status);
         Assert.Equal(1, repository.SaveCount);
+
+        // The transition also reports the version the caller must send as its next If-Match
+        // (B2B-10 F3/3) — every transition moves it.
+        Assert.Equal(agreement.RowVersion, status.RowVersion);
     }
 
     [Fact]
@@ -75,7 +79,7 @@ public class AgreementCommandHandlerTests
         var status = await handler.Handle(
             new AcceptAgreementCommand(agreement.Id, Guest, GuestUser, Terms, "signed:doc-1"), default);
 
-        Assert.Equal(AgreementStatus.Accepted, status);
+        Assert.Equal(AgreementStatus.Accepted, status.Status);
         Assert.Equal(Terms, agreement.CurrentTermsRevisionId);
         Assert.Equal("signed:doc-1", agreement.AcceptanceEvidence);
     }

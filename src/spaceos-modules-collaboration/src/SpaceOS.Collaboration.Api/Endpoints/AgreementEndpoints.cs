@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Routing;
 using SpaceOS.Collaboration.Application.Agreements;
 using SpaceOS.Collaboration.Application.Authorization;
 using SpaceOS.Collaboration.Contracts;
+using Microsoft.Net.Http.Headers;
 
 namespace SpaceOS.Collaboration.Api.Endpoints;
 
@@ -34,71 +35,92 @@ public static class AgreementEndpoints
         var agreements = group.MapGroup("/agreements").WithTags("Collaboration agreements");
 
         agreements.MapPost("/{agreementId:guid}/propose", async (
-            Guid agreementId, ICollaborationCallerContext callers, IMediator mediator, CancellationToken cancellationToken) =>
+            Guid agreementId, HttpContext http, ICollaborationCallerContext callers,
+            IMediator mediator, CancellationToken cancellationToken) =>
         {
             var caller = callers.Current;
-            var status = await mediator.Send(
-                new ProposeAgreementCommand(agreementId, caller.TenantId, caller.UserId), cancellationToken);
+            var expected = ConditionalRequests.ReadIfMatch(http.Request, required: false);
+            var result = await mediator.Send(
+                new ProposeAgreementCommand(agreementId, caller.TenantId, caller.UserId, expected), cancellationToken);
 
-            return Results.Ok(new AgreementStatusResponse(agreementId, status.ToString()));
+            return Respond(http, agreementId, result);
         })
         .WithName("ProposeAgreement");
 
         agreements.MapPost("/{agreementId:guid}/accept", async (
-            Guid agreementId, AcceptAgreementRequest request, ICollaborationCallerContext callers,
+            Guid agreementId, AcceptAgreementRequest request, HttpContext http, ICollaborationCallerContext callers,
             IMediator mediator, CancellationToken cancellationToken) =>
         {
             var caller = callers.Current;
-            var status = await mediator.Send(
+            var expected = ConditionalRequests.ReadIfMatch(http.Request, required: false);
+            var result = await mediator.Send(
                 new AcceptAgreementCommand(
                     agreementId, caller.TenantId, caller.UserId,
-                    request.TermsRevisionId, request.AcceptanceEvidence),
+                    request.TermsRevisionId, request.AcceptanceEvidence, expected),
                 cancellationToken);
 
-            return Results.Ok(new AgreementStatusResponse(agreementId, status.ToString()));
+            return Respond(http, agreementId, result);
         })
         .WithName("AcceptAgreement");
 
         agreements.MapPost("/{agreementId:guid}/reject", async (
-            Guid agreementId, RejectAgreementRequest request, ICollaborationCallerContext callers,
+            Guid agreementId, RejectAgreementRequest request, HttpContext http, ICollaborationCallerContext callers,
             IMediator mediator, CancellationToken cancellationToken) =>
         {
             var caller = callers.Current;
-            var status = await mediator.Send(
-                new RejectAgreementCommand(agreementId, caller.TenantId, caller.UserId, request.Reason),
+            var expected = ConditionalRequests.ReadIfMatch(http.Request, required: false);
+            var result = await mediator.Send(
+                new RejectAgreementCommand(agreementId, caller.TenantId, caller.UserId, request.Reason, expected),
                 cancellationToken);
 
-            return Results.Ok(new AgreementStatusResponse(agreementId, status.ToString()));
+            return Respond(http, agreementId, result);
         })
         .WithName("RejectAgreement");
 
         agreements.MapPost("/{agreementId:guid}/cancel", async (
-            Guid agreementId, CancelAgreementRequest request, ICollaborationCallerContext callers,
+            Guid agreementId, CancelAgreementRequest request, HttpContext http, ICollaborationCallerContext callers,
             IMediator mediator, CancellationToken cancellationToken) =>
         {
             var caller = callers.Current;
-            var status = await mediator.Send(
-                new CancelAgreementCommand(agreementId, caller.TenantId, caller.UserId, request.Reason),
+            var expected = ConditionalRequests.ReadIfMatch(http.Request, required: false);
+            var result = await mediator.Send(
+                new CancelAgreementCommand(agreementId, caller.TenantId, caller.UserId, request.Reason, expected),
                 cancellationToken);
 
-            return Results.Ok(new AgreementStatusResponse(agreementId, status.ToString()));
+            return Respond(http, agreementId, result);
         })
         .WithName("CancelAgreement");
 
         agreements.MapPost("/{agreementId:guid}/supersede", async (
-            Guid agreementId, SupersedeAgreementRequest request, ICollaborationCallerContext callers,
+            Guid agreementId, SupersedeAgreementRequest request, HttpContext http, ICollaborationCallerContext callers,
             IMediator mediator, CancellationToken cancellationToken) =>
         {
             var caller = callers.Current;
-            var status = await mediator.Send(
+            var expected = ConditionalRequests.ReadIfMatch(http.Request, required: false);
+            var result = await mediator.Send(
                 new SupersedeAgreementCommand(
-                    agreementId, caller.TenantId, caller.UserId, request.SupersedingTermsRevisionId),
+                    agreementId, caller.TenantId, caller.UserId, request.SupersedingTermsRevisionId, expected),
                 cancellationToken);
 
-            return Results.Ok(new AgreementStatusResponse(agreementId, status.ToString()));
+            return Respond(http, agreementId, result);
         })
         .WithName("SupersedeAgreement");
 
         return group;
+    }
+
+    /// <summary>
+    /// One response shape for every transition: the new state, and the tag for the NEXT request.
+    /// </summary>
+    /// <remarks>
+    /// Returning the fresh <c>ETag</c> is what makes a chain of calls possible while there is no
+    /// agreement read endpoint (that arrives with the projection in F3/4). Without it the client
+    /// would send the first transition blind and then have no way to learn where it ended up.
+    /// </remarks>
+    private static IResult Respond(HttpContext http, Guid agreementId, AgreementTransitionResult result)
+    {
+        ConditionalRequests.SetETag(http.Response, result.RowVersion);
+
+        return Results.Ok(new AgreementStatusResponse(agreementId, result.Status.ToString(), result.RowVersion));
     }
 }

@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using SpaceOS.Collaboration.Application.Authorization;
+using SpaceOS.Collaboration.Application.Concurrency;
 
 namespace SpaceOS.Collaboration.Api;
 
@@ -89,6 +90,20 @@ public sealed class CollaborationExceptionHandler(
         // Absent and not-a-party answer identically — see the guard.
         CollaborationResourceNotFoundException =>
             (StatusCodes.Status404NotFound, "Not found", "The resource was not found."),
+
+        // The caller was working from a stale copy. Telling it the current version is safe — it is
+        // a party — and saves it a round trip it would otherwise guess at.
+        CollaborationPreconditionFailedException precondition =>
+            (StatusCodes.Status412PreconditionFailed, "Precondition failed",
+                $"The resource is at version {precondition.Actual}; the request expected {precondition.Expected}."),
+
+        CollaborationPreconditionRequiredException required =>
+            (StatusCodes.Status428PreconditionRequired, "Precondition required", required.Message),
+
+        // Lost the race after being current: distinct from 412 on purpose (see the exception).
+        CollaborationConcurrencyConflictException =>
+            (StatusCodes.Status409Conflict, "Conflict",
+                "The resource was modified by another writer; read it again and retry."),
 
         ValidationException validation =>
             (StatusCodes.Status400BadRequest, "Invalid request", FirstValidationMessage(validation)),

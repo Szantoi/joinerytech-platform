@@ -1,12 +1,14 @@
 using MediatR;
 using SpaceOS.Collaboration.Application.Authorization;
+using SpaceOS.Collaboration.Application.Concurrency;
 using SpaceOS.Collaboration.Application.Repositories;
 using SpaceOS.Collaboration.Domain;
 
 namespace SpaceOS.Collaboration.Application.Agreements;
 
 /// <summary>
-/// Shared handling for every agreement transition: authorize → domain action → persist → new status.
+/// Shared handling for every agreement transition: authorize → precondition → domain action →
+/// persist → new status and version.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -29,13 +31,13 @@ namespace SpaceOS.Collaboration.Application.Agreements;
 public abstract class AgreementCommandHandlerBase<TCommand>(
     ICollaborationAccessGuard accessGuard,
     IAgreementRepository repository,
-    TimeProvider clock) : IRequestHandler<TCommand, AgreementStatus>
+    TimeProvider clock) : IRequestHandler<TCommand, AgreementTransitionResult>
     where TCommand : IAgreementCommand
 {
     /// <summary>Invokes the aggregate's transition; guards stay in the domain.</summary>
     protected abstract void Apply(CollaborationAgreement agreement, TCommand command, DateTimeOffset timestampUtc);
 
-    public async Task<AgreementStatus> Handle(TCommand command, CancellationToken cancellationToken)
+    public async Task<AgreementTransitionResult> Handle(TCommand command, CancellationToken cancellationToken)
     {
         // Loads through the guard: the caller's right to see this agreement is decided before the
         // aggregate is in hand, and the same instance is then acted on — no second query, and no
@@ -43,11 +45,14 @@ public abstract class AgreementCommandHandlerBase<TCommand>(
         var agreement = await accessGuard.EnsureParticipationAsync(
             command.AgreementId, command.ActorTenantId, cancellationToken);
 
+        // AFTER the guard: a caller with no right to this agreement must not learn its version.
+        CollaborationPrecondition.Verify(command.ExpectedRowVersion, agreement.RowVersion);
+
         Apply(agreement, command, clock.GetUtcNow());
 
         await repository.SaveChangesAsync(cancellationToken);
 
-        return agreement.Status;
+        return new AgreementTransitionResult(agreement.Status, agreement.RowVersion);
     }
 }
 

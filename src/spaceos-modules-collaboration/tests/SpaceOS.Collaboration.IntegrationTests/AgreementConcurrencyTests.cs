@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using SpaceOS.Collaboration.Application.Concurrency;
 using SpaceOS.Collaboration.Domain;
 using SpaceOS.Collaboration.Infrastructure.Data;
 using SpaceOS.Modules.Hosting.RlsFixtures;
@@ -102,5 +103,32 @@ public sealed class AgreementConcurrencyTests : IAsyncLifetime
 
         Assert.Equal(AgreementStatus.Accepted, stored.Status);
         Assert.Equal(3, stored.RowVersion);
+    }
+
+    [Fact]
+    public async Task The_lost_update_reaches_the_application_as_a_collaboration_failure()
+    {
+        // B2B-10 F3/3. The token has existed since F2/4, but what it produced was an Entity
+        // Framework type, and neither the application layer nor the API references EF — so a lost
+        // update would have arrived at the generic 500 handler as an unknown server fault. The
+        // repository translates it; this measures the translation on a real provider, because the
+        // InMemory one never raises it in the first place.
+        await using var first = new CollaborationDbContext(Options);
+        await using var second = new CollaborationDbContext(Options);
+
+        var mine = await first.Agreements.SingleAsync(a => a.Id == _agreementId);
+        var theirs = await second.Agreements.SingleAsync(a => a.Id == _agreementId);
+
+        // The other writer commits while I still hold the version I read.
+        theirs.Cancel(_host, Guid.NewGuid(), "elsonek ert oda", DateTimeOffset.UtcNow);
+        await new AgreementRepository(second).SaveChangesAsync();
+
+        mine.Reject(_guest, Guid.NewGuid(), "kesobb ertem oda", DateTimeOffset.UtcNow);
+
+        var failure = await Assert.ThrowsAsync<CollaborationConcurrencyConflictException>(
+            () => new AgreementRepository(first).SaveChangesAsync());
+
+        // The EF detail is kept as the inner exception: the log still says what the database said.
+        Assert.IsType<DbUpdateConcurrencyException>(failure.InnerException);
     }
 }

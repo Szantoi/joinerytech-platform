@@ -1,4 +1,5 @@
 using MediatR;
+using SpaceOS.Collaboration.Application.Concurrency;
 using SpaceOS.Collaboration.Application.Projections;
 
 namespace SpaceOS.Collaboration.Application.WorkPackages;
@@ -12,7 +13,7 @@ namespace SpaceOS.Collaboration.Application.WorkPackages;
 /// without knowing who made it is worthless in a two-tenant audit trail, and an implicit
 /// "current user" is the thing that goes missing in a background job.
 /// </remarks>
-public interface IWorkPackageCommand : IRequest<WorkPackageReadModel>
+public interface IWorkPackageCommand : IRequest<WorkPackageReadModel>, IConditionalCommand
 {
     /// <summary>The work package to move.</summary>
     Guid WorkPackageId { get; }
@@ -25,34 +26,42 @@ public interface IWorkPackageCommand : IRequest<WorkPackageReadModel>
 }
 
 /// <summary>Host offers the package to the guest.</summary>
-public sealed record OfferWorkPackageCommand(Guid WorkPackageId, Guid ActorTenantId, Guid ActorUserId)
+public sealed record OfferWorkPackageCommand(
+    Guid WorkPackageId, Guid ActorTenantId, Guid ActorUserId, int? ExpectedRowVersion = null)
     : IWorkPackageCommand;
 
 /// <summary>Guest accepts the offer.</summary>
-public sealed record AcceptWorkPackageCommand(Guid WorkPackageId, Guid ActorTenantId, Guid ActorUserId)
+public sealed record AcceptWorkPackageCommand(
+    Guid WorkPackageId, Guid ActorTenantId, Guid ActorUserId, int? ExpectedRowVersion = null)
     : IWorkPackageCommand;
 
 /// <summary>Guest refuses the offer, with a reason the host can act on.</summary>
-public sealed record RejectWorkPackageCommand(Guid WorkPackageId, Guid ActorTenantId, Guid ActorUserId, string Reason)
+public sealed record RejectWorkPackageCommand(
+    Guid WorkPackageId, Guid ActorTenantId, Guid ActorUserId, string Reason,
+    int? ExpectedRowVersion = null)
     : IWorkPackageCommand;
 
 /// <summary>Guest starts working.</summary>
-public sealed record StartWorkPackageProgressCommand(Guid WorkPackageId, Guid ActorTenantId, Guid ActorUserId)
+public sealed record StartWorkPackageProgressCommand(
+    Guid WorkPackageId, Guid ActorTenantId, Guid ActorUserId, int? ExpectedRowVersion = null)
     : IWorkPackageCommand;
 
 /// <summary>Guest submits the deliverable.</summary>
 public sealed record SubmitWorkPackageCommand(
-    Guid WorkPackageId, Guid ActorTenantId, Guid ActorUserId, string DeliverableRef)
+    Guid WorkPackageId, Guid ActorTenantId, Guid ActorUserId, string DeliverableRef,
+    int? ExpectedRowVersion = null)
     : IWorkPackageCommand;
 
 /// <summary>Host sends it back for changes, with a reason.</summary>
 public sealed record RequestWorkPackageChangesCommand(
-    Guid WorkPackageId, Guid ActorTenantId, Guid ActorUserId, string Reason)
+    Guid WorkPackageId, Guid ActorTenantId, Guid ActorUserId, string Reason,
+    int? ExpectedRowVersion = null)
     : IWorkPackageCommand;
 
 /// <summary>Host accepts the delivery as complete.</summary>
 public sealed record CompleteWorkPackageCommand(
-    Guid WorkPackageId, Guid ActorTenantId, Guid ActorUserId, string CompletionProofRef)
+    Guid WorkPackageId, Guid ActorTenantId, Guid ActorUserId, string CompletionProofRef,
+    int? ExpectedRowVersion = null)
     : IWorkPackageCommand;
 
 /// <summary>
@@ -64,5 +73,6 @@ public sealed record CompleteWorkPackageCommand(
 /// a collaboration ends badly.
 /// </remarks>
 public sealed record CancelWorkPackageCommand(
-    Guid WorkPackageId, Guid ActorTenantId, Guid ActorUserId, string Reason)
+    Guid WorkPackageId, Guid ActorTenantId, Guid ActorUserId, string Reason,
+    int? ExpectedRowVersion = null)
     : IWorkPackageCommand;

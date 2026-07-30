@@ -20,8 +20,8 @@ public sealed record CancelAgreementRequest(string? Reason);
 /// <summary>The revision that replaces the terms in force.</summary>
 public sealed record SupersedeAgreementRequest(Guid SupersedingTermsRevisionId);
 
-/// <summary>The agreement's new state after a transition.</summary>
-public sealed record AgreementStatusResponse(Guid AgreementId, string Status);
+/// <summary>The agreement's new state after a transition, with the tag for the next request.</summary>
+public sealed record AgreementStatusResponse(Guid AgreementId, string Status, int RowVersion);
 
 /// <summary>A reason the other side will read (work-package reject, change request, cancel).</summary>
 public sealed record WorkPackageReasonRequest(string Reason);

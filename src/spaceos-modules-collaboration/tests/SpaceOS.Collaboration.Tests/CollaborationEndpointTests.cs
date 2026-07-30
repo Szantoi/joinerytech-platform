@@ -50,6 +50,24 @@ public class CollaborationEndpointTests
         return package;
     }
 
+
+    /// <summary>
+    /// A conditional POST, because since F3/3 a work-package transition without <c>If-Match</c> is
+    /// refused. The version is what the caller would have read from the ETag.
+    /// </summary>
+    private static Task<HttpResponseMessage> PostAsync(
+        CollaborationEndpointTestHost host, string url, int? ifMatch, HttpContent? content = null)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Post, url) { Content = content };
+
+        if (ifMatch is { } version)
+        {
+            request.Headers.TryAddWithoutValidation("If-Match", ConditionalRequests.Format(version));
+        }
+
+        return host.Client.SendAsync(request);
+    }
+
     // ---------------------------------------------------------------------------------------
     // The gates on the route itself
     // ---------------------------------------------------------------------------------------
@@ -157,8 +175,8 @@ public class CollaborationEndpointTests
         await using var host = await CollaborationEndpointTestHost.StartAsync(agreement, package);
         host.As(Guest, GuestUser);
 
-        var response = await host.Client.PostAsync(
-            $"/api/collaboration/v1/work-packages/{package.Id}/accept", content: null);
+        var response = await PostAsync(
+            host, $"/api/collaboration/v1/work-packages/{package.Id}/accept", package.RowVersion);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Equal(WorkPackageStatus.Accepted, package.Status);
@@ -180,8 +198,8 @@ public class CollaborationEndpointTests
             Encoding.UTF8,
             "application/json");
 
-        var response = await host.Client.PostAsync(
-            $"/api/collaboration/v1/work-packages/{package.Id}/reject", smuggled);
+        var response = await PostAsync(
+            host, $"/api/collaboration/v1/work-packages/{package.Id}/reject", package.RowVersion, smuggled);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
@@ -202,8 +220,8 @@ public class CollaborationEndpointTests
         await using var host = await CollaborationEndpointTestHost.StartAsync(agreement, package);
         host.As(Guest, GuestUser);
 
-        var response = await host.Client.PostAsync(
-            $"/api/collaboration/v1/work-packages/{package.Id}/accept", content: null);
+        var response = await PostAsync(
+            host, $"/api/collaboration/v1/work-packages/{package.Id}/accept", package.RowVersion);
 
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
         Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
@@ -223,8 +241,8 @@ public class CollaborationEndpointTests
         await using var host = await CollaborationEndpointTestHost.StartAsync(agreement, package);
         host.As(Stranger, HostUser);
 
-        var response = await host.Client.PostAsync(
-            $"/api/collaboration/v1/work-packages/{package.Id}/accept", content: null);
+        var response = await PostAsync(
+            host, $"/api/collaboration/v1/work-packages/{package.Id}/accept", package.RowVersion);
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
@@ -241,8 +259,8 @@ public class CollaborationEndpointTests
         await using var host = await CollaborationEndpointTestHost.StartAsync(agreement, draft);
         host.As(Guest, GuestUser);
 
-        var response = await host.Client.PostAsync(
-            $"/api/collaboration/v1/work-packages/{draft.Id}/accept", content: null);
+        var response = await PostAsync(
+            host, $"/api/collaboration/v1/work-packages/{draft.Id}/accept", draft.RowVersion);
 
         Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
     }
@@ -257,8 +275,8 @@ public class CollaborationEndpointTests
         await using var host = await CollaborationEndpointTestHost.StartAsync(agreement, package);
         host.As(Guest, GuestUser);
 
-        var response = await host.Client.PostAsync(
-            $"/api/collaboration/v1/work-packages/{package.Id}/accept", content: null);
+        var response = await PostAsync(
+            host, $"/api/collaboration/v1/work-packages/{package.Id}/accept", package.RowVersion);
 
         Assert.True(response.Headers.TryGetValues("X-Correlation-Id", out var header));
         var correlationId = header!.Single();
@@ -313,5 +331,167 @@ public class CollaborationEndpointTests
         var response = await host.Client.GetAsync($"/api/collaboration/v1/work-packages/{package.Id}");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    // ---------------------------------------------------------------------------------------
+    // F3/3 — conditional requests
+    // ---------------------------------------------------------------------------------------
+
+    [Fact]
+    public async Task Reading_a_package_hands_back_the_tag_to_write_with()
+    {
+        var agreement = Agreement();
+        agreement.AddGrant(CollaborationCapability.WorkPackageRead, Guid.NewGuid(), Now.AddDays(-9));
+        var package = OfferedPackage(agreement);
+
+        await using var host = await CollaborationEndpointTestHost.StartAsync(agreement, package);
+        host.As(Guest, GuestUser);
+
+        var response = await host.Client.GetAsync($"/api/collaboration/v1/work-packages/{package.Id}");
+
+        Assert.Equal(ConditionalRequests.Format(package.RowVersion), response.Headers.ETag?.ToString());
+    }
+
+    [Fact]
+    public async Task A_transition_without_If_Match_is_refused_with_428()
+    {
+        // Everything else about this request is valid — the guest is a party, holds the grant, and
+        // the package is in the right state. Only the precondition is missing.
+        var agreement = Agreement();
+        var package = OfferedPackage(agreement);
+        await using var host = await CollaborationEndpointTestHost.StartAsync(agreement, package);
+        host.As(Guest, GuestUser);
+
+        var response = await PostAsync(host, $"/api/collaboration/v1/work-packages/{package.Id}/accept", ifMatch: null);
+
+        Assert.Equal(HttpStatusCode.PreconditionRequired, response.StatusCode);
+        Assert.Equal(WorkPackageStatus.Offered, package.Status);
+    }
+
+    [Fact]
+    public async Task A_stale_If_Match_is_refused_with_412_and_changes_nothing()
+    {
+        var agreement = Agreement();
+        var package = OfferedPackage(agreement);
+        await using var host = await CollaborationEndpointTestHost.StartAsync(agreement, package);
+        host.As(Guest, GuestUser);
+
+        var stale = package.RowVersion - 1;
+        var response = await PostAsync(host, $"/api/collaboration/v1/work-packages/{package.Id}/accept", stale);
+
+        Assert.Equal(HttpStatusCode.PreconditionFailed, response.StatusCode);
+        Assert.Equal(WorkPackageStatus.Offered, package.Status);
+
+        // The current version IS disclosed here — the caller is a party, and withholding it would
+        // only make it guess.
+        var body = await response.Content.ReadAsStringAsync();
+        Assert.Contains(package.RowVersion.ToString(), body, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_successful_transition_returns_the_next_tag()
+    {
+        var agreement = Agreement();
+        var package = OfferedPackage(agreement);
+        var before = package.RowVersion;
+
+        await using var host = await CollaborationEndpointTestHost.StartAsync(agreement, package);
+        host.As(Guest, GuestUser);
+
+        var response = await PostAsync(host, $"/api/collaboration/v1/work-packages/{package.Id}/accept", before);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(ConditionalRequests.Format(before + 1), response.Headers.ETag?.ToString());
+        Assert.Equal(before + 1, package.RowVersion);
+    }
+
+    [Fact]
+    public async Task A_tag_this_API_never_issued_is_a_400_not_a_412()
+    {
+        // A 412 would tell the client to re-read and retry — with a tag it will mangle the same way
+        // next time. This is a client bug and has to say so.
+        var agreement = Agreement();
+        var package = OfferedPackage(agreement);
+        await using var host = await CollaborationEndpointTestHost.StartAsync(agreement, package);
+        host.As(Guest, GuestUser);
+
+        var request = new HttpRequestMessage(
+            HttpMethod.Post, $"/api/collaboration/v1/work-packages/{package.Id}/accept");
+        request.Headers.TryAddWithoutValidation("If-Match", "\"abc123\"");
+
+        var response = await host.Client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task If_Match_star_means_whatever_version_it_is_now()
+    {
+        var agreement = Agreement();
+        var package = OfferedPackage(agreement);
+        await using var host = await CollaborationEndpointTestHost.StartAsync(agreement, package);
+        host.As(Guest, GuestUser);
+
+        var request = new HttpRequestMessage(
+            HttpMethod.Post, $"/api/collaboration/v1/work-packages/{package.Id}/accept");
+        request.Headers.TryAddWithoutValidation("If-Match", "*");
+
+        var response = await host.Client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task The_precondition_never_becomes_a_version_oracle()
+    {
+        // A stranger sending a deliberately wrong version must not be able to tell "wrong version"
+        // (the resource exists and moves) apart from "nothing here". Authorization runs first, so
+        // both answer 404.
+        var agreement = Agreement();
+        var package = OfferedPackage(agreement);
+        await using var host = await CollaborationEndpointTestHost.StartAsync(agreement, package);
+        host.As(Stranger, HostUser);
+
+        var response = await PostAsync(
+            host, $"/api/collaboration/v1/work-packages/{package.Id}/accept", package.RowVersion + 99);
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task A_party_without_a_grant_gets_403_before_the_version_is_even_compared()
+    {
+        var agreement = Agreement(withExecuteGrant: false);
+        var package = OfferedPackage(agreement);
+        await using var host = await CollaborationEndpointTestHost.StartAsync(agreement, package);
+        host.As(Guest, GuestUser);
+
+        var response = await PostAsync(
+            host, $"/api/collaboration/v1/work-packages/{package.Id}/accept", package.RowVersion + 99);
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task An_agreement_transition_carries_a_tag_and_honours_a_stale_one()
+    {
+        // The agreement routes accept If-Match but do not demand it: they have no read endpoint yet
+        // (F3/4), so requiring a tag nobody can obtain would make them unusable. What is present is
+        // enforced, and the response always hands back the next one.
+        var agreement = Agreement();
+        await using var host = await CollaborationEndpointTestHost.StartAsync(agreement);
+        host.As(Host, HostUser);
+
+        var blind = await PostAsync(host, $"/api/collaboration/v1/agreements/{agreement.Id}/propose", ifMatch: null);
+        Assert.Equal(HttpStatusCode.OK, blind.StatusCode);
+        Assert.Equal(ConditionalRequests.Format(agreement.RowVersion), blind.Headers.ETag?.ToString());
+
+        var stale = await PostAsync(
+            host, $"/api/collaboration/v1/agreements/{agreement.Id}/cancel",
+            agreement.RowVersion - 1,
+            new StringContent("{\"reason\":\"meggondoltuk\"}", Encoding.UTF8, "application/json"));
+
+        Assert.Equal(HttpStatusCode.PreconditionFailed, stale.StatusCode);
+        Assert.Equal(AgreementStatus.Proposed, agreement.Status);
     }
 }

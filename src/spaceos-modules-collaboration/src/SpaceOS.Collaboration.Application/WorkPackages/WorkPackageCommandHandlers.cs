@@ -1,5 +1,6 @@
 using MediatR;
 using SpaceOS.Collaboration.Application.Authorization;
+using SpaceOS.Collaboration.Application.Concurrency;
 using SpaceOS.Collaboration.Application.Projections;
 using SpaceOS.Collaboration.Application.Repositories;
 using SpaceOS.Collaboration.Domain;
@@ -68,6 +69,9 @@ public abstract class WorkPackageCommandHandlerBase<TCommand> : IRequestHandler<
             command.ActorTenantId,
             CollaborationCapability.WorkPackageExecute,
             cancellationToken);
+
+        // AFTER the guard: a caller with no right to this package must not learn its version.
+        CollaborationPrecondition.Verify(command.ExpectedRowVersion, workPackage.RowVersion);
 
         Apply(workPackage, command, _clock.GetUtcNow());
 

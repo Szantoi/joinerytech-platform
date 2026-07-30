@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using SpaceOS.Collaboration.Application.Concurrency;
 using SpaceOS.Collaboration.Application.Repositories;
 using SpaceOS.Collaboration.Domain;
 
@@ -21,7 +22,7 @@ public sealed class WorkPackageRepository(CollaborationDbContext database) : IWo
         => await database.WorkPackages.AddAsync(workPackage, cancellationToken);
 
     public Task SaveChangesAsync(CancellationToken cancellationToken = default)
-        => database.SaveChangesAsync(cancellationToken);
+        => ConcurrencyTranslation.SaveAsync(database, cancellationToken);
 }
 
 /// <summary>EF-backed <see cref="IAgreementRepository"/>.</summary>
@@ -43,5 +44,38 @@ public sealed class AgreementRepository(CollaborationDbContext database) : IAgre
         => await database.Agreements.AddAsync(agreement, cancellationToken);
 
     public Task SaveChangesAsync(CancellationToken cancellationToken = default)
-        => database.SaveChangesAsync(cancellationToken);
+        => ConcurrencyTranslation.SaveAsync(database, cancellationToken);
+}
+
+/// <summary>
+/// Translates EF's lost-update signal into the application's vocabulary (B2B-10 F3/3).
+/// </summary>
+/// <remarks>
+/// <para>
+/// The concurrency tokens have been in place since F2/4, but nothing above the persistence layer
+/// could name what they produce: <c>DbUpdateConcurrencyException</c> is an Entity Framework type,
+/// and neither the application layer nor the API references Entity Framework. The failure would
+/// therefore have travelled all the way to the generic 500 handler — a lost update reported as a
+/// server fault, with the client given no reason to retry.
+/// </para>
+/// <para>
+/// Translating HERE rather than referencing EF from the API is the point: the persistence detail
+/// stops at the boundary that owns it.
+/// </para>
+/// </remarks>
+internal static class ConcurrencyTranslation
+{
+    public static async Task SaveAsync(CollaborationDbContext database, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await database.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (DbUpdateConcurrencyException exception)
+        {
+            throw new CollaborationConcurrencyConflictException(
+                "The collaboration aggregate was modified by another writer before this change could be saved.",
+                exception);
+        }
+    }
 }

@@ -9403,3 +9403,42 @@ beégetni: a `ProjectCode` formátumát (a portál és a Kontrolling ma **másk�
 a wire-enum alakját (ez buktatta a B2B-08-at).
 
 — Claude (root)
+
+## 2026-07-31 este — Claude (root) — ADR-072 ELFOGADVA · és egy mérés, ami megakadályozott egy néma kiesést
+
+**Gábor két döntése:** *„ADR-072 az legyen független"* → a **Döntés 1** (önálló,
+iparág-semleges `spaceos.projects` modul) **ELFOGADVA**. Az elfogadással együtt
+rögzítve, hogy az **ADR-066 §9.1 FELÜLÍRT** (2026-07-21: „a `ProjectRef` tulajdonosa a
+Kernel `FlowEpic`") — mindkét ADR frissítve, különben két ADR két tulajdonost nevezne
+meg ugyanarra a fogalomra. Gábor **VPS-módosításra is felhatalmazott.**
+
+### ⛔ És pont ezért a felhatalmazásért érdemes elolvasni a következőt
+
+A `NOBYPASSRLS` tétel hónapok óta úgy szerepelt a listán, hogy *„a kód kész, csak az
+`ALTER ROLE` + a migráció-telepítés hiányzik"*. A felhatalmazás után **meg akartam
+csinálni** — de előbb mértem:
+
+```
+a ket worker              ma is rolbypassrls=t, mindket service FUT
+SECURITY DEFINER fv-ek    az elo DB-ben: 0 a 8-bol
+VPS git HEAD              inventory 2026-07-22 · procurement 2026-07-22
+a migraciok               2026-07-27  -> a KINT FUTO kod nem ismeri oket
+```
+
+**Ha csak az `ALTER ROLE`-t futtatom, mindkét háttér-worker NÉMÁN leáll** — az RLS 0
+sort adna nekik, a job „lefutna" és nem csinálna semmit. Ez a legrosszabb kiesés-fajta,
+és a mérés nélkül **egy felhatalmazott, jó szándékú lépés okozta volna.**
+
+**A tétel átminősítve:** nem egysoros jogosultság-változtatás, hanem **két modul
+tervezett újratelepítése** (worker-kód → migráció `FORCE RLS`-sel élő táblán →
+`ALTER ROLE` → záró mérés). Saját deploy-ablakot kér.
+
+⚠ **A tanulság, ami mindenkire áll:** *a „kész kód" és a „kész változás" nem ugyanaz.*
+A lista évek óta helyesen mondta, hogy a kód kész — és pont ezzel **rejtette el, hogy a
+telepítés maga a nehéz rész**. Ha egy tételnél a végrehajtás „már csak" valami, mérd meg
+azt a „már csak"-ot.
+
+Elvégezve mellette: 4 lezárt task-doksi archiválva (B2B-01/02/04, B2B-10-F5), az
+`EPICS.yaml` útvonalai igazítva.
+
+— Claude (root)

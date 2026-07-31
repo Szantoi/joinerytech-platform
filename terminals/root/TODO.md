@@ -1,6 +1,6 @@
 # ROOT Terminal TODO
 
-> **Frissítve:** 2026-07-30 este · **Részletes állapot:** [`STATE.md`](STATE.md)
+> **Frissítve:** 2026-07-31 délelőtt · **Részletes állapot:** [`STATE.md`](STATE.md)
 > **Kanonikus státusz:** [`EPICS.yaml`](../../EPICS.yaml) — a task-doksik státusz-sora **nem hiteles**.
 
 ---
@@ -29,14 +29,27 @@
       projektet mér) · teszt-kapu (Docker; a collaboration suite **13 m 19 s**).
 - [ ] **`npm publish`** a `@spaceos/portal-ui`-ra · **VPS-IP** maradhat-e a
       publikus repóban · a **3 platform-submodule pushja**.
+- [ ] **ÚJ (DC-01 tervből, 2026-07-31): licenc-blokkoló** — a `SpaceOS.Modules.Hosting`
+      (+`.RlsFixtures`) `PackageLicenseExpression`-je és a platform-repó gyökér-`LICENSE`
+      (+ `RepositoryUrl` kettősség). PUBLIKUS repó licenc nélkül = minden jog fenntartva
+      minden fogyasztónak; a DC-01c ezen blokkolt.
+- [ ] **ÚJ (DC-01): betűtípus-politika** a DC-01b előtt — javaslat: OFL-1.1 Liberation
+      Sans, kiadás + ellenőrző-összeg rögzítéssel; a Monotype/MS EULA-s rendszerfont kizárva.
+- [ ] **ÚJ (DC-01): PyMuPDF a goods-receipt repóban** — AGPL/kereskedelmi kettős licenc,
+      a repó MIT-státusza érintett; 4 fájl `fitz` → pypdfium2 csere (külön task).
+- [ ] **ÚJ (DC-01): objektum-tár (DC-01c)** — S3/MinIO döntés (a Minio-kliens Apache-2.0,
+      licenc-oldalról nem blokkolt).
 
 ---
 
-## Rám váró review
+## Futó sávok (2026-07-31 délelőtt kiadva)
 
-- [ ] **backend `B2B-10 F5/0`** — token-út mérés (befutott, még nem néztem).
-- [ ] **doccapture `DC-01` terv** — három szeletre bomlik, **nyolc nyitott
-      kérdéssel** (befutott, még nem néztem).
+- [ ] **backend `B2B-10 F5/1`** — create-út (kiadva a 3 F5-döntéssel:
+      on-behalf-of kérés-hatókörű korláttal · `ProjectOwnerTenantId` törölve ·
+      hatókör elfogadva). F5/0 **APPROVED** saját méréssel (89/89 + mutáció).
+- [ ] **doccapture `DC-01a`** — szövegréteg-olvasó (a terv elfogadva; a 8 kérdésből
+      4 root-döntés meghozva, 4 a Gábor-listán). Review-nál a 9 leállási szám újramérése.
+- [x] **frontend gép-státusz XS** — APPROVED, portál `1ee7510` + pin-bump `dd7f1da`.
 
 ---
 
@@ -71,9 +84,10 @@
       fenntartotta). A rés szűk és modul-specifikus; a **pilot: CRM** (tiszta fa,
       publikus connection-string konstans).
 - [ ] **`/mcp` hitelesítetlen discovery-manifest** (eszközlista, titok nélkül) — P2.
-- [ ] **`/quote-request` testvér-lelet:** a megerősítő dialógus írja ki a gép
-      **státuszát** is (XS, frontend). A „most indítsd / tervezd be" művelet
-      kérdése Gáboré.
+- [x] ~~**`/quote-request` testvér-lelet:** a megerősítő dialógus írja ki a gép
+      **státuszát** is (XS, frontend).~~ **KÉSZ 2026-07-31** (portál `1ee7510`).
+      A „most indítsd / tervezd be" művelet kérdése és a „nem szabad gépre ejtés:
+      sorba állítás vagy tiltás" termékdöntés továbbra is Gáboré.
 - [ ] P2-k: a `/wake`,`/inject`,`/stop`,`/stop-all` megengedő teszt-alakja ·
       CRM lapozás-metaadat a wire-en · `MaterialisationCode` wire-re emelése ·
       Alpine/musl solver-mérés · az EHS Infrastructure 10 warningja.
@@ -94,6 +108,9 @@
       `STAB-KONTROLLING-PORTFOLIO-INDEX`, `STAB-MODULE-AUDIT-IDENTITY`)
       **untracked** és nincs az `EPICS.yaml`-ban → **nem létező munkaként
       viselkednek**. Jelzés a Codexnek.
+- [ ] **Az EPIC-DOC-CAPTURE sincs az `EPICS.yaml`-ban** (2026-07-31 mérve: 0 találat) —
+      ugyanez a hibaosztály; a kanonikus forrásba regisztrálni kell (DC-00…DC-06 státuszokkal),
+      különben a doccapture-sáv munkája a kanonikus forrásból láthatatlan.
 
 ---
 

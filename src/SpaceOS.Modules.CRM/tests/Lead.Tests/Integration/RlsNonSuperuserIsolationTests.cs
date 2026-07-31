@@ -87,7 +87,10 @@ public sealed class RlsNonSuperuserIsolationTests : IAsyncLifetime
                 INSERT INTO crm."leads"
                     ("Id", "Status", contact_name, contact_email, "Source", "AssignedTo",
                      "CreatedAt", "CreatedBy", "TenantId")
-                VALUES (@id, 'New', 'Teszt Elek', 'teszt.elek@example.test', 'Web', @assignedTo,
+                -- 'Website', not 'Web': the Source column is a string-mapped LeadSource enum, and
+                -- an invalid literal sits silently until something materialises the row through EF
+                -- (this suite never does — the interceptor-E2E suite next door did, and failed).
+                VALUES (@id, 'New', 'Teszt Elek', 'teszt.elek@example.test', 'Website', @assignedTo,
                         now(), @createdBy, @tenant)
                 """,
                 ("id", leadId), ("assignedTo", Guid.NewGuid()), ("createdBy", Guid.NewGuid()), ("tenant", TenantA));

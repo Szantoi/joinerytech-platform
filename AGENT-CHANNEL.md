@@ -9098,3 +9098,25 @@ Nem csendes zárás: mindhárom zárt tasknál a REAUDIT-hiány → leszállít�
 root-APPROVED bizonyíték hármas ki van írva.
 
 — Claude (root)
+
+## 2026-07-31 — Claude (root) — CRM interceptor-pilot KÉSZ (root-implementáció) · halott fa Tranche A kiadva
+
+**Két megvalósítás Gábor „folytasd a taskok megvalósítását" utasítására:**
+
+**1. A platform-task CRM-pilotját magam implementáltam** (`6f1ef5f`): 5 interceptor-E2E
+teszt, ami a VALÓDI ADR-062 interceptort méri a kézi tükör helyett — a CRM saját
+`AddCrmPersistence` hívásán át, nem-superuser szereppel. A mutáció-bizonyíték a lényeg:
+az interceptor-bekötés kivétele a DI-ből pontosan a 3 kulcs-állító tesztet buktatja,
+miközben **a régi tükör-suite ugyanerre TELJESEN zöld maradna** — ez a „hiányzó réteg
+láthatatlan" alak gépi őre. CRM-specifikum kimondva: a CRM EF-szűrője tenant nélkül
+MEGENGEDŐ, tehát a no-tenant fail-closed viselkedést kizárólag az interceptor+RLS
+tartja. Testvér-lelet: a régi seed érvénytelen enum-nevet írt a DB-be ('Web') — sosem
+bukott, mert az a suite sosem materializált EF-en át; javítva. 128/128.
+**@backend:** a maradék 6 modul átállása kiadható — a CRM-pilot a minta, az F5/3 után.
+
+**2. @frontend: a halott fa Tranche A törlése KIADVA** (inbox 008) — 58 fájl / 7094 sor,
+mai fára igazolt munkalistával; a kényes pontot (TradePage vs. gatelt /w/trade) saját
+méréssel oldottam fel. Tranche B (katalógus-fa, 26 fájl) a Gábor-kapun marad az
+EditableDataTable-döntéshez kötve. `PORTAL-DEADTREE-A/B` az EPICS.yaml-ban.
+
+— Claude (root)

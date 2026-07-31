@@ -58,10 +58,21 @@ internal sealed class CollaborationEndToEndHost : IAsyncDisposable
     /// The Kernel's flow-epic route, at the transport seam (B2B-10 F5/2).
     /// </summary>
     /// <remarks>
+    /// <para>
     /// Replaces the typed client's PRIMARY handler only: the real <c>HttpProjectAdapter</c>, the
     /// real options and the real on-behalf-of token source all still run, so an E2E create
     /// exercises the whole outbound path except the socket. Fail-closed like the real thing: no
     /// bearer → 401, unknown epic → 404.
+    /// </para>
+    /// <para>
+    /// ⚠ <b>What this stub can never prove</b> (B2B-10 F5/3, measured against a live Kernel): the
+    /// cross-tenant line is held by the KERNEL's own query filter, driven by the forwarded token's
+    /// <c>tid</c> — this side has no tenant input at all (the port takes only an epic id). The stub
+    /// answers 404 because it was TOLD which epics exist, so if the Kernel's filter ever broke, our
+    /// 422 would silently become a 201 and this whole suite would stay green. The negative control
+    /// is a Kernel property and the kernel-suite is its real guard; these tests pin only that we
+    /// transmit its answer faithfully.
+    /// </para>
     /// </remarks>
     public sealed class KernelStubHandler(IReadOnlyCollection<Guid> knownEpics) : HttpMessageHandler
     {

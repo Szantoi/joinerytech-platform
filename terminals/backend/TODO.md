@@ -36,17 +36,14 @@ Kiírás: [`B2B-10-F5-PROJECT-ANCHOR-RESOLUTION.md`](../../docs/tasks/EPIC-B2B-C
       javítása (`spaceos_tenants` 3. alak → csendes 403) is átment, `e0b922d` origin/main-en.
 - [x] **F5/1 — a create-út**: **APPROVED** (root, 2026-07-31, saját mérés + saját mutáció; inbox
       `2026-07-31_002`). A létrehozó-user-nem-perzisztálódik korlát elfogadva, MOST nem kell.
-- [x] **F5/2 — `HttpProjectAdapter`**: **`review_requested`** (`d2b9689`, origin/main-en). Hívási
-      pont kimondva: a **create-út scope-validálása**. On-behalf-of kérés-hatókörű dekrétum kódban;
-      hibatérkép 404→null · 401/403→502 · timeout/5xx→503; fail-fast options; E2E primary-handler
-      kernel-stubbal, bearer-továbbítás állítva. **277/277 unit + 53/53 integrációs, 0 warning;
-      mutáció 4/4.** Outbox: `2026-07-31-b2b10-f5-2-http-project-adapter-review-requested.md`.
-      ⚠ DEPLOY: az éles hostnak kell a `Collaboration:Kernel:BaseUrl` (fail-fast) — Gábor-kapu.
-- [ ] **F5/3** — negatív kontroll (**kiadásra vár**): idegen bérlő tokenjével a feloldás semmit ne
-      adjon, valódi Kernellel mérve, és **kimondva, melyik réteg tartja** (a kernel 404-je vagy az
-      adapter). A mérőeszköztár az F5/0-ból megvan (eldobható KC24 + kernel + collaboration host).
-      + ide tartozik: az epic↔projekt viszony NEM ellenőrizhető a mai kernel-válaszból (nincs benne
-      projekt-id) — kimondandó, F4-kontraktus-anyag.
+- [x] **F5/2 — `HttpProjectAdapter`**: **APPROVED** (root, 2026-07-31, saját mutációval).
+      ⚠ DEPLOY-BLOKKOLÓ a Gábor-listán: az éles hostnak kell a `Collaboration:Kernel:BaseUrl`.
+- [x] **F5/3 — negatív kontroll**: **`review_requested`**. Élő Kernellel: idegen epicre **422 +
+      0 sor** (fantom-esettel megkülönböztethetetlenül), saját epicre **201** (pozitív kontroll);
+      a kernel A/B mátrix mindkét irányban zár. **Kimondva: a vonalat a Kernel tartja, EGYEDÜL** —
+      nem védelem mélységben, és a mi suite-unk (stub) nem tudná elkapni a kernel-regressziót.
+      Jegyzőkönyv: `KERNEL_ANCHOR_NEGATIVE_CONTROL_2026-07-31.md`. Takarítás kimondva.
+- [ ] **Az F5 négy szelete lefutott** → a kritikus úton az **F7** következik (root-kiírásra vár).
 
 ## P2 — Scheduling: M5 (írási irány) + két nyitott kontraktus-döntés
 

@@ -56,8 +56,21 @@ visszavetítés a B2B-06-é.
 |---|---|---|
 | **F5/0** mérési szelet | **APPROVED** (2026-07-31, root saját méréssel) | 89/89 + mutáció sha1-bizonyítással |
 | **F5/1** create-út | **APPROVED** (2026-07-31, root saját méréssel + saját mutációval) | inbox `2026-07-31_002` |
-| **F5/2** `HttpProjectAdapter` | **`review_requested`** (`d2b9689`) | 277/277 unit + 53/53 integrációs, 0 warning; mutáció 4/4; outbox `2026-07-31-b2b10-f5-2-…` |
-| **F5/3** negatív kontroll | kiadásra vár | idegen bérlő tokenjével a feloldás semmit ne adjon + MELYIK réteg tartja; a mérőeszköztár az F5/0-ból megvan |
+| **F5/2** `HttpProjectAdapter` | **APPROVED** (2026-07-31, root saját mutációval) | inbox `2026-07-31_003` |
+| **F5/3** negatív kontroll | **`review_requested`** | élő Kernellel mérve; jegyzőkönyv: [`KERNEL_ANCHOR_NEGATIVE_CONTROL_2026-07-31.md`](../../docs/knowledge/architecture/KERNEL_ANCHOR_NEGATIVE_CONTROL_2026-07-31.md); outbox `2026-07-31-b2b10-f5-3-…` |
+
+### Az F5/3 két átvihető tétele
+
+- **A vonalat a Kernel tartja, EGYEDÜL.** Mátrix élő Kernellel: epicA+A **200** / epicA+B **404**
+  / epicB+B **200** / epicB+A **404**; a teljes vermen a create idegen epicre **422 + 0 sor**
+  (fantom-esettel megkülönböztethetetlenül), saját epicre **201** (pozitív kontroll).
+  ⚠ Ez **nem védelem mélységben**: az adapter szignatúrájában nincs tenant-paraméter, tehát
+  elvileg sem szűrhet. Ha a kernel query filter elromlik, a mi 422-nk **csendben 201** lesz, és a
+  Collaboration-suite zöld marad (stubbal mér). A negatív kontroll **kernel-tulajdonság** — beírva
+  a `KernelStubHandler` doc-kommentjébe is.
+- **A Kernel nem ismer „projektet":** nincs `Project` entitás, nincs `ProjectId` a domainben,
+  nincs `Projects` tábla. A `WorkScope.ProjectId` tehát hívó-állította marad, és az
+  `EnsureSameProject` **belső** konzisztenciát véd, nem külső igazságot. F4-anyag, nem építettem meg.
 
 ### Az F5/2 tartalma (amit a review-nak látnia kell)
 

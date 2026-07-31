@@ -1,0 +1,138 @@
+# A horgony-feloldás negatív kontrollja — mérés (B2B-10 F5/3)
+
+> **Dátum:** 2026-07-31 · **Mérte:** backend terminál · **Státusz:** mérési jegyzőkönyv
+> **Miért:** az F5/2 `HttpProjectAdapter` fail-closed viselkedése eddig **stubbal** volt mérve.
+> Az F5/3 kérdése: idegen bérlő tokenjével a feloldás valóban semmit nem ad-e **élő Kernellel**,
+> és **melyik réteg tartja** a vonalat.
+> **Előzmény:** [`KERNEL_TOKEN_PATH_MEASUREMENT_2026-07-30.md`](KERNEL_TOKEN_PATH_MEASUREMENT_2026-07-30.md)
+
+## A mérőkörnyezet
+
+Eldobható konténerek + lokálisan futtatott hostok, éles rendszer **nem érintve**:
+
+| Elem | Beállítás |
+|---|---|
+| Keycloak | `quay.io/keycloak/keycloak:24.0.0`, `start-dev`, port **8081**, realm `spaceos` |
+| Kernel API | `dotnet run`, port **5099**, `ASPNETCORE_ENVIRONMENT=Development` → SQLite |
+| Collaboration host | a `dotnet publish` **másolatából** futtatva (a repót nem módosítottam), port **5098** |
+| Collaboration DB | `postgres:16-alpine`, port **5433**, migrációk a hoston át felhúzva |
+| Kliens | `portal` (public, direct access grant), **két audience-mapper**: `kernel-api` + `collaboration-api` |
+| Felhasználók | `user.a` (`tid`=A bérlő) és `user.b` (`tid`=B bérlő), mindkettő `Admin` szereppel |
+
+**A runbook három csapdáját előre elolvastam** (`TENANT_ONBOARDING_RUNBOOK.md` + a saját
+memóriám), és mind a hármat elkerültem: `unmanagedAttributePolicy=ADMIN_EDIT` a realmen (enélkül
+a `tid`/`spaceos_tenants` attribútum el sem tárolódik), a user egy POST-tal jött létre
+attribútumostul (nincs `PUT`-os teljes csere), és **minden mérés friss tokennel** ment (a lejárt
+token 401-e pont úgy néz ki, mint az audience-hiba).
+
+## 1. Kernel A/B mátrix — a bérlő-szűkítés élőben
+
+Két flow-epic, egy-egy bérlőé, ugyanaz a végpont, két különböző `tid`-ű token:
+
+| Kérés | Válasz |
+|---|---|
+| `GET /api/flow-epics/{epicA}` **A** tokennel (övé a sor) | **200** |
+| `GET /api/flow-epics/{epicA}` **B** tokennel (idegen) | **404** |
+| `GET /api/flow-epics/{epicB}` **B** tokennel (övé a sor) | **200** |
+| `GET /api/flow-epics/{epicB}` **A** tokennel (idegen) | **404** |
+
+A mátrix **mindkét irányban** zár, tehát nem egy epic véletlen tulajdonsága.
+
+## 2. A teljes vermen: pozitív és negatív kontroll
+
+A Collaboration hosthoz két megállapodás (A-host/B-guest és B-host/A-guest), a create-út
+`POST /api/collaboration/v1/agreements/{id}/work-packages` végponton:
+
+| Mérés | Kérés | Válasz | DB |
+|---|---|---|---|
+| **M-POZITÍV** | A token, **saját** epicA, A-host megállapodás | **201 Created** | 1 sor, `work_scope_epic_id` = epicA |
+| **M-NEGATÍV** | B token, **idegen** epicA, B saját megállapodása | **422** | **0 sor** |
+| **SZIMMETRIA** | A token, **idegen** epicB, A saját megállapodása | **422** | **0 sor** |
+| **FANTOM** | B token, **sosem létezett** epic-id | **422** | **0 sor** |
+
+A 422 törzse (a hívó saját inputját mondja vissza, semmi mást):
+
+```json
+{"type":"https://httpstatuses.io/422","title":"Work scope does not resolve","status":422,
+ "detail":"The work scope names flow-epic e51ca000-…, which the Kernel does not know for this caller.",
+ "correlationId":"00-4af29e80…"}
+```
+
+**A pozitív kontroll a lényeg:** enélkül a négy 422 üresen zöld lenne — bármi eltörhetett volna a
+láncban (rossz base-URL, hiányzó audience, elrontott route), és a „semmit nem ad vissza"
+ugyanígy nézne ki. A 201 bizonyítja, hogy a lánc végig **működik**, és a 422-t a bérlő-szűkítés
+okozza, nem egy szakadás.
+
+**A FANTOM-eset külön tétel:** egy idegen bérlő létező epicje és egy sosem létezett id
+**megkülönböztethetetlen** (mindkettő 422, azonos törzs-alakkal). Így a végpont nem lesz orákulum
+arra, hogy „létezik-e X epic a másik cégnél".
+
+## 3. ⭐ MELYIK RÉTEG TARTJA A VONALAT — mérve, nem következtetve
+
+**A Kernel tartja. Egyedül.** Két, egymástól független bizonyíték:
+
+1. **Viselkedés (1. fejezet mátrixa):** a 404 magától a Kerneltől jön, a saját EF query
+   filterén át, amit a token `tid` claimje hajt. A Collaboration-oldal ezt csak **továbbadja**.
+2. **Szerkezet:** az `IProjectAdapter.ResolveFlowEpicAsync(flowEpicId)` szignatúrájában
+   **nincs tenant-paraméter** (az F5/2 root-döntés törölte). Az adapter tehát *elvileg sem*
+   tud szűrni — nincs mihez hasonlítania. A handler ugyanígy: a `null`-t 422-vé alakítja, de
+   nem dönt bérlőről.
+
+**Amit ez kimond, és amit a jelentésnek hordoznia kell:** ez **nem védelem mélységben**. Egyetlen
+réteg tartja, és az a réteg **nem a miénk**. Ha a Kernel `FlowEpics` query filtere elromlik vagy
+kikapcsolják, a mi 422-nk **csendben 201-re fordul**, és a Collaboration-suite végig zöld marad —
+a mi tesztjeink közül egy sem tudná elkapni, mert stubbal mérnek. A negatív kontroll tehát a
+**Kernel tulajdonsága**, és a valódi őre a **kernel-suite**. Ez a mérés ezt a függést szögezi le.
+
+⚠ A kernel query filter kikapcsolásával nem mértem (Kernel-kapu: a Kernelhez nem nyúlok) — a
+fenti állítás a mátrixból és a szignatúrából következik, nem mutációból.
+
+## 4. Az epic↔projekt viszony: NEM ellenőrizhető — és a helyzet rosszabb, mint hittük
+
+A kiírás 4. pontja: *ha bármi mérhetőt találsz, nevesítsd — de NE építsd meg.*
+
+| Mért tény | Következmény |
+|---|---|
+| A `FlowEpicDto` mezői: `id`, `title`, `targetFacilityId`, `phase`, `isDelegated` | projekt-azonosító **nincs** benne |
+| A Kernel domén-entitásai (15 fájl): `Tenant`, `Facility`, `FlowEpic`, `SpaceLayer`, `WorkStation`, `StageChain*`, … | **`Project` entitás nem létezik**, és a `ProjectId` név **egyetlen** kernel-domain fájlban sem fordul elő |
+| A futó kernel SQLite-sémája: 24 tábla | **nincs `Projects` tábla** |
+
+**Vagyis a `CollaborationWorkScope.ProjectId`-nek ma nincs kernel-oldali megfelelője** — nem
+arról van szó, hogy a DTO-ból hiányzik egy mező, hanem hogy a Kernel nem ismeri a „projekt"
+fogalmát ebben a sémában. (A `KernelWorkScope` a **scheduling** repóban él, külön csomagként.)
+
+Ebből következően:
+
+- Az **EpicId** ellenőrizhető és ellenőrzött (ezt csinálja az F5/2 adapter).
+- A **ProjectId** hívó-állította marad, és **nincs az a drót, amin ma ellenőrizhető lenne**.
+- Az `EnsureSameProject` invariáns így **belső konzisztenciát** véd (egy megállapodás egy
+  projektet delegál), nem külső igazságot. Ez rendben van, csak ki kell mondani.
+
+**Nem építettem meg semmit** — a döntés az F4-kontraktusé: vagy a Kernel kap projekt-fogalmat
+(Kernel-kapu, Gábor), vagy a `ProjectId` marad hívó-állította korrelációs azonosító, és ezt a
+Doorstarnak publikált szerződés **mondja ki**.
+
+## 5. A mérőkörnyezet műtermékei — nem termékhiba
+
+- A kernel `POST /api/tenants` **500**-at ad Development/SQLite alatt: `no such table:
+  AuditEvents` — az `EnsureCreated` séma nem tartalmazza az audit-táblát (élesben PostgreSQL +
+  migrációk). Emiatt a kernel-oldali seedelést **közvetlenül a SQLite-fájlba** írtam
+  (`Tenants`/`Facilities`/`FlowEpics`), nem az API-n át. A **mért** út (a `GET /api/flow-epics`)
+  ettől független és végig az API-n ment.
+- `OutboxBackgroundWorker` ciklikus kivétele: `SQLite does not support … DateTimeOffset in
+  ORDER BY` — ugyanaz a Development-műtermék, amit az F5/0 is rögzített.
+- Mindkettő **jelzés a Kernel csapatának**, nem javítás (Kernel-kapu).
+
+## 6. Takarítás
+
+`f53-keycloak` és `f53-collab-db` konténerek **törölve**, a két host-processz leállítva, az
+eldobható SQLite-fájl és a publish-másolat törölve. A **`doorstar-production-db` konténerhez nem
+nyúltam** — fut, érintetlen.
+
+## Következtetés
+
+1. **A negatív kontroll teljesül**: idegen bérlő tokenjével a horgony-feloldás semmit nem ad, a
+   create 422-t kap, és **0 sor** íródik — élő Kernellel, mindkét irányban, fantom-esettel együtt.
+2. **A vonalat a Kernel tartja, egyedül** — a mi oldalunk továbbít. Ez a függés kimondva, és a
+   valódi őr a kernel-suite.
+3. **Az epic↔projekt viszony ma nem ellenőrizhető**, mert a Kernel nem ismer projektet. F4-anyag.

@@ -55,9 +55,26 @@ visszavetítés a B2B-06-é.
 | Szelet | Állapot | Bizonyíték / megjegyzés |
 |---|---|---|
 | **F5/0** mérési szelet | **APPROVED** (2026-07-31, root saját méréssel) | 89/89 + mutáció sha1-bizonyítással |
-| **F5/1** create-út | **`review_requested`** (`a4e1f49`) | 256/256 unit + 52/52 integrációs, 0 warning; mutáció 5/5 harapott; outbox `2026-07-31-b2b10-f5-1-…` |
-| **F5/2** `HttpProjectAdapter` | kiadásra vár | on-behalf-of, kérés-hatókörű korláttal; fail-fast options; explicit hibatérkép |
-| **F5/3** negatív kontroll | pending | idegen bérlő tokenjével a feloldás semmit ne adjon + MELYIK réteg tartja |
+| **F5/1** create-út | **APPROVED** (2026-07-31, root saját méréssel + saját mutációval) | inbox `2026-07-31_002` |
+| **F5/2** `HttpProjectAdapter` | **`review_requested`** (`d2b9689`) | 277/277 unit + 53/53 integrációs, 0 warning; mutáció 4/4; outbox `2026-07-31-b2b10-f5-2-…` |
+| **F5/3** negatív kontroll | kiadásra vár | idegen bérlő tokenjével a feloldás semmit ne adjon + MELYIK réteg tartja; a mérőeszköztár az F5/0-ból megvan |
+
+### Az F5/2 tartalma (amit a review-nak látnia kell)
+
+- **Hívási pont kimondva: a create-út scope-validálása** — a horgony epicje a születés előtt
+  feloldódik; a read-model dúsítás elvetve (minden olvasás Kernel-függővé vált volna).
+- Port: `ResolveFlowEpicAsync(epicId)`; `ProjectOwnerTenantId` ÉS `requestingTenantId` törölve —
+  a bérlőt a továbbadott token hordozza, a kikényszerítő fél a Kernel (404 = bérlő-bizonyíték).
+- On-behalf-of kérés-hatókörű dekrétum kódban (`IOnBehalfOfTokenSource.RequireToken` hangosan
+  bukik háttérből); hibatérkép: 404→null · 401/403→502 · timeout/5xx→503, semmi nem olvad null-ba.
+- Fail-fast options (`ValidateOnStart`, üres alapérték — a tiltott `?? localhost` minta helyett).
+- E2E: primary-handler kernel-stub, bearer-továbbítás a stub oldalán állítva. Az első E2E-futáson
+  minden create 500 volt — a szintetikus identitáson nem volt Authorization header, a dekrétum
+  pont úgy harapott, ahogy kell; az `As()` most bearer-t is ad.
+- ⚠ **DEPLOY:** az éles hostnak mostantól kell a `Collaboration:Kernel:BaseUrl` (fail-fast,
+  különben el sem indul) — VPS-config Gábor-kapu.
+- Korlát kimondva: a Kernel-válasz nem hordoz projekt-azonosítót → csak az EPIC léte ellenőrzött,
+  a ProjectId hívó-állította marad (F4/F5-3 anyag).
 
 ### Az F5/1 tartalma (amit a review-nak látnia kell)
 

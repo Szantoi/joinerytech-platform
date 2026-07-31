@@ -87,9 +87,11 @@ a mi tesztjeink közül egy sem tudná elkapni, mert stubbal mérnek. A negatív
 ⚠ A kernel query filter kikapcsolásával nem mértem (Kernel-kapu: a Kernelhez nem nyúlok) — a
 fenti állítás a mátrixból és a szignatúrából következik, nem mutációból.
 
-## 4. Az epic↔projekt viszony: NEM ellenőrizhető — és a helyzet rosszabb, mint hittük
+## 4. Az epic↔projekt viszony: nem ellenőrizhető — de ez SZÁNDÉKOS, nem hiányosság
 
 A kiírás 4. pontja: *ha bármi mérhetőt találsz, nevesítsd — de NE építsd meg.*
+
+### A mért tények
 
 | Mért tény | Következmény |
 |---|---|
@@ -97,20 +99,52 @@ A kiírás 4. pontja: *ha bármi mérhetőt találsz, nevesítsd — de NE épí
 | A Kernel domén-entitásai (15 fájl): `Tenant`, `Facility`, `FlowEpic`, `SpaceLayer`, `WorkStation`, `StageChain*`, … | **`Project` entitás nem létezik**, és a `ProjectId` név **egyetlen** kernel-domain fájlban sem fordul elő |
 | A futó kernel SQLite-sémája: 24 tábla | **nincs `Projects` tábla** |
 
-**Vagyis a `CollaborationWorkScope.ProjectId`-nek ma nincs kernel-oldali megfelelője** — nem
-arról van szó, hogy a DTO-ból hiányzik egy mező, hanem hogy a Kernel nem ismeri a „projekt"
-fogalmát ebben a sémában. (A `KernelWorkScope` a **scheduling** repóban él, külön csomagként.)
+### ⚠ Az első megfogalmazásom félrevezető volt — javítva
 
-Ebből következően:
+Ezt a szakaszt eredetileg „a helyzet rosszabb, mint hittük" felütéssel írtam, mintha hiányt
+találtam volna. **Nem az.** A mérés után elolvasott ADR-ek kimondják:
 
-- Az **EpicId** ellenőrizhető és ellenőrzött (ezt csinálja az F5/2 adapter).
-- A **ProjectId** hívó-állította marad, és **nincs az a drót, amin ma ellenőrizhető lenne**.
-- Az `EnsureSameProject` invariáns így **belső konzisztenciát** véd (egy megállapodás egy
-  projektet delegál), nem külső igazságot. Ez rendben van, csak ki kell mondani.
+- **ADR-066** (ACCEPTED, Gábor döntése 2026-07-21): a `ProjectRef` tulajdonosa a Kernel `FlowEpic`.
+- **ADR-068 §5** (ACCEPTED): *„ma a gyakorlatban nincs ilyen felső szint"* — a FlowEpic **de facto
+  a legkisebb és egyben az egyetlen ténylegesen referálható »projekt-egység«**; a FlowEpic fölötti
+  projekt-buroknak **nincs tulajdonosa**, `decision_required` Gábornak. Az ADR kifejezetten
+  **retire-jelöltnek** minősíti a `FlowManagement.FlowProject` POCO-kat, mert egy felépített
+  projekt-réteg *„egy második, redundáns »projekt« fogalom"* lenne.
 
-**Nem építettem meg semmit** — a döntés az F4-kontraktusé: vagy a Kernel kap projekt-fogalmat
-(Kernel-kapu, Gábor), vagy a `ProjectId` marad hívó-állította korrelációs azonosító, és ezt a
-Doorstarnak publikált szerződés **mondja ki**.
+Vagyis a Kernelben azért nincs `Project`, mert az elfogadott ownership-tábla szerint **ma a
+FlowEpic AZ a projekt**. Tanulság a sajátomra: a mérés ELŐTT kellett volna elolvasnom a témába
+vágó ADR-eket — ugyanaz a hiba, mint a Keycloak-runbooknál.
+
+### ⭐ Gábor termékdöntése (2026-07-31), ami ezt lezárja
+
+> **„A projekt az epikek felett egy összefogó egység."**
+
+Ez az ADR-068 §5 `decision_required` tételére adott válasz. Három következménye:
+
+1. **A `ProjectId` mező helyes, nem redundáns.** A `CollaborationWorkScope` három mezője
+   (Project + Epic + Task) a termékmodellt tükrözi; a scheduling modul azonos alakja szintén.
+2. **Visszamenőleg igazolja az F0/F1 tervezést.** Az `EnsureSameProject` invariáns így nyer
+   értelmet: egy megállapodás **egy projektet** delegál, de **több epicet is hordozhat** ugyanabból
+   a projektből. Ha a projekt = epic lenne, ez „egy megállapodás egy epic"-re zsugorodna.
+3. **A `ProjectRef` név-adóssága most nevesíthető:** az ADR-066 `ProjectRef`-je ma egy
+   **FlowEpic-azonosítót hordoz `projectId` néven**. Amíg projekt = epic, ez pontos; ha a projekt
+   egy szinttel feljebb van, a mező **rossz nevet visel**, és pontosan akkor fog félrevezetni,
+   amikor a valódi projekt-szint megérkezik.
+
+### Ami ebből az F4-re és a Doorstarra tartozik
+
+- Az **EpicId** ellenőrizhető és ellenőrzött (F5/2 adapter, F5/3 mérés).
+- A **ProjectId** hívó-állította marad, mert a fogalom létezik, de **az adat nem** — nincs
+  tulajdonos, tábla, API.
+- Az `EnsureSameProject` **belső** konzisztenciát véd, nem külső igazságot.
+- ⛔ **Kiadott ígéret, amit ma nem tudunk betartani:** a PLAN-03 kontraktus-követelménye szó
+  szerint *„Project–Epic–Task hivatkozások publikus mezőként — a Doorstar opak értékként adja át,
+  **a platform validál**"*. A Project-mezőre ez ma **nem igaz**. Ha az F4 ezt nem mondja ki, a
+  Doorstar joggal hiszi, hogy a `projectId`-jét valaki ellenőrzi.
+
+**Nem építettem meg semmit** — a projekt-szint tulajdonosának kijelölése önálló döntés
+(Kernel-kapu / új bounded context), az F4-kontraktus dolga pedig kimondani, hogy a `projectId` ma
+opak korrelációs azonosító.
 
 ## 5. A mérőkörnyezet műtermékei — nem termékhiba
 

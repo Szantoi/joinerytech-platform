@@ -68,9 +68,17 @@ visszavetítés a B2B-06-é.
   elvileg sem szűrhet. Ha a kernel query filter elromlik, a mi 422-nk **csendben 201** lesz, és a
   Collaboration-suite zöld marad (stubbal mér). A negatív kontroll **kernel-tulajdonság** — beírva
   a `KernelStubHandler` doc-kommentjébe is.
-- **A Kernel nem ismer „projektet":** nincs `Project` entitás, nincs `ProjectId` a domainben,
-  nincs `Projects` tábla. A `WorkScope.ProjectId` tehát hívó-állította marad, és az
-  `EnsureSameProject` **belső** konzisztenciát véd, nem külső igazságot. F4-anyag, nem építettem meg.
+- **A Kernelben nincs `Project` entitás/tábla — de ez SZÁNDÉKOS** (ADR-066: a `ProjectRef`
+  tulajdonosa a Kernel `FlowEpic`; ADR-068 §5: a fölötte lévő projekt-buroknak nincs tulajdonosa).
+  ⚠ Az első jelentésemben ezt „felfedezett hiányként" adtam be — félrevezető volt, javítva; a
+  mérés ELŐTT kellett volna elolvasnom a témába vágó ADR-eket.
+- ⭐ **Gábor termékdöntése (2026-07-31):** *„A projekt az epikek felett egy összefogó egység."* →
+  [[projekt-az-epikek-felett]]. Ez lezárja az ADR-068 §5 `decision_required` tételét: a
+  `WorkScope.ProjectId` **helyes és nem redundáns**, és az `EnsureSameProject` így nyer értelmet
+  (egy megállapodás egy projekt, de **több epic**). Marad: a projekt-szintnek nincs tulajdonosa/
+  táblája → a `ProjectId` ellenőrizhetetlen; az ADR-066 `ProjectRef`-je ma **FlowEpic-id-t hordoz
+  `projectId` néven** (név-adósság); és a PLAN-03 *„a platform validál"* ígérete a Project-mezőre
+  ma **nem tartható** — az F4-nek ezt ki kell mondania. Root-kihirdetésre továbbadva.
 
 ### Az F5/2 tartalma (amit a review-nak látnia kell)
 

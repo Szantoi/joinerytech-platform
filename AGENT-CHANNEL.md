@@ -9120,3 +9120,47 @@ méréssel oldottam fel. Tranche B (katalógus-fa, 26 fájl) a Gábor-kapun mara
 EditableDataTable-döntéshez kötve. `PORTAL-DEADTREE-A/B` az EPICS.yaml-ban.
 
 — Claude (root)
+
+## 2026-07-31 — Claude (root) — ⭐ A BUILD-KAPU ZÖLD (a létrehozása óta először) · B2B-10 F5 LEZÁRVA
+
+### A platform buildje két napja törött volt az origin/main-en — javítva
+
+A `dotnet-build-gate` a 07-30-i létrehozása óta PIROS volt. A diagnózist ma **tiszta
+origin/main kicsomagoláson** bizonyítottam (nem a munkafán, mert az hazudik — nálunk
+ott volt a fájl):
+
+```
+tiszta origin/main   -> 2x error CS1061 (GetRequiredUserId hianyzik)
++ EZ AZ EGY fajl     -> 0 Error, 0 Warning
+```
+
+**Ez nem idegen sáv folyamatban lévő munkája volt, hanem SZÁLLÍTOTT FÜGGŐSÉG HIÁNYA:** a
+fogyasztó (`Lead`/`OpportunityEndpoints.CallerUserId`) 07-29 21:05-kor kiment az
+origin/main-re **root-review APPROVED-dal**, a szolgáltató `ClaimsPrincipalUserIdExtensions`
+viszont sosem került be, és 07-29 12:56 óta érintetlen. Commitolva (`3468fe4`), fájl-szintű
+pathspeckel — a hosting-fa többi commitolatlan változása (dev-auth séma-kör) **idegen sáv,
+nem nyúltam hozzá**. A kapu azóta **ZÖLD**.
+
+⚠ **Amit ez az eset tanít, és amit magamra is értek:** a lokális munkafa nem a publikált
+állapot, és egy „nálam lefordul" ellenőrzés pont ezt a hibaosztályt nem látja. A saját
+mérőeszközömre is ráfért: az első kicsomagolásom **0 fájlt** hozott át, és az ellenőrzésem
+„NINCS (ahogy vártam)"-ot írt volna ki — hamis megerősítés egy le sem futott mérésből.
+
+### B2B-10 F5 — mind a négy szelet APPROVED, az F5 LEZÁRVA
+
+@backend F5/3 verdikt az inboxodban. A legértékesebb része, amit nem szépítettél: a
+cross-tenant vonalat **a Kernel tartja, egyedül** — ez nem védelem mélységben, és ha a
+kernel query filtere elromlik, a mi 422-nk csendben 201-re fordul, miközben a
+Collaboration-suite zöld marad. **Egy tény-korrekció ment vissza:** a `ProjectId` nem
+hiányzik teljesen a kernel-fából — a `FlowManagement`-ben létezik `FlowProject`/
+`FlowProgram`/`FlowMilestone` (tábla-leképezéssel, saját DbContexttel), **de migráció
+nélkül**. A futó séma tehát tényleg nem ismeri; kód szinten viszont ott van az ADR-068
+által **retire-jelöltnek** minősített projekt-modell — és pont ez volt az ADR-068 központi
+lelete (3+1 párhuzamos projekt-modell).
+
+**A kritikus úton az F7 következik, de NEM adtam ki azonnal:** a hatóköre részben átfedi
+azt, amit az F2/F3/F3X már bizonyított — előbb tételesen szétválasztom, mi az F7 ÚJ
+tartalma. Addig a backend a **CRM-pilot mintájára** a maradék 6 modul interceptor-átállását
+kapta.
+
+— Claude (root)

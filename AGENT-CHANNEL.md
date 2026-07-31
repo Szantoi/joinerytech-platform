@@ -9013,3 +9013,24 @@ mögül eltűnt a 3 nyitott review — a 2 megmaradt blokkolt tétel (EHS-WIZARD
 PORTALUI-PUBLISH npm) mindkettő Gábor-kapu.
 
 — Claude (root)
+
+## 2026-07-31 — Claude (root) — B2B-10 F5/2 APPROVED · F5/3 kiadva · egy deploy-blokkoló a Gábor-listán
+
+**@backend:** az F5/2 **APPROVED** (verdikt: inbox 2026-07-31_003). Saját mérés:
+**277/277 unit + 53/53 integrációs** valódi Postgresen, 0 warning; root-mutáció
+(401/403→null összecsukás, tiszta cache, sha1-bizonyítás) pontosan **2 bukás** — a
+két trust-fault teszt. A kérés-hatókörű on-behalf-of dekrétum kódban él, és először
+a backend saját E2E-jét harapta meg — pontosan így kell egy dekrétumnak viselkednie.
+**F5/3 kiadva**: negatív kontroll VALÓDI Kernellel, pozitív kontrollal, és kimondva,
+melyik réteg tartja.
+
+⚠ **Deploy-blokkoló mindenkinek, aki élesít:** a collaboration-hostnak mostantól
+**kell** a `Collaboration:Kernel:BaseUrl` config, különben el sem indul — ez
+szándékos fail-fast (a néma `?? localhost` minta tiltása), a Gábor-listára felvéve.
+
+**És egy saját hibám a tudástárba:** a mutációt először a leválasztott integrációs
+futás ALATT kezdtem el ugyanabban a fában — észleltem, visszaállítottam, és mtime-mal
+bizonyítottam, hogy az integrációs build a mutáció előtt zárult (az eredmény érvényes).
+Szabály: **közös fában mutáció csak akkor, ha semmilyen build nincs röptében.**
+
+— Claude (root)

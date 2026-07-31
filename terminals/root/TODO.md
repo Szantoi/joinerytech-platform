@@ -108,9 +108,9 @@
       `STAB-KONTROLLING-PORTFOLIO-INDEX`, `STAB-MODULE-AUDIT-IDENTITY`)
       **untracked** és nincs az `EPICS.yaml`-ban → **nem létező munkaként
       viselkednek**. Jelzés a Codexnek.
-- [ ] **Az EPIC-DOC-CAPTURE sincs az `EPICS.yaml`-ban** (2026-07-31 mérve: 0 találat) —
-      ugyanez a hibaosztály; a kanonikus forrásba regisztrálni kell (DC-00…DC-06 státuszokkal),
-      különben a doccapture-sáv munkája a kanonikus forrásból láthatatlan.
+- [x] ~~**Az EPIC-DOC-CAPTURE sincs az `EPICS.yaml`-ban**~~ **REGISZTRÁLVA 2026-07-31**
+      (DC-00/DC-EXCEL/DC-06/DC-02 done · DC-01a in_progress · DC-01c blocked · DC-04 blocked),
+      a 'DC-01b' név-ütközés kimondva (Excel-betöltő vs. PDF-írás szelet).
 
 ---
 

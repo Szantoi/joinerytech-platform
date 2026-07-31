@@ -415,3 +415,35 @@ epics:
           - { id: PLAN-05, role: frontend, title: "Doorstar megjelenítő-eszközök általánosítása (GanttChart/DependencyGraph/CapacityHeatmap primitívek + scheduling nézet-model)", status: done, task: docs/tasks/EPIC-PRODUCTION-PLANNING-2026Q3/archive/PLAN-05-SCHEDULING-UI-GENERALIZATION.md, note: "2026-07-28 Gábor kérése; root-felmérés kész — a doorstar planning/* prototípus (FS/SS/FF/SF+lag+partial-release vizualizáció, be nem kötött, tesztelt) közel nulla költséggel emelhető; F1-F3 fázisok a task-doksiban. Kiosztás a world-gating zárása után; a TimelineRow/ExecutionTimeline beolvasztása kötelező (ne legyen két versengő idősáv)." }
     coordination:
       note: "Bemenetek a Doorstartól (fixture/doksi, nem forrás): legacy-képlet tesztvektorok, verziózott standard-minták, naptár/műszak-példák, nevesített kontraktus-reviewer — a response-doksi 'Amit kérünk' szakasza. Ütemezés-prioritás: Gábor."
+
+  - id: EPIC-DOC-CAPTURE-2026Q3
+    title: "Dokumentum-digitalizálás termékként (motor + platform-modul + bevételezés, 3 külön publikus repó)"
+    owner: root
+    coordinator: root
+    executor: doccapture-terminal
+    started: 2026-07-29
+    status: in_progress
+    note: "2026-07-31 root: az epic eddig HIÁNYZOTT a kanonikus forrásból (a task-doksik léteztek, az EPICS.yaml-ban 0 sor — ugyanaz a hibaosztály, mint a 3 untracked Codex-task). A munka HÁROM KÜLÖN publikus repóban él (spaceos-doccapture-engine · spaceos-modules-doccapture · joinerytech-goods-receipt), a platform-repóban csak a task-doksik. Részletes állapot: docs/tasks/EPIC-DOC-CAPTURE-2026Q3/README.md. Mind az 5 G-kapu ELDŐLT (Gábor, 2026-07-30): G1 a bevételezés a gazda · G2 LLM az olvasáshoz, szabály a könyveléshez (ADR-jelölt) · G3 portál-UI azonnal (⚠ felülírja a terminál CLAUDE.md 3. szabályát — a mechanika nem cserélhető, a lépésszám mérendő) · G4 helyi alap, külső opcionális (fail-closed, mutációval igazolva) · G5 MIT a 3 doccapture-repóra. ⚠ ELNEVEZÉSI CSAPDA: a 'DC-01b' címke KÉTSZER használt — a 2026-07-30-án APPROVED Excel/CSV-betöltő ÉS az új DC-01 terv PDF-írás szelete is ezt a nevet viseli; az új szeletek hivatkozása mindig a DC-01-TERV-2026-07-30.md szerint értendő."
+    milestones:
+      - id: DC0-foundations
+        status: done
+        tasks:
+          - { id: DC-00, role: doccapture, title: "Repók, CI, verziózás, semlegességi őr (1 implementáció, 3 szabályhalmaz, hash-pin)", status: done, completed: 2026-07-29, note: "2026-07-29 este ROOT-REVIEW APPROVED (csatorna). Kapu-önteszt 8/8+8/8, 3/3 repó TISZTA, motor 29 zöld, hash-pin publikált==lokális. Ismert örökség: a CI sokáig nem futott Actionsön — 2026-07-30-tól fut és zöld." }
+          - { id: DC-EXCEL, role: doccapture, title: "Excel/CSV betöltő (TabularReader, modell nélkül) — az eredeti doksikban 'DC-01b' néven", status: done, completed: 2026-07-30, note: "2026-07-30 ROOT-REVIEW APPROVED (inbox 2026-07-30_001). 154 zöld (141 függőség nélkül, 0 KIHAGYVA, negatív kontrollal), 6/6 mutáció. A csatorna-archívumban és a README-ben 'DC-01b' néven fut — NEM azonos az új DC-01 terv DC-01b (PDF-írás) szeletével." }
+          - { id: DC-06, role: doccapture, title: "Irat-típus szerinti elemzés (DocumentProfile — két független tengely: InputKind × profil)", status: done, completed: 2026-07-30, note: "2026-07-30 ROOT-REVIEW APPROVED (inbox 2026-07-30_002). 245 zöld, 10/10 mutáció, elv-tábla teszthez kötve. Kulcs-lelet: az M4-származtatás elmaszkolta a címke-elszívási hibát (önjavító réteg!)." }
+          - { id: DC-02, role: doccapture, title: "Capture-kontraktus (JSON Schema 2020-12, hash-pin, .NET fogyasztó) — ADAT-szerződés, nem HTTP-API", status: done, completed: 2026-07-30, note: "2026-07-30 ROOT-REVIEW APPROVED (inbox 2026-07-30_003). Motor 274 zöld + 13/13 mutáció; .NET 32 zöld 0 warning + 3/3 mutáció; kereszt-repó séma BÁJTRA egyezik (sha256:6f2aef82323c…). A sorvég-család (CRLF) itt ütött háromszor — .gitattributes '-text' mindkét repóban." }
+      - id: DC1-document-path
+        status: in_progress
+        note: "A DC-01 HÁROM szeletre bomlott (DC-01-TERV-2026-07-30.md, 17 ügynökös workflow + 9 adverzáriális bírálat). Root-döntések 2026-07-31: szeletelés ELFOGADVA · MPL-2.0 NEM kerül az engedélyezett listára (fail-closed marad) · a tools/ a doccapture terminálé · role-láthatóság csak élő-tokenes mérés után. Gábor-kapuk (felvive): hosting/platform LICENC (DC-01c blokkoló!) · betűtípus-politika (DC-01b előtt) · PyMuPDF a goods-receipt-ben · objektum-tár."
+        tasks:
+          - { id: DC-01a, role: doccapture, title: "Szövegréteg-olvasó geometriával (TextLayerReader, pypdfium2 >=4.30,<5, document extra)", status: in_progress, depends_on: [DC-02], note: "2026-07-31 KIADVA (root verdikt: inbox 2026-07-31_001). Leállási feltétel: 9 mért szám, NULLA .NET-tétel; a licenc-kapu marker-javításánál az előtte/utána szám kötelező (31 megmérve/77 nem telepített/certifi MPL → 5/0/TISZTA). Review-nál a root a 9 számot újraméri." }
+          - { id: DC-01b-write, role: doccapture, title: "Kereshető PDF írása (SearchableDocumentBuilder, reportlab+pypdf, pozíció- és betűtípus-kapu)", status: pending, depends_on: [DC-01a], note: "Port-alak-változás kimondott lépésként (build-jelentés). A kapu-terv MÁR RÖGZÍTETT a DC-01-TERV 5. szakaszában (karakter-egyenlőség+hossz MINDKÉT olvasóval; pozíció ±1.5pt mért alapvonalhoz). ELŐFELTÉTEL: betűtípus-politika (Gábor-kapu)." }
+          - { id: DC-01c, role: doccapture, title: ".NET befogadás + DMS-tárolás (capture_records, entitlement-kapu)", status: blocked, depends_on: [DC-01b-write], note: "HÁROM mért blokkoló, egyik sem a terminál hatásköre: (1) a SpaceOS.Modules.Hosting-nak NINCS licence (Gábor-kapu, a listán); (2) nincs NuGet-fogyasztási út; (3) a .NET repóban csak a Contracts projekt létezik. + az AddVersion csendben Draft-ra állít és törli a ReviewNote-ot → saját kapu kell (a DC-01-TERV rögzíti)." }
+      - id: DC2-later
+        status: pending
+        tasks:
+          - { id: DC-03, role: doccapture, title: "RAG-indexelés (VectorStorePort → Nexus)", status: pending, depends_on: [DC-01a] }
+          - { id: DC-04, role: doccapture, title: "Bevételezés: sorok + megfeleltetés + jóváhagyási hurok (G3: portál-UI, lépésszám-méréssel)", status: blocked, note: "Gábor bevezetési tapasztalat-gyűjtésére vár — az normatív bemenet a jóváhagyási hurok alakjához. A G3 portál-UI döntés után a lépésszám-mérés (vs. mai Excel-út) kötelező." }
+          - { id: DC-05, role: doccapture, title: "Kézírás (HandwritingOCRPort, saját minőségi kapuval)", status: pending }
+    coordination:
+      note: "A 3 repó PUBLIKUS. Semlegességi kapu mindhárom repóban (a motorban a legszigorúbb). Done/APPROVED kizárólag root-review. A goods-receipt PyMuPDF-kitettsége (AGPL) külön nevesített feladat, Gábor-döntéssel."

@@ -1,8 +1,10 @@
 # ADR-072 — A projekt-szint tulajdonosa: önálló `spaceos.projects` modul
 
-> **Státusz:** **JAVASLAT — a §1–§6 döntéseket és a §7.1-et Gábor elfogadta (2026-07-31)**;
-> a **§7.2 és §7.3 nyitva marad** (ezekre nem tettem javaslatot, tehát nincs mihez hozzájárulni).
-> Formális elfogadás root-kiadással.
+> **Státusz:** **JAVASLAT — Gábor elé megy elfogadásra** (a root átnézte és a teherhordó
+> állításokat megmérte, de az ADR elfogadása **Gábor joga**, ahogy az ADR-066/068/069 is így ment).
+> A §1–§6 irányát és a §7.1-et Gábor már elfogadta (2026-07-31); a **§7.2 és §7.3 nyitva marad**
+> (ezekre nem tettem javaslatot, tehát nincs mihez hozzájárulni).
+> ⚠ **Elfogadáskor rögzítendő:** az **ADR-066 §9.1 felülírva** — ld. §5.
 > **Készítette:** backend terminál, 2026-07-31
 > **Előzmény:** ADR-066 (`ProjectRef` = Kernel `FlowEpic`), ADR-067 (modul-katalógus és
 > ModuleId-konvenció), **ADR-068 §5** (a projekt-burok szintnek *nincs tulajdonosa*,
@@ -87,14 +89,25 @@ máshol létezik. A tételek, a pénz és a költségsorok a mai gazdájuknál m
 Az ADR-066 `ProjectRef`-je ma **FlowEpic-azonosítót hordoz `projectId` néven**. Amíg a projekt
 = epic volt, ez pontos; Gábor döntése után **rossz nevet visel**.
 
-**Döntés:** a két fogalom két külön referencia-típus:
+### ⚠ Root-helyesbítés (2026-07-31) — a veszély alakja más, mint amit írtam
 
-- `EpicRef(epicId)` — a Kernel `FlowEpic`-re mutat *(a mai `ProjectRef` tartalma)*,
+A root megmérte az állításomat, és pontosított: **a wire-alak ma NEM kétértelmű.** A
+`WorkScopeDto` már külön `ProjectId` és `EpicId` mezőt hord, a `ProjectReference` pedig
+`FlowEpicId`-t (az F5/2 root-döntése után). **A baj tehát nem az, hogy a `projectId` epicet
+jelent — hanem hogy nincs mögötte semmi, amit ellenőrizni lehetne.**
+
+**Ami viszont marad, és amit az ADR elfogadásakor ki kell mondani:** az **ADR-066 §9.1 döntése
+(`ProjectRef` tulajdonosa = Kernel `FlowEpic`, 2026-07-21) FELÜLÍRT** Gábor 2026-07-31-i
+döntésével. Ezt neki kell kimondania, különben két ADR két tulajdonost nevez meg ugyanarra a
+fogalomra. A jövőbeli referencia-típusok:
+
+- `EpicRef(epicId)` — a Kernel `FlowEpic`-re mutat,
 - `ProjectRef(projectId)` — a `spaceos.projects` `Project`-re mutat *(a `WorkScope` mezője)*.
 
-**Miért blokkoló:** az **F4** most publikálja a szerződést a Doorstarnak. Ha a `projectId` név
-kimegy két különböző jelentéssel, a Doorstar kétértelműségre épít, és a javítás utána
-**verziózott törő változás**. A szétválasztás most egy névadás.
+**Miért F4-blokkoló (root által megerősítve):** az **F4** most publikálja a szerződést a
+Doorstarnak, és abban **ki kell mondani**, hogy a `projectId` **opak korrelációs azonosító** —
+nincs mögötte ellenőrzés —, és hogy a PLAN-03 *„a platform validál"* ígéretét a Project-mezőre
+**ma nem tartjuk be**. Enélkül a későbbi javítás **verziózott törő változás** a Doorstar felé.
 
 **Amíg a modul nem áll:** az F4 szerződése mondja ki, hogy a `projectId` **opak korrelációs
 azonosító, jövőbeli gazdája a `spaceos.projects`** — a PLAN-03 *„a platform validál"* ígéretét a

@@ -49,9 +49,22 @@ Kiírás: [`B2B-10-F5-PROJECT-ANCHOR-RESOLUTION.md`](../../docs/tasks/EPIC-B2B-C
 
 ## P1b — `spaceos.projects` ÚJ MODUL (FUT) — Gábor termékdöntése + kivitelezési kérése
 
-Terv: [`ADR-072`](../../docs/knowledge/adr/ADR-072-projects-module-ownership.md) ·
-⚠ **a kiírás root joga** — EPICS-sor + task-id megkérve, **még nem érkezett meg**
-(outbox `2026-07-31-proj-modul-adr-072-es-kiiras-keres.md`).
+Terv: [`ADR-072`](../../docs/knowledge/adr/ADR-072-projects-module-ownership.md) (**javaslat,
+Gábor elé megy** — az elfogadás az ő joga) · ✅ **KIADVA**: `EPIC-PROJECTS-MODULE-2026Q3` /
+**`PROJ-01` `in_progress`** (inbox `2026-07-31_005`).
+
+**Root kötelező kapu-sora a PROJ-01-hez — ezek nélkül nem jelenthetek review-t:**
+
+- [ ] **Hosting-csomag a kezdetektől** (ADR-061/062): közös `TenantResolver` +
+      `SpaceOsTenantSessionInterceptor` **DI-ből** + RLS-baseline **`FORCE`**-szal.
+- [ ] **Interceptor-E2E a CRM-pilot mintájára** (`6f1ef5f`), **nem kézi tükör** — és ha a
+      no-tenant fail-closed mögött **nincs második réteg**, azt ki kell mondani.
+- [ ] **Valódi Testcontainers-PostgreSQL** + **modell↔séma konformancia-teszt** (InMemory elvileg
+      sem lát hiányzó oszlopot — az F1 három defektusának tanulsága).
+- [ ] **Mutáció-bizonyíték minden új kapura**, alkalmazva-bizonyítással, tiszta build-cache-sel.
+      ⚠ Közös fában mutációt **csak akkor**, ha semmilyen build nincs röptében.
+- [ ] **NE égessem be:** a `ProjectCode` formátumát (konfigurálható vagy halasztott — és a
+      jelentés mondja ki, melyiket választottam és miért) és a **wire-enum alakját**.
 
 - [x] **PROJ-01 mérés** — négy fogyasztó, nulla forrás; a portál `/w/projects` **élő route**, de
       mockból él; a Kontrollingnak **két** párhuzamos, stubolt projekt-portja van.
@@ -73,9 +86,14 @@ Terv: [`ADR-072`](../../docs/knowledge/adr/ADR-072-projects-module-ownership.md)
 - [ ] A **§7.1 eldöntve** (függőségek = Collaboration-projekciók), de nyitva maradt benne: a
       **házon belüli** szakma-függőség nem fér a Collaboration kétoldalú modelljébe → ha előjön,
       **új döntés**, nem csendes `Dependency` tábla.
-- [ ] ⛔ **F4-blokkoló, amit tovább kell vinni:** az ADR-066 `ProjectRef`-je FlowEpic-id-t hordoz
-      `projectId` néven — a szétválasztás **a Doorstar-publikálás előtt** olcsó, utána verziózott
-      törő változás.
+- [ ] ⛔ **F4-blokkoló — root által megerősítve, de HELYESBÍTVE:** a wire-alak ma **nem**
+      kétértelmű (a `WorkScopeDto` külön `ProjectId`/`EpicId`-t hord, a `ProjectReference`
+      `FlowEpicId`-t az F5/2 óta) — a baj az, hogy **nincs mögötte semmi ellenőrizhető**. Az F4
+      szerződése mondja ki: a `projectId` **opak korrelációs azonosító**, és a PLAN-03 *„a platform
+      validál"* ígéretét a Project-mezőre ma **nem tartjuk be**.
+- [ ] Az ADR-072 elfogadásakor Gábornak ki kell mondania, hogy az **ADR-066 §9.1 felülírt**
+      (07-21: „a `ProjectRef` tulajdonosa a Kernel `FlowEpic`") — különben két ADR két
+      tulajdonost nevez meg ugyanarra a fogalomra.
 
 ## P2 — Scheduling: M5 (írási irány) + két nyitott kontraktus-döntés
 

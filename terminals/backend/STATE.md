@@ -144,8 +144,19 @@ Hosting: **89/89 zöld**, mutáció 2 bukással.
 
 **Kiváltó ok:** Gábor termékdöntése — *„A projekt az epikek felett egy összefogó egység."*
 Ez lezárta az **ADR-068 §5** `decision_required` tételét, és Gábor a megvalósítást is kérte
-(*„Tervezéssel, kivitelezéssel"*). ⚠ **A kiírás root joga** — az `EPICS.yaml`-sort és a task-id-t
-megkértem (outbox `2026-07-31-proj-modul-adr-072-es-kiiras-keres.md`), még nem érkezett meg.
+(*„Tervezéssel, kivitelezéssel"*).
+
+✅ **A root kiadta** (inbox `2026-07-31_005`): új epic **`EPIC-PROJECTS-MODULE-2026Q3`**,
+**`PROJ-01` `in_progress`** — *„spaceos.projects v1: azonosság-mag (domain + migráció + API-host)
+a hosting-minta szerint"*. Az **ADR-072 = javaslat, Gábor elé megy** (az ADR elfogadása az ő joga,
+a root csak a teherhordó állításokat mérte meg).
+
+**Kötelező kapu-sor a PROJ-01-hez (root):** ① hosting-csomag a kezdetektől (ADR-061/062: közös
+`TenantResolver` + `SpaceOsTenantSessionInterceptor` **DI-ből** + RLS-baseline `FORCE`-szal);
+② **interceptor-E2E a CRM-pilot mintájára**, nem kézi tükör — és mondjam ki, ha a no-tenant
+fail-closed mögött nincs második réteg; ③ valódi Testcontainers-PostgreSQL + **modell↔séma
+konformancia**; ④ **mutáció-bizonyíték minden új kapura**, tiszta build-cache-sel.
+**Ne égessem be:** a `ProjectCode` formátumát és a wire-enum alakját.
 
 ### Terv: [`ADR-072`](../../docs/knowledge/adr/ADR-072-projects-module-ownership.md) (`9cb6736`)
 
@@ -164,9 +175,15 @@ projekt-burok „vékony fogalom" — nem az). Mit mértem:
 
 **Három döntés:** (1) önálló, iparág-semleges `spaceos.projects` modul (ADR-068 O1–O4 átvíve:
 Kernel-bővítés, JoineryTech-tulajdon és meglévő-modulba-rejtés mind elutasítva); (2) a **v1 az
-azonosság és semmi több** (tételek a CRM-nél, árrés a Kontrollingnál); (3) ⛔ **F4-blokkoló**:
-az ADR-066 `ProjectRef`-je FlowEpic-id-t hordoz `projectId` néven → `EpicRef`/`ProjectRef`
-szétválasztás, **mielőtt** az F4 publikál a Doorstarnak.
+azonosság és semmi több** (tételek a CRM-nél, árrés a Kontrollingnál); (3) ⛔ **F4-blokkoló**.
+
+⚠ **Root-helyesbítés a (3)-hoz:** a **wire-alak ma NEM kétértelmű** — a `WorkScopeDto` már külön
+`ProjectId`/`EpicId` mezőt hord, a `ProjectReference` pedig `FlowEpicId`-t (az F5/2 óta). **A baj
+nem az, hogy a `projectId` epicet jelent, hanem hogy nincs mögötte semmi ellenőrizhető.** Amit
+viszont az ADR-072 elfogadásakor ki kell mondani: az **ADR-066 §9.1 felülírt** (07-21 → 07-31),
+különben két ADR két tulajdonost nevez meg. Az F4 kötelező eleme marad: mondja ki, hogy a
+`projectId` **opak korrelációs azonosító**, és hogy a PLAN-03 *„a platform validál"* ígéretét a
+Project-mezőre ma nem tartjuk be.
 
 ### Kivitelezés
 

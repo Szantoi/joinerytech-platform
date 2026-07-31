@@ -8994,3 +8994,22 @@ A lint-térkép 6 gatelt lelete a legacy-scope döntés része marad; a
 ELSŐ tétele.
 
 — Claude (root)
+
+## 2026-07-31 — Claude (root) — a portál 3 régi designer-review-ja ZÁRVA · a maradék nevesítve ment tovább
+
+**@frontend:** a verifikáció ELFOGADVA (verdikt: inbox 2026-07-31_004). **F1-REVIEW,
+F2-CRM-REVIEW, F2-EHS-REVIEW — mindhárom done.** A nap tanulsága: az F2-CRM és F2-EHS
+task-státusza a SAJÁT review-doksijához képest volt elavult — a designer 07-14-én
+RE-REVIEW APPROVED-dal zárta mindkettőt, csak a task-státusz nem követte. A
+task-doksi↔státusz eltérés tehát MINDKÉT irányban jön (ma: a doksi volt előrébb).
+
+Root-szúrópróba: 201/201 modul-teszt · fókusz-csapda a hivatkozott helyen ·
+`lang="en"` valóban áll. A nevesített maradék NEM nyelődött el: **F1-A11Y-RESIDUALS**
+(XS) kiadva — lang=hu · ThemeToggle roving tabindex · toast SR-próba · opcionális
+axe-kör.
+
+Ezzel a triázs „önellentmondás" tétele feloldva: az EPIC-UI-PORTAL `done` státusza
+mögül eltűnt a 3 nyitott review — a 2 megmaradt blokkolt tétel (EHS-WIZARD-HU QA,
+PORTALUI-PUBLISH npm) mindkettő Gábor-kapu.
+
+— Claude (root)

@@ -9034,3 +9034,17 @@ bizonyítottam, hogy az integrációs build a mutáció előtt zárult (az eredm
 Szabály: **közös fában mutáció csak akkor, ha semmilyen build nincs röptében.**
 
 — Claude (root)
+
+## 2026-07-31 — Claude (root) — WorkflowPage csak-olvasható + a11y-maradék: APPROVED · axe jóváhagyva
+
+**@frontend:** mindkét XS **APPROVED** (verdikt: inbox 2026-07-31_005) — portál
+`13a57ed` + `eede328`, pin-bump `c67d264`. Saját mérés: 18/18 + mutáció pontosan a
+várt bukással. A néma drag-elnyelés megszűnt: API-adatnál a tábla kimondja, hogy
+csak olvasható, és a (b)→(a) újranyitás feltétele kommentben rögzített.
+
+Döntések: **axe-core devDependency jóváhagyva** (számos jelentéssel fut tovább az
+F1-A11Y-RESIDUALS alatt) · a toast SR-próba a **manuális QA-körbe** utalva — az
+EHS-WIZARD-HU QA-jával EGY ülésben elvégezhető (a Gábor-listán összevonva) · a
+`<title>jt-temp` névdöntés ugyanoda.
+
+— Claude (root)

@@ -44,6 +44,9 @@
       gazdátlan: visszakerül a Codexhez, vagy a backend kapja a B2B-10 után?
 - [ ] **ÚJ (triázs): EHS-WIZARD-HU manuális QA** — a fejlesztés kész és mergelt
       (portál `1f3ca31`), kizárólag a mobil+desktop+dark vizuális átnézés hiányzik.
+      **EGY ülésben elvégezhető vele:** a toast live-region felolvasó-szúrópróba
+      (NVDA/VO — headless környezetben nem mérhető) és a `<title>jt-temp</title>`
+      névdöntés.
 - [ ] **ÚJ (F5/2): deploy-előfeltétel** — az éles collaboration-hostnak mostantól
       KELL a `Collaboration:Kernel:BaseUrl` config, különben el sem indul (szándékos
       fail-fast, a néma localhost-fallback tiltása miatt). Élesítés előtt VPS-config.

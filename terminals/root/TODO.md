@@ -1,6 +1,6 @@
 # ROOT Terminal TODO
 
-> **Frissítve:** 2026-07-31 délelőtt · **Részletes állapot:** [`STATE.md`](STATE.md)
+> **Frissítve:** 2026-07-31 délután · **Részletes állapot:** [`STATE.md`](STATE.md)
 > **Kanonikus státusz:** [`EPICS.yaml`](../../EPICS.yaml) — a task-doksik státusz-sora **nem hiteles**.
 
 ---
@@ -55,34 +55,41 @@
 
 ## Rám váró review
 
-- [ ] **doccapture: faipari RAG 1. fázis** (csatorna 12:58) — VPS-en reprodukálható
-      bizonyíték-sor (dry-run + count + MCP-próbák); 35→1998 dokumentum a
-      `doorstar-knowledge`-ban. + 2 kihirdetett Gábor-döntés (nexus GraphRAG · LLM-kinyerés
-      a könyv-korpuszra szűkítve).
+- [ ] **Az F7 átdefiniálva** (`B2B-10-F7-SCOPE-SZETVALASZTAS-2026-07-31.md`): a REAUDIT
+      hat eleme MIND leszállt → az F7 ma **pilot-készültségi kapu**, nem fejlesztés.
+      R1 (a suite-ot semmi nem futtatja) és R4 (`Kernel:BaseUrl`) **Gábor-döntés**;
+      R2 (Kernel-függés-nyilatkozat) az enyém. **A pilotig hátralévő fejlesztés az F4.**
+
+- [x] ~~**doccapture: faipari RAG 1. fázis**~~ **APPROVED 2026-07-31** saját VPS-méréssel
+      (manifest-hash 5/5 · dry-run 1963 chunk · Chroma count=1998 · MCP-próbák).
+      ⚠ Mért csapda: a 3460 `/health` 35-öt mond — a fájl-figyelő száma, nem a vektor-tár.
 
 ## Root-task (triázsból, 2026-07-31)
 
-- [ ] **B2B-01..08 tételes megfeleltetés** a REAUDIT F0–F8 fázisaira: a 7
-      `changes_requested` a REAUDIT ELŐTTI körből való — melyiket fedi le a B2B-10
-      lánc (bizonyítékkal), melyik marad önálló követelés. Nem csendes zárás.
+- [x] ~~**B2B-01..08 tételes megfeleltetés**~~ **KÉSZ 2026-07-31**: 3 zárva bizonyítékkal
+      (B2B-01/02/04), 5 nevesített maradékkal (B2B-05→F6 · B2B-06 adapter-scope ·
+      B2B-07/08→F4 · B2B-09→F7). A megfeleltetés soronként az `EPICS.yaml`-ban.
 - [ ] **ERPSEP triázs-kör** az 5 státusz-eltérésre (yaml↔doksi) — gazda-kérdéssel együtt.
 
-## Futó sávok (2026-07-31 délelőtt kiadva)
+## Futó sávok (2026-07-31 délután)
 
-- [ ] **backend `B2B-10 F5/1`** — create-út (kiadva a 3 F5-döntéssel:
-      on-behalf-of kérés-hatókörű korláttal · `ProjectOwnerTenantId` törölve ·
-      hatókör elfogadva). F5/0 **APPROVED** saját méréssel (89/89 + mutáció).
-- [ ] **doccapture `DC-01a`** — szövegréteg-olvasó (a terv elfogadva; a 8 kérdésből
-      4 root-döntés meghozva, 4 a Gábor-listán). Review-nál a 9 leállási szám újramérése.
-- [x] **frontend gép-státusz XS** — APPROVED, portál `1ee7510` + pin-bump `dd7f1da`.
+- [ ] **backend: a 6 maradék modul interceptor-átállása** (`STAB-RLS-INTERCEPTOR-E2E`) —
+      a **CRM-pilotot ma magam implementáltam** (`6f1ef5f`), az a minta.
+      ⚠ Modulonként nézni: hol megengedő az EF-szűrő tenant nélkül (a CRM-é az volt).
+- [ ] **doccapture `DC-01a`** — szövegréteg-olvasó. Review-nál a 9 leállási szám újramérése.
+- [ ] **frontend `PORTAL-DEADTREE-A`** — 58 fájl / 7094 sor törlése, mai fára igazolva.
+- [ ] **designer `WORLDS-WAREHOUSE-REVIEW`** — 07-28 óta állt, ma kiadva.
+- [x] **B2B-10 F5 mind a 4 szelete APPROVED** — az F5 LEZÁRVA.
 
 ---
 
 ## Root-tételek, amiket ma átvettem
 
-- [ ] **`ClaimsPrincipalUserIdExtensions.cs` untracked** → a CRM buildje függ tőle,
-      ezért a `dotnet-build-gate` pirosan áll. **@codex sávja**, jelezve — amíg nincs
-      bent, egy tartósan piros kapunk van, ami pontosan az, amit ma ostoroztunk.
+- [x] ~~**`ClaimsPrincipalUserIdExtensions.cs` untracked**~~ **MEGOLDVA 2026-07-31**
+      (`3468fe4`): a besorolás volt hibás — nem idegen sáv folyamatban lévő munkája,
+      hanem **szállított függőség hiánya** (a fogyasztó 07-29-én kiment a főágra).
+      Tiszta `origin/main` kicsomagoláson bizonyítva (2 hiba → 0 hiba/0 warning).
+      **A `dotnet-build-gate` azóta ZÖLD — a létrehozása óta először.**
 - [ ] **Orphan `spaceos-modules-ehs` fa**: törlés vagy javítás? Mérve: nem fut,
       **nem is fordul**, és a `Program.cs` az **interceptor nélküli** DI-t hívja.
 - [ ] **Kontrolling**: az `AddSpaceOsModuleTenancy()` az API-rétegben van, nem az
@@ -93,8 +100,9 @@
       telepítési alak** eldőlése előtt meg kell lennie.
 - [ ] **`Invoke-DbRolePrivilegeGuard.ps1` bekötése** ütemezett futásba. ⚠ **Nem
       GitHub Actions**: SSH kell a VPS-hez.
-- [ ] **A 3 árva gitlink** rendezése — ez a `submodules: recursive` előfeltétele,
-      és amíg nyitva van, a `git submodule status` **semmit nem ír ki**.
+- [x] ~~**A 3 árva gitlink** rendezése~~ **KÉSZ 2026-07-31** (`d6e647e`): mindhárom az
+      initial commitból jött, `.gitmodules`-bejegyzés nélkül, a GitHub-repók nem léteznek.
+      A `git submodule status` azóta **ad kimenetet** — a repó létrehozása óta először.
 - [ ] **`Production.Tests`**: kereszt-repó kontraktus-sodródás a `contracts`
       submodule pinjén — semmi nem őrzi (a doc-capture hash-pinje a saját
       szerződésén igen).
@@ -103,11 +111,10 @@
 
 ## Kiadható / kiosztatlan
 
-- [ ] **Platform-task 2. szelet:** a hét modul RLS-suite-ja álljon át a valódi
-      interceptorra. ⚠ **Mérve: NEM biztonsági javítás** — mind a hét modul
-      bekötí az interceptort (7/7 megdöntési kísérlet magas bizalommal
-      fenntartotta). A rés szűk és modul-specifikus; a **pilot: CRM** (tiszta fa,
-      publikus connection-string konstans).
+- [x] ~~**Platform-task 2. szelet, CRM-pilot**~~ **KÉSZ 2026-07-31** (`6f1ef5f`, root):
+      5 interceptor-E2E teszt; a mutáció (interceptor-bekötés kivétele a DI-ből) pontosan
+      a 3 kulcs-állító tesztet buktatja, míg a régi tükör-suite teljesen zöld maradna.
+      **A maradék 6 modul a backend sávjában** (ld. Futó sávok).
 - [ ] **`/mcp` hitelesítetlen discovery-manifest** (eszközlista, titok nélkül) — P2.
 - [x] ~~**`/quote-request` testvér-lelet:** a megerősítő dialógus írja ki a gép
       **státuszát** is (XS, frontend).~~ **KÉSZ 2026-07-31** (portál `1ee7510`).

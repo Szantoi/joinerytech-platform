@@ -9164,3 +9164,38 @@ tartalma. Addig a backend a **CRM-pilot mintájára** a maradék 6 modul interce
 kapta.
 
 — Claude (root)
+
+## 2026-07-31 — Claude (root) — az F7-et NEM adom ki: a REAUDIT hat eleme MIND leszállt
+
+Kiadás előtt megmértem az F7 hatókörét, és a kiírás **elmaradt** — jó okkal. A REAUDIT
+normatív sora hat elemet sorol; **mind a hat kész**:
+
+| F7-elem | Hol szállt le |
+|---|---|
+| Testcontainers · non-superuser | F2 (`CollaborationRlsProofTests`, 9 teszt) |
+| 3-tenant · két-tenant E2E | F2/F3 (4 osztály, `CollaborationEndToEndTests` 14 teszt) |
+| revoked-grant negatív | F3 — ráadásul **lejárt** (`ExpiresAtUtc`) fixture-ökkel is |
+| FSM Theory-mátrix | F1 — **60 cella** (állapot × átmenet × aktor), `MemberData`-val |
+
+**Egy task, aminek a 90%-a kész, kiadva hamis munkát könyvel el, és a valódi rést
+elrejti.** Az F7 ezért **átdefiniálva pilot-készültségi kapuvá**
+(`B2B-10-F7-SCOPE-SZETVALASZTAS-2026-07-31.md`), négy tétellel — és ebből **egy sem
+backend-fejlesztés**:
+
+- **R1 ⭐ a suite-ot SEMMI nem futtatja.** A 277+53 teszt csak kézi indításra fut; a
+  `dotnet-build-gate` **buildel, nem tesztel**. Ez ugyanaz a hibaosztály, amit a REAUDIT
+  a B2B-02-nél leplezett le: a zöld szám nem a mai állapotról szól. **Gábor-döntés**
+  (Docker + idő a runneren).
+- **R2 a Kernel-függés őrizetlen** (az F5/3 lelete) — függés-nyilatkozat kell, mert
+  figyelmeztetés nem kapu. Az enyém.
+- **R3** idempotencia-takarítás ütemezése · **R4** `Kernel:BaseUrl` a pilot-környezetben.
+
+**A kritikus út ezzel megváltozott:** a pilotig hátralévő FEJLESZTÉS nem az F7, hanem az
+**F4** (OpenAPI-artifact + drift-gate + generált kliens — ez oldja fel a B2B-07-et ÉS a
+B2B-08-at egyszerre), és szükség szerint az F6.
+
+⚠ **Mérőeszköz-jegyzet magamnak:** az FSM-mátrixot elsőre `InlineData`-ra grepeltem és
+**0 találatot** kaptam — a mátrix `MemberData`-val generált. Rossz műszerrel mért hiány
+nem hiány; majdnem kiírtam egy nem létező rést.
+
+— Claude (root)

@@ -16,6 +16,17 @@
 
 ## 🔴 Gábor előtt — sürgősségi sorrendben
 
+- [ ] **ÚJ, 2026-07-31: `ADR-072` elfogadása** — a projekt-szint tulajdonosa (`spaceos.projects`
+      önálló modul). A Te mai termékdöntésed („a projekt az epikek felett egy összefogó
+      egység") végrehajtási artefaktuma; a root átnézte és a teherhordó állításait mérte.
+      ⚠ **Az elfogadással együtt ki kell mondani, hogy az ADR-066 §9.1 döntése (2026-07-21:
+      „a `ProjectRef` tulajdonosa a Kernel `FlowEpic`") FELÜLÍRT** — különben két ADR két
+      tulajdonost nevez meg ugyanarra a fogalomra.
+- [ ] **ÚJ: az ADR-072 §7 három kérdése** (a v1 magját nem blokkolják): a szakma-függőségek
+      a Collaboration projekciói legyenek-e · a projekt CRM-rendelésből születik-e ·
+      a `ProjectCode` formátuma és kiosztása (a portál `PRJ-2426-001`, a Kontrolling
+      `PRJ-2026-014` alakot használ — ma **kétféle** van a fában).
+
 - [ ] **`/shopfloor` PIN-backdoor.** A `PIN=1234` ág eltávolítása authorizált; a
       kérdés az, hogy **egy nem működő világ mit keres publikus route-on**
       (se backend, se MSW-mock → a PIN az egyetlen működő belépő). A frontend

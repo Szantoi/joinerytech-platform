@@ -9359,3 +9359,47 @@ APPROVED szelet bizonyítéka kimaradt a főágból, és a „nálam zöld" elle
 hibaosztályt **strukturálisan nem látja**.
 
 — Claude (root)
+
+## 2026-07-31 — Claude (root) — ⭐ GÁBOR TERMÉKDÖNTÉSE KIHIRDETVE: a projekt az epikek felett áll
+
+> **„A projekt az epikek felett egy összefogó egység."** — Gábor, 2026-07-31
+
+Ez az **ADR-068 §5** `decision_required` tételére adott válasz. A döntés közvetlenül a
+**backend terminálnak** hangzott el; a konvenció szerint a termékdöntés a rooton át megy
+és **itt kell kihirdetni** — különben ugyanez a kérdés máshonnan újra felmegy és más
+választ kaphat. Gábor a végrehajtást is kérte („tervezéssel, kivitelezéssel").
+
+**Új epic: `EPIC-PROJECTS-MODULE-2026Q3`** — `spaceos.projects`, önálló iparág-semleges
+modul. **NEM** a PROJECT-CORE alá: annak a stop-feltétele kimondta, hogy a végrehajtás
+nem része, és ma le is zárult.
+
+**A mért indok — négy fogyasztó, NULLA forrás:** a portál `/w/projects` **élő** route-ja
+mockból él · a Kontrolling **két párhuzamos** projekt-portja stub (a doc-komment maga
+mondja: *„it does NOT own projects"*) · a Collaboration és a scheduling `WorkScope`-ja
+kötelező, de **opak** `projectId`-t hordoz.
+
+### ⛔ Időkritikus az F4-nek
+
+Az **ADR-066 5. sora** kimondja: *„`ProjectRef` tulajdonosa — ELDÖNTVE (Gábor,
+2026-07-21): Kernel `FlowEpic`"* — Gábor **mai** döntése ezt **felülírja**, tehát az
+ADR-066 §9.1 superseded, és ezt az ADR-072 elfogadásakor rögzíteni kell.
+
+**Egy pontosítás a backend jelentéséhez, ami a veszély alakját megváltoztatja:** a
+wire-alak ma **NEM** kétértelmű — a `WorkScopeDto` már külön `ProjectId`/`EpicId` mezőt
+hord, a `ProjectReference` pedig `FlowEpicId`-t (az F5/2 root-döntés után). A baj nem
+az, hogy a `projectId` epicet jelent, hanem hogy **nincs mögötte semmi, amit ellenőrizni
+lehetne**.
+
+**Ezért az F4 kötelező eleme:** a publikált szerződés **mondja ki**, hogy a `projectId`
+**opak korrelációs azonosító**, és hogy a PLAN-03 *„a platform validál"* ígéretét a
+Project-mezőre ma **nem tartjuk be**. Enélkül a javítás később **verziózott törő
+változás** a Doorstar felé.
+
+**ADR-072 = JAVASLAT, Gábor elé megy** (az elfogadás az ő joga — ADR-066/068/069 mind
+így ment). `PROJ-01` kiadva a backendnek a bevált kapu-sorral: hosting-csomag a
+kezdetektől · **interceptor-E2E a mai CRM-pilot mintájára, nem kézi tükör** · valódi
+PostgreSQL + modell↔séma konformancia · mutáció minden új kapura. Két dolgot NEM szabad
+beégetni: a `ProjectCode` formátumát (a portál és a Kontrolling ma **másképp** írja) és
+a wire-enum alakját (ez buktatta a B2B-08-at).
+
+— Claude (root)

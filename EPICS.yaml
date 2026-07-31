@@ -458,3 +458,48 @@ epics:
           - { id: DC-RAG-DOORSTAR-F2, role: doccapture, title: "Faipari GraphRAG 2. fázis: gráf-út (szekció-extractor, domain-entitástípusok, domain-szűrő a hibrid keresésben)", status: blocked, depends_on: [DC-RAG-DOORSTAR-F1], note: "A kérés kiment a nexus-dev root inboxába (2026-07-31); a Nexust saját projekt fejleszti — a mi dolgunk a jelzés. + 3 üzemeltetési jelzés ugyanott (régi kódvonal a 3460-on · *: bind auth nélkül, kívülről UFW zárja · nohup nem systemd)." }
     coordination:
       note: "A 3 repó PUBLIKUS. Semlegességi kapu mindhárom repóban (a motorban a legszigorúbb). Done/APPROVED kizárólag root-review. A goods-receipt PyMuPDF-kitettsége (AGPL) külön nevesített feladat, Gábor-döntéssel."
+
+  - id: EPIC-PROJECTS-MODULE-2026Q3
+    title: "spaceos.projects — a projekt-szint mint önálló, iparág-semleges modul"
+    owner: root
+    coordinator: root
+    executor: backend
+    started: 2026-07-31
+    status: in_progress
+    trigger: >
+      GÁBOR TERMÉKDÖNTÉSE (2026-07-31): „A projekt az epikek felett egy összefogó egység."
+      Ez az ADR-068 §5 decision_required tételére adott válasz, és Gábor a végrehajtást is
+      kérte („kezdjük el a megvalósítást is. Tervezéssel, kivitelezéssel"). A döntés
+      közvetlenül a backend terminálnak hangzott el; a root a csatornán kihirdette, hogy
+      ugyanez a kérdés máshonnan ne kapjon más választ.
+    goal: >
+      A ma tulajdonos nélküli projekt-fogalom kapjon EGY forrás-igazságot. Mérve: NÉGY
+      fogyasztó van és NULLA forrás — a portál /w/projects ÉLŐ route-ja mockból él, a
+      Kontrolling KÉT párhuzamos projekt-portja stub (a doc-komment maga mondja ki, hogy
+      „it does NOT own projects"), a Collaboration és a scheduling WorkScope-ja pedig
+      kötelező, de opak projectId-t hordoz.
+    stop_condition: >
+      A projectId ellenőrizhető (van mögötte sor); a portál /w/projects valós adatból él;
+      a Kontrolling két stub-portja EGY forrásra mutat; a WorkScope.ProjectId feloldható.
+    milestones:
+      - id: PM0-adr
+        status: pending
+        done_when: "ADR-072 elfogadva (Gábor); az ADR-066 §9.1 felülírt döntése rendezve"
+        tasks:
+          - { id: PROJ-ADR-072, role: root+gabor, title: "ADR-072 — a projekt-szint tulajdonosa (JAVASLAT → elfogadás)", status: review_requested, task: docs/knowledge/adr/ADR-072-projects-module-ownership.md, note: "2026-07-31 a backend megírta (9cb6736), a root átnézte és a teherhordó állításait MÉRTE. Három döntés: (1) önálló spaceos.projects modul — a Kernel-bővítés elutasítva (a core érinthetetlen, és oda már kétszer szivárgott iparági szókincs), a JoineryTech-tulajdon elutasítva (a Doorstarnak is kell); (2) a v1 AZ AZONOSSÁG, semmi több (ProjectId + ProjectCode + Name + Status + CustomerRef + epic-hozzárendelés) — a tételek a CRM-nél, a költségek a Kontrollingnál maradnak, hogy ne szülessen második igazság; (3) ⛔ NÉVADÁSI ÜTKÖZÉS: az ADR-066 5. sora kimondja, hogy a ProjectRef tulajdonosa a Kernel FlowEpic (Gábor, 2026-07-21) — a MAI döntés ezt FELÜLÍRJA, tehát az ADR-066 §9.1 superseded, és ezt az ADR-072 elfogadásakor rögzíteni kell. **ADR-elfogadás Gábor joga** — a rooté csak az előkészítés. Root-mérés: a WorkScopeDto ma már külön ProjectId és EpicId mezőt hord, a ProjectReference pedig helyesen FlowEpicId-t (az F5/2 root-döntése után) — a wire-alak tehát NEM kétértelmű; a valódi baj az, hogy a projectId mögött NINCS SEMMI, amit ellenőrizni lehetne (az F5/3 mérése: a Kernel nem ismeri a projekt fogalmát)." }
+      - id: PM1-core
+        status: in_progress
+        done_when: "A v1 azonosság-mag domain + perzisztencia + API, valódi PostgreSQL-bizonyítékkal, a hosting-minta szerint (RLS + interceptor + RequireEnabledModule)"
+        tasks:
+          - { id: PROJ-01, role: backend, title: "spaceos.projects v1: azonosság-mag (domain + migráció + API-host) a hosting-minta szerint", status: in_progress, depends_on: [PROJ-ADR-072], note: "2026-07-31 KIADVA (root). A backend a vázat már felrakta (src/spaceos-modules-projects: Project, ProjectCode, ProjectEpicAssignment, ProjectLifecycleStatus). KÖTELEZŐ a bevált kapu-sor: ADR-061/062 hosting-csomag (közös TenantResolver + SpaceOsTenantSessionInterceptor DI-ből + RLS-baseline FORCE-szal) · a CRM-pilot mintájára INTERCEPTOR-E2E teszt (nem kézi tükör!) · valódi Testcontainers-PostgreSQL · modell↔séma konformancia-teszt (InMemory elvileg sem lát hiányzó oszlopot) · mutáció-bizonyíték minden új kapura. KETTŐS AZONOSSÁG mérve indokolt: belső Guid + ember-olvasható PRJ-… üzleti kulcs. ⚠ A ProjectCode FORMÁTUMA és kiosztása NYITOTT (a portál PRJ-2426-001, a Kontrolling PRJ-2026-014 alakot használ) → a v1 a formátumot NE égesse be: konfigurálható vagy halasztott, és a jelentés mondja ki, melyiket választotta és miért. A wire-enum alakja ugyanaz a csapda, mint a B2B-08-nál — ne találgasd." }
+          - { id: PROJ-02, role: backend, title: "A négy fogyasztó rákötése: portál /w/projects · Kontrolling két stub-portja · WorkScope-feloldás", status: pending, depends_on: [PROJ-01], note: "A stop-feltétel valódi tartalma. A Kontrolling KÉT párhuzamos portja (IProjectPortfolioSource + IIntegrationDataProvider) EGY forrásra kell mutasson — a konvergencia a Kontrolling saját doc-kommentje szerint is 'documented follow-up'. A portál /w/projects ma ÉLŐ route mockból: a mock és a valós adat közti váltás a bevált MSW→API mintát kövesse." }
+    coordination:
+      note: >
+        ⛔ F4-KAPCSOLAT, időkritikus: az F4 MOST publikálja a Collaboration szerződését a
+        Doorstarnak. Amíg a projects-modul nem áll, az F4-nek KI KELL MONDANIA a
+        szerződésben, hogy a projectId OPAK KORRELÁCIÓS AZONOSÍTÓ (nincs mögötte
+        ellenőrzés), és hogy a PLAN-03 „a platform validál" ígéretét a Project-mezőre ma
+        NEM tartjuk be. Enélkül a javítás később verziózott TÖRŐ változás lenne.
+        Három Gábor-döntést igénylő kérdés az ADR-072 §7-ben (szakma-függőségek helye ·
+        a projekt CRM-rendelésből születik-e · a ProjectCode formátuma) — a v1 magját
+        egyik sem blokkolja.

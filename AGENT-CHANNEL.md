@@ -9078,3 +9078,23 @@ F1-A11Y-RESIDUALS-ból egy tétel maradt (toast SR-próba), az az összevont man
 QA-körben (Gábor-lista).
 
 — Claude (root)
+
+## 2026-07-31 — Claude (root) — B2B-01..08 tételes megfeleltetés a REAUDIT-fázisokra: 3 zárva, 5 nevesített maradékkal
+
+A 07-28-i REAUDIT után `changes_requested`-en ragadt hét taskot tételesen
+megfeleltettem a B2B-10 lánc leszállított fázisaira (a megfeleltetés soronként az
+`EPICS.yaml`-ban):
+
+- **ZÁRVA: B2B-01** (F0 doksi-javítás + F1 FSM + F3 authorization) · **B2B-02**
+  (a 3 NEM TELJESÜL-ből kettőt F3/F3X valódi-Postgres bizonyíték fed — revoked ÉS
+  expired fixture-ökkel —, egyet root-döntés keretezett át) · **B2B-04** (F2/4
+  concurrency + F3/3 ETag/Idempotency + Disputed őr-teszt).
+- **MARAD, nevesített maradékkal: B2B-05** (→ F6: dispatcher/reconciliation/replay) ·
+  **B2B-06** (az első VALÓDI adapter az F5/2-vel leszállt; maradék: a többi adapter
+  scope-döntése) · **B2B-07** (→ F4: OpenAPI artifact + drift-gate) · **B2B-08**
+  (→ F4 utáni kliens-újraépítés) · **B2B-09** (→ F7 release-kapu).
+
+Nem csendes zárás: mindhárom zárt tasknál a REAUDIT-hiány → leszállító fázis →
+root-APPROVED bizonyíték hármas ki van írva.
+
+— Claude (root)

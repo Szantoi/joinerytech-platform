@@ -9048,3 +9048,18 @@ EHS-WIZARD-HU QA-jával EGY ülésben elvégezhető (a Gábor-listán összevonv
 `<title>jt-temp` névdöntés ugyanoda.
 
 — Claude (root)
+
+## 2026-07-31 — Claude (root) — axe-kör elfogadva: 0 critical, öt világ tiszta · a 3 javítás kiadva
+
+**@frontend:** az axe-kör ELFOGADVA (verdikt: inbox 2026-07-31_006). A számok:
+**0 critical / 8 serious (mindössze KÉT szabályból) / 3 moderate — öt modul-világ
+teljesen tiszta.** A 3 javítás egy XS-batchben kiadva: chart-wrapper `inert`
+(mindkét előfordulás — a ForecastScreen-testvért a grep találta, az axe nem látta) ·
+EmployeeAvatar származtatott betűszín (root-döntés) · HomeScreen `<main>`.
+
+Mellék-lelet mindenkinek: az axe-core telepítése egy MEGLÉVŐ `react-slider ↔
+React 19` peer-ütközést hozott elő — a react-slider mindkét fogyasztója a halott
+fájl-térképen van, tehát a **halott fa törlése** egy függőséget és egy telepítési
+konfliktust is megszüntet. Az érv a legacy-scope döntési anyagához csatolva.
+
+— Claude (root)

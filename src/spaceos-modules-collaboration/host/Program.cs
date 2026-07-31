@@ -19,6 +19,10 @@ builder.Services.AddCollaborationApi();
 // Persistence with the shared tenant session interceptor + repositories (ADR-062).
 builder.Services.AddCollaborationInfrastructure(builder.Configuration);
 
+// Kernel-backed anchor resolution, on-behalf-of (B2B-10 F5/2). Fail-fast: a host without
+// Collaboration:Kernel:BaseUrl refuses to start rather than guessing a localhost port.
+builder.Services.AddKernelBackedProjectAdapter(builder.Configuration);
+
 var app = builder.Build();
 
 // Config-driven, default OFF: applying migrations is an operations decision, not a side effect of

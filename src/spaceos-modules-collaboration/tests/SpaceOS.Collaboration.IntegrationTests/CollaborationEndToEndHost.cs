@@ -1,3 +1,6 @@
+using System.Net;
+using System.Net.Http.Headers;
+using System.Text;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -5,8 +8,11 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Http;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using SpaceOS.Collaboration.Api;
+using SpaceOS.Collaboration.Application.Adapters;
 using SpaceOS.Collaboration.Infrastructure;
 using SpaceOS.Collaboration.TestSupport;
 using SpaceOS.Modules.Hosting.Tenancy;
@@ -38,14 +44,67 @@ internal sealed class CollaborationEndToEndHost : IAsyncDisposable
 
     public HttpClient Client { get; }
 
-    private CollaborationEndToEndHost(IHost host)
+    /// <summary>The stub standing in for the Kernel — inspectable, so token forwarding is assertable.</summary>
+    public KernelStubHandler KernelStub { get; }
+
+    private CollaborationEndToEndHost(IHost host, KernelStubHandler kernelStub)
     {
         _host = host;
+        KernelStub = kernelStub;
         Client = host.GetTestClient();
     }
 
-    public static async Task<CollaborationEndToEndHost> StartAsync(string connectionString)
+    /// <summary>
+    /// The Kernel's flow-epic route, at the transport seam (B2B-10 F5/2).
+    /// </summary>
+    /// <remarks>
+    /// Replaces the typed client's PRIMARY handler only: the real <c>HttpProjectAdapter</c>, the
+    /// real options and the real on-behalf-of token source all still run, so an E2E create
+    /// exercises the whole outbound path except the socket. Fail-closed like the real thing: no
+    /// bearer → 401, unknown epic → 404.
+    /// </remarks>
+    public sealed class KernelStubHandler(IReadOnlyCollection<Guid> knownEpics) : HttpMessageHandler
     {
+        private readonly List<AuthenticationHeaderValue?> _seenAuthorizations = [];
+
+        /// <summary>The Authorization header of every request the "Kernel" received.</summary>
+        public IReadOnlyList<AuthenticationHeaderValue?> SeenAuthorizations => _seenAuthorizations;
+
+        protected override Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            lock (_seenAuthorizations)
+            {
+                _seenAuthorizations.Add(request.Headers.Authorization);
+            }
+
+            if (request.Headers.Authorization is not { Scheme: "Bearer", Parameter.Length: > 0 })
+            {
+                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.Unauthorized));
+            }
+
+            var lastSegment = request.RequestUri!.AbsolutePath.TrimEnd('/').Split('/')[^1];
+
+            if (!Guid.TryParse(lastSegment, out var epicId) || !knownEpics.Contains(epicId))
+            {
+                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.NotFound));
+            }
+
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(
+                    $$"""{"id":"{{epicId}}","title":"E2E epic","targetFacilityId":"{{Guid.NewGuid()}}","phase":1,"isDelegated":false}""",
+                    Encoding.UTF8,
+                    "application/json")
+            });
+        }
+    }
+
+    public static async Task<CollaborationEndToEndHost> StartAsync(
+        string connectionString, IReadOnlyCollection<Guid>? knownEpics = null)
+    {
+        var kernelStub = new KernelStubHandler(knownEpics ?? []);
+
         var host = await new HostBuilder()
             .ConfigureWebHost(web => web
                 .UseTestServer()
@@ -54,7 +113,10 @@ internal sealed class CollaborationEndToEndHost : IAsyncDisposable
                     var configuration = new ConfigurationBuilder()
                         .AddInMemoryCollection(new Dictionary<string, string?>
                         {
-                            ["ConnectionStrings:CollaborationDatabase"] = connectionString
+                            ["ConnectionStrings:CollaborationDatabase"] = connectionString,
+                            // A syntactically real URL the stub swallows; its VALUE being here at
+                            // all is what the fail-fast options demand.
+                            ["Collaboration:Kernel:BaseUrl"] = "http://kernel.e2e.test"
                         })
                         .Build();
 
@@ -70,6 +132,14 @@ internal sealed class CollaborationEndToEndHost : IAsyncDisposable
                     // The production registration, not a test-shaped one: DbContext + interceptor +
                     // repositories + idempotency store + view queries.
                     services.AddCollaborationInfrastructure(configuration);
+
+                    // The production outbound path too (B2B-10 F5/2) — with only its transport
+                    // swapped for the stub above.
+                    services.AddKernelBackedProjectAdapter(configuration);
+                    services.Configure<HttpClientFactoryOptions>(
+                        nameof(IProjectAdapter),
+                        options => options.HttpMessageHandlerBuilderActions.Add(
+                            builder => builder.PrimaryHandler = kernelStub));
                 })
                 .Configure(app =>
                 {
@@ -84,10 +154,17 @@ internal sealed class CollaborationEndToEndHost : IAsyncDisposable
             .StartAsync()
             .ConfigureAwait(false);
 
-        return new CollaborationEndToEndHost(host);
+        return new CollaborationEndToEndHost(host, kernelStub);
     }
 
     /// <summary>Presents the caller as an authenticated user of the given tenant.</summary>
+    /// <remarks>
+    /// Also puts a bearer on the request. The synthetic scheme authenticates from its own
+    /// headers and ignores it — but the on-behalf-of path (F5/2) reads the REAL
+    /// <c>Authorization</c> header to forward, and a request without one is, for that path, a
+    /// background call: it fails loudly, by root decree. The first E2E run proved this the hard
+    /// way — every create answered 500 until the caller carried a token to forward.
+    /// </remarks>
     public CollaborationEndToEndHost As(
         Guid tenantId, Guid userId, string modules = CollaborationApiExtensions.ModuleId)
     {
@@ -98,6 +175,9 @@ internal sealed class CollaborationEndToEndHost : IAsyncDisposable
         Client.DefaultRequestHeaders.Add(HeaderTokenAuthenticationHandler.TenantHeader, tenantId.ToString());
         Client.DefaultRequestHeaders.Add(HeaderTokenAuthenticationHandler.UserHeader, userId.ToString());
         Client.DefaultRequestHeaders.Add(HeaderTokenAuthenticationHandler.ModulesHeader, modules);
+
+        Client.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", $"e2e-token-{tenantId:N}");
 
         return this;
     }

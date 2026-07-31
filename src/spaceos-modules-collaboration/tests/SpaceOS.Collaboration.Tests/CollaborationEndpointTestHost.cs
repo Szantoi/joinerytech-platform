@@ -57,7 +57,8 @@ internal sealed class CollaborationEndpointTestHost : IAsyncDisposable
         DelegatedWorkPackage? workPackage = null,
         TimeProvider? clock = null,
         IIdempotencyStore? idempotencyStore = null,
-        IAgreementViewQueries? viewQueries = null)
+        IAgreementViewQueries? viewQueries = null,
+        SpaceOS.Collaboration.Application.Adapters.IProjectAdapter? projectAdapter = null)
     {
         var host = await new HostBuilder()
             .ConfigureWebHost(web => web
@@ -82,6 +83,11 @@ internal sealed class CollaborationEndpointTestHost : IAsyncDisposable
                     services.AddScoped<IWorkPackageRepository>(_ => workPackages);
                     services.AddSingleton<IIdempotencyStore>(idempotencyStore ?? new InMemoryIdempotencyStore());
                     services.AddSingleton<IAgreementViewQueries>(viewQueries ?? new StubAgreementViewQueries());
+
+                    // Fail-closed default (F5/2): an unseeded adapter resolves nothing, so a
+                    // create test must SAY which epics its kernel knows.
+                    services.AddSingleton(projectAdapter
+                        ?? new SpaceOS.Collaboration.Application.Adapters.InMemoryProjectAdapter());
 
                     if (clock is not null)
                     {

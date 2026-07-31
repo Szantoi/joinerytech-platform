@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using SpaceOS.Collaboration.Application;
+using SpaceOS.Collaboration.Application.Adapters;
 using SpaceOS.Collaboration.Application.Authorization;
 using SpaceOS.Collaboration.Application.Projections;
 using SpaceOS.Collaboration.Application.Repositories;
@@ -212,23 +213,34 @@ public class WorkPackageCommandHandlerTests
     // F5/1 — the create path
     // ---------------------------------------------------------------------------------------
 
+    /// <summary>The one epic the seeded project adapter knows (F5/2): resolution is real, not permissive.</summary>
+    private static readonly Guid KnownEpic = Guid.Parse("77777777-7777-7777-7777-777777777777");
+
     private static CreateWorkPackageCommand CreateCommand(
         CollaborationAgreement agreement,
         Guid actorTenantId,
         Guid actorUserId,
-        Guid? projectId = null)
+        Guid? projectId = null,
+        Guid? epicId = null)
         => new(
             agreement.Id, actorTenantId, actorUserId, "Ajtólap gyártás", "50 db tölgy ajtólap",
-            Now.AddDays(30), projectId ?? Guid.NewGuid(), Guid.NewGuid());
+            Now.AddDays(30), projectId ?? Guid.NewGuid(), epicId ?? KnownEpic);
 
     private static CreateWorkPackageHandler CreateHandler(
         CollaborationAgreement agreement,
         Guid callerTenantId,
         Guid callerUserId,
         InMemoryWorkPackageRepository repository)
-        => new(
+    {
+        // Seeded with exactly one epic — an adapter resolving everything would keep these tests
+        // green with the resolution step deleted (the permissive-double mistake).
+        var projects = new InMemoryProjectAdapter();
+        projects.RegisterProject(new ProjectReference(KnownEpic, "Doorstar pilot projekt"));
+
+        return new CreateWorkPackageHandler(
             AuthKit.Guard(agreement, callerTenantId, callerUserId, Now),
-            repository, new CollaborationProjectionService(), new AuthKit.FixedClock(Now));
+            repository, projects, new CollaborationProjectionService(), new AuthKit.FixedClock(Now));
+    }
 
     [Fact]
     public async Task The_create_handler_persists_a_new_package_and_returns_its_view()
@@ -316,6 +328,21 @@ public class WorkPackageCommandHandlerTests
 
         var view = await handler.Handle(CreateCommand(agreement, Host, HostUser, firstProject), default);
         Assert.Equal(firstProject, view.WorkScope!.ProjectId);
+    }
+
+    [Fact]
+    public async Task An_anchor_the_kernel_does_not_know_stops_the_birth()
+    {
+        // F5/2: the adapter's production call site. The host is authorized and the input is
+        // well-formed; it is the RESOLUTION that says no, and nothing may be persisted.
+        var agreement = GrantedAgreement();
+        var repository = new InMemoryWorkPackageRepository(null);
+        var handler = CreateHandler(agreement, Host, HostUser, repository);
+
+        await Assert.ThrowsAsync<CollaborationAnchorUnresolvedException>(() =>
+            handler.Handle(CreateCommand(agreement, Host, HostUser, epicId: Guid.NewGuid()), default));
+
+        Assert.Equal(0, repository.SaveCount);
     }
 
     [Fact]

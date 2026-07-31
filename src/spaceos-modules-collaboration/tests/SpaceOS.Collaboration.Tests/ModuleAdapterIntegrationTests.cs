@@ -7,23 +7,23 @@ public sealed class ModuleAdapterIntegrationTests
 {
     private static readonly Guid HostTenantId = Guid.NewGuid();
     private static readonly Guid GuestTenantId = Guid.NewGuid();
-    private static readonly Guid AttackerTenantId = Guid.NewGuid();
 
     [Fact]
-    public async Task ProjectAdapter_ValidOwner_ResolvesProjectRef()
+    public async Task ProjectAdapter_KnownEpic_ResolvesAndUnknownStaysNull()
     {
+        // The F5/2 port shape: no tenant parameter and no owner field — on the on-behalf-of path
+        // the tenant travels in the forwarded token and the KERNEL enforces it (its 404 is the
+        // tenant proof). The in-memory stand-in therefore only models known/unknown, fail-closed.
         var adapter = new InMemoryProjectAdapter();
         var epicId = Guid.NewGuid();
-        adapter.RegisterProject(new ProjectReference(epicId, "Door Manufacturing Project", HostTenantId));
+        adapter.RegisterProject(new ProjectReference(epicId, "Door Manufacturing Project"));
 
-        // Host tenant (Owner) resolves
-        var result = await adapter.GetProjectRefAsync(epicId, HostTenantId);
+        var result = await adapter.ResolveFlowEpicAsync(epicId);
         Assert.NotNull(result);
         Assert.Equal("Door Manufacturing Project", result.Title);
 
-        // Attacker tenant fail-closed
-        var attackerResult = await adapter.GetProjectRefAsync(epicId, AttackerTenantId);
-        Assert.Null(attackerResult);
+        var unknown = await adapter.ResolveFlowEpicAsync(Guid.NewGuid());
+        Assert.Null(unknown);
     }
 
     [Fact]

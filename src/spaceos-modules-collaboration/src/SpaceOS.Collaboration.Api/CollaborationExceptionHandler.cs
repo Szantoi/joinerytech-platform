@@ -109,6 +109,22 @@ public sealed class CollaborationExceptionHandler(
             (StatusCodes.Status409Conflict, "Conflict",
                 "The resource was modified by another writer; read it again and retry."),
 
+        // The anchor named an epic the Kernel does not know for this caller (B2B-10 F5/2). The
+        // message is safe: the epic id is the caller's own input, and the fix is on their side.
+        Application.Adapters.CollaborationAnchorUnresolvedException anchor =>
+            (StatusCodes.Status422UnprocessableEntity, "Work scope does not resolve", anchor.Message),
+
+        // Trust between the services is misconfigured — nothing the caller can fix, and nothing
+        // a retry will change; 502 says "the upstream refused us", which is the truth.
+        Application.Adapters.ProjectResolutionRejectedException =>
+            (StatusCodes.Status502BadGateway, "Upstream refused",
+                "The project system refused this service's credentials; the operators have been signalled."),
+
+        // The Kernel could not answer now: fail-closed create, honest retry advice.
+        Application.Adapters.ProjectResolutionUnavailableException =>
+            (StatusCodes.Status503ServiceUnavailable, "Upstream unavailable",
+                "The project system could not be reached to verify the work scope; try again later."),
+
         ValidationException validation =>
             (StatusCodes.Status400BadRequest, "Invalid request", FirstValidationMessage(validation)),
 

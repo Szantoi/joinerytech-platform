@@ -35,6 +35,8 @@ public sealed class CollaborationEndToEndTests : IAsyncLifetime
     private readonly Guid _guestUser = Guid.NewGuid();
     private readonly DateTimeOffset _now = new(2026, 7, 30, 9, 0, 0, TimeSpan.Zero);
 
+    private readonly Guid _knownEpic = Guid.NewGuid();
+
     private Guid _agreementId;
     private Guid _packageId;
     private Guid _revokedPackageId;
@@ -62,7 +64,8 @@ public sealed class CollaborationEndToEndTests : IAsyncLifetime
         await _fixture.CreateApplicationRoleAsync(Schema);
 
         // The application role is the point: NOSUPERUSER + NOBYPASSRLS, so the policies decide.
-        _api = await CollaborationEndToEndHost.StartAsync(_fixture.AppConnectionString());
+        // The stub Kernel knows exactly one epic (F5/2) — anchor resolution is seeded, never permissive.
+        _api = await CollaborationEndToEndHost.StartAsync(_fixture.AppConnectionString(), [_knownEpic]);
     }
 
     public async Task DisposeAsync()
@@ -314,15 +317,15 @@ public sealed class CollaborationEndToEndTests : IAsyncLifetime
     // F5/1 — the create path against the real database
     // ---------------------------------------------------------------------------------------
 
-    private static string CreateJson(Guid projectId, string title = "Új delegált csomag")
+    private string CreateJson(Guid projectId, string title = "Új delegált csomag", Guid? epicId = null)
         => $$"""
             {"title":"{{title}}","scopeDescription":"F5/1 e2e","dueAtUtc":"{{DateTimeOffset.UtcNow.AddDays(30):O}}",
-             "workScope":{"projectId":"{{projectId}}","epicId":"{{Guid.NewGuid()}}","taskId":null}
+             "workScope":{"projectId":"{{projectId}}","epicId":"{{epicId ?? _knownEpic}}","taskId":null}
             }
             """;
 
-    private static HttpContent CreateBody(Guid projectId, string title = "Új delegált csomag")
-        => AsJson(CreateJson(projectId, title));
+    private HttpContent CreateBody(Guid projectId, string title = "Új delegált csomag", Guid? epicId = null)
+        => AsJson(CreateJson(projectId, title, epicId));
 
     private static HttpContent AsJson(string json)
         => new StringContent(json, Encoding.UTF8, "application/json");
@@ -358,11 +361,35 @@ public sealed class CollaborationEndToEndTests : IAsyncLifetime
         var read = await _api.Client.GetAsync(created.Headers.Location!.ToString());
         Assert.Equal(HttpStatusCode.OK, read.StatusCode);
 
+        // On-behalf-of, observed at the Kernel's side of the wire (F5/2): the stub only answers
+        // bearer-carrying requests at all, and here is the token it saw.
+        Assert.Contains(_api.KernelStub.SeenAuthorizations,
+            authorization => authorization is { Scheme: "Bearer", Parameter.Length: > 0 });
+
         var crossProject = await _api.PostAsync(
             Url($"/agreements/{_agreementId}/work-packages"), ifMatch: null,
             CreateBody(Guid.NewGuid(), "Másik projekt csomagja"), idempotencyKey: "f5-create-2");
 
         Assert.Equal(HttpStatusCode.Conflict, crossProject.StatusCode);
+    }
+
+    [Fact]
+    public async Task An_anchor_the_kernel_does_not_know_is_refused_by_the_whole_stack()
+    {
+        // The F5/2 fail-closed path end to end: authorized host, valid body, real database — and
+        // the Kernel (stub) answering 404 for the epic is what stops the birth, with nothing
+        // written.
+        _api.As(_host, _hostUser);
+
+        var response = await _api.PostAsync(
+            Url($"/agreements/{_agreementId}/work-packages"), ifMatch: null,
+            CreateBody(Guid.NewGuid(), "Halott horgony", epicId: Guid.NewGuid()),
+            idempotencyKey: "f5-dead-anchor");
+
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, response.StatusCode);
+
+        await using var db = new CollaborationDbContext(AdminOptions);
+        Assert.Equal(0, await db.WorkPackages.CountAsync(package => package.Title == "Halott horgony"));
     }
 
     [Fact]

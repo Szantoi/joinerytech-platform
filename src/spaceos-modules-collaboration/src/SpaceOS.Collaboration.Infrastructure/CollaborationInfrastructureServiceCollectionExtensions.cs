@@ -1,10 +1,13 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
+using SpaceOS.Collaboration.Application.Adapters;
 using SpaceOS.Collaboration.Application.Idempotency;
 using SpaceOS.Collaboration.Application.Projections;
 using SpaceOS.Collaboration.Application.Repositories;
 using SpaceOS.Collaboration.Infrastructure.Data;
+using SpaceOS.Collaboration.Infrastructure.Kernel;
 using SpaceOS.Modules.Hosting.Persistence;
 using SpaceOS.Modules.Hosting.Tenancy;
 
@@ -94,6 +97,46 @@ public static class CollaborationInfrastructureServiceCollectionExtensions
 
         // Read-side queries for the agreement view (B2B-10 F3/4).
         services.AddScoped<IAgreementViewQueries, AgreementViewQueries>();
+
+        return services;
+    }
+
+    /// <summary>
+    /// Adds the Kernel-backed <see cref="IProjectAdapter"/> — the on-behalf-of anchor resolution
+    /// (B2B-10 F5/2).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Fail-fast:</b> the base URL binds from <see cref="KernelProjectAdapterOptions.SectionName"/>
+    /// with no default, and <c>ValidateOnStart</c> turns a missing value into a startup failure —
+    /// the F5 task doc bans the tree's <c>?? "http://127.0.0.1:500x"</c> fallback pattern by name.
+    /// </para>
+    /// <para>
+    /// The adapter itself needs an <see cref="IOnBehalfOfTokenSource"/>, which this method does
+    /// NOT register: only the composition that knows what "the current request" means can supply
+    /// it (the API host does, from the incoming Authorization header). Composing the adapter
+    /// without one fails at the first resolution — loudly, as the request-scope decree demands.
+    /// </para>
+    /// </remarks>
+    public static IServiceCollection AddKernelBackedProjectAdapter(
+        this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(configuration);
+
+        services.AddOptions<KernelProjectAdapterOptions>()
+            .Bind(configuration.GetSection(KernelProjectAdapterOptions.SectionName))
+            .ValidateOnStart();
+        services.AddSingleton<IValidateOptions<KernelProjectAdapterOptions>, KernelProjectAdapterOptionsValidator>();
+
+        services.AddHttpClient<IProjectAdapter, HttpProjectAdapter>((serviceProvider, client) =>
+        {
+            var options = serviceProvider.GetRequiredService<IOptions<KernelProjectAdapterOptions>>().Value;
+
+            // Trailing slash so relative paths append instead of replacing the last segment.
+            client.BaseAddress = new Uri(options.BaseUrl.TrimEnd('/') + "/");
+        });
 
         return services;
     }

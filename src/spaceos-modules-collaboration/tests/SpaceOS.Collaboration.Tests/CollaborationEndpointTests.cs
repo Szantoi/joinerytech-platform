@@ -611,10 +611,21 @@ public class CollaborationEndpointTests
     // F5/1 — creating a work package
     // ---------------------------------------------------------------------------------------
 
-    private static CreateWorkPackageRequest CreateBody(Guid? projectId = null)
+    /// <summary>The one epic the tests' kernel knows (F5/2): resolution is seeded, never permissive.</summary>
+    private static readonly Guid KnownEpic = Guid.Parse("66666666-6666-6666-6666-666666666666");
+
+    private static SpaceOS.Collaboration.Application.Adapters.InMemoryProjectAdapter SeededProjects()
+    {
+        var projects = new SpaceOS.Collaboration.Application.Adapters.InMemoryProjectAdapter();
+        projects.RegisterProject(new SpaceOS.Collaboration.Application.Adapters.ProjectReference(
+            KnownEpic, "Doorstar pilot projekt"));
+        return projects;
+    }
+
+    private static CreateWorkPackageRequest CreateBody(Guid? projectId = null, Guid? epicId = null)
         => new(
             "Ajtólap gyártás", "50 db tölgy ajtólap", Now.AddDays(30),
-            new WorkScopeRequest(projectId ?? Guid.NewGuid(), Guid.NewGuid()));
+            new WorkScopeRequest(projectId ?? Guid.NewGuid(), epicId ?? KnownEpic));
 
     private static Task<HttpResponseMessage> PostCreateAsync(
         CollaborationEndpointTestHost host, Guid agreementId, object body, string? idempotencyKey)
@@ -638,7 +649,7 @@ public class CollaborationEndpointTests
     {
         var agreement = Agreement();
         await using var host = await CollaborationEndpointTestHost.StartAsync(
-            agreement, clock: new AuthKit.FixedClock(Now));
+            agreement, clock: new AuthKit.FixedClock(Now), projectAdapter: SeededProjects());
         host.As(Host, HostUser);
         var projectId = Guid.NewGuid();
 
@@ -682,7 +693,7 @@ public class CollaborationEndpointTests
     {
         var agreement = Agreement();
         await using var host = await CollaborationEndpointTestHost.StartAsync(
-            agreement, clock: new AuthKit.FixedClock(Now));
+            agreement, clock: new AuthKit.FixedClock(Now), projectAdapter: SeededProjects());
         host.As(Host, HostUser);
         var body = CreateBody();
 
@@ -719,11 +730,12 @@ public class CollaborationEndpointTests
     [Fact]
     public async Task The_guest_cannot_create_a_work_package()
     {
-        // A party holding the execute grant, so the guard passes and it is the DOMAIN's host-only
-        // rule that refuses (409) — the same shape as any transition refused to the wrong actor.
+        // A party holding the execute grant AND naming a resolvable epic, so both the guard and
+        // the resolution pass, and it is the DOMAIN's host-only rule that refuses (409) — the
+        // same shape as any transition refused to the wrong actor.
         var agreement = Agreement();
         await using var host = await CollaborationEndpointTestHost.StartAsync(
-            agreement, clock: new AuthKit.FixedClock(Now));
+            agreement, clock: new AuthKit.FixedClock(Now), projectAdapter: SeededProjects());
         host.As(Guest, GuestUser);
 
         var response = await PostCreateAsync(host, agreement.Id, CreateBody(), "kulcs-guest");
@@ -754,7 +766,7 @@ public class CollaborationEndpointTests
             CollaborationWorkScope.Create(projectId, Guid.NewGuid()), null, Now.AddDays(-1));
 
         await using var host = await CollaborationEndpointTestHost.StartAsync(
-            agreement, existing, clock: new AuthKit.FixedClock(Now));
+            agreement, existing, clock: new AuthKit.FixedClock(Now), projectAdapter: SeededProjects());
         host.As(Host, HostUser);
 
         var crossProject = await PostCreateAsync(host, agreement.Id, CreateBody(), "kulcs-projekt-2");
@@ -787,11 +799,32 @@ public class CollaborationEndpointTests
         agreement.Cancel(Host, HostUser, "meggondoltuk", Now.AddDays(-1));
 
         await using var host = await CollaborationEndpointTestHost.StartAsync(
-            agreement, clock: new AuthKit.FixedClock(Now));
+            agreement, clock: new AuthKit.FixedClock(Now), projectAdapter: SeededProjects());
         host.As(Host, HostUser);
 
         var response = await PostCreateAsync(host, agreement.Id, CreateBody(), "kulcs-zart");
 
         Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task An_anchor_the_kernel_does_not_know_is_a_422_and_names_the_epic()
+    {
+        // F5/2: the resolution's own refusal shape, distinct from everything else on this route —
+        // not 400 (the input is well-formed), not 404 (the agreement exists and is the caller's),
+        // not 409 (no rule of the aggregate refused). The epic id is safe to echo: it is the
+        // caller's own input about its own project system.
+        var agreement = Agreement();
+        await using var host = await CollaborationEndpointTestHost.StartAsync(
+            agreement, clock: new AuthKit.FixedClock(Now), projectAdapter: SeededProjects());
+        host.As(Host, HostUser);
+        var unknownEpic = Guid.NewGuid();
+
+        var response = await PostCreateAsync(
+            host, agreement.Id, CreateBody(epicId: unknownEpic), "kulcs-ismeretlen-epic");
+
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, response.StatusCode);
+        var body = await response.Content.ReadAsStringAsync();
+        Assert.Contains(unknownEpic.ToString(), body, StringComparison.OrdinalIgnoreCase);
     }
 }

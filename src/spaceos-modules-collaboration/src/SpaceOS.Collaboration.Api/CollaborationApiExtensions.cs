@@ -40,6 +40,12 @@ public static class CollaborationApiExtensions
         services.AddHttpContextAccessor();
         services.AddScoped<ICollaborationCallerContext, HttpCollaborationCallerContext>();
 
+        // On-behalf-of token for outbound Kernel calls (B2B-10 F5/2): the same "only this process
+        // knows what the caller means" division as the caller context above. Request-scoped by
+        // root decree — resolving it outside a request throws, it never falls back.
+        services.AddScoped<SpaceOS.Collaboration.Application.Adapters.IOnBehalfOfTokenSource,
+            HttpOnBehalfOfTokenSource>();
+
         // RFC 7807 for everything, including the framework's own 401/403 — the Doorstar client
         // should not have to parse two different error shapes depending on who refused it.
         services.AddProblemDetails();

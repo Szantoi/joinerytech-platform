@@ -1,4 +1,5 @@
 using MediatR;
+using SpaceOS.Collaboration.Application.Adapters;
 using SpaceOS.Collaboration.Application.Authorization;
 using SpaceOS.Collaboration.Application.Concurrency;
 using SpaceOS.Collaboration.Application.Projections;
@@ -104,10 +105,20 @@ public abstract class WorkPackageCommandHandlerBase<TCommand> : IRequestHandler<
 /// The sibling-project lookup happens here because the invariant needs a fact only the store has;
 /// the rule itself stays in the domain (<see cref="CollaborationAgreement.DelegateWork"/>).
 /// </para>
+/// <para>
+/// <b>This is the adapter's real production call site</b> (B2B-10 F5/2 — the create path, said
+/// out loud as the issuance asked): the anchor's epic is resolved against the Kernel BEFORE the
+/// package is born, so a dead reference cannot enter the store, and the F5/3 negative control
+/// has a concrete point to measure. Read-model enrichment was the alternative and lost: it would
+/// have made every READ depend on Kernel availability, where this gates only the write that
+/// claims the anchor. Known limit: the Kernel's flow-epic answer carries no project id, so only
+/// the EPIC's existence is verified — the ProjectId remains caller-asserted (F4/F5-3 material).
+/// </para>
 /// </remarks>
 public sealed class CreateWorkPackageHandler(
     ICollaborationAccessGuard accessGuard,
     IWorkPackageRepository repository,
+    IProjectAdapter projects,
     CollaborationProjectionService projections,
     TimeProvider clock) : IRequestHandler<CreateWorkPackageCommand, WorkPackageReadModel>
 {
@@ -120,6 +131,12 @@ public sealed class CreateWorkPackageHandler(
             cancellationToken);
 
         var workScope = CollaborationWorkScope.Create(command.ProjectId, command.EpicId, command.TaskId);
+
+        // AFTER the guard (authorization first, F3X order), BEFORE the domain: an anchor the
+        // Kernel does not know for this caller must stop the birth, fail-closed. Only existence
+        // is consumed — the reference's title is read-model material for a later slice.
+        _ = await projects.ResolveFlowEpicAsync(workScope.EpicId, cancellationToken)
+            ?? throw new CollaborationAnchorUnresolvedException(workScope.EpicId);
 
         var existingProjectId = await repository.GetDelegatedProjectIdAsync(
             command.AgreementId, cancellationToken);

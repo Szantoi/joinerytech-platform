@@ -59,6 +59,8 @@ epics:
           - { id: F2-EHS-REREVIEW, role: designer, title: "EHS re-review (dark mód + mobil vizuális check) → APPROVED esetén CLAUDE.md státusz-átbillentés", status: done, verdict: "✅ APPROVED — CLAUDE.md EHS sor átbillentve, 90/90 teszt zöld" }
           - { id: F2-CRM-FE, role: frontend, title: "CRM frontend: pipeline kanban + lead/opp FSM + adatréteg az EHS-mintára (MSW-first)", status: done, tests: "60/60 új + 1201/1220 teljes (19 pre-existing)", note: "backend-gap dokumentálva: nincs host + Lead FSM nurturing hiányzik (follow-up)" }
           - { id: F2-CRM-REVIEW, role: designer, title: "CRM világ designer-review", status: changes_requested, verdict: "3 kis blokkoló: S1 quote-gomb UI-guard, S2 detail-kulcs invalidáció (README 6. szabály), S3 kanban-affordanciák; M1/M2 kérve; adatréteg+tokenek APPROVED", report: docs/knowledge/qa/F2_CRM_DESIGN_REVIEW_2026-07-14.md }
+          - { id: EHS-WIZARD-HU, role: frontend, title: "EHS gyors balesetbejelentő honosítás + ingest-kapu", status: blocked, task: docs/tasks/EPIC-UI-PORTAL-2026Q3/EHS-WIZARD-HU.md, note: "2026-07-31 root: a sor eddig HIÁNYZOTT a kanonikus forrásból (a doksi 07-23 óta él). A fejlesztés KÉSZ és mergelt (joinerytech-portal@1f3ca31, root fresh review után); kizárólag Gábor manuális mobil+desktop+dark vizuális QA-ja hiányzik a done-hoz. Nem elfelejtett munka — emberi kapun áll." }
+          - { id: PORTALUI-PUBLISH, role: frontend, title: "@spaceos/portal-ui fogyaszthatóvá tétele a Doorstarnak (npm publish)", status: blocked, task: docs/tasks/EPIC-UI-PORTAL-2026Q3/PORTALUI-PUBLISH-DOORSTAR.md, note: "2026-07-31 root: a sor eddig HIÁNYZOTT a kanonikus forrásból. A végrehajtás root-review APPROVED (2026-07-29: build + 811 teszt, commit 47ecd29 a portál main-jén) — de a kész definíciója a fogyasztói átvétel, és az npm publish GÁBOR-KAPU. A push nem publikálás." }
           - { id: F2-CRM-FIX, role: frontend, title: "CRM review-javítások (S1-S3 + M1/M2)", status: done, tests: "68 célzott teszt zöld (60 baseline + 8 új), tsc+eslint tiszta" }
           - { id: F2-CRM-REREVIEW, role: designer, title: "CRM re-review (S1-S3 célzott ellenőrzés)", status: done, verdict: "✅ APPROVED — mind az 5 finding kódban igazolva, 68 teszt zöld" }
           - { id: F2-KONTROLLING-FE, role: frontend, title: "Kontrolling frontend: vezetői áttekintés + portfólió + projekt-fedezet + eltérés-elemzés + utókalkuláció (MSW-first)", status: done, tests: "35/35 új + 1232/1251 teljes (19 pre-existing)", note: "calc.ts = backend ProjectCostCalculation tükör; tudatosan nincs FSM (lifecycle-címkék); rule-6 teljes invalidáció" }
@@ -253,7 +255,9 @@ epics:
     owner: root
     coordinator: conductor
     started: 2026-07-18
-    status: in_progress
+    status: done
+    completed: 2026-07-31
+    closure_note: "2026-07-31 root: a stop-feltétel tételesen teljesül — capability/ownership audit kész (PROJECT_CORE_BOUNDARY_AUDIT_2026-07-18), ADR-068 ACCEPTED (2026-07-27, Gábor 8 döntésével), a duplikált truth-source kérdés eldöntve (Collaboration önálló bounded context), a végrehajtó taskok fájlhatárral kiadva és futnak (B2B-lánc + PROJECT-KERNEL-TRADETYPE-NEUTRAL done). A folytatás gazdája az EPIC-B2B-COLLABORATION."
     goal: >
       A meglévő Kernel FlowManagement, FlowEpic, StageChain és B2BHandshake
       képességek ownershipának tisztázása, majd elfogadott ADR a JoineryTech

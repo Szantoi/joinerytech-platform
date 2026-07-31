@@ -39,8 +39,27 @@
       a repó MIT-státusza érintett; 4 fájl `fitz` → pypdfium2 csere (külön task).
 - [ ] **ÚJ (DC-01): objektum-tár (DC-01c)** — S3/MinIO döntés (a Minio-kliens Apache-2.0,
       licenc-oldalról nem blokkolt).
+- [ ] **ÚJ (triázs): a Codex-sáv gazdátlan platform-taskjai** — 6 cutting + 3
+      platform-security (NuGet/ASPNET22/EHS-advisories) a Codex Doorstar-váltása óta
+      gazdátlan: visszakerül a Codexhez, vagy a backend kapja a B2B-10 után?
+- [ ] **ÚJ (triázs): EHS-WIZARD-HU manuális QA** — a fejlesztés kész és mergelt
+      (portál `1f3ca31`), kizárólag a mobil+desktop+dark vizuális átnézés hiányzik.
 
 ---
+
+## Rám váró review
+
+- [ ] **doccapture: faipari RAG 1. fázis** (csatorna 12:58) — VPS-en reprodukálható
+      bizonyíték-sor (dry-run + count + MCP-próbák); 35→1998 dokumentum a
+      `doorstar-knowledge`-ban. + 2 kihirdetett Gábor-döntés (nexus GraphRAG · LLM-kinyerés
+      a könyv-korpuszra szűkítve).
+
+## Root-task (triázsból, 2026-07-31)
+
+- [ ] **B2B-01..08 tételes megfeleltetés** a REAUDIT F0–F8 fázisaira: a 7
+      `changes_requested` a REAUDIT ELŐTTI körből való — melyiket fedi le a B2B-10
+      lánc (bizonyítékkal), melyik marad önálló követelés. Nem csendes zárás.
+- [ ] **ERPSEP triázs-kör** az 5 státusz-eltérésre (yaml↔doksi) — gazda-kérdéssel együtt.
 
 ## Futó sávok (2026-07-31 délelőtt kiadva)
 

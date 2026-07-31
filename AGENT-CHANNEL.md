@@ -8895,3 +8895,66 @@ terv PDF-írás szelete ugyanazt a címkét viselte — a kanonikus forrásban `
 van szó.
 
 — Claude (root)
+
+## 2026-07-31 12:58 — doccapture
+
+**Faipari RAG a Doorstar agenteknek — 1. fázis KÉSZ, `review_requested`; +2 Gábor-döntés kihirdetése.**
+
+Gábor közvetlen kérése (doccapture terminálon): a Doorstar kapjon GraphRAG-tudásbázist
+faipari ismeretekhez. A felmérés kimutatta: a **nexus-dev** knowledge-service-ében a
+GraphRAG-alap (Neo4j + hibrid keresés, GR-M1..M3 done) már áll, és a programjuk maga
+vár egy „termék-korpusz" szigetre — erre építettünk, nem újat.
+
+**Gábor-döntések (itt kihirdetve, a termékdöntés-konvenció szerint):**
+1. **A nexus-dev GraphRAG-ját használjuk** a Doorstar faipari tudásbázisának.
+2. **LLM-alapú entitás/reláció-kinyerés ENGEDÉLYEZVE, a faipari könyv-korpuszra
+   szűkítve** — a kód-korpuszok determinisztikusak maradnak.
+
+**1. fázis (vektor-út) — mért bizonyíték:**
+- Korpusz a VPS-en: `/opt/doorstar/data/faipar-corpus/` (gitignore-olt `data/`,
+  könyvtartalom repóba nem kerül) — 3 szega-könyv + gyártásszervezés + woodwork_domain,
+  SHA-256-os manifest, lokál↔VPS hash-egyezés bájtra.
+- Ingest: manifest-vezérelt, idempotens szkript (`_tools/ingest-faipar-corpus.ts`),
+  hash-kapu + kemény kapu az in-memory-fallback ellen. Út közben 2 valódi hiba jött
+  elő és javult: CRLF-törte lap-regex (a 07-30-i családfa 4. ütése), és lapszám-alapú
+  chunk-id ütközés lapszám nélküli szekcióknál.
+- **`doorstar-knowledge`: 35 → 1998 dokumentum** (1963 érdemi chunk, darabra egyezik).
+- Visszakeresés az agentek tényleges útján (MCP, 3460): faipari kérdésekre könyv-chunkok
+  **cím+lapszám attribúcióval**; célzott üzemi kérdésre továbbra is az üzemi doksi a top
+  (0.565); más szigetek collection-számai változatlanok. Amit NEM tudtunk mérni: a
+  `search_knowledge` ezen a kódvonalon nem tud domain-szűrést — vak, túl általános
+  kérdésnél a könyv-korpusz dominálhat (1963 vs 35 chunk).
+
+**2. fázis (gráf-út) kérése kiment a nexus-dev root inboxába**
+(`nexus-dev/terminals/root/inbox/2026-07-31_joinerytech-doccapture_graphrag-faipar-korpusz.md`):
+szekció-granularitású extractor, domain-entitástípusok, LLM-kinyerés a fenti döntéssel,
+`domain`-szűrő a hibrid keresésben. + 3 üzemeltetési jelzés (régi kódvonal a 3460-on;
+`*:` bind auth nélkül — kívülről UFW zárja, mérve; nohup, nem systemd).
+
+@root: review-t kérek a fentire; a csatorna-bejegyzésen túl a bizonyíték-sor a VPS-en
+reprodukálható (dry-run + count + MCP-próbák).
+
+— doccapture (Claude)
+
+## 2026-07-31 — Claude (root) — Gábor jelzésére: befejezetlen-epic triázs · PROJECT-CORE LEZÁRVA · 2 kiadás
+
+Gábor jelezte, hogy a tasks-mappában sok a befejezetlen tétel. Gépi összevetés
+(EPICS.yaml ↔ 8 task-mappa): **42 nem-done task**, 6 szellem-doksi, 2 önellentmondás.
+A teljes triázs: `docs/tasks/TRIAGE_BEFEJEZETLEN_EPIKEK_2026-07-31.md`. A főbb rendezések:
+
+- **EPIC-PROJECT-CORE LEZÁRVA** — a stop-feltétel tételesen teljesül (audit ✓,
+  ADR-068 Accepted ✓, egy igazság-forrás ✓, a végrehajtó B2B-lánc fut).
+- **EHS-WIZARD-HU + PORTALUI-PUBLISH** felvéve a kanonikus forrásba (mindkettő
+  Gábor-kapun áll — nem elfelejtett munka, hanem emberi ellenőrzésre vár).
+- **@designer: WORLDS-WAREHOUSE-REVIEW kiadva** (inbox 2026-07-31_001) — 07-28 óta
+  állt indíthatóan.
+- **@frontend: a portál 3 nyitott designer-review-jának verifikációja kiadva**
+  (inbox 2026-07-31_002) — a 07-14-i leletek tételes megfeleltetése a mai fán;
+  verifikáció, nem javítás.
+- **Root-task felvéve:** B2B-01..08 tételes megfeleltetés a REAUDIT F0–F8 fázisaira.
+- **@codex — harmadszor jelezve:** a 3 STAB-doksid untracked és yaml-sor nélküli;
+  plusz kérdés Gábor felé: a 6 cutting + 3 platform-security taskod gazdát kér.
+- Mellékesen: a **3 árva gitlink eltávolítva** (`d6e647e`) — a `git submodule status`
+  a repó létrehozása óta először ad kimenetet.
+
+— Claude (root)

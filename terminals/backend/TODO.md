@@ -1,6 +1,6 @@
 # BACKEND Terminal TODO
 
-> **Frissítve:** 2026-07-31 délután (Europe/Budapest)
+> **Frissítve:** 2026-07-31 este (Europe/Budapest)
 > **Részletes állapot:** [`STATE.md`](STATE.md)
 > **Kanonikus task-státusz:** [`EPICS.yaml`](../../EPICS.yaml) — a `done` kimondása root-review joga
 >
@@ -46,6 +46,36 @@ Kiírás: [`B2B-10-F5-PROJECT-ANCHOR-RESOLUTION.md`](../../docs/tasks/EPIC-B2B-C
       nem védelem mélységben, és a mi suite-unk (stub) nem tudná elkapni a kernel-regressziót.
       Jegyzőkönyv: `KERNEL_ANCHOR_NEGATIVE_CONTROL_2026-07-31.md`. Takarítás kimondva.
 - [ ] **Az F5 négy szelete lefutott** → a kritikus úton az **F7** következik (root-kiírásra vár).
+
+## P1b — `spaceos.projects` ÚJ MODUL (FUT) — Gábor termékdöntése + kivitelezési kérése
+
+Terv: [`ADR-072`](../../docs/knowledge/adr/ADR-072-projects-module-ownership.md) ·
+⚠ **a kiírás root joga** — EPICS-sor + task-id megkérve, **még nem érkezett meg**
+(outbox `2026-07-31-proj-modul-adr-072-es-kiiras-keres.md`).
+
+- [x] **PROJ-01 mérés** — négy fogyasztó, nulla forrás; a portál `/w/projects` **élő route**, de
+      mockból él; a Kontrollingnak **két** párhuzamos, stubolt projekt-portja van.
+- [x] **PROJ-02 ADR-072** (`9cb6736`) — önálló `spaceos.projects`; v1 = az azonosság és semmi több;
+      névadás-szétválasztás `EpicRef`/`ProjectRef`.
+- [x] **PROJ-04 domain-mag** (`eb11735`) — `Project` + `ProjectCode` + `ProjectEpicAssignment` +
+      `EnsureEpicUnassigned`. **16/16 zöld, 0 warning; mutáció 2/2 harapott**, visszaállítva.
+- [ ] **PROJ-05 — Application + Infrastructure**: repository-port; create/rename/status/epic-assign
+      parancsok; EF-konfiguráció (`ProjectCode` konverter, **bérlőnként egyedi** kód-index);
+      tenant query filter + **RLS-migráció a hosting-baseline `NULLIF(...)` alakjával** (a csupasz
+      `current_setting(...)::uuid` a pool-reset üres értékén 22P02-t dobna); **modell↔séma
+      konformancia-teszt valódi Postgresen** (InMemory elvileg sem lát hiányzó oszlopot).
+- [ ] **PROJ-06 — Api + host**: `/api/projects/v1`, ETag/`If-Match`, `Idempotency-Key` a create-en,
+      ADR-067 `RequireEnabledModule` kapu, ProblemDetails + correlation id. Az **epic-hozzárendelés
+      az F5/2 `HttpProjectAdapter` mintájával** ellenőrizze a FlowEpic létét on-behalf-of.
+- [ ] ⛔ **Gábor-döntésre vár, amikor blokkolóvá válik** (ADR-072 §7): a **`ProjectCode` kiosztása**
+      (a create-végpontnál) és hogy a **projekt a CRM-rendelésből születik-e** (a CRM-bekötésnél).
+      Ezekre **nem tettem javaslatot**, tehát nincs hallgatólagos válaszuk.
+- [ ] A **§7.1 eldöntve** (függőségek = Collaboration-projekciók), de nyitva maradt benne: a
+      **házon belüli** szakma-függőség nem fér a Collaboration kétoldalú modelljébe → ha előjön,
+      **új döntés**, nem csendes `Dependency` tábla.
+- [ ] ⛔ **F4-blokkoló, amit tovább kell vinni:** az ADR-066 `ProjectRef`-je FlowEpic-id-t hordoz
+      `projectId` néven — a szétválasztás **a Doorstar-publikálás előtt** olcsó, utána verziózott
+      törő változás.
 
 ## P2 — Scheduling: M5 (írási irány) + két nyitott kontraktus-döntés
 

@@ -1,7 +1,8 @@
 # ADR-072 — A projekt-szint tulajdonosa: önálló `spaceos.projects` modul
 
-> **Státusz:** **JAVASLAT** — Gábor irány-döntése megvan (2026-07-31), a **hatókör-kérdések
-> (§7) nyitva**. Root-kiadásra és Gábor jóváhagyására vár.
+> **Státusz:** **JAVASLAT — a §1–§6 döntéseket és a §7.1-et Gábor elfogadta (2026-07-31)**;
+> a **§7.2 és §7.3 nyitva marad** (ezekre nem tettem javaslatot, tehát nincs mihez hozzájárulni).
+> Formális elfogadás root-kiadással.
 > **Készítette:** backend terminál, 2026-07-31
 > **Előzmény:** ADR-066 (`ProjectRef` = Kernel `FlowEpic`), ADR-067 (modul-katalógus és
 > ModuleId-konvenció), **ADR-068 §5** (a projekt-burok szintnek *nincs tulajdonosa*,
@@ -113,15 +114,26 @@ Project-mezőre **ma nem tartjuk be**, és ezt le kell írni, nem elhallgatni.
 - A `FlowManagement.FlowProgram/FlowProject/FlowMilestone` **retire-jelölt marad** (ADR-068 §5);
   erre a modulra **nem épül** rájuk semmi.
 
-## 7. ⛔ Nyitott kérdések — Gábor döntése kell
+## 7. Hatókör-kérdések — egy eldöntve, kettő nyitva
 
-**7.1 — A szakma-függőségek (`dependencies`) hol laknak?**
+> **A §7.2 és §7.3 azért marad nyitva, mert rájuk nem tettem javaslatot** — csak felvázoltam az
+> opciókat. Egy „egyetértek" nem tud olyat eldönteni, amire nem hangzott el ajánlás; ezeket akkor
+> viszem fel újra, amikor blokkolóvá válnak (a §7.3 a create-végpontnál, a §7.2 a CRM-bekötésnél).
+
+**7.1 — A szakma-függőségek (`dependencies`) hol laknak? — ✅ ELDÖNTVE (Gábor, 2026-07-31)**
 A portál mockjában egy projekt függ más szakmáktól (víz/áram/szellőzés/gépészet/bútor), státusszal
-és `blocksInstall` jelzővel. Ez **fogalmilag átfed** a Collaboration `DelegatedWorkPackage`-ével
-(delegált munka egy másik félnek). Két út: (a) a függőség **Collaboration-munkacsomag** projekció,
-egy forrással; (b) a projekt saját, könnyű `Dependency` listája, a Collaborationtól függetlenül.
-**Javaslatom: (a)**, mert (b) egy második delegáció-fogalmat hozna — pontosan azt, amit az
-ADR-068 tilt. De ez termékdöntés: nem minden szakma-függőség B2B-partner (lehet házon belüli is).
+és `blocksInstall` jelzővel. Ez **fogalmilag átfed** a Collaboration `DelegatedWorkPackage`-ével.
+Két út volt: (a) a függőség **Collaboration-munkacsomag** projekciója, egy forrással;
+(b) a projekt saját, könnyű `Dependency` listája.
+
+**Döntés: (a)** — a javaslatomat Gábor elfogadta. A `spaceos.projects` **nem** kap saját
+`Dependency` entitást; a szakma-függőségek a Collaboration munkacsomagjainak **olvasó oldali
+projekciói**, egyetlen forrással. Egy második delegáció-fogalom pontosan az, amit az ADR-068 tilt.
+
+⚠ **Amit ez a döntés még nem old meg, és a projekció tervezésekor elő fog jönni:** nem minden
+szakma-függőség B2B-partner — egy házon belüli villanyszerelő is blokkolhatja a beépítést. Ha
+kiderül, hogy a házon belüli eset nem fér bele a Collaboration kétoldalú (host/guest, két bérlő)
+modelljébe, az **új döntést** kér, nem csendes `Dependency` tábla felvételét ide.
 
 **7.2 — A projekt a CRM-rendelésből születik, vagy önállóan?**
 A Kontrolling kommentje *„CRM order → project"*-et feltételez. Ha így van, a `spaceos.projects`

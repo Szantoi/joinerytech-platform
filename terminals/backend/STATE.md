@@ -140,7 +140,62 @@ Hosting: **89/89 zöld**, mutáció 2 bukással.
 
 ---
 
-## 3. Scheduling (PLAN-03) — M4 APPROVED, M5 nem indult
+## 3. `spaceos.projects` — ÚJ MODUL (FUT, 2026-07-31)
+
+**Kiváltó ok:** Gábor termékdöntése — *„A projekt az epikek felett egy összefogó egység."*
+Ez lezárta az **ADR-068 §5** `decision_required` tételét, és Gábor a megvalósítást is kérte
+(*„Tervezéssel, kivitelezéssel"*). ⚠ **A kiírás root joga** — az `EPICS.yaml`-sort és a task-id-t
+megkértem (outbox `2026-07-31-proj-modul-adr-072-es-kiiras-keres.md`), még nem érkezett meg.
+
+### Terv: [`ADR-072`](../../docs/knowledge/adr/ADR-072-projects-module-ownership.md) (`9cb6736`)
+
+A tervezést **méréssel** kezdtem, és az cáfolta a saját előzetes állításomat (azt mondtam, a
+projekt-burok „vékony fogalom" — nem az). Mit mértem:
+
+| Fogyasztó | Állapot |
+|---|---|
+| Portál **`/w/projects` ÉLŐ route** | **mockból él** (`src/mocks/projects.ts`) |
+| Kontrolling `IProjectPortfolioSource` | stub; doc-komment: *„it does NOT own projects"* |
+| Kontrolling `IIntegrationDataProvider` | **második, párhuzamos** projekt-port, szintén stub |
+| Collaboration + scheduling `WorkScope` | kötelező `projectId`, ma **opak** |
+
+**Két erős jel:** a portál öt életciklus-címkéje és a Kontrolling `ProjectLifecycleStatus` enumja
+**egymástól függetlenül ugyanaz**; és **kettős azonosság** kell (belső `Guid` + `PRJ-…` üzleti kulcs).
+
+**Három döntés:** (1) önálló, iparág-semleges `spaceos.projects` modul (ADR-068 O1–O4 átvíve:
+Kernel-bővítés, JoineryTech-tulajdon és meglévő-modulba-rejtés mind elutasítva); (2) a **v1 az
+azonosság és semmi több** (tételek a CRM-nél, árrés a Kontrollingnál); (3) ⛔ **F4-blokkoló**:
+az ADR-066 `ProjectRef`-je FlowEpic-id-t hordoz `projectId` néven → `EpicRef`/`ProjectRef`
+szétválasztás, **mielőtt** az F4 publikál a Doorstarnak.
+
+### Kivitelezés
+
+| Szelet | Állapot | Bizonyíték |
+|---|---|---|
+| **PROJ-04** domain-mag | **kész** (`eb11735`) | **16/16 zöld, 0 warning**; mutáció **2/2 harapott** (cross-aggregátum epic-őr; `ProjectCode` nagybetűsítés), visszaállítva |
+| **PROJ-05** Application + Infrastructure (EF, RLS, migráció) | **következik** | a hosting-baseline `NULLIF(...)` RLS-alakja + tenant query filter + modell↔séma konformancia |
+| **PROJ-06** Api + host | pending | `/api/projects/v1`, ETag/Idempotency-Key, ADR-067 modul-kapu; az epic-hozzárendelés az F5/2 adapter-mintájával ellenőrizze a FlowEpic létét |
+
+**Amit a domain-mag hoz:** `Project` (Id + TenantId + `ProjectCode` + Name + Status + opcionális
+`CustomerId` + RowVersion), `ProjectEpicAssignment` (ez teszi valódivá az epikek feletti
+összefogást — entitás, mert a riportnak tudnia kell, MIKORTÓL tartozott ide), és az
+`EnsureEpicUnassigned` szabály: **egy epic legfeljebb egy projekthez tartozhat** (a Collaboration
+`EnsureSameProject` mintájával — a tényt a hívó adja be, a szabály a domainben marad).
+Az öt életciklus-címkét **conformance-teszt védi** a „továbbfejlesztés" ellen.
+
+### Hatókör-kérdések
+
+- **§7.1 — ELDÖNTVE (Gábor, 2026-07-31):** a szakma-függőségek a Collaboration munkacsomagjainak
+  **olvasó oldali projekciói**; a modul **nem** kap saját `Dependency` entitást.
+  ⚠ Nyitva marad benne: a **házon belüli** szakma-függőség nem fér a Collaboration kétoldalú
+  (két bérlő) modelljébe — ha ez előjön, **új döntés**, nem csendes tábla-felvétel.
+- **§7.2 (CRM-rendelésből születik-e) és §7.3 (`ProjectCode` kiosztása) NYITVA** — ezekre
+  **nem tettem javaslatot**, tehát nincs mihez hozzájárulni. A §7.3 a create-végpontnál, a §7.2 a
+  CRM-bekötésnél válik blokkolóvá; akkor viszem fel újra.
+
+---
+
+## 4. Scheduling (PLAN-03) — M4 APPROVED, M5 nem indult
 
 `5cf9e7a..e22687a`, CI-mérés a pusholt állapoton (run `30482853132`): **430 zöld, 0 bukás**
 (Domain 263 / Infrastructure 52 / Host 70 / Solver.OrTools 26 / Integration 19).
@@ -148,7 +203,7 @@ A kontraktus-kör lezárva, `1.0.0-preview.2` kézbesítve. **Következik az M5*
 
 ---
 
-## 4. Új a platformon, ami az én munkafolyamatomat érinti
+## 5. Új a platformon, ami az én munkafolyamatomat érinti
 
 **Van .NET CI-kapu** (`.github/workflows/dotnet-build-gate.yml`, root, 2026-07-30) — a platform
 **első** automatikus .NET-kapuja. Amit tudni kell róla:
@@ -160,7 +215,7 @@ A kontraktus-kör lezárva, `1.0.0-preview.2` kézbesítve. **Következik az M5*
 
 ---
 
-## 5. Ismert korlátok és adósságok (backend-sáv)
+## 6. Ismert korlátok és adósságok (backend-sáv)
 
 - **Idempotencia-rekordok takarítása nincs telepítve** — üzemeltetési feladat, a pilot előtt kell.
 - **A wire-enumok alakja** (`"Proposed"`) **F4-döntés** — szándékosan nem találtam ki előre.
@@ -175,7 +230,7 @@ A kontraktus-kör lezárva, `1.0.0-preview.2` kézbesítve. **Következik az M5*
 - **A kernel working tree-jében más sávjának commitolatlan munkája van** (`TenantHandshakeAllowlist`
   + migráció + tesztek) — hozzá nem nyúltam.
 
-## 6. Kapuk, amik NEM az enyémek
+## 7. Kapuk, amik NEM az enyémek
 
 Élesítés, VPS-művelet, éles DB-migráció, éles Keycloak-realm, sandbox-kitettség, **Kernel-módosítás**:
 **Gábor-kapu**. A `done`/`APPROVED` kimondása **root-review joga**.

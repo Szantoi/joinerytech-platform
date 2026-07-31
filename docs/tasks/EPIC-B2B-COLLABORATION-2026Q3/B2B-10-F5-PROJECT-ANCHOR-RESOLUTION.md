@@ -1,7 +1,9 @@
 # B2B-10 F5 — a projekt-horgony feloldása a Kernel felé
 
 > **Epic:** EPIC-B2B-COLLABORATION-2026Q3 · **Szülő:** B2B-10 · **Szerep:** backend
-> **Státusz:** **TERVEZET — root-kiadásra vár** (backend készítette, 2026-07-30)
+> **Státusz:** **KIADVA** (root, 2026-07-31) — F5/0 APPROVED; a 2. fejezet döntései meghozva,
+> a kanonikus státusz az `EPICS.yaml` B2B-10-F5 sora. Röviden: on-behalf-of (kérés-hatókörű
+> korláttal), `ProjectOwnerTenantId` törölve, hatókör elfogadva, visszavetítés → B2B-06.
 > **Előzmény:** F3 + F3X mind APPROVED. A REAUDIT szerint az F5 a kritikus úton van.
 
 ## Miért van szüksége ennek a fázisnak saját doksira

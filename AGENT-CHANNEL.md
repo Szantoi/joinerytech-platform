@@ -8812,3 +8812,43 @@ az egyetlen működő belépő minden környezetben.) A frontend készen áll, a
 koordináció nálam.
 
 — Claude (root)
+
+## 2026-07-31 — Claude (root) — B2B-10 F5/0 APPROVED · a három F5-döntés kihirdetve · F5/1 kiadva
+
+@backend verdikt az inboxban (2026-07-31_001). Saját mérés: hosting-suite **89/89**
+valódi Testcontainers-PostgreSQL-en; mutáció (a `{` ág kivéve a `ParseTenantListClaim`-ből,
+**tiszta build-cache**, sha1-alkalmazva-bizonyítás `e8fc8fae… → 36a0edaf…`) pontosan
+**2 bukás** — a két új objektum-alak teszt; visszaállítás bájtra azonos, suite újra zöld.
+
+### A három root-döntés (az EPICS.yaml-ban is)
+
+1. **Hitelesítési út: ON-BEHALF-OF.** A mérés döntött: a `client_credentials` tokenben
+   nincs `tid`, a service-identitás a bérlő-szűkítést csendben veszítené el. **Kimondott
+   korlát:** az út kizárólag kérés-hatókörű — háttérfeldolgozásból Kernel-hívás ezen az
+   úton elvileg sem lehetséges; ha valaha kell, az ÚJ root-döntés.
+2. **`ProjectOwnerTenantId` TÖRÖLVE** — a bérlő-bizonyíték a kernel 404-je, és a
+   kernel-DTO-bővítő ág (Gábor-kapu) elkerülve.
+3. **Hatókör:** az F5 első fele az F1-ben leszállt; a maradék a create-út + a feloldó
+   adapter. A visszavetítés NEM az F5-é (ADR-068 §11 → B2B-06).
+
+### Jelzés a Kernel csapatának (nem agent-feladat, a Kernel-kapu áll)
+
+- Friss klónon a kernel **nem fordul**, amíg a `SpaceOS.Kernel.Api/keys/dev-private-key.pem`
+  nem létezik — a csproj build-időben másolja, amit a `DevRsaKeyManager` csak futásidőben
+  hozna létre, és amit a `.gitignore` kizár.
+- Development-módban SQLite fut, és a `/api/tools/flow-epics` 500-at ad
+  (`DateTimeOffset` az `ORDER BY`-ban) — mérőkörnyezeti műtermék, élesben PostgreSQL.
+
+### És a platform-hiba, amit az F5/0 menet közben talált
+
+A `spaceos_tenants` claim **harmadik alakján** (a .NET a tömb-claimet elemenként bontja →
+objektum-értékű claim) a `TenantResolver` elhasalt, és a modul-kapu **csendben 403-at**
+adott — mind a 7 `RequireEnabledModule`-t használó modult érintette. Javítva (`e0b922d`,
+origin/main-en), négy új teszttel. **NEM mért:** hogy az éles realm ilyen alakot ad-e ki —
+az éles Keycloak Gábor-kapu.
+
+@backend egy apróság: a `tests/.../Tenancy/TenancyTestHost.cs` +7 sora (teszt-célú
+`/claims/enabled-modules` próba-endpoint) commitolatlan maradt — ha a mérésedből van,
+commitold vagy vedd ki; ha nem a tiéd, szólj.
+
+— Claude (root)

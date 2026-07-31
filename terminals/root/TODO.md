@@ -16,7 +16,10 @@
 
 ## 🔴 Gábor előtt — sürgősségi sorrendben
 
-- [ ] **ÚJ, 2026-07-31: `ADR-072` elfogadása** — a projekt-szint tulajdonosa (`spaceos.projects`
+- [x] ~~**`ADR-072` elfogadása**~~ **ELFOGADVA 2026-07-31 (Gábor: „ADR-072 az legyen
+      független").** A root rögzítette az **ADR-066 §9.1 felülírását** is (a `ProjectRef`
+      tulajdonosa már nem a Kernel `FlowEpic`) — mindkét ADR frissítve.
+- [ ] ~~ÚJ, 2026-07-31: `ADR-072` elfogadása~~ (lezárva, ld. fent) — a projekt-szint tulajdonosa (`spaceos.projects`
       önálló modul). A Te mai termékdöntésed („a projekt az epikek felett egy összefogó
       egység") végrehajtási artefaktuma; a root átnézte és a teherhordó állításait mérte.
       ⚠ **Az elfogadással együtt ki kell mondani, hogy az ADR-066 §9.1 döntése (2026-07-21:
@@ -34,8 +37,17 @@
 - [ ] **Négy kulcs visszavonása:** Google Gemini · **két** Brave Search
       (`061ddd503f`, `cefeb3edee`) · a forrás-prototípus **két
       modell-szolgáltatói kulcsa** (egyikük a **futó app** `settings.json`-jában).
-- [ ] **`ALTER ROLE … NOBYPASSRLS`** a két workerre + a `SECURITY DEFINER`
-      migrációk telepítése. ⚠ **Mérve: az éles kockázat ma is fennáll.**
+- [ ] ⚠ **`NOBYPASSRLS` — A TÉTEL ÁTMINŐSÍTVE (root-mérés, 2026-07-31 este):
+      ez NEM egy `ALTER ROLE`, hanem KÉT MODUL ÚJRATELEPÍTÉSE.** A VPS-felhatalmazásod
+      után megmértem, mielőtt hozzányúltam volna — és jó, hogy megmértem:
+      - a két worker **ma is `rolbypassrls=t`**, és mindkét service **FUT**;
+      - a `SECURITY DEFINER` függvények az éles DB-ben **NINCSENEK TELEPÍTVE**
+        (a 8-ból 0; egyetlen függvény van a sémákban, az sem definer);
+      - a VPS-checkoutok **2026-07-22**-iek, a migrációk **07-27**-iek → a kint futó
+        worker-kód **nem ismeri** az új függvényeket.
+      **Ha csak az `ALTER ROLE`-t futtatom, mindkét háttér-worker NÉMÁN leáll**
+      (az RLS 0 sort adna nekik). Helyes sorrend: worker-kód deploy → migráció →
+      `ALTER ROLE` → záró mérés. Ez saját, tervezett deploy-ablakot kér.
 - [ ] **CI-hatókör:** PAT a privát `spaceos-kernel`-hez (a build-kapu ma 6/15
       projektet mér) · teszt-kapu (Docker; a collaboration suite **13 m 19 s**).
 - [ ] **`npm publish`** a `@spaceos/portal-ui`-ra · **VPS-IP** maradhat-e a
@@ -79,8 +91,8 @@
       B2B-07/08→F4 · B2B-09→F7). A megfeleltetés soronként az `EPICS.yaml`-ban.
 - [ ] **ERPSEP triázs-kör** az 5 státusz-eltérésre (yaml↔doksi) — gazda-kérdéssel együtt.
       ⚠ A sáv **egész nap nem mozdult** (7/14), és **nincs gazdája**.
-- [ ] **4 task-doksi archiválása** (`B2B-01`, `B2B-02`, `B2B-04`, `B2B-10-F5`) — a
-      kanonikus státuszuk már `done`. **Gábor jóváhagyására vár** (fájlmozgatás).
+- [x] ~~**4 task-doksi archiválása**~~ **KÉSZ 2026-07-31** (`B2B-01`, `B2B-02`,
+      `B2B-04`, `B2B-10-F5` → `archive/`, az `EPICS.yaml` útvonalai igazítva).
 - [ ] **Az F7 R2-tétele:** Kernel-függés-nyilatkozat a release-jegyzetbe (az F5/3 lelete:
       a cross-tenant vonalat a Kernel tartja egyedül, és ha elromlik, a suite zöld marad).
 

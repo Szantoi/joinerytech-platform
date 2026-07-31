@@ -79,6 +79,38 @@ addig a „több cég egy adatbázisban" ígéret nem teljes.
       `scripts/Invoke-DbRolePrivilegeGuard.ps1` + `config/db-role-privileges.json`
       + `scripts/Invoke-DbRolePrivilegeGuard.Tests.ps1`. Ld. lent.
 
+## ⛔ 2026-07-31 este — ROOT-MÉRÉS a VPS-en: a záró lépés NEM egy `ALTER ROLE`
+
+Gábor felhatalmazást adott VPS-módosításra. **Mérés a végrehajtás ELŐTT** (read-only),
+és jó, hogy megtörtént:
+
+| Mit mértem | Eredmény |
+|---|---|
+| `pg_roles` az élő clusteren | a két worker **ma is `rolbypassrls=t`**; minden más login-szerep `f` (a `spaceos_sales_worker` **ugyanolyan szerep bypass NÉLKÜL** — belső kontroll: a bypass nem szükségszerű) |
+| `spaceos-inventory` / `spaceos-procurement` service | **mindkettő `active (running)`** |
+| A `SECURITY DEFINER` függvények az élő DB-ben | **0 a 8-ból.** A sémákban egyetlen függvény van (`fn_enforce_reservation_tenant`), és az **sem** `prosecdef` |
+| A VPS-checkoutok git HEAD-je | inventory `cbae55f` (**2026-07-22**) · procurement `9a2cc31` (**2026-07-22**) — a migrációk **2026-07-27**-iek |
+
+**Következtetés:** a kint futó worker-kód **nem ismeri** az új `SECURITY DEFINER`
+függvényeket, és a migrációk **nincsenek telepítve**. Ha csak az `ALTER ROLE … NOBYPASSRLS`
+futna le, mindkét háttér-worker **némán leállna** — az RLS 0 sort adna nekik, a job
+„lefutna" és nem csinálna semmit. Ez a legrosszabb kiesés-fajta.
+
+**A helyes sorrend (és ezért nem hajtottam végre ad hoc):**
+
+1. a két modul **worker-kódjának** deployja (az, amelyik a definer-függvényeket hívja),
+2. a **migrációk** telepítése (⚠ `ENABLE`+`FORCE ROW LEVEL SECURITY` élő táblán),
+3. **`ALTER ROLE … NOBYPASSRLS`** mindkét workerre,
+4. **záró mérés**: `pg_roles` + a workerek tényleges működése (nem csak „fut a service").
+
+**A tétel tehát átminősítve:** nem egy egysoros jogosultság-változtatás, hanem **két
+modul tervezett újratelepítése** — saját deploy-ablakot kér, visszaállítási úttal
+(a migrációnak van `Down()`-ja).
+
+⚠ **Amit ez a mérés a listáról is elmond:** a tétel hónapok óta úgy szerepelt, hogy „a
+kód kész, csak a telepítés hiányzik" — ami igaz, de **elrejtette, hogy a telepítés
+maga a nehéz rész**. A „kész kód" és a „kész változás" nem ugyanaz.
+
 ## Stop / eszkaláció
 
 Éles jogosultság-módosítás (`ALTER ROLE … NOBYPASSRLS`) **csak Gábor

@@ -2,7 +2,14 @@
 
 - **Státusz:** **ACCEPTED (2026-07-25)** — az utolsó blokkoló pontot Gábor
   eldöntötte. Döntés-történet:
-  - **`ProjectRef` tulajdonosa (9.1)** — ELDÖNTVE (Gábor, 2026-07-21): Kernel `FlowEpic`.
+  - ~~**`ProjectRef` tulajdonosa (9.1)** — ELDÖNTVE (Gábor, 2026-07-21): Kernel `FlowEpic`.~~
+    ⛔ **FELÜLÍRVA (superseded) — ADR-072, 2026-07-31 (Gábor):** *„A projekt az epikek
+    felett egy összefogó egység."* A projekt-szint tulajdonosa mostantól az önálló
+    **`spaceos.projects`** modul; a Kernel `FlowEpic` **epic** marad, nem projekt.
+    Következmény a szerződésekre: az `EpicRef(epicId)` és a `ProjectRef(projectId)`
+    külön fogalom. ⚠ Amíg a `spaceos.projects` modul nem áll, a kiadott szerződésekben
+    a `projectId` **opak korrelációs azonosító** (nincs mögötte ellenőrzés) — ezt a
+    B2B-10 F4-nek ki kell mondania, különben a javítás verziózott törő változás lesz.
   - **Order/Quote/Customer aggregate a CRM-ben (9.2)** — **ELDÖNTVE (Gábor,
     2026-07-25): IGEN, megépül.** Indoklás szó szerint: *„kell hogy legyen.
     Megéri, mert újra felhasználható lesz a kód."* Ezzel a CRM az `OrderRef`

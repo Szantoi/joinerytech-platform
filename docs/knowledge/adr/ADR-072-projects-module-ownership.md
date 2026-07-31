@@ -1,10 +1,18 @@
 # ADR-072 — A projekt-szint tulajdonosa: önálló `spaceos.projects` modul
 
-> **Státusz:** **JAVASLAT — Gábor elé megy elfogadásra** (a root átnézte és a teherhordó
-> állításokat megmérte, de az ADR elfogadása **Gábor joga**, ahogy az ADR-066/068/069 is így ment).
-> A §1–§6 irányát és a §7.1-et Gábor már elfogadta (2026-07-31); a **§7.2 és §7.3 nyitva marad**
-> (ezekre nem tettem javaslatot, tehát nincs mihez hozzájárulni).
-> ⚠ **Elfogadáskor rögzítendő:** az **ADR-066 §9.1 felülírva** — ld. §5.
+> **Státusz:** ✅ **ELFOGADVA (Accepted) — 2026-07-31 (Gábor).**
+> A döntő mondat: *„ADR-072 az legyen független"* — vagyis a **Döntés 1** (önálló,
+> iparág-semleges `spaceos.projects` modul) elfogadva; ezzel a §1–§6 irány és a §7.1 áll.
+> **Nyitva marad:** a §7.2 (a projekt CRM-rendelésből születik-e) és a §7.3
+> (`ProjectCode` formátuma és kiosztása) — ezekre nem született javaslat, tehát nincs
+> mihez hozzájárulni; a v1 magját egyik sem blokkolja.
+>
+> ⚠ **AZ ELFOGADÁSSAL EGYÜTT RÖGZÍTVE (root, 2026-07-31): az ADR-066 §9.1 FELÜLÍRT.**
+> Az ADR-066 5. sora kimondta: *„`ProjectRef` tulajdonosa (9.1) — ELDÖNTVE (Gábor,
+> 2026-07-21): Kernel `FlowEpic`"*. Gábor mai döntése („a projekt az epikek felett egy
+> összefogó egység") ezt **felülírja**: a projekt-szint tulajdonosa mostantól a
+> `spaceos.projects` modul, a `FlowEpic` pedig **epic** marad, nem projekt. Enélkül a
+> rögzítés nélkül két ADR két tulajdonost nevezne meg ugyanarra a fogalomra. Ld. §5.
 > **Készítette:** backend terminál, 2026-07-31
 > **Előzmény:** ADR-066 (`ProjectRef` = Kernel `FlowEpic`), ADR-067 (modul-katalógus és
 > ModuleId-konvenció), **ADR-068 §5** (a projekt-burok szintnek *nincs tulajdonosa*,

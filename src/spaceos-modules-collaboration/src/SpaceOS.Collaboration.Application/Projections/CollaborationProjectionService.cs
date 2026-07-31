@@ -103,7 +103,10 @@ public class CollaborationProjectionService(IAgreementViewQueries? viewQueries =
             workPackage.RejectionOrChangeReason,
             allowedActions,
             historyDtos,
-            workPackage.CreatedAtUtc
+            workPackage.CreatedAtUtc,
+            workPackage.WorkScope is { } scope
+                ? new WorkScopeDto(scope.ProjectId, scope.EpicId, scope.TaskId)
+                : null
         );
     }
 }

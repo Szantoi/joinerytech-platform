@@ -606,4 +606,192 @@ public class CollaborationEndpointTests
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         Assert.Equal(AgreementStatus.Draft, agreement.Status);
     }
+
+    // ---------------------------------------------------------------------------------------
+    // F5/1 — creating a work package
+    // ---------------------------------------------------------------------------------------
+
+    private static CreateWorkPackageRequest CreateBody(Guid? projectId = null)
+        => new(
+            "Ajtólap gyártás", "50 db tölgy ajtólap", Now.AddDays(30),
+            new WorkScopeRequest(projectId ?? Guid.NewGuid(), Guid.NewGuid()));
+
+    private static Task<HttpResponseMessage> PostCreateAsync(
+        CollaborationEndpointTestHost host, Guid agreementId, object body, string? idempotencyKey)
+    {
+        var request = new HttpRequestMessage(
+            HttpMethod.Post, $"/api/collaboration/v1/agreements/{agreementId}/work-packages")
+        {
+            Content = JsonContent.Create(body)
+        };
+
+        if (idempotencyKey is not null)
+        {
+            request.Headers.TryAddWithoutValidation("Idempotency-Key", idempotencyKey);
+        }
+
+        return host.Client.SendAsync(request);
+    }
+
+    [Fact]
+    public async Task The_host_creates_a_work_package_and_can_read_it_back_where_Location_points()
+    {
+        var agreement = Agreement();
+        await using var host = await CollaborationEndpointTestHost.StartAsync(
+            agreement, clock: new AuthKit.FixedClock(Now));
+        host.As(Host, HostUser);
+        var projectId = Guid.NewGuid();
+
+        var response = await PostCreateAsync(host, agreement.Id, CreateBody(projectId), "kulcs-1");
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        Assert.Equal(ConditionalRequests.Format(1), response.Headers.ETag?.ToString());
+
+        using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        var root = document.RootElement;
+        Assert.Equal("Draft", root.GetProperty("status").GetString());
+        Assert.Equal(agreement.Id, root.GetProperty("agreementId").GetGuid());
+        Assert.Equal(projectId, root.GetProperty("workScope").GetProperty("projectId").GetGuid());
+        Assert.Equal(
+            JsonValueKind.Null, root.GetProperty("workScope").GetProperty("taskId").ValueKind);
+
+        // The Location is not decoration: the host must be able to GET it (without any grant).
+        var read = await host.Client.GetAsync(response.Headers.Location);
+        Assert.Equal(HttpStatusCode.OK, read.StatusCode);
+    }
+
+    [Fact]
+    public async Task A_create_without_an_Idempotency_Key_is_refused_before_anything_happens()
+    {
+        // A transition retried blind is stopped by If-Match; a create retried blind makes a second
+        // package. The key is the create's only retry-safety, so its absence is a 400, not a wish.
+        var agreement = Agreement();
+        await using var host = await CollaborationEndpointTestHost.StartAsync(
+            agreement, clock: new AuthKit.FixedClock(Now));
+        host.As(Host, HostUser);
+
+        var response = await PostCreateAsync(host, agreement.Id, CreateBody(), idempotencyKey: null);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var body = await response.Content.ReadAsStringAsync();
+        Assert.Contains("Idempotency-Key", body, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_create_retried_with_the_same_key_returns_the_same_package_and_makes_no_second_one()
+    {
+        var agreement = Agreement();
+        await using var host = await CollaborationEndpointTestHost.StartAsync(
+            agreement, clock: new AuthKit.FixedClock(Now));
+        host.As(Host, HostUser);
+        var body = CreateBody();
+
+        var first = await PostCreateAsync(host, agreement.Id, body, "kulcs-retry");
+        var second = await PostCreateAsync(host, agreement.Id, body, "kulcs-retry");
+
+        Assert.Equal(HttpStatusCode.Created, first.StatusCode);
+        Assert.Equal(HttpStatusCode.Created, second.StatusCode);
+        Assert.True(second.Headers.Contains("Idempotency-Replayed"));
+
+        using var firstDocument = JsonDocument.Parse(await first.Content.ReadAsStringAsync());
+        using var secondDocument = JsonDocument.Parse(await second.Content.ReadAsStringAsync());
+        Assert.Equal(
+            firstDocument.RootElement.GetProperty("workPackageId").GetGuid(),
+            secondDocument.RootElement.GetProperty("workPackageId").GetGuid());
+    }
+
+    [Fact]
+    public async Task A_guest_without_the_grant_cannot_even_ask_to_create()
+    {
+        // The create is grant-gated like everything else the agreement carries (Gábor's decision):
+        // without the execute grant the guest gets the same silent 403 as on a transition — the
+        // domain's host-only rule is never reached, so nothing about it is disclosed either.
+        var agreement = Agreement(withExecuteGrant: false);
+        await using var host = await CollaborationEndpointTestHost.StartAsync(
+            agreement, clock: new AuthKit.FixedClock(Now));
+        host.As(Guest, GuestUser);
+
+        var response = await PostCreateAsync(host, agreement.Id, CreateBody(), "kulcs-grant-nelkul");
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task The_guest_cannot_create_a_work_package()
+    {
+        // A party holding the execute grant, so the guard passes and it is the DOMAIN's host-only
+        // rule that refuses (409) — the same shape as any transition refused to the wrong actor.
+        var agreement = Agreement();
+        await using var host = await CollaborationEndpointTestHost.StartAsync(
+            agreement, clock: new AuthKit.FixedClock(Now));
+        host.As(Guest, GuestUser);
+
+        var response = await PostCreateAsync(host, agreement.Id, CreateBody(), "kulcs-guest");
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task An_outside_tenant_cannot_create_and_learns_nothing()
+    {
+        var agreement = Agreement();
+        await using var host = await CollaborationEndpointTestHost.StartAsync(
+            agreement, clock: new AuthKit.FixedClock(Now));
+        host.As(Stranger, HostUser);
+
+        var response = await PostCreateAsync(host, agreement.Id, CreateBody(), "kulcs-stranger");
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task A_second_package_scoped_to_a_different_project_is_a_409()
+    {
+        var agreement = Agreement();
+        var projectId = Guid.NewGuid();
+        var existing = agreement.DelegateWork(
+            Host, HostUser, "Első csomag", "meglévő", Now.AddDays(10),
+            CollaborationWorkScope.Create(projectId, Guid.NewGuid()), null, Now.AddDays(-1));
+
+        await using var host = await CollaborationEndpointTestHost.StartAsync(
+            agreement, existing, clock: new AuthKit.FixedClock(Now));
+        host.As(Host, HostUser);
+
+        var crossProject = await PostCreateAsync(host, agreement.Id, CreateBody(), "kulcs-projekt-2");
+        Assert.Equal(HttpStatusCode.Conflict, crossProject.StatusCode);
+
+        var sameProject = await PostCreateAsync(host, agreement.Id, CreateBody(projectId), "kulcs-projekt-1");
+        Assert.Equal(HttpStatusCode.Created, sameProject.StatusCode);
+    }
+
+    [Fact]
+    public async Task A_create_whose_body_forgets_the_scope_is_a_400_not_a_500()
+    {
+        var agreement = Agreement();
+        await using var host = await CollaborationEndpointTestHost.StartAsync(
+            agreement, clock: new AuthKit.FixedClock(Now));
+        host.As(Host, HostUser);
+
+        var response = await PostCreateAsync(
+            host, agreement.Id,
+            new { title = "Ajtólap gyártás", scopeDescription = "50 db", dueAtUtc = Now.AddDays(30) },
+            "kulcs-scope-nelkul");
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task A_closed_agreement_takes_no_new_work_over_the_wire_either()
+    {
+        var agreement = Agreement();
+        agreement.Cancel(Host, HostUser, "meggondoltuk", Now.AddDays(-1));
+
+        await using var host = await CollaborationEndpointTestHost.StartAsync(
+            agreement, clock: new AuthKit.FixedClock(Now));
+        host.As(Host, HostUser);
+
+        var response = await PostCreateAsync(host, agreement.Id, CreateBody(), "kulcs-zart");
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+    }
 }

@@ -40,6 +40,10 @@ public class WorkPackageCommandHandlerTests
             return Task.CompletedTask;
         }
 
+        public Task<Guid?> GetDelegatedProjectIdAsync(Guid agreementId, CancellationToken cancellationToken = default)
+            => Task.FromResult(
+                _stored?.AgreementId == agreementId ? _stored.WorkScope?.ProjectId : null);
+
         public Task SaveChangesAsync(CancellationToken cancellationToken = default)
         {
             SaveCount++;
@@ -200,6 +204,126 @@ public class WorkPackageCommandHandlerTests
     {
         var result = new OfferWorkPackageValidator()
             .Validate(new OfferWorkPackageCommand(Guid.Empty, Host, HostUser));
+
+        Assert.False(result.IsValid);
+    }
+
+    // ---------------------------------------------------------------------------------------
+    // F5/1 — the create path
+    // ---------------------------------------------------------------------------------------
+
+    private static CreateWorkPackageCommand CreateCommand(
+        CollaborationAgreement agreement,
+        Guid actorTenantId,
+        Guid actorUserId,
+        Guid? projectId = null)
+        => new(
+            agreement.Id, actorTenantId, actorUserId, "Ajtólap gyártás", "50 db tölgy ajtólap",
+            Now.AddDays(30), projectId ?? Guid.NewGuid(), Guid.NewGuid());
+
+    private static CreateWorkPackageHandler CreateHandler(
+        CollaborationAgreement agreement,
+        Guid callerTenantId,
+        Guid callerUserId,
+        InMemoryWorkPackageRepository repository)
+        => new(
+            AuthKit.Guard(agreement, callerTenantId, callerUserId, Now),
+            repository, new CollaborationProjectionService(), new AuthKit.FixedClock(Now));
+
+    [Fact]
+    public async Task The_create_handler_persists_a_new_package_and_returns_its_view()
+    {
+        var agreement = GrantedAgreement();
+        var repository = new InMemoryWorkPackageRepository(null);
+        var handler = CreateHandler(agreement, Host, HostUser, repository);
+        var projectId = Guid.NewGuid();
+
+        var view = await handler.Handle(CreateCommand(agreement, Host, HostUser, projectId), default);
+
+        Assert.Equal(WorkPackageStatus.Draft, view.Status);
+        Assert.Equal(agreement.Id, view.AgreementId);
+        Assert.Equal(1, view.RowVersion);
+        Assert.Equal(projectId, view.WorkScope!.ProjectId);
+        Assert.Contains("Offer", view.AllowedActions);
+        Assert.Equal(1, repository.SaveCount);
+
+        var stored = await repository.GetByIdAsync(view.WorkPackageId);
+        Assert.Equal(projectId, stored!.WorkScope!.ProjectId);
+    }
+
+    [Fact]
+    public async Task The_create_handler_refuses_a_stranger_before_anything_is_read_or_written()
+    {
+        var agreement = GrantedAgreement();
+        var repository = new InMemoryWorkPackageRepository(null);
+        var handler = CreateHandler(agreement, Stranger, HostUser, repository);
+
+        await Assert.ThrowsAsync<CollaborationResourceNotFoundException>(() =>
+            handler.Handle(CreateCommand(agreement, Stranger, HostUser), default));
+
+        Assert.Equal(0, repository.SaveCount);
+    }
+
+    [Fact]
+    public async Task The_create_handler_lets_the_domain_refuse_the_guest()
+    {
+        // The guard passes — the guest is a party AND holds the execute grant — and the DOMAIN
+        // says only the host delegates. The handler must not restate that rule, only let it
+        // through.
+        var agreement = GrantedAgreement();
+        var repository = new InMemoryWorkPackageRepository(null);
+        var handler = CreateHandler(agreement, Guest, GuestUser, repository);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            handler.Handle(CreateCommand(agreement, Guest, GuestUser), default));
+
+        Assert.Equal(0, repository.SaveCount);
+    }
+
+    [Fact]
+    public async Task A_guest_without_the_grant_is_stopped_by_the_guard_not_the_domain()
+    {
+        // Grant-gated like everything the agreement carries: without the execute grant the
+        // refusal is the guard's fail-closed denial, and the domain's host-only rule stays
+        // unreached and undisclosed.
+        var agreement = CollaborationAgreement.Create(Host, Guest, "Doorstar pilot", Now);
+        var repository = new InMemoryWorkPackageRepository(null);
+        var handler = CreateHandler(agreement, Guest, GuestUser, repository);
+
+        await Assert.ThrowsAsync<CollaborationAccessDeniedException>(() =>
+            handler.Handle(CreateCommand(agreement, Guest, GuestUser), default));
+
+        Assert.Equal(0, repository.SaveCount);
+    }
+
+    [Fact]
+    public async Task A_second_project_under_the_same_agreement_is_refused()
+    {
+        // The handler fetches the siblings' project as a FACT; the rule refusing the mismatch
+        // stays in the domain. Seeding the repository with an anchored package is what makes the
+        // fact non-null here.
+        var agreement = GrantedAgreement();
+        var firstProject = Guid.NewGuid();
+        var seeded = agreement.DelegateWork(
+            Host, HostUser, "Első csomag", "meglévő", Now.AddDays(10),
+            CollaborationWorkScope.Create(firstProject, Guid.NewGuid()), null, Now.AddDays(-1));
+        var repository = new InMemoryWorkPackageRepository(seeded);
+        var handler = CreateHandler(agreement, Host, HostUser, repository);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            handler.Handle(CreateCommand(agreement, Host, HostUser, Guid.NewGuid()), default));
+        Assert.Equal(0, repository.SaveCount);
+
+        var view = await handler.Handle(CreateCommand(agreement, Host, HostUser, firstProject), default);
+        Assert.Equal(firstProject, view.WorkScope!.ProjectId);
+    }
+
+    [Fact]
+    public void A_create_without_its_anchor_ids_fails_validation()
+    {
+        var result = new CreateWorkPackageValidator().Validate(new CreateWorkPackageCommand(
+            Guid.NewGuid(), Host, HostUser, "Ajtólap gyártás", "50 db",
+            Now.AddDays(30), Guid.Empty, Guid.Empty));
 
         Assert.False(result.IsValid);
     }

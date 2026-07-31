@@ -100,6 +100,10 @@ public sealed class CollaborationExceptionHandler(
         CollaborationPreconditionRequiredException required =>
             (StatusCodes.Status428PreconditionRequired, "Precondition required", required.Message),
 
+        // The create-side sibling of the 428 above; 400 because there is no tag to go read.
+        CollaborationIdempotencyKeyRequiredException keyRequired =>
+            (StatusCodes.Status400BadRequest, "Idempotency-Key required", keyRequired.Message),
+
         // Lost the race after being current: distinct from 412 on purpose (see the exception).
         CollaborationConcurrencyConflictException =>
             (StatusCodes.Status409Conflict, "Conflict",

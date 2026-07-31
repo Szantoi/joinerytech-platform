@@ -19,6 +19,18 @@ public interface IWorkPackageRepository
     /// <summary>Adds a new work package.</summary>
     Task AddAsync(DelegatedWorkPackage workPackage, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// The project the agreement's existing packages are anchored to, or <c>null</c> when none
+    /// of them carries an anchor (B2B-10 F5/1).
+    /// </summary>
+    /// <remarks>
+    /// A FACT for <see cref="DelegatedWorkPackage.EnsureSameProject"/>, not a rule: packages are
+    /// separate aggregates, so the one-agreement-one-project invariant needs the siblings'
+    /// project handed in, and only the persistence layer can look across them. Anchor-less
+    /// legacy packages do not constrain anything — they have no project to disagree with.
+    /// </remarks>
+    Task<Guid?> GetDelegatedProjectIdAsync(Guid agreementId, CancellationToken cancellationToken = default);
+
     /// <summary>Persists pending changes of loaded aggregates.</summary>
     Task SaveChangesAsync(CancellationToken cancellationToken = default);
 }

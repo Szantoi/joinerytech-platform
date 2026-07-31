@@ -23,6 +23,23 @@ public sealed record SupersedeAgreementRequest(Guid SupersedingTermsRevisionId);
 /// <summary>The agreement's new state after a transition, with the tag for the next request.</summary>
 public sealed record AgreementStatusResponse(Guid AgreementId, string Status, int RowVersion);
 
+/// <summary>
+/// A new delegated work package under an agreement (B2B-10 F5/1).
+/// </summary>
+/// <remarks>
+/// No tenant pair: host and guest come from the agreement in the route, so the payload cannot
+/// delegate to a third party. The anchor is mandatory here because it is mandatory at birth —
+/// see <c>CollaborationAgreement.DelegateWork</c>.
+/// </remarks>
+public sealed record CreateWorkPackageRequest(
+    string Title,
+    string? ScopeDescription,
+    DateTimeOffset DueAtUtc,
+    WorkScopeRequest WorkScope);
+
+/// <summary>The Kernel anchor the new package will serve: project → epic → optional task.</summary>
+public sealed record WorkScopeRequest(Guid ProjectId, Guid EpicId, Guid? TaskId = null);
+
 /// <summary>A reason the other side will read (work-package reject, change request, cancel).</summary>
 public sealed record WorkPackageReasonRequest(string Reason);
 

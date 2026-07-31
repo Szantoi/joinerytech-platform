@@ -25,7 +25,9 @@ public class DelegatedWorkPackage
     /// </summary>
     /// <remarks>
     /// Nullable only because packages created before this field existed have no anchor to fill
-    /// in. New packages always carry one — <see cref="Create"/> demands it.
+    /// in. New packages always carry one — not because <see cref="Create"/> demands it (it keeps
+    /// the parameter optional so tests can build a legacy, anchor-less row), but because the only
+    /// production birth path, <see cref="CollaborationAgreement.DelegateWork"/>, does (F5/1).
     /// </remarks>
     public CollaborationWorkScope? WorkScope { get; private set; }
 

@@ -42,6 +42,27 @@ public sealed class CollaborationIdempotencyMiddleware(
     /// <summary>Longest key accepted; the column is bounded and so is this.</summary>
     public const int MaxKeyLength = 200;
 
+    /// <summary>
+    /// Demands the header on an endpoint whose blind retry would act twice (B2B-10 F5/1).
+    /// </summary>
+    /// <remarks>
+    /// The middleware itself is opt-in — it protects whoever sends a key. A create is the one
+    /// write where opting out is not a smaller guarantee but none: a transition retried blind is
+    /// refused by its <c>If-Match</c>, a create retried blind makes a second package. The demand
+    /// sits on the endpoint (not here) so the middleware keeps one job; this helper keeps the
+    /// header's name and the refusal in the file that owns them.
+    /// </remarks>
+    /// <exception cref="CollaborationIdempotencyKeyRequiredException">The header is absent.</exception>
+    public static void RequireKey(HttpRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        if (string.IsNullOrWhiteSpace(request.Headers[KeyHeader]))
+        {
+            throw new CollaborationIdempotencyKeyRequiredException();
+        }
+    }
+
     public async Task InvokeAsync(HttpContext context, IIdempotencyStore store, ITenantContext tenants)
     {
         if (!IsCandidate(context) || !tenants.HasTenant)
@@ -170,6 +191,17 @@ public sealed class CollaborationIdempotencyMiddleware(
         });
     }
 }
+
+/// <summary>
+/// The endpoint refuses to create without an <c>Idempotency-Key</c> — mapped to <c>400</c>.
+/// </summary>
+/// <remarks>
+/// The create-side sibling of <see cref="CollaborationPreconditionRequiredException"/>: 428 is
+/// reserved for conditional-request headers (RFC 6585), and there is no tag to go read — the
+/// client only has to mint a key, which the message says.
+/// </remarks>
+public sealed class CollaborationIdempotencyKeyRequiredException()
+    : Exception("This endpoint requires an Idempotency-Key header, so that a retry cannot create twice.");
 
 /// <summary>Pipeline registration for <see cref="CollaborationIdempotencyMiddleware"/>.</summary>
 public static class CollaborationIdempotencyMiddlewareExtensions

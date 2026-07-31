@@ -21,6 +21,17 @@ public sealed class WorkPackageRepository(CollaborationDbContext database) : IWo
     public async Task AddAsync(DelegatedWorkPackage workPackage, CancellationToken cancellationToken = default)
         => await database.WorkPackages.AddAsync(workPackage, cancellationToken);
 
+    /// <remarks>
+    /// The nullable cast is load-bearing: on a bare <c>Guid</c> "no rows" and <c>Guid.Empty</c>
+    /// would be the same answer, and an anchor-less agreement would look anchored to the empty
+    /// project. Runs under the tenant query filter and RLS like every other read here.
+    /// </remarks>
+    public Task<Guid?> GetDelegatedProjectIdAsync(Guid agreementId, CancellationToken cancellationToken = default)
+        => database.WorkPackages
+            .Where(package => package.AgreementId == agreementId && package.WorkScope != null)
+            .Select(package => (Guid?)package.WorkScope!.ProjectId)
+            .FirstOrDefaultAsync(cancellationToken);
+
     public Task SaveChangesAsync(CancellationToken cancellationToken = default)
         => ConcurrencyTranslation.SaveAsync(database, cancellationToken);
 }

@@ -75,8 +75,11 @@ internal sealed class CollaborationEndpointTestHost : IAsyncDisposable
 
                     services.AddCollaborationApi();
 
+                    // ONE instance across requests (the lambda would otherwise run per scope):
+                    // since F5/1 a test POSTs a package and then GETs it in a second request.
+                    var workPackages = new SingleWorkPackageRepository(workPackage);
                     services.AddScoped<IAgreementRepository>(_ => new AuthKit.InMemoryAgreementRepository(agreement));
-                    services.AddScoped<IWorkPackageRepository>(_ => new SingleWorkPackageRepository(workPackage));
+                    services.AddScoped<IWorkPackageRepository>(_ => workPackages);
                     services.AddSingleton<IIdempotencyStore>(idempotencyStore ?? new InMemoryIdempotencyStore());
                     services.AddSingleton<IAgreementViewQueries>(viewQueries ?? new StubAgreementViewQueries());
 
@@ -122,13 +125,27 @@ internal sealed class CollaborationEndpointTestHost : IAsyncDisposable
         _host.Dispose();
     }
 
+    /// <summary>
+    /// Seed plus whatever the create endpoint adds — kept, so a test can GET what it POSTed.
+    /// </summary>
     private sealed class SingleWorkPackageRepository(DelegatedWorkPackage? seed) : IWorkPackageRepository
     {
+        private readonly List<DelegatedWorkPackage> _stored = seed is null ? [] : [seed];
+
         public Task<DelegatedWorkPackage?> GetByIdAsync(Guid workPackageId, CancellationToken cancellationToken = default)
-            => Task.FromResult(seed?.Id == workPackageId ? seed : null);
+            => Task.FromResult(_stored.FirstOrDefault(package => package.Id == workPackageId));
 
         public Task AddAsync(DelegatedWorkPackage workPackage, CancellationToken cancellationToken = default)
-            => Task.CompletedTask;
+        {
+            _stored.Add(workPackage);
+            return Task.CompletedTask;
+        }
+
+        public Task<Guid?> GetDelegatedProjectIdAsync(Guid agreementId, CancellationToken cancellationToken = default)
+            => Task.FromResult(_stored
+                .Where(package => package.AgreementId == agreementId && package.WorkScope is not null)
+                .Select(package => (Guid?)package.WorkScope!.ProjectId)
+                .FirstOrDefault());
 
         public Task SaveChangesAsync(CancellationToken cancellationToken = default)
             => Task.CompletedTask;

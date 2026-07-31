@@ -85,6 +85,64 @@ public class CollaborationAgreement
     }
 
     /// <summary>
+    /// Creates a new work package under this agreement — the production birth of delegated work
+    /// (B2B-10 F5/1).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A factory on the agreement rather than a bare <see cref="DelegatedWorkPackage.Create"/>
+    /// call, because every rule of the birth lives on facts this aggregate holds: WHO may delegate
+    /// (the host — letting the guest create packages would let an outside tenant write obligations
+    /// into the host's delegation, the same direction rule as <see cref="Propose"/>), between WHOM
+    /// (the pair comes from here, so a caller cannot invent a third tenant), and WHETHER there is
+    /// still an agreement to delegate under.
+    /// </para>
+    /// <para>
+    /// <b>Creation is allowed while the agreement is in play</b> (Draft, Proposed, Accepted): the
+    /// host stages draft packages alongside the proposal it is preparing. A closed agreement
+    /// (Rejected, Cancelled, Superseded) takes no new work — "the closed state is closed"
+    /// (Gábor's decision, 2026-07-30) applies to what the agreement carries too.
+    /// </para>
+    /// <para>
+    /// <paramref name="existingDelegatedProjectId"/> is the one fact this aggregate cannot know:
+    /// which project the agreement's other packages already serve. The caller that can query them
+    /// hands it in; the RULE (one agreement plans one project) stays in
+    /// <see cref="DelegatedWorkPackage.EnsureSameProject"/>.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="ArgumentNullException">No work scope — a new package must carry its anchor.</exception>
+    /// <exception cref="InvalidOperationException">
+    /// The actor is not the host, the agreement is closed, or the scope names a different project
+    /// than the agreement already delegates.
+    /// </exception>
+    public DelegatedWorkPackage DelegateWork(
+        Guid actorTenantId,
+        Guid actorUserId,
+        string title,
+        string scopeDescription,
+        DateTimeOffset dueAtUtc,
+        CollaborationWorkScope workScope,
+        Guid? existingDelegatedProjectId,
+        DateTimeOffset timestampUtc)
+    {
+        if (actorUserId == Guid.Empty)
+            throw new ArgumentException("Delegating work must name the acting user.", nameof(actorUserId));
+
+        ArgumentNullException.ThrowIfNull(workScope);
+
+        EnsureActorIsHost(actorTenantId);
+
+        if (Status is AgreementStatus.Rejected or AgreementStatus.Cancelled or AgreementStatus.Superseded)
+            throw new InvalidOperationException(
+                $"Cannot delegate new work under an agreement in {Status}: it is closed.");
+
+        DelegatedWorkPackage.EnsureSameProject(existingDelegatedProjectId, workScope);
+
+        return DelegatedWorkPackage.Create(
+            Id, HostTenantId, GuestTenantId, title, scopeDescription, dueAtUtc, timestampUtc, workScope);
+    }
+
+    /// <summary>
     /// Every grant issued for <paramref name="capability"/>, whatever its state (B2B-10 F3).
     /// </summary>
     /// <remarks>

@@ -24,6 +24,10 @@ namespace SpaceOS.Collaboration.Api.Endpoints;
 /// to get a tag from, so there is no excuse for a blind write — and a blind write is exactly how
 /// two people end up answering the same offered package.
 /// </para>
+/// <para>
+/// The create (F5/1) is the one write with no tag to match, so its retry-safety is a mandatory
+/// <c>Idempotency-Key</c> instead — same rule ("no blind writes"), different instrument.
+/// </para>
 /// </remarks>
 public static class WorkPackageEndpoints
 {
@@ -31,6 +35,40 @@ public static class WorkPackageEndpoints
     public static RouteGroupBuilder MapWorkPackageEndpoints(this RouteGroupBuilder group)
     {
         ArgumentNullException.ThrowIfNull(group);
+
+        // Nested under the agreement on purpose: the agreement CARRIES the packages, and putting
+        // it in the route is what lets the guard 404 a non-party before the payload means anything.
+        group.MapPost("/agreements/{agreementId:guid}/work-packages", async (
+            Guid agreementId, CreateWorkPackageRequest request, HttpContext http,
+            ICollaborationCallerContext callers, IMediator mediator, CancellationToken cancellationToken) =>
+        {
+            // A transition retried blind is refused by its If-Match; a create retried blind makes
+            // a SECOND package. The key is the create's only retry-safety, so it is not optional.
+            CollaborationIdempotencyMiddleware.RequireKey(http.Request);
+
+            // Binding leaves an omitted object null; without this the anchor's absence would
+            // surface as a 500 instead of the 400 it is.
+            if (request.WorkScope is null)
+            {
+                throw new ArgumentException(
+                    "A new work package must carry its work scope (projectId, epicId).", nameof(request));
+            }
+
+            var caller = callers.Current;
+            var view = await mediator.Send(
+                new CreateWorkPackageCommand(
+                    agreementId, caller.TenantId, caller.UserId,
+                    request.Title, request.ScopeDescription ?? string.Empty, request.DueAtUtc,
+                    request.WorkScope.ProjectId, request.WorkScope.EpicId, request.WorkScope.TaskId),
+                cancellationToken);
+
+            ConditionalRequests.SetETag(http.Response, view.RowVersion);
+
+            return Results.CreatedAtRoute(
+                "GetWorkPackage", new { workPackageId = view.WorkPackageId }, view);
+        })
+        .WithName("CreateWorkPackage")
+        .WithTags("Collaboration work packages");
 
         var packages = group.MapGroup("/work-packages").WithTags("Collaboration work packages");
 

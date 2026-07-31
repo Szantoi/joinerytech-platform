@@ -269,6 +269,10 @@ public class CollaborationAccessGuardTests
         public Task AddAsync(DelegatedWorkPackage workPackage, CancellationToken cancellationToken = default)
             => Task.CompletedTask;
 
+        public Task<Guid?> GetDelegatedProjectIdAsync(Guid agreementId, CancellationToken cancellationToken = default)
+            => Task.FromResult(
+                package.AgreementId == agreementId ? package.WorkScope?.ProjectId : null);
+
         public Task SaveChangesAsync(CancellationToken cancellationToken = default)
         {
             SaveCount++;

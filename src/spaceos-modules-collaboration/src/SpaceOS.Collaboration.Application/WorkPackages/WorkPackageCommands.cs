@@ -25,6 +25,34 @@ public interface IWorkPackageCommand : IRequest<WorkPackageReadModel>, IConditio
     Guid ActorUserId { get; }
 }
 
+/// <summary>
+/// Host creates a new delegated work package under an agreement (B2B-10 F5/1).
+/// </summary>
+/// <remarks>
+/// <para>
+/// Deliberately NOT an <see cref="IWorkPackageCommand"/>: there is no package to identify yet and
+/// no version to expect, so neither <c>WorkPackageId</c> nor <c>ExpectedRowVersion</c> would mean
+/// anything. Retry-safety for a create comes from the <c>Idempotency-Key</c> the endpoint demands,
+/// not from a precondition.
+/// </para>
+/// <para>
+/// The scope fields are flat GUIDs rather than a <c>CollaborationWorkScope</c>, so that the value
+/// object is constructed exactly once, in the handler, where its factory can refuse a malformed
+/// anchor — a command carrying a pre-built scope would mean two places can build one.
+/// </para>
+/// </remarks>
+public sealed record CreateWorkPackageCommand(
+    Guid AgreementId,
+    Guid ActorTenantId,
+    Guid ActorUserId,
+    string Title,
+    string ScopeDescription,
+    DateTimeOffset DueAtUtc,
+    Guid ProjectId,
+    Guid EpicId,
+    Guid? TaskId = null)
+    : IRequest<WorkPackageReadModel>;
+
 /// <summary>Host offers the package to the guest.</summary>
 public sealed record OfferWorkPackageCommand(
     Guid WorkPackageId, Guid ActorTenantId, Guid ActorUserId, int? ExpectedRowVersion = null)

@@ -310,6 +310,132 @@ public sealed class CollaborationEndToEndTests : IAsyncLifetime
         Assert.Equal(HttpStatusCode.NotFound, package.StatusCode);
     }
 
+    // ---------------------------------------------------------------------------------------
+    // F5/1 — the create path against the real database
+    // ---------------------------------------------------------------------------------------
+
+    private static string CreateJson(Guid projectId, string title = "Új delegált csomag")
+        => $$"""
+            {"title":"{{title}}","scopeDescription":"F5/1 e2e","dueAtUtc":"{{DateTimeOffset.UtcNow.AddDays(30):O}}",
+             "workScope":{"projectId":"{{projectId}}","epicId":"{{Guid.NewGuid()}}","taskId":null}
+            }
+            """;
+
+    private static HttpContent CreateBody(Guid projectId, string title = "Új delegált csomag")
+        => AsJson(CreateJson(projectId, title));
+
+    private static HttpContent AsJson(string json)
+        => new StringContent(json, Encoding.UTF8, "application/json");
+
+    [Fact]
+    public async Task The_host_creates_a_package_and_the_anchor_lands_in_the_database()
+    {
+        // The anchor's first production round trip: until F5/1 nothing wrote it, so the owned-type
+        // columns existed and stayed NULL. This also measures the sibling-project query's
+        // owned-type null check on real PostgreSQL — the second POST can only be refused if
+        // `WorkScope != null` translated into something that finds the package just created.
+        _api.As(_host, _hostUser);
+        var projectId = Guid.NewGuid();
+
+        var created = await _api.PostAsync(
+            Url($"/agreements/{_agreementId}/work-packages"), ifMatch: null,
+            CreateBody(projectId), idempotencyKey: "f5-create-1");
+
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+
+        using var document = JsonDocument.Parse(await created.Content.ReadAsStringAsync());
+        var packageId = document.RootElement.GetProperty("workPackageId").GetGuid();
+        Assert.Equal(
+            projectId, document.RootElement.GetProperty("workScope").GetProperty("projectId").GetGuid());
+
+        await using (var db = new CollaborationDbContext(AdminOptions))
+        {
+            var stored = await db.WorkPackages.SingleAsync(package => package.Id == packageId);
+            Assert.Equal(WorkPackageStatus.Draft, stored.Status);
+            Assert.Equal(projectId, stored.WorkScope!.ProjectId);
+        }
+
+        var read = await _api.Client.GetAsync(created.Headers.Location!.ToString());
+        Assert.Equal(HttpStatusCode.OK, read.StatusCode);
+
+        var crossProject = await _api.PostAsync(
+            Url($"/agreements/{_agreementId}/work-packages"), ifMatch: null,
+            CreateBody(Guid.NewGuid(), "Másik projekt csomagja"), idempotencyKey: "f5-create-2");
+
+        Assert.Equal(HttpStatusCode.Conflict, crossProject.StatusCode);
+    }
+
+    [Fact]
+    public async Task A_retried_create_makes_one_package_not_two()
+    {
+        _api.As(_host, _hostUser);
+        var projectId = await DelegatedProjectIdOrNewAsync();
+
+        // ONE body, sent twice: a retry means the SAME request again. (First measured with a body
+        // rebuilt per call — fresh epic id and timestamp — and the middleware rightly answered
+        // 422 FingerprintMismatch: same key, different request.)
+        var json = CreateJson(projectId, title: "Kulcsolt csomag");
+
+        var first = await _api.PostAsync(
+            Url($"/agreements/{_agreementId}/work-packages"), ifMatch: null, AsJson(json), idempotencyKey: "f5-retry");
+        var second = await _api.PostAsync(
+            Url($"/agreements/{_agreementId}/work-packages"), ifMatch: null, AsJson(json), idempotencyKey: "f5-retry");
+
+        Assert.Equal(HttpStatusCode.Created, first.StatusCode);
+        Assert.Equal(HttpStatusCode.Created, second.StatusCode);
+        Assert.True(second.Headers.Contains(CollaborationIdempotencyMiddleware.ReplayHeader));
+
+        await using var db = new CollaborationDbContext(AdminOptions);
+        var count = await db.WorkPackages.CountAsync(package => package.Title == "Kulcsolt csomag");
+        Assert.Equal(1, count);
+    }
+
+    [Fact]
+    public async Task A_stranger_cannot_create_under_an_agreement_it_cannot_see()
+    {
+        // Two layers give the same answer here: under the app role RLS never returns the
+        // agreement row to this tenant, and the guard answers absent-and-not-mine identically.
+        _api.As(_stranger, _hostUser);
+
+        var response = await _api.PostAsync(
+            Url($"/agreements/{_agreementId}/work-packages"), ifMatch: null,
+            CreateBody(Guid.NewGuid(), "Idegen csomag"), idempotencyKey: "f5-stranger");
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+
+        await using var db = new CollaborationDbContext(AdminOptions);
+        Assert.Equal(0, await db.WorkPackages.CountAsync(package => package.Title == "Idegen csomag"));
+    }
+
+    [Fact]
+    public async Task The_guest_is_refused_by_the_domain_not_by_the_database()
+    {
+        // The guest CAN see the agreement (RLS filters participation) and holds the execute
+        // grant, so a 409 here proves the refusal is the domain's host-only rule — a 404 or 403
+        // would mean a different layer answered.
+        _api.As(_guest, _guestUser);
+
+        var response = await _api.PostAsync(
+            Url($"/agreements/{_agreementId}/work-packages"), ifMatch: null,
+            CreateBody(Guid.NewGuid(), "Vendég csomagja"), idempotencyKey: "f5-guest");
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+    }
+
+    private async Task<Guid> DelegatedProjectIdOrNewAsync()
+    {
+        // Tests in this class share one database; if another test already anchored a package to
+        // this agreement, a new project id would trip the one-project invariant instead of
+        // measuring idempotency.
+        await using var db = new CollaborationDbContext(AdminOptions);
+        var existing = await db.WorkPackages
+            .Where(package => package.AgreementId == _agreementId && package.WorkScope != null)
+            .Select(package => (Guid?)package.WorkScope!.ProjectId)
+            .FirstOrDefaultAsync();
+
+        return existing ?? Guid.NewGuid();
+    }
+
     [Fact]
     public async Task An_expired_grant_closes_the_endpoint_just_as_a_revoked_one_does()
     {

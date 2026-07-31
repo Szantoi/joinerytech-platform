@@ -22,6 +22,25 @@ public abstract class WorkPackageCommandValidator<TCommand> : AbstractValidator<
     }
 }
 
+/// <summary>
+/// Shape rules of the create command (B2B-10 F5/1) — its own base, because the shared one is for
+/// commands that name an existing package.
+/// </summary>
+public sealed class CreateWorkPackageValidator : AbstractValidator<CreateWorkPackageCommand>
+{
+    public CreateWorkPackageValidator()
+    {
+        RuleFor(command => command.AgreementId).NotEmpty();
+        RuleFor(command => command.ActorTenantId).NotEmpty();
+        RuleFor(command => command.ActorUserId).NotEmpty();
+        RuleFor(command => command.Title).NotEmpty();
+        RuleFor(command => command.ProjectId).NotEmpty()
+            .WithMessage("A work scope must name its project.");
+        RuleFor(command => command.EpicId).NotEmpty()
+            .WithMessage("A work scope must name its epic.");
+    }
+}
+
 public sealed class OfferWorkPackageValidator : WorkPackageCommandValidator<OfferWorkPackageCommand>;
 
 public sealed class AcceptWorkPackageValidator : WorkPackageCommandValidator<AcceptWorkPackageCommand>;

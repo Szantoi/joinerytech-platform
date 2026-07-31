@@ -84,6 +84,63 @@ public abstract class WorkPackageCommandHandlerBase<TCommand> : IRequestHandler<
     }
 }
 
+/// <summary>
+/// create — the birth of a delegated work package (B2B-10 F5/1). Not a transition, so it does not
+/// extend <see cref="WorkPackageCommandHandlerBase{TCommand}"/>: there is nothing to load and no
+/// version to verify.
+/// </summary>
+/// <remarks>
+/// <para>
+/// <b>The guard still comes first</b> (the F3X order, applied to a create): a tenant outside the
+/// agreement gets the same 404 as for an agreement that does not exist, before any of its input is
+/// interpreted. The check is the work-package capability, not bare participation — what the
+/// agreement CARRIES is grant-gated (Gábor's decision, 2026-07-30), and the create is the first
+/// thing that carries anything. For the host this collapses into participation (it issues the
+/// grants, so the guard never asks it for one), but the gate is what makes the refusal shape
+/// uniform with every other work-package write: a guest without the grant gets the same silent
+/// 403 here as on a transition, instead of a chattier domain answer.
+/// </para>
+/// <para>
+/// The sibling-project lookup happens here because the invariant needs a fact only the store has;
+/// the rule itself stays in the domain (<see cref="CollaborationAgreement.DelegateWork"/>).
+/// </para>
+/// </remarks>
+public sealed class CreateWorkPackageHandler(
+    ICollaborationAccessGuard accessGuard,
+    IWorkPackageRepository repository,
+    CollaborationProjectionService projections,
+    TimeProvider clock) : IRequestHandler<CreateWorkPackageCommand, WorkPackageReadModel>
+{
+    public async Task<WorkPackageReadModel> Handle(CreateWorkPackageCommand command, CancellationToken cancellationToken)
+    {
+        var agreement = await accessGuard.EnsureCapabilityAsync(
+            command.AgreementId,
+            command.ActorTenantId,
+            CollaborationCapability.WorkPackageExecute,
+            cancellationToken);
+
+        var workScope = CollaborationWorkScope.Create(command.ProjectId, command.EpicId, command.TaskId);
+
+        var existingProjectId = await repository.GetDelegatedProjectIdAsync(
+            command.AgreementId, cancellationToken);
+
+        var workPackage = agreement.DelegateWork(
+            command.ActorTenantId,
+            command.ActorUserId,
+            command.Title,
+            command.ScopeDescription,
+            command.DueAtUtc,
+            workScope,
+            existingProjectId,
+            clock.GetUtcNow());
+
+        await repository.AddAsync(workPackage, cancellationToken);
+        await repository.SaveChangesAsync(cancellationToken);
+
+        return projections.ProjectWorkPackage(workPackage, command.ActorTenantId)!;
+    }
+}
+
 /// <summary>offer — Draft → Offered (host).</summary>
 public sealed class OfferWorkPackageHandler(
     ICollaborationAccessGuard accessGuard, IWorkPackageRepository repository,

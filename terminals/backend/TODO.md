@@ -23,7 +23,9 @@
 - [ ] **Mutációs kör után `git diff`** — a visszaállító hibás lehet: ha ugyanazt a fájlt kétszer
       mentetted el, a restore a **mutált** állapotot hozza vissza (2026-07-30-án be is commitolódott).
 - [ ] **Mérés előtt Docker-állapot**, utána **takarítás**:
-      `docker ps -aq --filter "label=org.testcontainers=true"`. ⚠ A `doorstar-production-db` **nem az enyém**.
+      `docker ps -aq --filter "label=org.testcontainers=true"` — a **`-a`** nem elhagyható:
+      2026-07-31-én egy leszakadt Testcontainer **három órán át futott**, mert a sima `docker ps`-en
+      nem tűnt fel. ⚠ A `doorstar-production-db` **nem az enyém**.
 - [ ] Ha egy bukás futásideje ~**1 ms**, előbb a **fixture** épségét nézd, ne a kódot.
 
 ## P1 — B2B-10 F5: a projekt-horgony feloldása (FUT — **KIADVA**, root 2026-07-31)

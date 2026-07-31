@@ -123,11 +123,20 @@ Doorstarnak publikált szerződés **mondja ki**.
   ORDER BY` — ugyanaz a Development-műtermék, amit az F5/0 is rögzített.
 - Mindkettő **jelzés a Kernel csapatának**, nem javítás (Kernel-kapu).
 
-## 6. Takarítás
+## 6. Takarítás — és amit közben találtam
 
-`f53-keycloak` és `f53-collab-db` konténerek **törölve**, a két host-processz leállítva, az
-eldobható SQLite-fájl és a publish-másolat törölve. A **`doorstar-production-db` konténerhez nem
-nyúltam** — fut, érintetlen.
+- `f53-keycloak` és `f53-collab-db` **törölve**, mindkét host-processz leállítva, az eldobható
+  SQLite-fájl és a publish-másolat törölve.
+- **Leszakadt Testcontainer:** a takarítás-ellenőrzés egy 12:38 óta futó, `org.testcontainers`
+  címkéjű `postgres:16-alpine` konténert talált — a **saját** délelőtti integrációs futásomból
+  maradt ott (a reaper nem vitte el). Futó teszt-processz nem volt, ezért eltávolítottam. Ezt
+  azért írom le, mert a P0-listám „mérés után takaríts" pontja **eddig is** ott volt, és a
+  konténer mégis három órán át élt: a `docker ps` (csak futók) önmagában nem elég, a
+  `--filter label=org.testcontainers=true` **`-a`-val** kell.
+- **Fantom-bejegyzés:** egy 2026-07-29-i, `Exited (137)` konténert a daemon egyszerre listáz
+  (`docker ps -a`) és tagad (`docker rm` → *No such container*). Nem futó processz, nem
+  takarítható — kimondom, nem állítom tisztának.
+- A **`doorstar-production-db` konténerhez nem nyúltam** — fut, érintetlen.
 
 ## Következtetés
 

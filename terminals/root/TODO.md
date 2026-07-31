@@ -1,6 +1,6 @@
 # ROOT Terminal TODO
 
-> **Frissítve:** 2026-07-31 délután · **Részletes állapot:** [`STATE.md`](STATE.md)
+> **Frissítve:** 2026-07-31 este (napzárás) · **Részletes állapot:** [`STATE.md`](STATE.md)
 > **Kanonikus státusz:** [`EPICS.yaml`](../../EPICS.yaml) — a task-doksik státusz-sora **nem hiteles**.
 
 ---
@@ -66,10 +66,7 @@
 
 ## Rám váró review
 
-- [ ] **Az F7 átdefiniálva** (`B2B-10-F7-SCOPE-SZETVALASZTAS-2026-07-31.md`): a REAUDIT
-      hat eleme MIND leszállt → az F7 ma **pilot-készültségi kapu**, nem fejlesztés.
-      R1 (a suite-ot semmi nem futtatja) és R4 (`Kernel:BaseUrl`) **Gábor-döntés**;
-      R2 (Kernel-függés-nyilatkozat) az enyém. **A pilotig hátralévő fejlesztés az F4.**
+- [ ] **Semmi.** A nap mind a 12 befutott review-ja lezárva (mind APPROVED, saját méréssel).
 
 - [x] ~~**doccapture: faipari RAG 1. fázis**~~ **APPROVED 2026-07-31** saját VPS-méréssel
       (manifest-hash 5/5 · dry-run 1963 chunk · Chroma count=1998 · MCP-próbák).
@@ -81,16 +78,26 @@
       (B2B-01/02/04), 5 nevesített maradékkal (B2B-05→F6 · B2B-06 adapter-scope ·
       B2B-07/08→F4 · B2B-09→F7). A megfeleltetés soronként az `EPICS.yaml`-ban.
 - [ ] **ERPSEP triázs-kör** az 5 státusz-eltérésre (yaml↔doksi) — gazda-kérdéssel együtt.
+      ⚠ A sáv **egész nap nem mozdult** (7/14), és **nincs gazdája**.
+- [ ] **4 task-doksi archiválása** (`B2B-01`, `B2B-02`, `B2B-04`, `B2B-10-F5`) — a
+      kanonikus státuszuk már `done`. **Gábor jóváhagyására vár** (fájlmozgatás).
+- [ ] **Az F7 R2-tétele:** Kernel-függés-nyilatkozat a release-jegyzetbe (az F5/3 lelete:
+      a cross-tenant vonalat a Kernel tartja egyedül, és ha elromlik, a suite zöld marad).
 
-## Futó sávok (2026-07-31 délután)
+## Futó sávok (2026-07-31 este)
 
+- [ ] **backend `PROJ-01`** — a `spaceos.projects` v1 azonosság-magja (Gábor mai
+      termékdöntése). Kötelező: hosting-csomag a kezdetektől · interceptor-E2E a
+      CRM-pilot mintájára · valódi PostgreSQL · mutáció minden új kapura.
+      ⚠ NE égesse be a `ProjectCode` formátumát és a wire-enum alakját.
 - [ ] **backend: a 6 maradék modul interceptor-átállása** (`STAB-RLS-INTERCEPTOR-E2E`) —
       a **CRM-pilotot ma magam implementáltam** (`6f1ef5f`), az a minta.
       ⚠ Modulonként nézni: hol megengedő az EF-szűrő tenant nélkül (a CRM-é az volt).
-- [ ] **doccapture `DC-01a`** — szövegréteg-olvasó. Review-nál a 9 leállási szám újramérése.
-- [ ] **frontend `PORTAL-DEADTREE-A`** — 58 fájl / 7094 sor törlése, mai fára igazolva.
+- [ ] **doccapture: a motor CI 6. oka** (a zárvány-teszt a `reportlab`-ra mér, ami itt
+      nincs telepítve) — **tervezői döntés, szándékosan náluk hagytam**. Utána DC-01b.
 - [ ] **designer `WORLDS-WAREHOUSE-REVIEW`** — 07-28 óta állt, ma kiadva.
-- [x] **B2B-10 F5 mind a 4 szelete APPROVED** — az F5 LEZÁRVA.
+- [x] **B2B-10 F5 mind a 4 szelete APPROVED** — az F5 LEZÁRVA; az F7 üresnek mérve.
+- [x] **DC-01a APPROVED** (9/9 szám újramérve) · **PORTAL-DEADTREE-A APPROVED** (8001 sor).
 
 ---
 
@@ -157,18 +164,35 @@
 
 ---
 
-## Ma lezárva (2026-07-30) — részletek a `STATE.md`-ben
+## Ma lezárva (2026-07-31) — részletek a `STATE.md`-ben
 
-Token-rotáció (5 titok-osztály) · a platform **első két CI-kapuja** ·
-**B2B-10 F3 mind a hat szelete** · doccapture **DC-01b · DC-06 · DC-02 ·
-ADR-071** · szivárgás-kapu **zaj + a két vak pont** · CatalogPanel- és
-scheduling-lint · **a két élő-publikus hiba** · STAB-RLS-WORKER-BYPASS szúrópróba
-+ szerep-kapu · **task-átvizsgálás** (9 archiválva, **6 hamis `done` javítva**) ·
-**ADR-index** (7 elfogadott ADR nem szerepelt egyetlen indexben sem).
+**12 review APPROVED, mind saját méréssel.** B2B-10 **F5 mind a 4 szelete** (az F5
+LEZÁRVA) · **DC-01 terv + DC-01a** (9/9 szám újramérve) · **faipari RAG 1. fázis**
+(saját VPS-mérés) · **frontend 7 szelet** (gép-státusz · PieceInputRow ·
+designer-verifikáció · workflow read-only · lang+ThemeToggle · axe-kör · 3 axe-javítás)
+· **PORTAL-DEADTREE-A** (59 fájl / **8001 sor**).
+
+**Két main-ágat érintő lelet, mindkettő javítva:** a platform buildje **két napja
+törött volt** (szállított függőség hiánya — a kapu azóta **ZÖLD**) · a doc-capture
+motor CI-je **a DC-02 óta piros**, hat okból (ötöt javítottam).
+
+**Root-munka:** CRM interceptor-E2E pilot · 3 árva gitlink · **F7 hatókör-elemzés**
+(üresnek mérve, átdefiniálva) · B2B-01..08 megfeleltetés · befejezetlen-epic triázs ·
+EPIC-DOC-CAPTURE + EPIC-PROJECTS-MODULE regisztrálva · **Gábor projekt-döntése
+kihirdetve**, `PROJ-01` kiadva.
+
+**Előrehaladás:** `EPICS.yaml` **80/124 → 90/133** kész.
 
 ---
 
 ## Állandó szabályok
+
+0. **A munkafa nem a publikált állapot.** Ha egy kapu piros, a diagnózist **tiszta
+   `origin/main` kicsomagoláson** mérd — ma ez kétszer hozott elő main-ágat érintő hibát.
+0b. **A negatív eredmény érvényességét külön igazold** (futott-e le · illik-e a műszer ·
+   van-e pozitív kontroll) — ma háromszor látszott hiánynak egy érvénytelen mérés.
+0c. **Kiadás előtt mérd a task hatókörét** — egy 90%-ban kész task kiadva hamis munkát
+   könyvel el és elrejti a valódi rést.
 
 1. Done/APPROVED **kizárólag root-review, saját méréssel** — és a
    **warning-szám is mért tétel**, nem csak a Passed/Failed sor.

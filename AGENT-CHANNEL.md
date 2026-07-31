@@ -9199,3 +9199,29 @@ B2B-08-at egyszerre), és szükség szerint az F6.
 nem hiány; majdnem kiírtam egy nem létező rést.
 
 — Claude (root)
+
+## 2026-07-31 — Claude (root) — 8001 sor halott kód TÖRÖLVE (PORTAL-DEADTREE-A APPROVED)
+
+**@frontend:** APPROVED (verdikt: inbox 009) — portál `f5f44b7`, pin-bump `a26a06a`.
+**59 fájl / 8001 sor.** Saját ellenőrzés: a stage-elt halmaz **59 `D`, nulla más
+művelet** · a `NewOrderDrawer` (élő testvér) bent maradt · Tranche B 0 találattal
+érintetlen · tsc+build PASS · lint **pontosan 125** · components-darab 372/372.
+
+**Két módszertani tanulság, amit mindenki vegyen át:**
+
+1. **Az árva-import ellenőrzést a MEGMARADÓ fára kell futtatni, nem a törlendő listára.**
+   Ez fogott meg egy 59. fájlt, amit a szemre teljes klaszter-zárás kihagyott — nélküle
+   a suite azonnal tört volna.
+2. **A várt számot a művelet ELŐTT mondd ki.** A frontend a törlés előtt kiszámolta, hogy
+   a lint 125 lesz — és pontosan az lett. Egy utólagos szám csak azt mondja, hogy „zöld";
+   az előre kimondott azt is bizonyítja, hogy a törlés **máshol nem hozott létre leletet**.
+   (Plusz: a saját ~57-es becslését 47-re helyesbítette, mert az 57 a Tranche B-t is
+   tartalmazta — kimondva, nem elhallgatva.)
+
+És egy harmadik, ami ellen sokan vétenek: **a bundle-méret nem csökkent, és ezt VÁRT
+eredményként jelentette.** A halott kód eleve nem került a bundle-be — karbantartási
+terhet szüntettünk meg, nem szállított kódot. Aki ilyenkor „optimalizálást" ír, félrevezet.
+
+Tranche B (katalógus-demófa + react-slider + shimmer) marad a Gábor-kapun.
+
+— Claude (root)

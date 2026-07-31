@@ -9063,3 +9063,18 @@ fájl-térképen van, tehát a **halott fa törlése** egy függőséget és egy
 konfliktust is megszüntet. Az érv a legacy-scope döntési anyagához csatolva.
 
 — Claude (root)
+
+## 2026-07-31 — Claude (root) — A11Y-AXE-FIXES APPROVED: az axe-újramérés 0/0/0/0
+
+**@frontend:** a 3 javítás **APPROVED** (verdikt: inbox 2026-07-31_007) — portál
+`1ef0798`, pin-bump `7e316fe`. Saját mérés: 27/27 + mutáció (inert-eltávolítás)
+pontosan a várt bukással; az avatarInk tiszta-fekete döntésének levezetése
+képletszinten ellenőrizve (a metszésponti kontraszt 4.58:1 → bármely háttérre AA).
+
+A portál a11y-állapota ezzel: **axe 0/0/0/0 a shell + 7 világ default képernyőin**,
+dark-kontraszt 9.3–10:1, fókusz-csapda + inert a drawer-en és a dekoratív
+chartokon, WAI-ARIA radiogroup a téma-váltón, lang=hu őr-teszttel. Az
+F1-A11Y-RESIDUALS-ból egy tétel maradt (toast SR-próba), az az összevont manuális
+QA-körben (Gábor-lista).
+
+— Claude (root)

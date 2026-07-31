@@ -1,10 +1,10 @@
 # BACKEND Terminal State
 
-> **Frissítve:** 2026-07-30 este (Europe/Budapest)
+> **Frissítve:** 2026-07-31 délután (Europe/Budapest)
 > **Kanonikus task-státusz:** [`EPICS.yaml`](../../EPICS.yaml) — a `done`/`APPROVED`
 > kimondása **root-review joga**, ez a fájl a végrehajtó nézete.
 > **Aktív task:** [`B2B-10 F5`](../../docs/tasks/EPIC-B2B-COLLABORATION-2026Q3/B2B-10-F5-PROJECT-ANCHOR-RESOLUTION.md)
-> (a doksi **tervezet**, root-kiadásra vár; az F5/0 mérési szelet viszont már lefutott)
+> (**KIADVA** — root, 2026-07-31; F5/0 APPROVED, F5/1 `review_requested`)
 
 ## Hol van a kód
 
@@ -44,14 +44,35 @@
 
 ---
 
-## 2. B2B-10 F5 — projekt-horgony feloldása (FUT)
+## 2. B2B-10 F5 — projekt-horgony feloldása (FUT, kiadva 2026-07-31)
+
+**A három root-döntés (inbox 2026-07-31_001):** (1) hitelesítési út = **on-behalf-of**,
+kimondott korláttal: KIZÁRÓLAG kérés-hatókörű — háttérfeldolgozásból Kernel-hívás ezen az
+úton elvileg sem lehet, ha kell, ÚJ root-döntés; (2) **`ProjectOwnerTenantId` törölve** (a
+bérlő-bizonyíték a kernel 404-je, kernel-kapu elkerülve); (3) hatókör elfogadva, a
+visszavetítés a B2B-06-é.
 
 | Szelet | Állapot | Bizonyíték / megjegyzés |
 |---|---|---|
-| **F5/0** mérési szelet | **`review_requested`** | eldobható KC24 + kernel + collaboration host |
-| **F5/1** create-út | **következik** | Gábor döntése: a hiány **kimaradás** volt, az F5 hozza |
-| **F5/2** `HttpProjectAdapter` | pending | a hitelesítési útra **on-behalf-of** a javaslatom |
-| **F5/3** negatív kontroll | pending | idegen bérlő tokenjével a feloldás semmit ne adjon |
+| **F5/0** mérési szelet | **APPROVED** (2026-07-31, root saját méréssel) | 89/89 + mutáció sha1-bizonyítással |
+| **F5/1** create-út | **`review_requested`** (`a4e1f49`) | 256/256 unit + 52/52 integrációs, 0 warning; mutáció 5/5 harapott; outbox `2026-07-31-b2b10-f5-1-…` |
+| **F5/2** `HttpProjectAdapter` | kiadásra vár | on-behalf-of, kérés-hatókörű korláttal; fail-fast options; explicit hibatérkép |
+| **F5/3** negatív kontroll | pending | idegen bérlő tokenjével a feloldás semmit ne adjon + MELYIK réteg tartja |
+
+### Az F5/1 tartalma (amit a review-nak látnia kell)
+
+- **Domain:** `CollaborationAgreement.DelegateWork` — host-only; lezárt megállapodás
+  (Rejected/Cancelled/Superseded) nem vesz fel új munkát; horgony kötelező a születésnél;
+  `EnsureSameProject` a domainben (a handler csak a sibling-projekt TÉNYT adja be).
+- **API:** `POST /agreements/{id}/work-packages` → 201 + Location + ETag; **Idempotency-Key
+  kötelező** (create-nél nincs If-Match — a „no blind writes" másik hangszere).
+- **Grant-kapu:** először részvétel-alapúra építettem, a kiírás korrigálta →
+  `WorkPackageExecute`; az M4-mutáció bizonyítja, hogy a különbséget teszt fogja.
+- **Read model:** `workScope` a dróton (GUID-ok); enum-alak továbbra is F4-döntés.
+- Menet közbeni tanulság: a retry-E2E első változatát a **fingerprint-védelem fogta meg**
+  (422 különböző törzsre) — a teszt hibája volt, a middleware helyesen tagadott.
+- A root jelezte `TenancyTestHost.cs` +7 sor **nem az enyém** — egy commitolatlan dev-auth
+  change-set része a hosting-fában (a `DevelopmentSchemeTests` +78 sora használja); nem nyúltam hozzá.
 
 ### Az F5/0 négy mért válasza
 

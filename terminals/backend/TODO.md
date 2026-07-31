@@ -1,6 +1,6 @@
 # BACKEND Terminal TODO
 
-> **Frissítve:** 2026-07-30 este (Europe/Budapest)
+> **Frissítve:** 2026-07-31 délután (Europe/Budapest)
 > **Részletes állapot:** [`STATE.md`](STATE.md)
 > **Kanonikus task-státusz:** [`EPICS.yaml`](../../EPICS.yaml) — a `done` kimondása root-review joga
 >
@@ -26,28 +26,29 @@
       `docker ps -aq --filter "label=org.testcontainers=true"`. ⚠ A `doorstar-production-db` **nem az enyém**.
 - [ ] Ha egy bukás futásideje ~**1 ms**, előbb a **fixture** épségét nézd, ne a kódot.
 
-## P1 — B2B-10 F5: a projekt-horgony feloldása (FUT)
+## P1 — B2B-10 F5: a projekt-horgony feloldása (FUT — **KIADVA**, root 2026-07-31)
 
-Kiírás (**tervezet, root-kiadásra vár**):
-[`B2B-10-F5-PROJECT-ANCHOR-RESOLUTION.md`](../../docs/tasks/EPIC-B2B-COLLABORATION-2026Q3/B2B-10-F5-PROJECT-ANCHOR-RESOLUTION.md)
+Kiírás: [`B2B-10-F5-PROJECT-ANCHOR-RESOLUTION.md`](../../docs/tasks/EPIC-B2B-COLLABORATION-2026Q3/B2B-10-F5-PROJECT-ANCHOR-RESOLUTION.md)
+· a három root-döntés az inbox `2026-07-31_001`-ben (on-behalf-of kérés-hatókörű korláttal ·
+`ProjectOwnerTenantId` törölve · hatókör elfogadva)
 
-- [x] **F5/0 — mérési szelet**: a Kernel elérhető és hitelesíthető; **egy token két API-t** szolgál
-      ki (on-behalf-of); a bérlő-szűkítést a token `tid`-je hajtja (A **200** / B **404**); a
-      gép-gép identitás **nem** tud bérlőt hordozni. **Kernel-módosítás nem kell.** `review_requested`.
-- [x] **Platform-hiba javítva** (az F5/0 mellékterméke): a `spaceos_tenants` claim harmadik alakja
-      → csendes **403** mind a 7 modulon. A/B bizonyíték, 89/89 zöld, mutáció 2 bukással.
-- [ ] **F5/1 — a create-út** (Gábor döntése: a hiány **kimaradás** volt): munkacsomag-létrehozás
-      parancs + végpont, ami **feltölti a horgonyt**. Ez teszi élővé a ma halott tárolt mezőt, és ez
-      adja a feloldó adapter valós hívási pontját. **Egyetlen nyitott kérdéstől sem függ.**
-- [ ] ⛔ **Root-jóváhagyást kér (a mérés után):** a hitelesítési út legyen **on-behalf-of**, és ezzel
-      a `ProjectOwnerTenantId` mező **essen ki** — így a kernel-DTO bővítés, azaz a **Kernel-kapu
-      elkerülhető**.
-- [ ] **F5/2** — `HttpProjectAdapter`: typed `HttpClient`, **fail-fast** base-URL options
-      (`ValidateOnStart`, üres alapérték — **nem** néma `?? "http://127.0.0.1:500x"` fallback),
-      explicit hibatérkép (404 / 401-403 fail-closed / timeout külön), per-hívás timeout.
-      Teszt: kézzel írt `HttpMessageHandler`-dublőr, **új NuGet nélkül**.
+- [x] **F5/0 — mérési szelet**: **APPROVED** (root, 2026-07-31, saját méréssel). A platform-hiba
+      javítása (`spaceos_tenants` 3. alak → csendes 403) is átment, `e0b922d` origin/main-en.
+- [x] **F5/1 — a create-út**: **`review_requested`** (`a4e1f49`, origin/main-en). DelegateWork
+      (host-only, lezárt megállapodás tilt, horgony kötelező, one-project invariáns) + grant-kapus
+      handler + `POST /agreements/{id}/work-packages` (201+Location+ETag, kötelező Idempotency-Key)
+      + `workScope` a read-modelben. **256/256 unit + 52/52 integrációs, 0 warning; mutáció 5/5.**
+      Outbox: `2026-07-31-b2b10-f5-1-create-ut-review-requested.md`.
+- [ ] **F5/2** — `HttpProjectAdapter` (**kiadásra vár**): typed `HttpClient`, **fail-fast** base-URL
+      options (`ValidateOnStart`, üres alapérték — **nem** néma `?? "http://127.0.0.1:500x"` fallback),
+      explicit hibatérkép (404 / 401-403 fail-closed / timeout külön), per-hívás timeout,
+      **on-behalf-of kizárólag kérés-hatókörrel** (root-korlát: háttérből Kernel-hívás nincs).
+      Teszt: kézzel írt `HttpMessageHandler`-dublőr, **új NuGet nélkül**. A valós hívási pont a
+      create-út mögé kerül.
 - [ ] **F5/3** — negatív kontroll mérve, és **kimondva, melyik réteg tartja** (a kernel 404-je vagy
       az adapter ellenőrzése).
+- [ ] Nyitott apróság a review-nak: a **létrehozó user nem perzisztálódik** (a history az első
+      átmenettől él) — ha kell, root-döntés.
 
 ## P2 — Scheduling: M5 (írási irány) + két nyitott kontraktus-döntés
 

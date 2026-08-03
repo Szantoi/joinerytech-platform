@@ -25,10 +25,26 @@
       ⚠ **Az elfogadással együtt ki kell mondani, hogy az ADR-066 §9.1 döntése (2026-07-21:
       „a `ProjectRef` tulajdonosa a Kernel `FlowEpic`") FELÜLÍRT** — különben két ADR két
       tulajdonost nevez meg ugyanarra a fogalomra.
-- [ ] **ÚJ: az ADR-072 §7 három kérdése** (a v1 magját nem blokkolják): a szakma-függőségek
-      a Collaboration projekciói legyenek-e · a projekt CRM-rendelésből születik-e ·
-      a `ProjectCode` formátuma és kiosztása (a portál `PRJ-2426-001`, a Kontrolling
-      `PRJ-2026-014` alakot használ — ma **kétféle** van a fában).
+- [x] ~~**az ADR-072 §7 három kérdéséből kettő**~~ **ELDŐLT** — §7.1 (2026-07-31) és
+      **§7.2 (2026-08-03, Gábor: „Igen a CRM-ből IS születhet")**. Kihirdetve a csatornán.
+      ⚠ A döntő szó az **„IS"**: mindkét származás jogos, a create-út rendelést NEM
+      követelhet — aki szigorúbban adja tovább, más szabályt csinál belőle.
+- [ ] **MARAD EGY: az ADR-072 §7.3** — a `ProjectCode` **formátuma** és egyediségi köre
+      (a portál `PRJ-2426-001`, a Kontrolling `PRJ-2026-014` — ma **kétféle** van a fában).
+      A „ki generálja" felét a §7.2 már eldöntötte: két független hívó ⇒ **szerver-oldali
+      kiadás**; a formátum viszont Gáboré. **A PROJ-06 create-végpontnál blokkoló.**
+      (A backend kísérőlevele „kettő"-t írt, a saját ADR-je „egy"-et — a mért szám: **egy**.)
+- [ ] ⚠ **ÚJ, 2026-08-03 — GAZDA-DÖNTÉS: 58 fájlnyi gazdátlan, commitolatlan Codex-munka.**
+      A Codex 07-28-án a Doorstar-szigetre váltott, és a platform-fán hagyott egy
+      összefüggő munkatestet, amit **egyetlen státusz-forrás sem látott** (3 task-doksi
+      untracked volt). **Biztonsági tartalma van, és a főágon MA a rossz alak fut:**
+      a hibaleképezők nyers handler-hibát tesznek a wire-re, a modul-health pedig kiadja
+      a `migrationsAssembly`/`moduleId`-t. A javítás megvan — csak nincs commitolva.
+      **Kérdés:** ki veszi át **egyben** (a három szelet ugyanazokra a hosting-fájlokra
+      rakódik)? A backend a B2B-10 után, vagy vissza a Codexhez? Amíg nincs gazda,
+      **nem review-zom és nem commitolom** — idegen sáv kódja.
+      Patch mentve lokálisan: `artifacts/orphaned-codex-worktree-2026-08-03/` (sha1
+      `06e026b6`) + scratchpad-másolat; a publikus repóba szándékosan nem megy.
 
 - [ ] **`/shopfloor` PIN-backdoor.** A `PIN=1234` ág eltávolítása authorizált; a
       kérdés az, hogy **egy nem működő világ mit keres publikus route-on**
@@ -78,7 +94,15 @@
 
 ## Rám váró review
 
-- [ ] **Semmi.** A nap mind a 12 befutott review-ja lezárva (mind APPROVED, saját méréssel).
+- [x] ~~**Semmi.**~~ ⛔ **EZ TÉVEDÉS VOLT (2026-08-03).** A frontend `_009` felterjesztése
+      07-31 **16:04**-kor befutott az outboxába — a napzárásom (18:06) mégis „semmi"-t írt,
+      és **három napig állt egy sáv** miatta. **Lezárva 2026-08-03: APPROVED** (portál
+      `ee2cf04`, saját méréssel + saját mutációval + pozitív kontrollal).
+      **A szerkezeti ok:** a review-sorom a csatornán és a saját listámon állt, és
+      **egyik sem nézte a terminál-outboxokat** — pont azt, ahová a felterjesztések mennek.
+      A P0-listám 2. sora („terminál-outboxok") ezt előírja; a napzáráskor nem futott le.
+      **Ellenintézkedés:** a Monitor újraélesítve (ma 19:32), és a napzárás előtt is
+      kötelező outbox-szemle, nem csak a session elején.
 
 - [x] ~~**doccapture: faipari RAG 1. fázis**~~ **APPROVED 2026-07-31** saját VPS-méréssel
       (manifest-hash 5/5 · dry-run 1963 chunk · Chroma count=1998 · MCP-próbák).
@@ -89,8 +113,15 @@
 - [x] ~~**B2B-01..08 tételes megfeleltetés**~~ **KÉSZ 2026-07-31**: 3 zárva bizonyítékkal
       (B2B-01/02/04), 5 nevesített maradékkal (B2B-05→F6 · B2B-06 adapter-scope ·
       B2B-07/08→F4 · B2B-09→F7). A megfeleltetés soronként az `EPICS.yaml`-ban.
-- [ ] **ERPSEP triázs-kör** az 5 státusz-eltérésre (yaml↔doksi) — gazda-kérdéssel együtt.
-      ⚠ A sáv **egész nap nem mozdult** (7/14), és **nincs gazdája**.
+- [x] ~~**ERPSEP triázs-kör** az 5 státusz-eltérésre (yaml↔doksi)~~ **KÉSZ 2026-08-03**
+      (`21ec995`): mind az 5 feloldva — a doksinak **2**-ben volt igaza, a yaml-nek **3**-ban
+      (az eltérés mindkét irányban jön). ERPSEP-05 → `in_progress` · ERPSEP-06 `blocked`, de
+      **átminősített blokkolóval** (nem a függőség, hanem a gazda hiánya) · ERPSEP-07 és
+      MODULE-PACKAGES doksi-státusza javítva · STAB-ASPNET22 „ready" → `pending`, **újramérve
+      a helyes műszerrel** (4 csproj / 5 élő `Http.Abstractions 2.2.0`; az első mérésem
+      érvénytelen volt: a `Encodings.Web`-lánc tranzitív, csprojban elvileg sem látszik).
+      ⭐ **A triázs valódi hozadéka nem a státuszok, hanem az ok:** a gazdátlan, commitolatlan
+      Codex-munkatest (ld. a Gábor-listán). A sáv **gazda-kérdése továbbra is nyitva.**
 - [x] ~~**4 task-doksi archiválása**~~ **KÉSZ 2026-07-31** (`B2B-01`, `B2B-02`,
       `B2B-04`, `B2B-10-F5` → `archive/`, az `EPICS.yaml` útvonalai igazítva).
 - [ ] **Az F7 R2-tétele:** Kernel-függés-nyilatkozat a release-jegyzetbe (az F5/3 lelete:
@@ -166,10 +197,11 @@
 | `MODULE-PACKAGES` | in_progress | blocked |
 | `STAB-PLATFORM-ASPNET22-RCE-REMOVAL` | pending | „ready" |
 
-- [ ] Három Codex-task-doksi (`STAB-HTTP-ERROR-REDACTION`,
-      `STAB-KONTROLLING-PORTFOLIO-INDEX`, `STAB-MODULE-AUDIT-IDENTITY`)
-      **untracked** és nincs az `EPICS.yaml`-ban → **nem létező munkaként
-      viselkednek**. Jelzés a Codexnek.
+- [x] ~~Három Codex-task-doksi **untracked** és nincs az `EPICS.yaml`-ban~~
+      **RENDEZVE 2026-08-03** (`21ec995`): mindhárom commitolva és regisztrálva
+      (`blocked`, a blokkoló a gazda hiánya). ⚠ **De a jelzés a Codexnek NEM elég**, mert
+      a mérés kihozta, hogy **a hozzájuk tartozó kód sincs a főágon** — ez már nem
+      adminisztráció, hanem a fenti gazda-döntés tárgya.
 - [x] ~~**Az EPIC-DOC-CAPTURE sincs az `EPICS.yaml`-ban**~~ **REGISZTRÁLVA 2026-07-31**
       (DC-00/DC-EXCEL/DC-06/DC-02 done · DC-01a in_progress · DC-01c blocked · DC-04 blocked),
       a 'DC-01b' név-ütközés kimondva (Excel-betöltő vs. PDF-írás szelet).

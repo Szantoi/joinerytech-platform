@@ -516,8 +516,16 @@ epics:
             "Igen a CRM-ből IS születhet." A döntő szó az "IS": MINDKÉT származás jogos,
             a create-út rendelést NEM követelhet. Aki "a projekt a CRM-rendelésből
             születik"-ként hirdeti ki, SZIGORÚBB szabályt csinál belőle, mint a döntés.
-          - §7.3 (a ProjectCode FORMÁTUMA és egyediségi köre) — NYITVA, Gábor-kapu,
-            a create-végpontnál (PROJ-06) blokkoló. A "ki generálja" felét a §7.2 már
-            leszűkíti: két független hívó ⇒ a kiadás szerver-oldali (a formátum Gáboré).
+          - §7.3 (a ProjectCode FORMÁTUMA és egyediségi köre) — ELDÖNTVE 2026-08-03 este,
+            Gábor: "PRJ-<négyjegyű naptári év>-<sorszám>" (a Kontrolling alakja; a portál
+            2426-os kódolása ELVETVE), BÉRLŐNKÉNT külön számláló, ami az év fordulóján
+            újraindul, és a kódot a MODUL adja ki (ez egybevág a §7.2-ből levezetett
+            szerver-oldali kiadással). Leszállítva: SequentialProjectCodeAllocator +
+            project_code_counters (TenantId, Year) RLS-sel, egyetlen INSERT..ON CONFLICT
+            ..RETURNING utasítással (a4d255c). KÉT KIMONDOTT KORLÁT, ami később ÚJ döntést
+            kérhet: az év UTC szerint dől el (nincs bérlőnkénti időzóna), és a sorszám
+            HÉZAGOS lehet (a hézagmentesség tranzakció-hosszú zárat kérne).
+        ⇒ **AZ ADR-072 MINDEN NYITOTT KÉRDÉSE ELDŐLT (2026-08-03).** A §7 három kérdése
+        közül egy sem vár Gáborra; a modul v1-e döntés-oldalról szabad.
         ROOT-HELYESBÍTÉS (2026-08-03): a backend kísérőlevele "mostantól kettő" nyitott
         kérdést írt, a saját ADR-je viszont "egy nyitva"-t — a mért, helyes szám EGY.

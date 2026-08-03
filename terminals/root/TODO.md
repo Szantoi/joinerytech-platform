@@ -29,7 +29,13 @@
       **§7.2 (2026-08-03, Gábor: „Igen a CRM-ből IS születhet")**. Kihirdetve a csatornán.
       ⚠ A döntő szó az **„IS"**: mindkét származás jogos, a create-út rendelést NEM
       követelhet — aki szigorúbban adja tovább, más szabályt csinál belőle.
-- [ ] **MARAD EGY: az ADR-072 §7.3** — a `ProjectCode` **formátuma** és egyediségi köre
+- [x] ~~**MARAD EGY: az ADR-072 §7.3**~~ **ELDŐLT 2026-08-03 este (Gábor):
+      `PRJ-<négyjegyű év>-<sorszám>`** — a Kontrolling alakja, a portál `2426`-os
+      kódolása elvetve; bérlőnkénti számláló, évfordulón újraindul, a kódot a **modul**
+      adja ki. ⇒ **AZ ADR-072-NEK NINCS TÖBB NYITOTT KÉRDÉSE.** Leszállítva: `a4d255c`.
+      ⚠ Két korlát, ami később ÚJ döntést kérhet: az év **UTC** szerint dől el
+      (nincs bérlőnkénti időzóna), és a sorszám **hézagos** lehet.
+- [ ] ~~a `ProjectCode` formátuma és egyediségi köre~~ (lezárva, ld. fent)
       (a portál `PRJ-2426-001`, a Kontrolling `PRJ-2026-014` — ma **kétféle** van a fában).
       A „ki generálja" felét a §7.2 már eldöntötte: két független hívó ⇒ **szerver-oldali
       kiadás**; a formátum viszont Gáboré. **A PROJ-06 create-végpontnál blokkoló.**
@@ -85,8 +91,11 @@
       (+`.RlsFixtures`) `PackageLicenseExpression`-je és a platform-repó gyökér-`LICENSE`
       (+ `RepositoryUrl` kettősség). PUBLIKUS repó licenc nélkül = minden jog fenntartva
       minden fogyasztónak; a DC-01c ezen blokkolt.
-- [ ] **ÚJ (DC-01): betűtípus-politika** a DC-01b előtt — javaslat: OFL-1.1 Liberation
-      Sans, kiadás + ellenőrző-összeg rögzítéssel; a Monotype/MS EULA-s rendszerfont kizárva.
+- [x] ~~**ÚJ (DC-01): betűtípus-politika** a DC-01b előtt~~ **ELDŐLT 2026-08-03 (Gábor):
+      LiberationSans OFL-1.1 alatt szállítva + konfigurálható felülírás; hiányzó vagy
+      nem fedő betűtípusnál fail-closed (`FontUnusableError`) a kimeneti fájl
+      létrehozása ELŐTT.** Az indoklás eladási érv is: az OFL engedi a beágyazást, és
+      a vevő PDF-je ettől nem lesz OFL-es. A DC-01b utolsó Gábor-kapuja ezzel nyitva.
 - [ ] **ÚJ (DC-01): PyMuPDF a goods-receipt repóban** — AGPL/kereskedelmi kettős licenc,
       a repó MIT-státusza érintett; 4 fájl `fitz` → pypdfium2 csere (külön task).
 - [ ] **ÚJ (DC-01): objektum-tár (DC-01c)** — S3/MinIO döntés (a Minio-kliens Apache-2.0,

@@ -93,14 +93,28 @@ ASP.NET 2.2 csomaggráfot kell eltávolítani, nem csak fölülírni egyik level
 ## Elfogadási kritériumok
 
 - [x] EHS direct 2.2 package eltávolítva, critical finding megszűnt.
-- [ ] Kontrolling direct 2.2 dependency megszűnt; vulnerability-scan nem romlott.
-- [ ] HR direct 2.2 dependency megszűnt; vulnerability-scan nem romlott.
-- [ ] Legacy DMS 2.2 dependency és RCE-lánc megszűnt.
-- [ ] JoineryTech Infrastructure két 2.2 package-e megszűnt.
-- [ ] Joinery Infrastructure 2.2 package-e megszűnt.
-- [ ] Minden érintett modul build/teszt zöld.
-- [ ] Egyetlen célgráfban sincs `System.Text.Encodings.Web 4.5.0`.
-- [ ] Független security review APPROVED modulonként.
+- [x] **Kontrolling** direct 2.2 dependency megszűnt (2026-08-03, root); a gráfban
+      **0** `AspNetCore.Http`-sor, build 0 W / 0 E, teszt **191/191**.
+- [ ] ~~HR direct 2.2 dependency~~ **ÁTMINŐSÍTVE: nem végrehajtási tétel.** A referencia
+      a **halott** HR-fában (`src/spaceos-modules/spaceos-modules-hr`, host/Api nélkül)
+      ül; az **élő** `src/hr` tiszta. Scope-döntés kell (törlés vagy élesztés).
+- [ ] Legacy DMS 2.2 dependency és RCE-lánc megszűnt. ⚠ A modul a mai fán **nincs meg**
+      — ez tisztázandó, nem tekinthető késznek.
+- [x] **JoineryTech Infrastructure** két 2.2 package-e megszűnt (2026-08-03, root);
+      a `System.Text.Encodings.Web 4.5.0` **eltűnt a gráfból** (előtte mérten ott volt),
+      `FrameworkReference` hozzáadva, **mutációval igazoltan teherhordó** (kivéve: 3 hiba).
+- [ ] Joinery Infrastructure 2.2 package-e megszűnt. ⚠ **Külön repó** (submodule) —
+      külön commit + gazda-ACK kell, innen nem végezhető el.
+- [ ] Minden érintett modul build/teszt zöld. → **A két elvégzett modulra teljesült**
+      (JoineryTech.sln 0 W/0 E · Kontrolling src+host+tests 0 W/0 E + 191/191);
+      a maradék kettőre nyitva. ⚠ A JoineryTech-modulnak **nincs egyetlen tesztje sem**
+      (ld. a melléklelet), tehát ott a bizonyíték kizárólag build + függőségi gráf.
+- [ ] Egyetlen célgráfban sincs `System.Text.Encodings.Web 4.5.0`. → **A két elvégzett
+      modulra mérve teljesül**; a Joinery-submodule és a legacy DMS kérdése nyitva.
+- [ ] **Független security review APPROVED modulonként.** ⚠ Ezt a root **nem tudja
+      magára kiállítani**: a végrehajtó ma a root volt, tehát a „független" feltétel
+      per definitionem nem teljesül. Vagy a gazda-döntéssel érkező sáv nézi át, vagy
+      Gábor mondja ki, hogy a mért bizonyíték (mutáció + gráf-diff + 191/191) elég.
 
 ## Stop / eszkaláció
 
@@ -114,3 +128,76 @@ ASP.NET 2.2 csomaggráfot kell eltávolítani, nem csak fölülírni egyik level
 
 Modulonként atomikus. Rollback után a vulnerability-scan kötelező; kritikus
 findinget visszahozó állapot nem release-elhető.
+
+---
+
+## 2026-08-03 — ROOT-VÉGREHAJTÁS: 4-ből 2 lezárva, és a másik kettő NEM végrehajtás-kérdés
+
+A tétel gazdátlan volt (Codex-sáv), a triázs-kör kihozta, a root elvégezte a
+végrehajtható részét. **Minden szám saját mérés**, a munkafán (ld. a korlátot lent).
+
+### Amit a mérés a kiíráshoz képest MEGVÁLTOZTATOTT
+
+A táblázat öt modult sorol. A mai fán **négy** hordozza a referenciát, és a négyből
+**kettő nem végrehajtási feladat**:
+
+| Modul | Mért állapot | Mi történt |
+|---|---|---|
+| **JoineryTech.Infrastructure** | a `System.Text.Encodings.Web 4.5.0` **ténylegesen materializálódik** | ✅ **JAVÍTVA** |
+| **Kontrolling** | a lánc **elfedve** (a tranzitív feloldás 8.0.0), de a 2.2 direct referencia él | ✅ **JAVÍTVA** |
+| **HR** | ⛔ a referencia a **HALOTT** HR-fában ül | ❌ nem javítom — ld. lent |
+| **Joinery.Infrastructure** | a `spaceos-modules-joinery` **külön repó** (submodule) | ❌ nem innen — külön commit + gazda |
+| legacy DMS | a mai fán **nincs meg** | tisztázandó, NEM feltételezhető, hogy kész |
+
+### ⛔ A HR-sor egy halott fára mutat — ezért NEM javítottam
+
+A HR-nek **két fája** van a repóban, és a lelet a rosszban ül:
+
+```
+src/hr/                              src + Api + tests · utolso commit 2026-07-25 · ELO
+src/spaceos-modules/spaceos-modules-hr/   src + tests, API/HOST NELKUL · 2026-07-15 · csak a sajat tesztje hivatkozza
+```
+
+**Az élő HR-fa tiszta** — nincs benne 2.2-es referencia. A leletet hordozó fa az,
+amelyiknek nincs hostja. Ennek a „javítása" egy hulla kozmetikázása lenne, és
+elrejtené a valódi kérdést: **a halott fa törlése vagy élesztése scope-döntés**
+(ugyanaz az osztály, mint az orphan `spaceos-modules-ehs` fa).
+
+### Mérések
+
+| Mit | Előtte | Utána |
+|---|---|---|
+| `JoineryTech.Infrastructure` függőségi gráf | `Encodings.Web 4.5.0` + 3 AspNetCore.Http-sor | **0 találat mindkettőre** |
+| `Kontrolling` függőségi gráf | `Http.Abstractions 2.2.0` (a 4.5.0 elfedve 8.0.0-val) | **0 AspNetCore.Http-sor** |
+| `JoineryTech.sln` (Api + Tests is) | — | **0 warning / 0 error** |
+| Kontrolling `src` / `host` / `tests` build | 0 W / 0 E | **0 W / 0 E** (változatlan) |
+| Kontrolling teszt-suite | — | **191/191 zöld** (4 m 48 s) |
+| saját `dotnet-build-gate` (önteszt + ratchet) | — | önteszt PASS, **„TISZTA: nincs romlás"** |
+
+**MUTÁCIÓ** (a produkciós oldalon, alkalmazva-bizonyítva): a beírt
+`FrameworkReference` kivétele a `JoineryTech.Infrastructure`-ből → **3 fordítási hiba**.
+A sor tehát **teherhordó**, nem kozmetika; a kiírás állítása („valós Http-fogyasztó:
+tenant interceptor") kódszinten is igazolt: `Data/TenantDbConnectionInterceptor.cs`
+`IHttpContextAccessor`-t használ. ⚠ Az első mutáció-olvasatom hibás volt (0 hibát
+mértem, mert `error CS`-re grepeltem a build-összegző helyett) — a **negatív eredmény
+érvényességét külön kellett igazolni**, és nem állt.
+
+### ⚠ MELLÉKLELET, ami nem ehhez a taskhoz tartozik, de itt derült ki
+
+A **`SpaceOS.Modules.JoineryTech.Tests` projekt NULLA tesztet tartalmaz**
+(0 `.cs` fájl, 0 `[Fact]`/`[Theory]`), miközben:
+
+- a `dotnet test` rá **exit 0**-t ad („No test is available" — de a kilépőkód siker);
+- a `dotnet-build-gate` a listáján **`OK w=0`** sorként jelenik meg.
+
+Vagyis egy olvasó jogosan hinné, hogy a modul teszt-fedettséggel bír. **Nincs.**
+A mai javítást ebben a modulban **kizárólag build és függőségi gráf** igazolja,
+teszt nem. Külön tételként felvéve.
+
+### A mérés korlátja, kimondva
+
+A build/teszt-mérések a **munkafán** futottak, amelyen idegen sáv commitolatlan
+változásai is ülnek (Kontrolling endpoint/portfolio). A csproj-változás ettől
+független, és a **különbség-mérés ugyanabban a fában** történt (előtte 0 W/0 E,
+utána 0 W/0 E), de a „main-ág zöld" állítás ebből **nem** következik — a CI-kapu
+mondja ki, push után.

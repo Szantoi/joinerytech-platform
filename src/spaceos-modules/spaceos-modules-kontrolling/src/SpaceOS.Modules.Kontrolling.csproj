@@ -26,10 +26,16 @@
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="8.0.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />
-    <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.2.0" />
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Az ASP.NET Core típusok a net8 shared frameworkből jönnek, NEM a 2.2-es
+         package-ekből (STAB-PLATFORM-ASPNET22-RCE-REMOVAL, 2026-08-03). A törölt
+         Microsoft.AspNetCore.Http.Abstractions 2.2.0 támogatáson kívüli, és a
+         System.Text.Encodings.Web 4.5.0 kritikus RCE-láncot (CVSS 9.8,
+         GHSA-ghhp-997w-qr28) hozza magával. Itt a lánc ma egy magasabb tranzitív
+         feloldás (8.0.0) mögé volt REJTVE — a 2.2 referencia ettől még eltávolítandó,
+         mert a maszkolás bármelyik függőség-mozdulásnál megszűnhet. -->
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 

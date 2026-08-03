@@ -7,8 +7,6 @@
   <ItemGroup>
     <PackageReference Include="Ardalis.Specification.EntityFrameworkCore" Version="8.0.0" />
     <PackageReference Include="MediatR" Version="12.4.1" />
-    <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.2.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Http" Version="2.2.2" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.11" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.11" />
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="8.0.1" />
@@ -16,6 +14,17 @@
     <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.3.1" />
     <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="8.3.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Az ASP.NET Core típusokat (a tenant-interceptor HttpContext-igényét) a net8
+         shared framework adja, NEM a 2.2-es package-ek — a modern src/dms ugyanezt a
+         mintát követi. A törölt Microsoft.AspNetCore.Http.Abstractions 2.2.0 és
+         Microsoft.AspNetCore.Http 2.2.2 támogatáson kívüli, és MÉRTEN ide hozta be a
+         System.Text.Encodings.Web 4.5.0 kritikus RCE-t (CVSS 9.8, GHSA-ghhp-997w-qr28):
+         itt a lánc nem volt elfedve, a 4.5.0 ténylegesen materializálódott.
+         STAB-PLATFORM-ASPNET22-RCE-REMOVAL, 2026-08-03. -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 
   <PropertyGroup>

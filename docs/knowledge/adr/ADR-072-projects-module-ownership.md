@@ -6,9 +6,10 @@
 > **§7.2 — ELDÖNTVE (Gábor, 2026-08-03):** *„Igen a CRM-ből **is** születhet."* → **mindkét
 > származás jogos**; a create-út rendelést **nem követelhet**. Ld. §7.2 (ott a négy levezetett
 > következmény is, `D1`–`D4` — azok az én következtetéseim, nem Gábor szavai).
-> **Nyitva marad:** a §7.3 (`ProjectCode` **formátuma** és egyediségi köre) — erre nem született
-> javaslat, tehát nincs mihez hozzájárulni; a v1 magját nem blokkolja, a create-végpontot igen.
-> ⚠ A §7.3 „ki generálja" felét a §7.2 válasza **leszűkíti** (két hívó ⇒ szerver-oldali kiadás).
+> **§7.3 — ELDÖNTVE (Gábor, 2026-08-03):** `PRJ-<négyjegyű év>-<sorszám>` (a Kontrolling alakja),
+> **bérlőnként külön, évente újrainduló** számlálóval, **a modul adja ki**. Ld. §7.3 a két
+> kimondott korláttal (UTC-év · hézagos sorszám).
+> **Ezzel a §7 mindhárom kérdése eldőlt** — nincs nyitott hatókör-kérdés ebben az ADR-ben.
 >
 > ⚠ **AZ ELFOGADÁSSAL EGYÜTT RÖGZÍTVE (root, 2026-07-31): az ADR-066 §9.1 FELÜLÍRT.**
 > Az ADR-066 5. sora kimondta: *„`ProjectRef` tulajdonosa (9.1) — ELDÖNTVE (Gábor,
@@ -139,12 +140,14 @@ Project-mezőre **ma nem tartjuk be**, és ezt le kell írni, nem elhallgatni.
 - A `FlowManagement.FlowProgram/FlowProject/FlowMilestone` **retire-jelölt marad** (ADR-068 §5);
   erre a modulra **nem épül** rájuk semmi.
 
-## 7. Hatókör-kérdések — kettő eldöntve, egy nyitva
+## 7. Hatókör-kérdések — mind a három eldöntve
 
-> **A §7.3 azért marad nyitva, mert rá nem tettem javaslatot** — csak felvázoltam az opciókat.
-> Egy „egyetértek" nem tud olyat eldönteni, amire nem hangzott el ajánlás; akkor viszem fel újra,
-> amikor blokkolóvá válik (a create-végpontnál). ⚠ A §7.2 válasza a §7.3 egyik felét **leszűkíti**
-> — ld. lent.
+> Mindhárom kérdés Gábor döntésével zárult: **§7.1** 2026-07-31, **§7.2 és §7.3** 2026-08-03.
+> A §7.2 és a §7.3 azért maradt sokáig nyitva, mert **rájuk nem tettem javaslatot** — egy
+> „egyetértek" nem tud olyat eldönteni, amire nem hangzott el ajánlás —, és a megállapodás szerint
+> akkor vittem fel őket újra, amikor blokkolóvá váltak (a §7.3 a create-végpontnál).
+> ⚠ Érdemes megjegyezni a sorrendet: a **§7.2 válasza szűkítette le a §7.3-at** (két hívó ⇒ a
+> kiadás csak szerver-oldali lehet), tehát a két kérdés nem volt független egymástól.
 
 **7.1 — A szakma-függőségek (`dependencies`) hol laknak? — ✅ ELDÖNTVE (Gábor, 2026-07-31)**
 A portál mockjában egy projekt függ más szakmáktól (víz/áram/szellőzés/gépészet/bútor), státusszal
@@ -192,11 +195,23 @@ create-út **nem követelhet** rendelést, és a projekt önálló születése t
   **egyetlen, opcionális** származási hivatkozás. Ez azért olcsó választás, mert a hivatkozás
   opak — ha az N:M valós, a kapcsolótáblára váltás **additív**, nem törő.
 
-**7.3 — A `ProjectCode` formátuma és kiosztása.** `PRJ-2426-001` (portál) vs `PRJ-2026-014`
-(Kontrolling) — két különböző év-kódolás. Ki generálja, bérlőnként vagy globálisan egyedi?
-⚠ A **„ki generálja"** felére a §7.2 D3 levezetése azt adja, hogy a modulnak kell; **a formátum
-és a bérlőnkénti/globális egyediség kérdése nyitva marad**, és a create-végpontnál (PROJ-06)
-válik blokkolóvá. A v1 a formátumot **nem égeti be**.
+**7.3 — A `ProjectCode` formátuma és kiosztása — ✅ ELDÖNTVE (Gábor, 2026-08-03)**
+`PRJ-2426-001` (portál) vs `PRJ-2026-014` (Kontrolling) — két különböző év-kódolás volt.
+
+**Döntés: `PRJ-<négyjegyű naptári év>-<sorszám>`**, a Kontrolling alakja — a portál `2426`-os
+kódolása elvetve. **Bérlőnként külön számláló**, ami az **év fordulóján újraindul**, és a kódot
+**a modul adja ki** (a hívó nem adhat kódot — ez a §7.2 D3 levezetése, most már döntéssel fedve).
+A sorszám 3 jegyre párnázva; a 999. fölött **nő**, nem fordul át (`PRJ-2026-1000`).
+
+Megvalósítás: `SequentialProjectCodeAllocator` + `project_code_counters` tábla `(TenantId, Year)`
+kulccsal. A kiadás **egyetlen `INSERT … ON CONFLICT DO UPDATE … RETURNING`**, mert a
+read-then-write két párhuzamos create-nek ugyanazt a számot adná — ez **mérve** van: valódi
+két-utasításos alakra a 20-párhuzamos teszt bukik, a szekvenciális tesztek zöldek maradnak.
+
+⚠ **Két kimondott korlát:** (1) az év **UTC** szerint dől el, mert a modulnak nincs bérlőnkénti
+időzónája — az újév utáni első órákban a helyi és az UTC-év eltérhet; ha egy bérlőnek ez számít,
+az **új döntés**, nem csendes alapérték. (2) A sorszám **hézagos lehet** (egy megszakadt create
+elhasznál egy számot); a hézagmentesség tranzakció-hosszú zárat kérne.
 
 ## 8. Amit ez az ADR NEM tesz
 

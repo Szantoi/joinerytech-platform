@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using SpaceOS.Modules.Hosting.Persistence;
 using SpaceOS.Modules.Hosting.Tenancy;
+using SpaceOS.Projects.Application.Projects;
 using SpaceOS.Projects.Application.Repositories;
 using SpaceOS.Projects.Application.Tenancy;
 using SpaceOS.Projects.Infrastructure.Data;
@@ -67,6 +68,11 @@ public static class ProjectsInfrastructureServiceCollectionExtensions
 
         services.AddScoped<IProjectRepository, ProjectRepository>();
         services.AddScoped<ICurrentTenant, TenantContextCurrentTenant>();
+
+        // ADR-072 §7.3 (Gábor, 2026-08-03): PRJ-<year>-<sequence>, allocated by the module. Until
+        // that decision landed this port deliberately had no implementation, so that no default
+        // format could answer the question quietly.
+        services.AddScoped<IProjectCodeAllocator, SequentialProjectCodeAllocator>();
 
         return services;
     }

@@ -74,5 +74,10 @@ public class ProjectsDbContext : DbContext
 
         modelBuilder.Entity<ProjectEpicAssignment>()
             .HasQueryFilter(a => CurrentTenantId == null || a.TenantId == CurrentTenantId);
+
+        // A counter row is tenant data too: how many projects a tenant has opened this year is
+        // its business and nobody else's.
+        modelBuilder.Entity<ProjectCodeCounter>()
+            .HasQueryFilter(c => CurrentTenantId == null || c.TenantId == CurrentTenantId);
     }
 }

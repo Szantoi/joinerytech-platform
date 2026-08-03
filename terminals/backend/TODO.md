@@ -75,23 +75,48 @@ Gábor elé megy** — az elfogadás az ő joga) · ✅ **KIADVA**: `EPIC-PROJEC
 - [x] **PROJ-05 — Application + Infrastructure**: **KÉSZ, `review_requested`** (`dc3dc28`,
       30 fájl / 2301 sor). **58/58 zöld, 0 warning** tiszta build-cache-sel; **mutáció 3/3
       harapott** sha1-alkalmazva-bizonyítással. Részletek és a két menet közbeni lelet: `STATE.md`.
-- [ ] ⛔ **PROJ-06 — Api + host: BLOKKOLVA a §7.3-on.** `/api/projects/v1`, ETag/`If-Match`,
+- [ ] **PROJ-06 — Api + host** (a §7.3-döntés óta **nem blokkolt**). `/api/projects/v1`, ETag/`If-Match`,
       `Idempotency-Key` a create-en, ADR-067 `RequireEnabledModule` kapu, ProblemDetails +
       correlation id; az **epic-hozzárendelés az F5/2 `HttpProjectAdapter` mintájával** ellenőrizze
-      a FlowEpic létét on-behalf-of. **Amiért blokkolt:** a create-út a `ProjectCode`-ot az
-      `IProjectCodeAllocator`-tól kéri, annak pedig **szándékosan nincs implementációja**, amíg a
-      formátum nyitott. Egy alapértelmezett formátum csendben eldöntené a §7.3-at.
+      a FlowEpic létét on-behalf-of.
+
+## P1c — Codex-munkatest átvétele (KIADVA, root 2026-08-03, inbox `2026-08-03_001`)
+
+Gábor feloldotta (*„Bárki átveheti a codex munkát meg javítani is kell."*). **A gazda én vagyok.**
+Öt szelet, **kitettség szerinti** sorrendben, **szeletenként külön `review_requested`**:
+
+- [ ] ⛔ **S1 — hibaüzenet-redakció** (EHS 8 + HR 4 + QA 6 + Kontrolling 4, ~24 fájl): a főágon
+      **ma nyers handler-hiba megy a wire-re** — élő információ-szivárgás. Kötelező **negatív
+      kontroll**: a redakció ne vigye el a valódi 4xx validációs visszajelzést sem.
+- [ ] ⛔ **S2 — health-anonimizálás** (hosting, ~3 fájl): a `/health` ma kiadja a
+      `migrationsAssembly`/`moduleId`-t.
+- [ ] **S3 — `EnabledModules`** (ERPSEP-06, ~9 fájl): fail-closed, nincs élő kitettség.
+- [ ] **S4 — Kontrolling portfolio-index** (~3 fájl): teljesítmény, nem biztonság.
+- [ ] **S5 — audit-identity**: a root **mérte**, hogy a nevesített hatóköre **nincs meg**
+      (0 CRM-fájl, 0 audit-mező; csak a segéd van a főágon) → `review`-ből **`pending`**-re
+      minősítve. **Külön kiírást kér, nem átvételt.**
+
+⚠ **Két csapda a kiírásból:** (1) a munkafa **nem** tiszta Codex-munkatest — **fájl-szintű
+pathspec kötelező, `git add -A` szigorúan tilos**; (2) a mentett patch **átvilágítatlan**
+(53 titok-szerű minta) és a repó **publikus** — a patch `.gitignore`-olt, **ne** kerüljön be.
+
+⚠ **Helyesbítés a kiíráshoz:** a root a `SequentialProjectCodeAllocator` + `ProjectCodeCounter` +
+`20260803210000` fájlokat „félkész PROJ-06 munkaként" látta a fán. Ezek **PROJ-05 (Infrastructure)**
+tételek, **készek, mérve és commitolva** (`a4d255c`) — a fa azóta tiszta.
 - [x] ✅ **§7.2 ELDÖNTVE (Gábor, 2026-08-03):** *„Igen a CRM-ből **is** születhet."* → **mindkét**
       származás jogos; a create-út **rendelést nem követelhet**. A `Project` opcionális, **opak**
       `OriginRef`-et kap (a `CustomerId` mintájával) — a rendelés tételei/ára/száma a CRM-nél
       marad. **Az irány: CRM → projects, soha visszafelé** (`D1`, ADR-072 §7.2).
       ⚠ A **számosságot** (egy rendelés ↔ egy projekt?) **nem** döntöttem el (`D4`) — a v1 egyetlen
       hivatkozást visz, az N:M-re váltás az opak hivatkozás miatt additív marad.
-- [ ] ⛔ **Gábor-döntésre vár, amikor blokkolóvá válik** (ADR-072 §7.3): a **`ProjectCode`
-      FORMÁTUMA** és egyediségi köre, a create-végpontnál (PROJ-06). Erre **nem tettem
-      javaslatot**, tehát nincs hallgatólagos válasza. A „ki generálja" felét viszont a §7.2
-      válasza leszűkíti: **két független hívó ⇒ szerver-oldali kiadás** (`D3`) — ezt a PROJ-06
-      jelentése mondja ki, nem hallgatólagosan valósítja meg.
+- [x] ✅ **§7.3 ELDÖNTVE (Gábor, 2026-08-03):** `PRJ-<négyjegyű év>-<sorszám>` (a Kontrolling
+      alakja; a portál `2426`-os kódolása elvetve), **bérlőnként külön, évente újrainduló**
+      számláló, **a modul adja ki**. Leszállítva (`a4d255c`): `SequentialProjectCodeAllocator` +
+      `project_code_counters` tábla RLS-sel; a kiadás **egyetlen** `INSERT … ON CONFLICT DO
+      UPDATE … RETURNING`. **Ezzel az ADR-072 §7 mind a három kérdése eldőlt.**
+      ⚠ Két kimondott korlát: az **év UTC** szerint dől el (bérlőnkénti időzóna nélkül — ha
+      számít, **új döntés**), és a sorszám **hézagos** lehet.
+      ⛔ **A PROJ-06 ezzel nem blokkolt többé.**
 - [ ] A **§7.1 eldöntve** (függőségek = Collaboration-projekciók), de nyitva maradt benne: a
       **házon belüli** szakma-függőség nem fér a Collaboration kétoldalú modelljébe → ha előjön,
       **új döntés**, nem csendes `Dependency` tábla.

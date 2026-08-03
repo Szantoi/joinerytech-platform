@@ -196,8 +196,28 @@ Project-mezőre ma nem tartjuk be.
 | Szelet | Állapot | Bizonyíték |
 |---|---|---|
 | **PROJ-04** domain-mag | **kész** (`eb11735`) | **16/16 zöld, 0 warning**; mutáció **2/2 harapott** (cross-aggregátum epic-őr; `ProjectCode` nagybetűsítés), visszaállítva |
-| **PROJ-05** Application + Infrastructure (EF, RLS, migráció) | **kész, `review_requested`** | **58/58 zöld, 0 warning** tiszta build-cache-sel (36 unit + 22 integrációs, valódi Testcontainers-PostgreSQL NOSUPERUSER/NOBYPASSRLS szerepen); **mutáció 3/3 harapott**, sha1-alkalmazva-bizonyítással |
-| **PROJ-06** Api + host | ⛔ **blokkolva a §7.3-on** | `/api/projects/v1`, ETag/Idempotency-Key, ADR-067 modul-kapu; az epic-hozzárendelés az F5/2 adapter-mintájával ellenőrizze a FlowEpic létét |
+| **PROJ-05** Application + Infrastructure (EF, RLS, migráció) | **kész, `review_requested`** (`dc3dc28` + `a4d255c`) | **64/64 zöld, 0 warning** tiszta build-cache-sel (36 unit + 28 integrációs, valódi Testcontainers-PostgreSQL NOSUPERUSER/NOBYPASSRLS szerepen); **mutáció 4 kapun harapott** (egy ötödik próbálkozás túlélt — ld. lent), sha1-alkalmazva-bizonyítással |
+| **PROJ-06** Api + host | **nem blokkolt** (a §7.3 eldőlt) | `/api/projects/v1`, ETag/Idempotency-Key, ADR-067 modul-kapu; az epic-hozzárendelés az F5/2 adapter-mintájával ellenőrizze a FlowEpic létét |
+
+### `ProjectCode`-kiadó — a §7.3-döntés (Gábor, 2026-08-03), `a4d255c`
+
+`PRJ-<négyjegyű év>-<sorszám>` (a Kontrolling alakja), **bérlőnként külön, évente újrainduló**
+számláló, **a modul adja ki**. `SequentialProjectCodeAllocator` + `project_code_counters` tábla
+`(TenantId, Year)` kulccsal és RLS-sel; a kiadás **egyetlen** `INSERT … ON CONFLICT DO UPDATE …
+RETURNING`. **Az ADR-072 §7 mind a három kérdése ezzel eldőlt.**
+
+⚠ **Két kimondott korlát:** az **év UTC** szerint dől el (a modulnak nincs bérlőnkénti időzónája —
+ha egy bérlőnek számít, az **új döntés**, nem csendes alapérték), és a sorszám **hézagos** lehet.
+⚠ **EF-buktató kimondva:** a `SingleAsync` `LIMIT`-et komponálna az `INSERT … RETURNING` köré, amit
+az EF nem-komponálhatóként visszautasít → `ToListAsync().Single()`.
+
+⭐ **Az ötödik mutációm TÚLÉLTE, és a saját hibám volt.** Először a `LastValue + 1` **aritmetikát**
+cseréltem egy `max()+1` alkérdésre — **mind a 6 teszt zöld maradt**. A mutáció nem a mért
+tulajdonság **hordozóját** rontotta el: egy `ON CONFLICT`-es utasítás akkor is **egyetlen,
+sorzárolt** utasítás marad, bármi áll a `SET`-ben. A **helyes** mutáció (valódi két-utasításos
+read-then-write) **pontosan a 20-párhuzamos tesztet buktatta**, az 5 szekvenciális zöld maradt —
+vagyis a párhuzamossági teszt tényleg arra érzékeny, amire hivatkozik, és a szekvenciális tesztek
+önmagukban **nem** fogták volna meg a nem-atomi alakot.
 
 ### A PROJ-05 tartalma (amit a review-nak látnia kell)
 

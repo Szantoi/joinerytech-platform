@@ -3,9 +3,12 @@
 > **Státusz:** ✅ **ELFOGADVA (Accepted) — 2026-07-31 (Gábor).**
 > A döntő mondat: *„ADR-072 az legyen független"* — vagyis a **Döntés 1** (önálló,
 > iparág-semleges `spaceos.projects` modul) elfogadva; ezzel a §1–§6 irány és a §7.1 áll.
-> **Nyitva marad:** a §7.2 (a projekt CRM-rendelésből születik-e) és a §7.3
-> (`ProjectCode` formátuma és kiosztása) — ezekre nem született javaslat, tehát nincs
-> mihez hozzájárulni; a v1 magját egyik sem blokkolja.
+> **§7.2 — ELDÖNTVE (Gábor, 2026-08-03):** *„Igen a CRM-ből **is** születhet."* → **mindkét
+> származás jogos**; a create-út rendelést **nem követelhet**. Ld. §7.2 (ott a négy levezetett
+> következmény is, `D1`–`D4` — azok az én következtetéseim, nem Gábor szavai).
+> **Nyitva marad:** a §7.3 (`ProjectCode` **formátuma** és egyediségi köre) — erre nem született
+> javaslat, tehát nincs mihez hozzájárulni; a v1 magját nem blokkolja, a create-végpontot igen.
+> ⚠ A §7.3 „ki generálja" felét a §7.2 válasza **leszűkíti** (két hívó ⇒ szerver-oldali kiadás).
 >
 > ⚠ **AZ ELFOGADÁSSAL EGYÜTT RÖGZÍTVE (root, 2026-07-31): az ADR-066 §9.1 FELÜLÍRT.**
 > Az ADR-066 5. sora kimondta: *„`ProjectRef` tulajdonosa (9.1) — ELDÖNTVE (Gábor,
@@ -87,6 +90,7 @@ A §2 mért igénye több modul területére nyúlik. A v1 **kizárólag azt tar
 | `Status` — az öt címke (Draft/Active/Install/Done/OnHold) | **Szakma-függőségek** (`dependencies`) → **§7.1 nyitott kérdés** |
 | `CustomerRef` (semleges referencia, ADR-066 típusokkal) | **Mérföldkő / program-szint** → ADR-068 szerint továbbra is `decision_required` |
 | **Epic-hozzárendelés** (project ↔ FlowEpic, 1:N) | **Task/Subtask** → nem MVP (ADR-068 §5) |
+| **`OriginRef`** — opak, opcionális származás (§7.2, Gábor 2026-08-03) | **A rendelés maga** (tételek, ár, rendelésszám) → CRM; ide csak a hivatkozás jön |
 
 **Indoklás:** ez oldja meg az eredeti bajt (ellenőrizhetetlen `projectId`), kiszolgálja mind a
 négy fogyasztót az azonosság szintjén, és **nem hoz létre második igazságot** semmiből, ami már
@@ -135,11 +139,12 @@ Project-mezőre **ma nem tartjuk be**, és ezt le kell írni, nem elhallgatni.
 - A `FlowManagement.FlowProgram/FlowProject/FlowMilestone` **retire-jelölt marad** (ADR-068 §5);
   erre a modulra **nem épül** rájuk semmi.
 
-## 7. Hatókör-kérdések — egy eldöntve, kettő nyitva
+## 7. Hatókör-kérdések — kettő eldöntve, egy nyitva
 
-> **A §7.2 és §7.3 azért marad nyitva, mert rájuk nem tettem javaslatot** — csak felvázoltam az
-> opciókat. Egy „egyetértek" nem tud olyat eldönteni, amire nem hangzott el ajánlás; ezeket akkor
-> viszem fel újra, amikor blokkolóvá válnak (a §7.3 a create-végpontnál, a §7.2 a CRM-bekötésnél).
+> **A §7.3 azért marad nyitva, mert rá nem tettem javaslatot** — csak felvázoltam az opciókat.
+> Egy „egyetértek" nem tud olyat eldönteni, amire nem hangzott el ajánlás; akkor viszem fel újra,
+> amikor blokkolóvá válik (a create-végpontnál). ⚠ A §7.2 válasza a §7.3 egyik felét **leszűkíti**
+> — ld. lent.
 
 **7.1 — A szakma-függőségek (`dependencies`) hol laknak? — ✅ ELDÖNTVE (Gábor, 2026-07-31)**
 A portál mockjában egy projekt függ más szakmáktól (víz/áram/szellőzés/gépészet/bútor), státusszal
@@ -156,13 +161,42 @@ szakma-függőség B2B-partner — egy házon belüli villanyszerelő is blokkol
 kiderül, hogy a házon belüli eset nem fér bele a Collaboration kétoldalú (host/guest, két bérlő)
 modelljébe, az **új döntést** kér, nem csendes `Dependency` tábla felvételét ide.
 
-**7.2 — A projekt a CRM-rendelésből születik, vagy önállóan?**
+**7.2 — A projekt a CRM-rendelésből születik, vagy önállóan? — ✅ ELDÖNTVE (Gábor, 2026-08-03)**
 A Kontrolling kommentje *„CRM order → project"*-et feltételez. Ha így van, a `spaceos.projects`
 a CRM-rendelésre hivatkozik, és a create-út a CRM-ben indul. Ha nem, a projekt önállóan is
 létrehozható és a rendelés opcionális.
 
+**Döntés: MINDKETTŐ.** Gábor szava: *„Igen a CRM-ből **is** születhet."* Az „is" a döntő —
+a kérdést vagylagosnak tettem fel, a válasz egyik felvázolt opció sem külön-külön: a
+CRM-rendelés **egy lehetséges** származás, **nem kötelező**. Ebből következik, hogy a
+create-út **nem követelhet** rendelést, és a projekt önálló születése továbbra is jogos.
+
+**Amit ebből levezetek — ez az én következtetésem, nem Gábor szava; felülírható:**
+
+- **D1 — Az irány: CRM → projects, soha visszafelé.** A `spaceos.projects` a Döntés 1 szerint
+  iparág-semleges, és az ADR-068 O2 kifejezetten elutasította a JoineryTech-tulajdont. Egy
+  modul, ami CRM-rendelést *olvas*, ezt mindkettőt megsérti, és a Doorstar-leválaszthatóságot
+  is elrontja. Tehát a CRM (vagy egy integrációs perem) **hívja** a projects create-végpontját;
+  a projects a CRM-ről semmit nem tud.
+- **D2 — A származás opak és opcionális**, a `Project.CustomerId` már meglévő mintájával
+  (`Project.cs:37` — csupasz azonosító, nem átmásolt név, mert a másolat az első átnevezéskor
+  szétcsúszik). A rendelés tételei, ára, száma a CRM-nél maradnak: a §4 „nem hozunk létre
+  második igazságot" szabálya erre is áll.
+- **D3 — ⚠ Ez a válasz a §7.3 egyik felét leszűkíti.** Ha **két, egymástól független** út szül
+  projektet, akkor a `ProjectCode`-ot **hívó nem adhatja** — pontosan ezt a szétcsúszást már
+  **megmértük** (portál `PRJ-2426-001` vs Kontrolling `PRJ-2026-014`, §2). Két hívó, közös
+  formátum-gazda nélkül, garantáltan két formátumot termel. A **kiosztás tehát a modulba
+  kerül** (szerver-oldali kiadás); a **formátum** továbbra is Gábor nyitott kérdése (§7.3).
+- **D4 — Amit NEM döntök el:** a **számosság**. Egy rendelés → egy projekt? Egy projekt ←
+  több rendelés? Egy rendelés → több projekt (pl. több helyszín)? A v1 a legkisebbet veszi:
+  **egyetlen, opcionális** származási hivatkozás. Ez azért olcsó választás, mert a hivatkozás
+  opak — ha az N:M valós, a kapcsolótáblára váltás **additív**, nem törő.
+
 **7.3 — A `ProjectCode` formátuma és kiosztása.** `PRJ-2426-001` (portál) vs `PRJ-2026-014`
 (Kontrolling) — két különböző év-kódolás. Ki generálja, bérlőnként vagy globálisan egyedi?
+⚠ A **„ki generálja"** felére a §7.2 D3 levezetése azt adja, hogy a modulnak kell; **a formátum
+és a bérlőnkénti/globális egyediség kérdése nyitva marad**, és a create-végpontnál (PROJ-06)
+válik blokkolóvá. A v1 a formátumot **nem égeti be**.
 
 ## 8. Amit ez az ADR NEM tesz
 

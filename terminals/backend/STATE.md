@@ -1,10 +1,11 @@
 # BACKEND Terminal State
 
-> **Frissítve:** 2026-07-31 délután (Europe/Budapest)
+> **Frissítve:** 2026-08-03 este (Europe/Budapest)
 > **Kanonikus task-státusz:** [`EPICS.yaml`](../../EPICS.yaml) — a `done`/`APPROVED`
 > kimondása **root-review joga**, ez a fájl a végrehajtó nézete.
-> **Aktív task:** [`B2B-10 F5`](../../docs/tasks/EPIC-B2B-COLLABORATION-2026Q3/B2B-10-F5-PROJECT-ANCHOR-RESOLUTION.md)
-> (**KIADVA** — root, 2026-07-31; F5/0 APPROVED, F5/1 `review_requested`)
+> **Aktív task:** [`PROJ-01`](../../docs/knowledge/adr/ADR-072-projects-module-ownership.md) —
+> `spaceos.projects` v1 (`in_progress`); a domain-mag kész, a **PROJ-05** következik.
+> A **B2B-10 F5 LEZÁRVA** (mind a 4 szelet APPROVED); az F7 root-kiírásra vár.
 
 ## Hol van a kód
 
@@ -57,7 +58,12 @@ visszavetítés a B2B-06-é.
 | **F5/0** mérési szelet | **APPROVED** (2026-07-31, root saját méréssel) | 89/89 + mutáció sha1-bizonyítással |
 | **F5/1** create-út | **APPROVED** (2026-07-31, root saját méréssel + saját mutációval) | inbox `2026-07-31_002` |
 | **F5/2** `HttpProjectAdapter` | **APPROVED** (2026-07-31, root saját mutációval) | inbox `2026-07-31_003` |
-| **F5/3** negatív kontroll | **`review_requested`** | élő Kernellel mérve; jegyzőkönyv: [`KERNEL_ANCHOR_NEGATIVE_CONTROL_2026-07-31.md`](../../docs/knowledge/architecture/KERNEL_ANCHOR_NEGATIVE_CONTROL_2026-07-31.md); outbox `2026-07-31-b2b10-f5-3-…` |
+| **F5/3** negatív kontroll | **APPROVED** (2026-07-31, root saját méréssel: 277/277) | élő Kernellel mérve; jegyzőkönyv: [`KERNEL_ANCHOR_NEGATIVE_CONTROL_2026-07-31.md`](../../docs/knowledge/architecture/KERNEL_ANCHOR_NEGATIVE_CONTROL_2026-07-31.md); inbox `2026-07-31_004` |
+
+✅ **Az F5 LEZÁRVA** — mind a 4 szelet APPROVED, az `EPICS.yaml`-ban `done`. A root tény-korrekciója
+(a kernelben **kód szinten** létezik `FlowProject`/`FlowMilestone`, migráció nélkül, ADR-068
+retire-jelöltként — tehát nem igaz, hogy „a Kernel nem ismeri a projektet") átvezetve a
+jegyzőkönyv 4. pontjába.
 
 ### Az F5/3 két átvihető tétele
 
@@ -206,9 +212,18 @@ Az öt életciklus-címkét **conformance-teszt védi** a „továbbfejlesztés"
   **olvasó oldali projekciói**; a modul **nem** kap saját `Dependency` entitást.
   ⚠ Nyitva marad benne: a **házon belüli** szakma-függőség nem fér a Collaboration kétoldalú
   (két bérlő) modelljébe — ha ez előjön, **új döntés**, nem csendes tábla-felvétel.
-- **§7.2 (CRM-rendelésből születik-e) és §7.3 (`ProjectCode` kiosztása) NYITVA** — ezekre
-  **nem tettem javaslatot**, tehát nincs mihez hozzájárulni. A §7.3 a create-végpontnál, a §7.2 a
-  CRM-bekötésnél válik blokkolóvá; akkor viszem fel újra.
+- **§7.2 — ELDÖNTVE (Gábor, 2026-08-03):** *„Igen a CRM-ből **is** születhet."* A kérdést
+  vagylagosnak tettem fel, a válasz **mindkettő**: a CRM-rendelés egy **lehetséges** származás,
+  nem kötelező → a create-út **nem követelhet** rendelést. Négy levezetés (ADR-072 §7.2,
+  `D1`–`D4`, **az én következtetéseim**): **D1** az irány CRM → projects, soha visszafelé (különben
+  a modul iparág-kötötté válik, ADR-068 O2); **D2** a származás **opak és opcionális**, a
+  `Project.CustomerId` mintájával; **D3** ez a §7.3 „ki generálja" felét leszűkíti — két
+  független hívó **garantáltan** két formátumot termel (megmérve: portál `PRJ-2426-001` vs
+  Kontrolling `PRJ-2026-014`), tehát a kiadás **szerver-oldali**; **D4** a **számosságot nem
+  döntöm el**, a v1 egyetlen opcionális hivatkozást visz (az opak hivatkozás miatt az N:M-re
+  váltás additív).
+- **§7.3 (`ProjectCode` FORMÁTUMA és egyediségi köre) NYITVA** — erre **nem tettem javaslatot**.
+  A create-végpontnál (PROJ-06) válik blokkolóvá; a v1 a formátumot nem égeti be.
 
 ---
 

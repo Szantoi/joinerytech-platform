@@ -73,16 +73,26 @@ Gábor elé megy** — az elfogadás az ő joga) · ✅ **KIADVA**: `EPIC-PROJEC
 - [x] **PROJ-04 domain-mag** (`eb11735`) — `Project` + `ProjectCode` + `ProjectEpicAssignment` +
       `EnsureEpicUnassigned`. **16/16 zöld, 0 warning; mutáció 2/2 harapott**, visszaállítva.
 - [ ] **PROJ-05 — Application + Infrastructure**: repository-port; create/rename/status/epic-assign
-      parancsok; EF-konfiguráció (`ProjectCode` konverter, **bérlőnként egyedi** kód-index);
+      parancsok; **opcionális `OriginRef`** a §7.2-döntés miatt (opak, nullable — a create-parancs
+      **nem** teheti kötelezővé); EF-konfiguráció (`ProjectCode` konverter, **bérlőnként egyedi**
+      kód-index);
       tenant query filter + **RLS-migráció a hosting-baseline `NULLIF(...)` alakjával** (a csupasz
       `current_setting(...)::uuid` a pool-reset üres értékén 22P02-t dobna); **modell↔séma
       konformancia-teszt valódi Postgresen** (InMemory elvileg sem lát hiányzó oszlopot).
 - [ ] **PROJ-06 — Api + host**: `/api/projects/v1`, ETag/`If-Match`, `Idempotency-Key` a create-en,
       ADR-067 `RequireEnabledModule` kapu, ProblemDetails + correlation id. Az **epic-hozzárendelés
       az F5/2 `HttpProjectAdapter` mintájával** ellenőrizze a FlowEpic létét on-behalf-of.
-- [ ] ⛔ **Gábor-döntésre vár, amikor blokkolóvá válik** (ADR-072 §7): a **`ProjectCode` kiosztása**
-      (a create-végpontnál) és hogy a **projekt a CRM-rendelésből születik-e** (a CRM-bekötésnél).
-      Ezekre **nem tettem javaslatot**, tehát nincs hallgatólagos válaszuk.
+- [x] ✅ **§7.2 ELDÖNTVE (Gábor, 2026-08-03):** *„Igen a CRM-ből **is** születhet."* → **mindkét**
+      származás jogos; a create-út **rendelést nem követelhet**. A `Project` opcionális, **opak**
+      `OriginRef`-et kap (a `CustomerId` mintájával) — a rendelés tételei/ára/száma a CRM-nél
+      marad. **Az irány: CRM → projects, soha visszafelé** (`D1`, ADR-072 §7.2).
+      ⚠ A **számosságot** (egy rendelés ↔ egy projekt?) **nem** döntöttem el (`D4`) — a v1 egyetlen
+      hivatkozást visz, az N:M-re váltás az opak hivatkozás miatt additív marad.
+- [ ] ⛔ **Gábor-döntésre vár, amikor blokkolóvá válik** (ADR-072 §7.3): a **`ProjectCode`
+      FORMÁTUMA** és egyediségi köre, a create-végpontnál (PROJ-06). Erre **nem tettem
+      javaslatot**, tehát nincs hallgatólagos válasza. A „ki generálja" felét viszont a §7.2
+      válasza leszűkíti: **két független hívó ⇒ szerver-oldali kiadás** (`D3`) — ezt a PROJ-06
+      jelentése mondja ki, nem hallgatólagosan valósítja meg.
 - [ ] A **§7.1 eldöntve** (függőségek = Collaboration-projekciók), de nyitva maradt benne: a
       **házon belüli** szakma-függőség nem fér a Collaboration kétoldalú modelljébe → ha előjön,
       **új döntés**, nem csendes `Dependency` tábla.

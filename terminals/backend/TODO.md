@@ -85,9 +85,17 @@ Gábor elé megy** — az elfogadás az ő joga) · ✅ **KIADVA**: `EPIC-PROJEC
 Gábor feloldotta (*„Bárki átveheti a codex munkát meg javítani is kell."*). **A gazda én vagyok.**
 Öt szelet, **kitettség szerinti** sorrendben, **szeletenként külön `review_requested`**:
 
-- [ ] ⛔ **S1 — hibaüzenet-redakció** (EHS 8 + HR 4 + QA 6 + Kontrolling 4, ~24 fájl): a főágon
-      **ma nyers handler-hiba megy a wire-re** — élő információ-szivárgás. Kötelező **negatív
-      kontroll**: a redakció ne vigye el a valódi 4xx validációs visszajelzést sem.
+- [x] **S1 — hibaüzenet-redakció: KÉSZ, `review_requested`** (`6919666`, 20 fájl / +497 −114).
+      **580/580 zöld** (EHS 124 / HR 213 / QA 243), 0 kód-warning; **mutáció 2/2** harapott.
+      ⚠ **A hatóköre kisebb volt, mint a kiírásé:** a CRM és a Kontrolling mapperje **már
+      07-16/07-18 óta javított** — a task-doksi tévesen sorolja ide őket.
+      ⛔ **Külön hiba ugyanezekben a fájlokban:** a HR approve/reject a jóváhagyó személyét a
+      **kliens törzséből** vette → a főágon **hamisítható** volt az audit-nyom. Javítva.
+      ⭐ Ez helyesbíti a root S5-mérését: a hívó-identitás javítás **létezik**, csak az S1
+      fájljain belül — ezért esett ki a „0 hozzáadott sor" mérésből.
+      ⭐ **Amit hozzátettem:** negatív kontroll mind a 3 modulra. Mérve, hogy a meglévő
+      validációs tesztek **csak státuszkódot** néznek, tehát egy túl agresszív redakció
+      teljesen zölden ment volna ki (az M2-mutáció ezt igazolta).
 - [ ] ⛔ **S2 — health-anonimizálás** (hosting, ~3 fájl): a `/health` ma kiadja a
       `migrationsAssembly`/`moduleId`-t.
 - [ ] **S3 — `EnabledModules`** (ERPSEP-06, ~9 fájl): fail-closed, nincs élő kitettség.
@@ -95,6 +103,18 @@ Gábor feloldotta (*„Bárki átveheti a codex munkát meg javítani is kell."*
 - [ ] **S5 — audit-identity**: a root **mérte**, hogy a nevesített hatóköre **nincs meg**
       (0 CRM-fájl, 0 audit-mező; csak a segéd van a főágon) → `review`-ből **`pending`**-re
       minősítve. **Külön kiírást kér, nem átvételt.**
+
+- [ ] ⛔ **S1b (JAVASLAT, root-döntésre) — ugyanez az osztály HAT másik modulban**, amit a
+      kiírás **nem nevez meg**. Mérve az S1 után: `.Errors` kiöntése HTTP-válaszban — **cutting 20 ·
+      joinery 16 · inventory 9 · procurement 8 · maintenance 8 = 61 hely**; `ex.Message` a
+      válaszban — dms 2 · procurement 1 · cutting 1 = **4 hely**. A maintenance és a dms a hét élő
+      modul közül való, az inventory/procurement pedig **futó VPS-service**. Nem tágítottam rá az
+      S1-et (61 hely egy blokkban pont az, amit a szeletelés elkerülni akart).
+      ⚠ **Triázs kell előtte:** a `spaceos-modules-*` fák között bizonyítottan van halott
+      (a két EHS-fa) — a halottat **törölni** kell, nem javítani.
+- [ ] **Külön lelet, nem S1:** `AutoMapper` **14.0.0 — ismert MAGAS súlyosságú sebezhetőség**
+      (`GHSA-rvv3-g6hj-g44x`); a 13.0.2-es pin nem oldható fel, ezért a 14.0.0 kerül be az EHS-be.
+      A repó publikus, a modul fut.
 
 ⚠ **Két csapda a kiírásból:** (1) a munkafa **nem** tiszta Codex-munkatest — **fájl-szintű
 pathspec kötelező, `git add -A` szigorúan tilos**; (2) a mentett patch **átvilágítatlan**

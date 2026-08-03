@@ -96,6 +96,23 @@
       kérdés az, hogy **egy nem működő világ mit keres publikus route-on**
       (se backend, se MSW-mock → a PIN az egyetlen működő belépő). A frontend
       készen áll, a végrehajtás a route-döntés után indul.
+- [ ] ⛔⛔ **ÚJ, 2026-08-03 — 48 KÖNYV-OLDAL SZKENN A PUBLIKUS REPÓBAN.**
+      A doccapture `.gitignore`-leletét a saját sávomra alkalmazva került elő:
+      - `docs/joinerytech/uploads/` alatt **48 db `szega_book_*_oldal_*.jpg`**
+        (+11 png, 4 md) — **követett fájlok, és `origin/main`-en is bent vannak**;
+      - a platform `.gitignore`-ja **egyetlen bináris alakot sem fog**: mérve a
+        `.ttf`/`.zip`/`.dll`/`.exe`/`.xlsx`/átnevezett `.dat`/`.png` **mind bemehet**.
+        Felsorolás, nem szabály — pontosan az a rés, amit a doccapture ma a saját
+        repójában megmért és bezárt.
+      **Miért más ez, mint egy token:** harmadik fél szerzői joga alá eső anyag, amit
+      **nem lehet „rotálni"**. A publikus történetből való eltávolítás **history-rewrite**,
+      és a repó publikus volta miatt a fork/cache másolatok akkor sem szűnnek meg.
+      **A döntés a Tiéd, én nem nyúlok hozzá.** Amit javaslok eldönteni:
+      (1) törlés + history-rewrite, vagy a repó priváttá tétele; (2) a hiányzó
+      bináris-kapu megépítése (a doccapture `binary_artifacts.json` + `binary_guard.py`
+      mintája kész és működik — átvehető); (3) a maradék 405 kép (`screenshots/`,
+      `docs/knowledge/qa/assets/`) átnézése: ERP-képernyőképek **ügyféladatot**
+      mutathatnak — ezt **nem mértem**, csak a kockázatot nevezem meg.
 - [ ] **Négy kulcs visszavonása:** Google Gemini · **két** Brave Search
       (`061ddd503f`, `cefeb3edee`) · a forrás-prototípus **két
       modell-szolgáltatói kulcsa** (egyikük a **futó app** `settings.json`-jában).

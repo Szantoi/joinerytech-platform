@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="MediatR" Version="12.4.1" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />
+  </ItemGroup>
+  <ItemGroup>
+    <!--
+      Domain only. No EF, no hosting package: the application layer states what it needs as ports
+      and lets Infrastructure satisfy them. This is also what keeps the handler tests runnable
+      without a database.
+    -->
+    <ProjectReference Include="../SpaceOS.Projects.Domain/SpaceOS.Projects.Domain.csproj" />
+  </ItemGroup>
+</Project>

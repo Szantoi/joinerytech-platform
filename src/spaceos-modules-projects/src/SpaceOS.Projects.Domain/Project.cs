@@ -45,6 +45,30 @@ public class Project
     /// </remarks>
     public Guid? CustomerId { get; private set; }
 
+    /// <summary>
+    /// The module this project was born in (<c>crm</c>), or <c>null</c> for a standalone project.
+    /// </summary>
+    /// <remarks>
+    /// Stored as two plain columns rather than an optional owned type on purpose. An optional
+    /// owned value object is the one EF shape that bites hardest here: a shared instance writes
+    /// NULLs into someone else's row, and "all columns null" is indistinguishable from "no value"
+    /// at the mapping level. <see cref="Origin"/> gives callers the value object anyway, built on
+    /// the way out, so the domain API stays whole while the mapping stays boring.
+    /// </remarks>
+    public string? OriginSystem { get; private set; }
+
+    /// <summary>The originating record's identifier in <see cref="OriginSystem"/>, or <c>null</c>.</summary>
+    public Guid? OriginExternalId { get; private set; }
+
+    /// <summary>
+    /// Where this project came from, or <c>null</c> if it started here (ADR-072 §7.2 — both are
+    /// legal births). Composed from the two stored columns; not mapped.
+    /// </summary>
+    public ProjectOrigin? Origin =>
+        OriginSystem is null || OriginExternalId is null
+            ? null
+            : new ProjectOrigin(OriginSystem, OriginExternalId.Value);
+
     public DateTimeOffset CreatedAtUtc { get; private set; }
 
     /// <summary>Optimistic concurrency token; increments on every change.</summary>
@@ -59,12 +83,18 @@ public class Project
 
     /// <summary>Opens a new project.</summary>
     /// <exception cref="ArgumentException">Missing tenant, code or name.</exception>
+    /// <param name="origin">
+    /// Where the project came from, or <c>null</c> when it starts here. Optional because Gábor's
+    /// 2026-08-03 decision made <b>both</b> births legal (ADR-072 §7.2) — a create path that
+    /// demanded an order would silently outlaw half of that answer.
+    /// </param>
     public static Project Create(
         Guid tenantId,
         ProjectCode code,
         string name,
         DateTimeOffset createdAtUtc,
-        Guid? customerId = null)
+        Guid? customerId = null,
+        ProjectOrigin? origin = null)
     {
         ArgumentNullException.ThrowIfNull(code);
 
@@ -89,6 +119,8 @@ public class Project
             Name = name.Trim(),
             Status = ProjectLifecycleStatus.Draft,
             CustomerId = customerId,
+            OriginSystem = origin?.System,
+            OriginExternalId = origin?.ExternalId,
             CreatedAtUtc = createdAtUtc,
             RowVersion = 1
         };
@@ -183,7 +215,7 @@ public class Project
             throw new InvalidOperationException(
                 $"Flow-epic {epicId} is already part of this project.");
 
-        var assignment = ProjectEpicAssignment.Record(Id, epicId, assignedAtUtc);
+        var assignment = ProjectEpicAssignment.Record(Id, TenantId, epicId, assignedAtUtc);
 
         _epics.Add(assignment);
         RowVersion++;

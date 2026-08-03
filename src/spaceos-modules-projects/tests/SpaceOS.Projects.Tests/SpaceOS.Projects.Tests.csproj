@@ -16,5 +16,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\SpaceOS.Projects.Domain\SpaceOS.Projects.Domain.csproj" />
+    <ProjectReference Include="..\..\src\SpaceOS.Projects.Application\SpaceOS.Projects.Application.csproj" />
   </ItemGroup>
 </Project>

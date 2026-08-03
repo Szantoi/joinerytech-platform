@@ -3,7 +3,15 @@
 - **Epic:** EPIC-PLATFORM-STABILITY-2026Q3
 - **Szerep:** backend/security + federation
 - **Prioritás:** P0 security
-- **Státusz:** ready — platformszintű ismétlődés bizonyítva
+- **Státusz:** pending (2026-08-03 root-triázs: a korábbi `ready` szó NEM része a
+  státusz-szótárnak — „indítható"-t jelentett, nem „elkészült"-et, és így éveken át
+  eltérést mutatott a kanonikus `EPICS.yaml` `pending`-jéhez képest. ÚJRAMÉRVE MA:
+  a `Microsoft.AspNetCore.Http.Abstractions 2.2.0` direct referencia **4 csproj-ban,
+  5 helyen ÉL** — HR, Kontrolling, Joinery.Infrastructure, JoineryTech.Infrastructure
+  (utóbbin a `Http 2.2.2` is). A doksi által nevesített ötödik, a legacy DMS, a mai
+  fán nincs meg — ez NEM azt jelenti, hogy elkészült, hanem hogy tisztázandó.
+  ⚠ Műszer-tanulság: a `System.Text.Encodings.Web`-re keresni a `.csproj`-okban
+  ÉRVÉNYTELEN mérés — az a lánc tranzitív, ott elvileg sem látszik.)
 - **Előzmény:** `STAB-EHS-DEPENDENCY-ADVISORIES` S0 az EHS-ben kész mintát ad
 - **Mutációs határ:** öt felsorolt modul `.csproj`-ja + szükséges buildtesztek
 - **Tiltott scope:** endpoint/domain viselkedés, tenant-refaktor, package major

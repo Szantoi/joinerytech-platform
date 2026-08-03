@@ -3,7 +3,12 @@
 - **Epic:** EPIC-ERP-SEPARATION-2026Q3
 - **Szerep:** frontend
 - **Prioritás:** P0
-- **Státusz:** blocked
+- **Státusz:** in_progress (2026-08-03 root-triázs: a `blocked` ELAVULT volt — a blokk
+  2026-07-27-én feloldódott, Gábor jóváhagyta az indítást, a fizikai átalakítás
+  2026-07-28-án commitolva (portál `0ce298b`), és azóta is fut rajta munka. A négy
+  follow-upból az első (eslint tiltott-import őr) kész volt, a két vak pontja
+  2026-08-03-án szerkezeti teszttel fedve (portál `ee2cf04`, root-review APPROVED);
+  a maradék három follow-up kiadva.)
 - **Függőség:** MODULE-FOLDERS, ERPSEP-02
 - **Mutációs határ:** `src/joinerytech-portal/` workspace/package/app szerkezet
 - **Tiltott scope:** backend, Doorstar repository, runtime Module Federation,

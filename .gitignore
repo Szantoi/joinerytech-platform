@@ -44,3 +44,8 @@ terminals/*/.mcp.json
 # Fejlesztoi gepre jellemzo abszolut utvonalak (publikus repo -- nem kovetjuk)
 LOCAL_PATHS.md
 terminals/*/LOCAL_PATHS.md
+
+# 2026-08-03 (root): lokalis bizonyitek-mentesek (pl. gazdatlan munkatest nyers patche).
+# NEM mehet a PUBLIKUS repoba: nyers diffeket tartalmaz, atvilagitas nelkul.
+# A mappa tartalma szandekosan csak lokalis + scratchpad-masolat.
+artifacts/

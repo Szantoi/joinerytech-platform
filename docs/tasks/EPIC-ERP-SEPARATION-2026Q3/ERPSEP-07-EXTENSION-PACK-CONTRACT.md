@@ -3,7 +3,9 @@
 - **Epic:** EPIC-ERP-SEPARATION-2026Q3
 - **Szerep:** architect/designer/backend/frontend
 - **Prioritás:** P1
-- **Státusz:** blocked
+- **Státusz:** pending (2026-08-03 root-triázs: a `blocked` ELAVULT volt — mindhárom
+  függőség teljesült, az ADR-066/067/068 mind Accepted 2026-07-27 óta; a kanonikus
+  `EPICS.yaml` már `pending`-et mondott, ez a doksi maradt le. Kiadható, gazdát vár.)
 - **Függőség:** ERPSEP-02, ERPSEP-03; production extensionhöz PROJECT-CORE-ADR
 - **Mutációs határ:** schema/ADR/reference fixture; üzleti implementáció tiltott
 - **Tiltott scope:** Doorstar konkrét asset, stationlista, seed vagy policy-kód

@@ -34,7 +34,20 @@
       A „ki generálja" felét a §7.2 már eldöntötte: két független hívó ⇒ **szerver-oldali
       kiadás**; a formátum viszont Gáboré. **A PROJ-06 create-végpontnál blokkoló.**
       (A backend kísérőlevele „kettő"-t írt, a saját ADR-je „egy"-et — a mért szám: **egy**.)
-- [ ] ⚠ **ÚJ, 2026-08-03 — GAZDA-DÖNTÉS: 58 fájlnyi gazdátlan, commitolatlan Codex-munka.**
+- [x] ~~⚠ **GAZDA-DÖNTÉS: 58 fájlnyi gazdátlan, commitolatlan Codex-munka**~~
+      **ELDŐLT 2026-08-03 este (Gábor): „Bárki átveheti a codex munkát meg javítani is
+      kell."** = blokkoló feloldva + a javítás KÖTELEZŐ; de **nem kiosztás** és **nem
+      review-mentesség**. Root-kiosztás: **BACKEND** (kompetencia + a hosting-csomag
+      az övék; a frontend indoklással visszautasította). Öt szeletre bontva,
+      **kitettség szerinti sorrendben** (S1 hibaüzenet-redakció → S2 health-anonimizálás
+      → S3 EnabledModules → S4 portfolio-index → S5 audit-identity).
+      ⭐ A kiosztás előtti mérés hozadéka: az **S5 nincs is kész** — a `review`
+      önstátusz ellenére 0 CRM-fájl és 0 audit-mező; a segéd a főágon, a munka sehol
+      → új kiírás lesz, nem átvétel.
+      ⚠ Csapda a végrehajtónak: a munkafa **már nem tiszta Codex-munkatest** (a backend
+      élő PROJ-06 munkája is benne van) → fájl-szintű pathspec, `git add -A` tilos.
+      _(A régi tétel szövege alább, hivatkozásnak.)_
+- [ ] ~~⚠ **2026-08-03 — GAZDA-DÖNTÉS: 58 fájlnyi gazdátlan, commitolatlan Codex-munka.**~~
       A Codex 07-28-án a Doorstar-szigetre váltott, és a platform-fán hagyott egy
       összefüggő munkatestet, amit **egyetlen státusz-forrás sem látott** (3 task-doksi
       untracked volt). **Biztonsági tartalma van, és a főágon MA a rossz alak fut:**

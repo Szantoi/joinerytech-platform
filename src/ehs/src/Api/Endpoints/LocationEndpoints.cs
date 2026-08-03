@@ -112,13 +112,17 @@ public static class LocationEndpoints
             var locationId = await mediator.Send(command, ct).ConfigureAwait(false);
             return Results.Created($"/api/ehs/locations/{locationId}", new { LocationId = locationId });
         }
-        catch (InvalidOperationException ex)
+        catch (InvalidOperationException)
         {
-            return Results.Conflict(new { Error = ex.Message });
+            return EhsEndpointResults.Conflict();
         }
-        catch (Exception ex)
+        catch (FluentValidation.ValidationException ex)
         {
-            return Results.BadRequest(new { Error = ex.Message });
+            return EhsEndpointResults.ValidationFailure(ex);
+        }
+        catch (Exception)
+        {
+            return EhsEndpointResults.InternalServerError();
         }
     }
 
@@ -146,13 +150,17 @@ public static class LocationEndpoints
         {
             return Results.NotFound();
         }
-        catch (InvalidOperationException ex)
+        catch (InvalidOperationException)
         {
-            return Results.Conflict(new { Error = ex.Message });
+            return EhsEndpointResults.Conflict();
         }
-        catch (Exception ex)
+        catch (FluentValidation.ValidationException ex)
         {
-            return Results.BadRequest(new { Error = ex.Message });
+            return EhsEndpointResults.ValidationFailure(ex);
+        }
+        catch (Exception)
+        {
+            return EhsEndpointResults.InternalServerError();
         }
     }
 
@@ -178,9 +186,9 @@ public static class LocationEndpoints
             // resource — 404 per the documented 204/404/409 contract (no 400 here).
             return Results.NotFound();
         }
-        catch (InvalidOperationException ex)
+        catch (InvalidOperationException)
         {
-            return Results.Conflict(new { Error = ex.Message });
+            return EhsEndpointResults.Conflict();
         }
     }
 }

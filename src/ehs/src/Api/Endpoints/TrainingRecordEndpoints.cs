@@ -45,9 +45,13 @@ public static class TrainingRecordEndpoints
             var id = await mediator.Send(command, ct).ConfigureAwait(false);
             return Results.Created($"/api/ehs/training-records/{id}", new { TrainingRecordId = id });
         }
-        catch (Exception ex)
+        catch (FluentValidation.ValidationException ex)
         {
-            return Results.BadRequest(new { Error = ex.Message });
+            return EhsEndpointResults.ValidationFailure(ex);
+        }
+        catch (Exception)
+        {
+            return EhsEndpointResults.InternalServerError();
         }
     }
 

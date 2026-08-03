@@ -149,10 +149,9 @@ public class QACheckpointApiTests
             description = "Should fail"
         });
 
-        // Assert: the checkpoint update endpoint maps every command failure to 400
-        // (pre-dates the 404 convention of the inspection/ticket endpoints — endpoint
-        // status-mapping follow-up is tracked in the ADR-IMPL-HOSTING task doc).
-        response.StatusCode.Should().Be(System.Net.HttpStatusCode.BadRequest);
+        // The documented endpoint contract distinguishes a missing checkpoint
+        // from malformed input, so a NotFound command result remains HTTP 404.
+        response.StatusCode.Should().Be(System.Net.HttpStatusCode.NotFound);
     }
 
     // ========== CRITERIA OWNED COLLECTION TESTS ==========

@@ -7,7 +7,8 @@ namespace SpaceOS.Modules.HR.Api.Endpoints;
 /// Shared Ardalis.Result → HTTP mapping for the HR module error contract
 /// (QA QaEndpointResults / EHS RiskAssessmentEndpoints precedent):
 /// 404 = not found, 409 = forbidden FSM transition, 400 = payload/aggregate
-/// validation, everything else = 400 with the raw errors.
+/// validation; unexpected processing failures return a generic 500 response
+/// rather than raw handler errors.
 ///
 /// This is the server side of the portal MSW contract (mocks/hrApi/db.ts):
 /// { error, message } bodies, 409 on a forbidden ABSENCE_FSM action.
@@ -26,9 +27,15 @@ internal static class HrEndpointResults
             ResultStatus.Conflict => Results.Conflict(
                 new { error = HrWire.AbsenceStatus.TranslateNames(FirstMessage(result)) }),
             ResultStatus.Invalid => Results.BadRequest(new { error = FirstValidationMessage(result) }),
-            _ => Results.BadRequest(result.Errors)
+            _ => InternalServerError()
         };
     }
+
+    /// <summary>Does not expose infrastructure or provider failure details.</summary>
+    private static Microsoft.AspNetCore.Http.IResult InternalServerError()
+        => Results.Json(
+            new { error = "InternalServerError", message = "Váratlan kiszolgálóhiba történt." },
+            statusCode: StatusCodes.Status500InternalServerError);
 
     private static string FirstMessage(Ardalis.Result.IResult result)
         => result.Errors.FirstOrDefault() ?? "Conflict";

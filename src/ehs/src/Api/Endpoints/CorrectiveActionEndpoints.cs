@@ -83,9 +83,9 @@ public static class CorrectiveActionEndpoints
             // resource — 404 per the documented 204/404/409 contract (no 400 here).
             return Results.NotFound();
         }
-        catch (InvalidOperationException ex)
+        catch (InvalidOperationException)
         {
-            return Results.Conflict(new { Error = ex.Message });
+            return EhsEndpointResults.Conflict();
         }
     }
 }

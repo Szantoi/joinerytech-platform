@@ -105,6 +105,22 @@ public class TicketEndpointsTests
     }
 
     [Fact]
+    public async Task ListTickets_UnexpectedFailure_ReturnsGeneric500WithoutInternalDetail()
+    {
+        var mediator = new Mock<IMediator>();
+        mediator
+            .Setup(m => m.Send(It.IsAny<GetTicketsQuery>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<TicketDto[]>.Error("NpgsqlException: connection string=secret"));
+
+        await using var host = await StartHostAsync(mediator.Object);
+        var response = await host.Client.GetAsync("/api/qa/tickets");
+
+        response.StatusCode.Should().Be(HttpStatusCode.InternalServerError);
+        var body = await response.Content.ReadAsStringAsync();
+        body.Should().Contain("InternalServerError").And.NotContain("connection string=secret");
+    }
+
+    [Fact]
     public async Task GetTicket_Found_ReturnsOkDto()
     {
         var mediator = new Mock<IMediator>();

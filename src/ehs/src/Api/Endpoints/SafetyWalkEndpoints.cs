@@ -110,13 +110,17 @@ public static class SafetyWalkEndpoints
             var walkId = await mediator.Send(command, ct).ConfigureAwait(false);
             return Results.Created($"/api/ehs/safety-walks/{walkId}", new { SafetyWalkId = walkId });
         }
-        catch (InvalidOperationException ex)
+        catch (InvalidOperationException)
         {
-            return Results.Conflict(new { Error = ex.Message });
+            return EhsEndpointResults.Conflict();
         }
-        catch (Exception ex)
+        catch (FluentValidation.ValidationException ex)
         {
-            return Results.BadRequest(new { Error = ex.Message });
+            return EhsEndpointResults.ValidationFailure(ex);
+        }
+        catch (Exception)
+        {
+            return EhsEndpointResults.InternalServerError();
         }
     }
 
@@ -183,9 +187,9 @@ public static class SafetyWalkEndpoints
             // resource — 404 per the documented 204/404/409 contract (no 400 here).
             return Results.NotFound();
         }
-        catch (InvalidOperationException ex)
+        catch (InvalidOperationException)
         {
-            return Results.Conflict(new { Error = ex.Message });
+            return EhsEndpointResults.Conflict();
         }
     }
 
@@ -217,13 +221,17 @@ public static class SafetyWalkEndpoints
         {
             return Results.NotFound();
         }
-        catch (InvalidOperationException ex)
+        catch (InvalidOperationException)
         {
-            return Results.Conflict(new { Error = ex.Message });
+            return EhsEndpointResults.Conflict();
         }
-        catch (Exception ex)
+        catch (FluentValidation.ValidationException ex)
         {
-            return Results.BadRequest(new { Error = ex.Message });
+            return EhsEndpointResults.ValidationFailure(ex);
+        }
+        catch (Exception)
+        {
+            return EhsEndpointResults.InternalServerError();
         }
     }
 
@@ -248,9 +256,9 @@ public static class SafetyWalkEndpoints
             // Pipeline guard (empty id/tenant) → 404, same contract as StartWalk.
             return Results.NotFound();
         }
-        catch (InvalidOperationException ex)
+        catch (InvalidOperationException)
         {
-            return Results.Conflict(new { Error = ex.Message });
+            return EhsEndpointResults.Conflict();
         }
     }
 
@@ -275,9 +283,9 @@ public static class SafetyWalkEndpoints
             // Pipeline guard (empty id/tenant) → 404, same contract as StartWalk.
             return Results.NotFound();
         }
-        catch (InvalidOperationException ex)
+        catch (InvalidOperationException)
         {
-            return Results.Conflict(new { Error = ex.Message });
+            return EhsEndpointResults.Conflict();
         }
     }
 
@@ -302,9 +310,9 @@ public static class SafetyWalkEndpoints
             // Pipeline guard (empty id/tenant) → 404, same contract as StartWalk.
             return Results.NotFound();
         }
-        catch (InvalidOperationException ex)
+        catch (InvalidOperationException)
         {
-            return Results.Conflict(new { Error = ex.Message });
+            return EhsEndpointResults.Conflict();
         }
     }
 }

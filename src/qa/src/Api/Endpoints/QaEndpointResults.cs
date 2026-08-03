@@ -7,7 +7,8 @@ namespace SpaceOS.Modules.QA.Api.Endpoints;
 /// Shared Ardalis.Result → HTTP mapping for the QA module error contract
 /// (EHS RiskAssessmentEndpoints precedent):
 /// 404 = not found, 409 = illegal FSM transition / status-guarded action,
-/// 400 = aggregate/payload validation, everything else = 400 with raw errors.
+/// 400 = aggregate/payload validation; unexpected processing failures are
+/// generic 500 responses and never expose raw handler errors.
 /// This is the ADR-059 wire seam: domain error messages interpolate enum
 /// values with their English member names ("Cannot transition from Reported
 /// to Assigned") — the vocabulary is translated to the wire keys here, so the
@@ -22,9 +23,15 @@ internal static class QaEndpointResults
             ResultStatus.NotFound => Results.NotFound(),
             ResultStatus.Conflict => Results.Conflict(new { error = TranslateWireNames(FirstMessage(result)) }),
             ResultStatus.Invalid => Results.BadRequest(new { error = TranslateWireNames(FirstValidationMessage(result)) }),
-            _ => Results.BadRequest(result.Errors)
+            _ => InternalServerError()
         };
     }
+
+    /// <summary>Does not expose infrastructure or provider failure details.</summary>
+    private static Microsoft.AspNetCore.Http.IResult InternalServerError()
+        => Results.Json(
+            new { error = "InternalServerError", message = "Váratlan kiszolgálóhiba történt." },
+            statusCode: StatusCodes.Status500InternalServerError);
 
     private static string FirstMessage(Ardalis.Result.IResult result)
         => result.Errors.FirstOrDefault() ?? "Conflict";

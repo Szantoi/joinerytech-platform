@@ -10,6 +10,7 @@ using SpaceOS.Modules.QA.Application.Commands;
 using SpaceOS.Modules.QA.Application.DTOs;
 using SpaceOS.Modules.QA.Application.Queries;
 using SpaceOS.Modules.QA.Domain.Enums;
+using SpaceOS.Modules.QA.Domain.StrongIds;
 using Xunit;
 
 namespace SpaceOS.Modules.QA.Tests.Api;
@@ -50,6 +51,60 @@ public class InspectionEndpointsTests
 
     private static Task<QaEndpointTestHost> StartHostAsync(IMediator mediator)
         => QaEndpointTestHost.StartAsync(mediator, endpoints => endpoints.MapInspectionEndpoints());
+
+    // Negative control for the redaction below: the generic-500 test is equally satisfied by a
+    // mapper that swallows the messages callers are supposed to read. This one fails if the
+    // redaction ever reaches past infrastructure errors into validation feedback.
+    [Fact]
+    public async Task CreateInspection_InvalidResult_KeepsTheValidationMessageTheCallerNeeds()
+    {
+        const string CallerFacingMessage = "Az ellenőrzés tervezett időpontja nem lehet múltbeli.";
+
+        var mediator = new Mock<IMediator>();
+        mediator
+            .Setup(m => m.Send(It.IsAny<CreateInspectionCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<InspectionId>.Invalid(
+                new ValidationError("PlannedAt", CallerFacingMessage)));
+
+        await using var host = await StartHostAsync(mediator.Object);
+        var response = await host.Client.PostAsJsonAsync(
+            "/api/qa/inspections",
+            new
+            {
+                checkpointId = Guid.NewGuid(),
+                inspectorId = Guid.NewGuid(),
+                plannedAt = DateTime.UtcNow.AddDays(1),
+            });
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var body = await response.Content.ReadAsStringAsync();
+        body.Should().Contain(CallerFacingMessage);
+    }
+
+    [Fact]
+    public async Task CreateInspection_UnexpectedFailure_ReturnsGeneric500WithoutInternalDetail()
+    {
+        var mediator = new Mock<IMediator>();
+        mediator
+            .Setup(m => m.Send(It.IsAny<CreateInspectionCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<InspectionId>.Error("NpgsqlException: connection string=secret"));
+
+        await using var host = await StartHostAsync(mediator.Object);
+        var response = await host.Client.PostAsJsonAsync(
+            "/api/qa/inspections",
+            new
+            {
+                checkpointId = Guid.NewGuid(),
+                inspectorId = Guid.NewGuid(),
+                plannedAt = DateTime.UtcNow.AddDays(1),
+                orderId = (Guid?)null,
+                productId = (Guid?)null
+            });
+
+        response.StatusCode.Should().Be(HttpStatusCode.InternalServerError);
+        var body = await response.Content.ReadAsStringAsync();
+        body.Should().Contain("InternalServerError").And.NotContain("connection string=secret");
+    }
 
     [Fact]
     public async Task StartInspection_Success_Returns200WithFreshDtoInsteadOf204()

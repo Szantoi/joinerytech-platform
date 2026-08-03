@@ -10,6 +10,7 @@ using SpaceOS.Modules.HR.Application.DTOs;
 using SpaceOS.Modules.HR.Application.Queries;
 using SpaceOS.Modules.HR.Domain.Enums;
 using SpaceOS.Modules.HR.Domain.StrongIds;
+using SpaceOS.Modules.Hosting.Auth;
 
 namespace SpaceOS.Modules.HR.Api.Endpoints;
 
@@ -32,6 +33,8 @@ namespace SpaceOS.Modules.HR.Api.Endpoints;
 public static class AbsenceEndpoints
 {
     private const string LoggerCategory = "SpaceOS.Modules.HR.Api.AbsenceEndpoints";
+
+    private static Guid CallerUserId(HttpContext httpContext) => httpContext.User.GetRequiredUserId();
 
     /// <summary>Maps the absence endpoints to the application.</summary>
     public static IEndpointRouteBuilder MapAbsenceEndpoints(this IEndpointRouteBuilder app)
@@ -204,13 +207,14 @@ public static class AbsenceEndpoints
         [FromRoute] Guid id,
         [FromBody] ApproveAbsenceRequestDto request,
         [FromServices] IMediator mediator,
+        HttpContext httpContext,
         CancellationToken ct)
         => ExecuteTransition(
             mediator,
             new ApproveAbsenceCommand
             {
                 AbsenceId = AbsenceId.From(id),
-                ApprovedByUserId = request.ApprovedBy
+                ApprovedByUserId = CallerUserId(httpContext)
             },
             ct);
 
@@ -218,13 +222,14 @@ public static class AbsenceEndpoints
         [FromRoute] Guid id,
         [FromBody] RejectAbsenceRequestDto request,
         [FromServices] IMediator mediator,
+        HttpContext httpContext,
         CancellationToken ct)
         => ExecuteTransition(
             mediator,
             new RejectAbsenceCommand
             {
                 AbsenceId = AbsenceId.From(id),
-                RejectedByUserId = request.RejectedBy,
+                RejectedByUserId = CallerUserId(httpContext),
                 // The aggregate enforces the mandatory reason (empty → DomainException → 400).
                 RejectionReason = request.Reason ?? string.Empty
             },
@@ -278,10 +283,13 @@ public record RequestAbsenceRequestDto(
 );
 
 /// <summary>
-/// The approver's user id. Travels in the payload until the platform has an
-/// authenticated-user/permission model (`hr.manage` follow-up).
+/// Legacy compatibility field. It is ignored: the endpoint records the
+/// authenticated caller as approver.
 /// </summary>
 public record ApproveAbsenceRequestDto(Guid ApprovedBy);
 
-/// <summary>The rejecter's user id + the mandatory reason (portal contract: missing reason → 400).</summary>
+/// <summary>
+/// Legacy rejecter id plus the mandatory reason. The rejecter id is ignored;
+/// audit identity comes from the authenticated caller.
+/// </summary>
 public record RejectAbsenceRequestDto(Guid RejectedBy, string? Reason);

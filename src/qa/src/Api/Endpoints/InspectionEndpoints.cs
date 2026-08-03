@@ -150,7 +150,7 @@ public static class InspectionEndpoints
 
         return result.IsSuccess
             ? Results.Created($"/api/qa/inspections/{result.Value.Value}", new { inspectionId = result.Value.Value })
-            : Results.BadRequest(result.Errors);
+            : QaEndpointResults.Failure(result);
     }
 
     private static async Task<IResult> GetInspection(
@@ -184,7 +184,7 @@ public static class InspectionEndpoints
 
         return result.IsSuccess
             ? Results.Ok(result.Value)
-            : Results.BadRequest(result.Errors);
+            : QaEndpointResults.Failure(result);
     }
 
     private static async Task<IResult> ListInspectionsByOrder(
@@ -202,7 +202,7 @@ public static class InspectionEndpoints
 
         return result.IsSuccess
             ? Results.Ok(result.Value)
-            : Results.BadRequest(result.Errors);
+            : QaEndpointResults.Failure(result);
     }
 
     private static async Task<IResult> AddInspectionFailureNote(
@@ -229,7 +229,7 @@ public static class InspectionEndpoints
 
         return result.IsSuccess
             ? Results.StatusCode(201)
-            : Results.BadRequest(result.Errors);
+            : QaEndpointResults.Failure(result);
     }
 
     private static async Task<IResult> StartInspection(
@@ -498,7 +498,7 @@ public static class InspectionEndpoints
 
         return result.IsSuccess
             ? Results.Ok(result.Value)
-            : Results.BadRequest(result.Errors);
+            : QaEndpointResults.Failure(result);
     }
 }
 

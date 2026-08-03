@@ -101,6 +101,71 @@ public class AbsenceEndpointsTests
     }
 
     [Fact]
+    public async Task ListAbsences_UnexpectedFailure_ReturnsGeneric500WithoutInternalDetail()
+    {
+        var mediator = new Mock<IMediator>();
+        mediator
+            .Setup(m => m.Send(It.IsAny<GetAbsencesQuery>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<IReadOnlyList<AbsenceDto>>.Error("NpgsqlException: connection string=secret"));
+
+        await using var host = await StartHostAsync(mediator.Object);
+        var response = await host.Client.GetAsync("/api/hr/absences");
+
+        response.StatusCode.Should().Be(HttpStatusCode.InternalServerError);
+        var body = await response.Content.ReadAsStringAsync();
+        body.Should().Contain("InternalServerError").And.NotContain("connection string=secret");
+    }
+
+    // ========== NEGATIVE CONTROL FOR THE REDACTION ==========
+    //
+    // The tests above prove that internal detail STOPS at the boundary. On their own they are
+    // satisfied by a redaction that is too aggressive — one that also swallows the messages users
+    // are supposed to read. A 400 with no reason and a 409 with no reason are silent failures for
+    // the caller, and no status-code assertion in this file would notice: the existing validation
+    // tests check the CODE only.
+    //
+    // These two therefore assert the opposite direction. Together with the redaction tests they
+    // pin the actual contract: internal text never leaves, intended text always does.
+
+    [Fact]
+    public async Task ListAbsences_InvalidResult_KeepsTheValidationMessageTheCallerNeeds()
+    {
+        var mediator = new Mock<IMediator>();
+        mediator
+            .Setup(m => m.Send(It.IsAny<GetAbsencesQuery>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<IReadOnlyList<AbsenceDto>>.Invalid(
+                new ValidationError("EmployeeId", "A dolgozó azonosítója kötelező.")));
+
+        await using var host = await StartHostAsync(mediator.Object);
+        var response = await host.Client.GetAsync("/api/hr/absences");
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var body = await response.Content.ReadAsStringAsync();
+        body.Should().Contain("A dolgozó azonosítója kötelező.");
+    }
+
+    [Fact]
+    public async Task ApproveAbsence_ConflictResult_KeepsTheReasonTheCallerNeeds()
+    {
+        var mediator = new Mock<IMediator>();
+        mediator
+            .Setup(m => m.Send(It.IsAny<ApproveAbsenceCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<AbsenceDto>.Conflict("Cannot approve absence in Approved status."));
+
+        await using var host = await StartHostAsync(mediator.Object);
+        var response = await host.Client.PutAsJsonAsync(
+            $"/api/hr/absences/{AbsenceGuid}/approve", new { approvedBy = ApproverGuid });
+
+        response.StatusCode.Should().Be(HttpStatusCode.Conflict);
+        var body = await response.Content.ReadAsStringAsync();
+
+        // The ADR-059 wire translation has to survive the redaction too: the domain writes the
+        // English member name, and this seam is the only place that turns it into a wire key.
+        body.Should().Contain("Cannot approve absence in");
+        body.Should().NotContain("\"error\":\"InternalServerError\"");
+    }
+
+    [Fact]
     public async Task GetAbsence_Found_ReturnsOkDto()
     {
         var mediator = new Mock<IMediator>();
@@ -179,7 +244,7 @@ public class AbsenceEndpointsTests
     // ========== FSM TRANSITIONS ==========
 
     [Fact]
-    public async Task ApproveAbsence_ReturnsOkWithFreshDto_AndPassesApprover()
+    public async Task ApproveAbsence_ReturnsOkWithFreshDto_AndUsesAuthenticatedCallerInsteadOfPayloadApprover()
     {
         ApproveAbsenceCommand? captured = null;
         var mediator = new Mock<IMediator>();
@@ -200,7 +265,8 @@ public class AbsenceEndpointsTests
 
         captured.Should().NotBeNull();
         captured!.AbsenceId.Value.Should().Be(AbsenceGuid);
-        captured.ApprovedByUserId.Should().Be(ApproverGuid);
+        captured.ApprovedByUserId.Should().Be(HrEndpointTestHost.UserId);
+        captured.ApprovedByUserId.Should().NotBe(ApproverGuid);
     }
 
     [Fact]
@@ -238,7 +304,7 @@ public class AbsenceEndpointsTests
     }
 
     [Fact]
-    public async Task RejectAbsence_PassesReason_ReturnsOk()
+    public async Task RejectAbsence_PassesReason_ReturnsOk_AndUsesAuthenticatedCallerInsteadOfPayloadRejecter()
     {
         RejectAbsenceCommand? captured = null;
         var mediator = new Mock<IMediator>();
@@ -255,6 +321,8 @@ public class AbsenceEndpointsTests
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         captured!.RejectionReason.Should().Be("Csúcsszezon");
+        captured.RejectedByUserId.Should().Be(HrEndpointTestHost.UserId);
+        captured.RejectedByUserId.Should().NotBe(ApproverGuid);
     }
 
     [Fact]

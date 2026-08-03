@@ -99,7 +99,7 @@ public static class QACheckpointEndpoints
 
         return result.IsSuccess
             ? Results.Created($"/api/qa/checkpoints/{result.Value.Value}", new { checkpointId = result.Value.Value })
-            : Results.BadRequest(result.Errors);
+            : QaEndpointResults.Failure(result);
     }
 
     private static async Task<IResult> GetQACheckpoint(
@@ -130,7 +130,7 @@ public static class QACheckpointEndpoints
 
         return result.IsSuccess
             ? Results.Ok(result.Value)
-            : Results.BadRequest(result.Errors);
+            : QaEndpointResults.Failure(result);
     }
 
     private static async Task<IResult> UpdateQACheckpoint(
@@ -161,7 +161,7 @@ public static class QACheckpointEndpoints
 
         return result.IsSuccess
             ? Results.NoContent()
-            : Results.BadRequest(result.Errors);
+            : QaEndpointResults.Failure(result);
     }
 
     private static async Task<IResult> UpdateQACheckpointCriteria(
@@ -181,7 +181,7 @@ public static class QACheckpointEndpoints
 
         return result.IsSuccess
             ? Results.NoContent()
-            : Results.BadRequest(result.Errors);
+            : QaEndpointResults.Failure(result);
     }
 }
 

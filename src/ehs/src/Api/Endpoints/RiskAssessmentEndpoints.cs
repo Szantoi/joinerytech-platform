@@ -132,13 +132,17 @@ public static class RiskAssessmentEndpoints
                 $"/api/ehs/risk-assessments/{id}",
                 new CreateRiskAssessmentResponse(id));
         }
-        catch (InvalidOperationException ex)
+        catch (InvalidOperationException)
         {
-            return Results.Conflict(new { Error = ex.Message });
+            return EhsEndpointResults.Conflict();
         }
-        catch (Exception ex)
+        catch (FluentValidation.ValidationException ex)
         {
-            return Results.BadRequest(new { Error = ex.Message });
+            return EhsEndpointResults.ValidationFailure(ex);
+        }
+        catch (Exception)
+        {
+            return EhsEndpointResults.InternalServerError();
         }
     }
 
@@ -214,13 +218,17 @@ public static class RiskAssessmentEndpoints
         {
             return Results.NotFound();
         }
-        catch (InvalidOperationException ex)
+        catch (InvalidOperationException)
         {
-            return Results.Conflict(new { Error = ex.Message });
+            return EhsEndpointResults.Conflict();
         }
-        catch (Exception ex)
+        catch (FluentValidation.ValidationException ex)
         {
-            return Results.BadRequest(new { Error = ex.Message });
+            return EhsEndpointResults.ValidationFailure(ex);
+        }
+        catch (Exception)
+        {
+            return EhsEndpointResults.InternalServerError();
         }
     }
 
@@ -277,13 +285,17 @@ public static class RiskAssessmentEndpoints
         {
             return Results.NotFound();
         }
-        catch (InvalidOperationException ex)
+        catch (InvalidOperationException)
         {
-            return Results.Conflict(new { Error = ex.Message });
+            return EhsEndpointResults.Conflict();
         }
-        catch (Exception ex)
+        catch (FluentValidation.ValidationException ex)
         {
-            return Results.BadRequest(new { Error = ex.Message });
+            return EhsEndpointResults.ValidationFailure(ex);
+        }
+        catch (Exception)
+        {
+            return EhsEndpointResults.InternalServerError();
         }
     }
 
@@ -313,9 +325,9 @@ public static class RiskAssessmentEndpoints
             // portal mock also answers 404 for such ids, so no new 400 contract.
             return Results.NotFound();
         }
-        catch (InvalidOperationException ex)
+        catch (InvalidOperationException)
         {
-            return Results.Conflict(new { Error = ex.Message });
+            return EhsEndpointResults.Conflict();
         }
     }
 }

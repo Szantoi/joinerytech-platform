@@ -99,9 +99,13 @@ public static class IncidentEndpoints
             var incidentId = await mediator.Send(command, ct).ConfigureAwait(false);
             return Results.Created($"/api/ehs/incidents/{incidentId}", new { IncidentId = incidentId });
         }
-        catch (Exception ex)
+        catch (FluentValidation.ValidationException ex)
         {
-            return Results.BadRequest(new { Error = ex.Message });
+            return EhsEndpointResults.ValidationFailure(ex);
+        }
+        catch (Exception)
+        {
+            return EhsEndpointResults.InternalServerError();
         }
     }
 
@@ -174,9 +178,13 @@ public static class IncidentEndpoints
         {
             return Results.NotFound();
         }
-        catch (Exception ex)
+        catch (FluentValidation.ValidationException ex)
         {
-            return Results.BadRequest(new { Error = ex.Message });
+            return EhsEndpointResults.ValidationFailure(ex);
+        }
+        catch (Exception)
+        {
+            return EhsEndpointResults.InternalServerError();
         }
     }
 
@@ -204,9 +212,13 @@ public static class IncidentEndpoints
         {
             return Results.NotFound();
         }
-        catch (Exception ex)
+        catch (FluentValidation.ValidationException ex)
         {
-            return Results.BadRequest(new { Error = ex.Message });
+            return EhsEndpointResults.ValidationFailure(ex);
+        }
+        catch (Exception)
+        {
+            return EhsEndpointResults.InternalServerError();
         }
     }
 
@@ -234,9 +246,13 @@ public static class IncidentEndpoints
         {
             return Results.NotFound();
         }
-        catch (Exception ex)
+        catch (FluentValidation.ValidationException ex)
         {
-            return Results.BadRequest(new { Error = ex.Message });
+            return EhsEndpointResults.ValidationFailure(ex);
+        }
+        catch (Exception)
+        {
+            return EhsEndpointResults.InternalServerError();
         }
     }
 
@@ -256,9 +272,13 @@ public static class IncidentEndpoints
         {
             return Results.NotFound();
         }
-        catch (Exception ex)
+        catch (FluentValidation.ValidationException ex)
         {
-            return Results.BadRequest(new { Error = ex.Message });
+            return EhsEndpointResults.ValidationFailure(ex);
+        }
+        catch (Exception)
+        {
+            return EhsEndpointResults.InternalServerError();
         }
     }
 }

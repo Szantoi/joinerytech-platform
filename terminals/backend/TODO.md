@@ -72,16 +72,15 @@ Gábor elé megy** — az elfogadás az ő joga) · ✅ **KIADVA**: `EPIC-PROJEC
       névadás-szétválasztás `EpicRef`/`ProjectRef`.
 - [x] **PROJ-04 domain-mag** (`eb11735`) — `Project` + `ProjectCode` + `ProjectEpicAssignment` +
       `EnsureEpicUnassigned`. **16/16 zöld, 0 warning; mutáció 2/2 harapott**, visszaállítva.
-- [ ] **PROJ-05 — Application + Infrastructure**: repository-port; create/rename/status/epic-assign
-      parancsok; **opcionális `OriginRef`** a §7.2-döntés miatt (opak, nullable — a create-parancs
-      **nem** teheti kötelezővé); EF-konfiguráció (`ProjectCode` konverter, **bérlőnként egyedi**
-      kód-index);
-      tenant query filter + **RLS-migráció a hosting-baseline `NULLIF(...)` alakjával** (a csupasz
-      `current_setting(...)::uuid` a pool-reset üres értékén 22P02-t dobna); **modell↔séma
-      konformancia-teszt valódi Postgresen** (InMemory elvileg sem lát hiányzó oszlopot).
-- [ ] **PROJ-06 — Api + host**: `/api/projects/v1`, ETag/`If-Match`, `Idempotency-Key` a create-en,
-      ADR-067 `RequireEnabledModule` kapu, ProblemDetails + correlation id. Az **epic-hozzárendelés
-      az F5/2 `HttpProjectAdapter` mintájával** ellenőrizze a FlowEpic létét on-behalf-of.
+- [x] **PROJ-05 — Application + Infrastructure**: **KÉSZ, `review_requested`** (`dc3dc28`,
+      30 fájl / 2301 sor). **58/58 zöld, 0 warning** tiszta build-cache-sel; **mutáció 3/3
+      harapott** sha1-alkalmazva-bizonyítással. Részletek és a két menet közbeni lelet: `STATE.md`.
+- [ ] ⛔ **PROJ-06 — Api + host: BLOKKOLVA a §7.3-on.** `/api/projects/v1`, ETag/`If-Match`,
+      `Idempotency-Key` a create-en, ADR-067 `RequireEnabledModule` kapu, ProblemDetails +
+      correlation id; az **epic-hozzárendelés az F5/2 `HttpProjectAdapter` mintájával** ellenőrizze
+      a FlowEpic létét on-behalf-of. **Amiért blokkolt:** a create-út a `ProjectCode`-ot az
+      `IProjectCodeAllocator`-tól kéri, annak pedig **szándékosan nincs implementációja**, amíg a
+      formátum nyitott. Egy alapértelmezett formátum csendben eldöntené a §7.3-at.
 - [x] ✅ **§7.2 ELDÖNTVE (Gábor, 2026-08-03):** *„Igen a CRM-ből **is** születhet."* → **mindkét**
       származás jogos; a create-út **rendelést nem követelhet**. A `Project` opcionális, **opak**
       `OriginRef`-et kap (a `CustomerId` mintájával) — a rendelés tételei/ára/száma a CRM-nél

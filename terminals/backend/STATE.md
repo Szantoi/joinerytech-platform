@@ -196,8 +196,49 @@ Project-mezőre ma nem tartjuk be.
 | Szelet | Állapot | Bizonyíték |
 |---|---|---|
 | **PROJ-04** domain-mag | **kész** (`eb11735`) | **16/16 zöld, 0 warning**; mutáció **2/2 harapott** (cross-aggregátum epic-őr; `ProjectCode` nagybetűsítés), visszaállítva |
-| **PROJ-05** Application + Infrastructure (EF, RLS, migráció) | **következik** | a hosting-baseline `NULLIF(...)` RLS-alakja + tenant query filter + modell↔séma konformancia |
-| **PROJ-06** Api + host | pending | `/api/projects/v1`, ETag/Idempotency-Key, ADR-067 modul-kapu; az epic-hozzárendelés az F5/2 adapter-mintájával ellenőrizze a FlowEpic létét |
+| **PROJ-05** Application + Infrastructure (EF, RLS, migráció) | **kész, `review_requested`** | **58/58 zöld, 0 warning** tiszta build-cache-sel (36 unit + 22 integrációs, valódi Testcontainers-PostgreSQL NOSUPERUSER/NOBYPASSRLS szerepen); **mutáció 3/3 harapott**, sha1-alkalmazva-bizonyítással |
+| **PROJ-06** Api + host | ⛔ **blokkolva a §7.3-on** | `/api/projects/v1`, ETag/Idempotency-Key, ADR-067 modul-kapu; az epic-hozzárendelés az F5/2 adapter-mintájával ellenőrizze a FlowEpic létét |
+
+### A PROJ-05 tartalma (amit a review-nak látnia kell)
+
+- **Application:** `IProjectRepository` port · öt MediatR-parancs (create/rename/status/
+  epic-assign/release) · `ICurrentTenant` port (az Application nem függ az ASP.NET Core-tól) ·
+  `IProjectCodeAllocator` port.
+- **Infrastructure:** `ProjectsDbContext` tenant query filterrel · EF-konfigurációk
+  (`ProjectCode` konverter + explicit `ValueComparer`) · `ProjectRepository` · **0001 migráció**
+  a hosting-baseline `NULLIF(...)` alakjával és `ENABLE`+`FORCE` RLS-sel **mindkét táblán, a modul
+  ELSŐ migrációjában** (a Collaboration és a CRM is utólagos javító-migrációt fizetett ezért).
+- **A §7.2-döntés kódban:** opcionális, opak `ProjectOrigin` (system + externalId), **két sima
+  oszlopként**, nem opcionális owned type-ként — az utóbbi az EF egyik legrosszabb csapdája.
+  A create-út **nem követel** származást; erre külön teszt van, névvel.
+- **`ProjectCode`: a modul adja ki** (`IProjectCodeAllocator`), mert két független szülő-út mellett
+  a hívó által adott kód garantáltan szétcsúszik — ez **mérve** van (portál `PRJ-2426-001` vs
+  Kontrolling `PRJ-2026-014`). A portnak **szándékosan nincs implementációja**: a §7.3 formátum-
+  kérdés Gáboré, és egy alapértelmezett formátum csendben eldöntené. ⛔ **Következmény: a
+  create-végpont (PROJ-06) a §7.3 nélkül nem szállítható.**
+- **Megerősített invariáns:** a `ProjectEpicAssignment` saját `TenantId`-t kapott, mert az „egy
+  epic egy projekthez" szabályt eddig **csak egy check-then-act** őrizte, amit két párhuzamos hívás
+  átlép. A `(TenantId, EpicId)` **egyedi index** zárja — **bérlőnként, nem globálisan**: a globális
+  index egy másik bérlő soráról adna választ.
+
+### A mutációs kör három tétele (sha1-alkalmazva-bizonyítással)
+
+| Mutáció | Eredmény |
+|---|---|
+| **M1** interceptor kivétele a DI-ből | pontosan a **3 kulcs-állító** E2E bukott — a **6 kézzel tükrözött RLS-teszt VÉGIG ZÖLD**. A CRM-pilot leletének pontos megismétlődése |
+| **M2** egyedi index → sima index | a **2 uniqueness-teszt** bukott |
+| **M3** query filter invertálása | a **2 szűrő-teszt** bukott, **mind az 5 interceptor-E2E zöld maradt** — a két réteg bizonyítottan független |
+
+⭐ **Az M2 a saját mérőeszközöm hibáját buktatta ki:** a szerkezeti index-teszt csak az index
+**NEVÉT** nézte, ezért a mutáció alatt **zöld maradt**. Átírva `pg_index.indisunique`-ra és
+**újramérve** — most már harap. A kapu csak azon fog, amit ténylegesen megnéz.
+
+⭐ **Mérés közben talált rés, betömve:** az E2E `IgnoreQueryFilters`-t használ, az RLS-suite pedig
+nem-superuserként megy — **a kettő között az EF query filter fedezetlen volt**. Egy kieső réteg
+viselkedésben láthatatlan, ezért új osztály (`QueryFilterTests`) méri **egyedül**, admin
+(superuser) kapcsolaton, ahol az RLS elvileg sem harap; pozitív kontrollal, hogy az üres eredmény
+ne lehessen elrontott seed. Kimondva benne: **tenant nélkül a szűrő megengedő**, tehát azon az
+úton a fail-closed viselkedést **kizárólag** az interceptor üres kulcsa + az RLS tartja.
 
 **Amit a domain-mag hoz:** `Project` (Id + TenantId + `ProjectCode` + Name + Status + opcionális
 `CustomerId` + RowVersion), `ProjectEpicAssignment` (ez teszi valódivá az epikek feletti

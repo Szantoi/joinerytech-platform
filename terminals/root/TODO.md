@@ -65,6 +65,33 @@
       Patch mentve lokálisan: `artifacts/orphaned-codex-worktree-2026-08-03/` (sha1
       `06e026b6`) + scratchpad-másolat; a publikus repóba szándékosan nem megy.
 
+- [ ] ⛔ **ÚJ, 2026-08-03 — a portál CI-je 07-30 ÓTA PIROS, és a `Tranche B` törlése oldja fel.**
+      A frontend döntési anyagából indult, root-méréssel megerősítve:
+      - a `react-slider@2.0.6` **`dependencies`-ben** van (nem dev!), peer-igénye
+        `react@^16||^17||^18`, a fán **React 19.2.7** → **`npm install` ÉS `npm ci`
+        is ERESOLVE-val bukik** egy friss klónon;
+      - a **`portal-ui` munkafolyamat** (a Doorstar felé publikált csomag kapuja)
+        emiatt **2026-07-30 óta piros**, pontosan ezen a hibán;
+      - ma **nem futott le**, mert `paths:`-szűrője csak a `packages/portal-ui/**`-ra
+        figyel — a mai két commitom nem érintette. **Vagyis nem „zöld" volt, hanem
+        nem is volt kapu alatt.**
+      - ⚠ **A portálnak NINCS általános CI-je**: a `portal-ui` az EGYETLEN munkafolyamat,
+        és egy csomagra szűkített. Minden más (app-`src/`, a többi csomag) **kapu nélkül** él.
+      - a két fogyasztó (`PriceRangeSlider`, `VersionSlider`) **mindkettő a Tranche B-ben**
+        → a törlés a blokkolót nyom nélkül megszünteti.
+      **Kérdés Neked:** mehet-e a Tranche B törlése? (A prior art nem vész el: a
+      Tranche A-ban törölt kód `git show`-val ma is előhívható.)
+- [ ] **ÚJ: az „`EditableDataTable`-átvétel" tétel ROSSZUL VAN FELTÉVE — mérve.**
+      A lista úgy hordozta, mintha egy kész komponens átvételére várna a jóváhagyásod.
+      Root-mérés: **`EditableDataTable` és `SheetTable` 0 commit-találat a teljes
+      git-történetben, minden ágon** — nem létezik és nem is létezett (a `SheetTable`
+      a **Doorstar** komponense). A blokkoló feltétele („CSAK ha az M4
+      revízió-szerkesztés bekerül") a `docs/` alatt **négy helyen fordul elő, mind a
+      négy magában a PLAN-05-ben** — önhivatkozás; a platformon definiált egyetlen `M4`
+      a PLAN-03/ADR-069 scheduler-mérföldköve, aminek semmi köze hozzá.
+      ⇒ Ez **nem elmaradt döntés, hanem meg nem specifikált fejlesztés** egy
+      kiértékelhetetlen feltételen. Vagy új kiírást kap, vagy lekerül a listáról.
+
 - [ ] **`/shopfloor` PIN-backdoor.** A `PIN=1234` ág eltávolítása authorizált; a
       kérdés az, hogy **egy nem működő világ mit keres publikus route-on**
       (se backend, se MSW-mock → a PIN az egyetlen működő belépő). A frontend

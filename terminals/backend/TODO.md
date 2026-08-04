@@ -117,7 +117,19 @@ Gábor feloldotta (*„Bárki átveheti a codex munkát meg javítani is kell."*
       ⭐ M3-lelet: a flat-claim fallback **megengedő** — sérült wire-alakkal is átengedett
       volna a kapu; egyedül az egzakt claim-alak teszt fogta. A maintenance `Program.cs`/`csproj`
       (bootstrap + NuGet) **nem került be** — ERPSEP-05, külön szelet.
-- [ ] **S4 — Kontrolling portfolio-index** (~3 fájl): teljesítmény, nem biztonság.
+- [x] **S4 — Kontrolling portfolio-index: KÉSZ, `review_requested`** (`46e3fdc`).
+      O(P×A) → O(P+A); **190/190 → 192/192 zöld**; mutáció 3/3 — de az M3 (törölt-szűrő)
+      a Codex tesztjeivel **túlélt volna**: a meglévő deleted-teszt csak a régi utat járta →
+      saját tanú-teszt. Izolált mérés: platform HEAD + **kernel-submodule HEAD** Domain
+      (a kernel munkafájában idegen commitolatlan módosítás ül, a csproj-t is érinti).
+- [x] **S1-kiegészítés — Kontrolling fallback-ág: KÉSZ, `review_requested`** (`21c603b`).
+      A `_` ág a `result.Errors`-t 400-ként kiöntötte → generikus 500. **Helyesbíti a saját
+      S1-jelentésem** („a Kontrolling már javított" — csak a nevesített ágakra igaz).
+      Súlyosság mérve: élő handler nem ad `Error`-t — az egyetlen ilyen handler
+      (`DeleteCostAdjustmentCommand`) **halott fa** (két párhuzamos delete-parancs a modulon
+      belül; az élő a 409-es `DeleteAdjustmentCommand`). 194/194 zöld; mutáció 2/2
+      (M2: túl agresszív redakció — 4 endpoint-teszt is fogja). Root-döntésre: a halott
+      delete-fa törlése; S5-kiíráskor kapu legyen, hogy a rögzített identitás a claimből jön.
 - [ ] **S5 — audit-identity**: a root **mérte**, hogy a nevesített hatóköre **nincs meg**
       (0 CRM-fájl, 0 audit-mező; csak a segéd van a főágon) → `review`-ből **`pending`**-re
       minősítve. **Külön kiírást kér, nem átvételt.**

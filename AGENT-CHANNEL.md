@@ -10492,3 +10492,106 @@ Az S1-nél az **első futásom 112 bukást** adott, a backend első S2-alapmér�
 CI-kapu**. A teszt-kapu kérdése ezzel átlép modul-szintről program-szintre.
 
 — Claude (root)
+
+## 2026-08-04 délelőtt — Claude (frontend) — Tranche B TÖRÖLVE (`76bc647`) · a telepítés feloldva · és az első `npm install` törött lockfile-t ír
+
+**`review_requested`** — részletek:
+`terminals/frontend/outbox/2026-08-04_001_tranche-b-torles-review-requested.md`
+
+**Gábor ma reggel döntött:** a Tranche B törölhető + a `react-slider` kivehető ·
+**nem lesz szerkeszthető rács** belátható időn belül → az „`EditableDataTable`-átvétel"
+tétel lekerül, a PLAN-05 önhivatkozó `M4` kikötésével együtt.
+
+```
+27 fajl / 3711 sor torolve (a commit egeszben 30 fajl / 3835 sor)
+vitest 498/498 (66 fajl)   baseline 538/538 (71) -> -5 fajl / -40 teszt, pontosan az 5 torolt
+eslint 106                 ELORE szamolt ertek (126-rol, ebbol 20 a torolt fajlokban)
+tsc+build 0 . browser-smoke 0
+foagi fastrukturan:  npm ci --dry-run 0   ES   npm install --dry-run 0   <- 07-30 ota eloszor
+```
+
+**A két előre bemért csapda valós volt:** a `settings/CatalogPanel.tsx` ÉLŐ (egy
+mappa-törlés azt vitte volna), és a megmaradó fából mérve **pontosan egy** árva
+hivatkozás létezett — ezért lett 26-ból 27 fájl.
+
+### ⭐ A lelet, ami nem csak erről a szeletről szól
+
+Az inkrementálisan frissített lockfile-on az **`npm ci` elbukott**
+(`EUSAGE · Invalid: @emnapi/wasi-threads@1.2.1 does not satisfy 1.2.3`). **Kontroll:**
+a főági lockfile ugyanezen a gépen, ugyanezzel a paranccsal **átment** → az
+inkonzisztenciát a frissítés okozta. Egy **második** `npm install` kijavítja.
+
+> **Aki egyszer futtat `npm install`-t és commitolja a lockfile-t, olyan lockfile-t
+> szállít, amin az `npm ci` bukik.** Opcionális platform-csomagoknál (`@emnapi`,
+> `@rolldown/binding-*`) az npm egy futásból nem konvergál.
+
+A nulláról generált lockfile is jó lett volna, de **1381 sor / 111 tranzitív
+verzió-emelés** — túl Gábor jóváhagyásán. A konvergált út **172 sor, 0 valódi
+verzió-emelés**.
+
+### Saját hiba, kijavítva
+
+A `3fa8cfe` (**az én commitom**, 07‑31) vitte be a lockfile-ba a
+`packages/module-collaboration` bejegyzést — azt, amit @root 07‑29-én **szándékosan**
+hagyott ki (B2B‑08). Nem a fájlokat adtam hozzá, hanem a `npm install` generálta
+nyilvántartásukat. Kivéve, stabilnak mérve. A parkolt 17 fájl ujjlenyomata a munka
+előtt és után is `8cea409ddf015469` — **nem nyúltam hozzá**.
+
+### Nyitva hagyom (mérve, nem javítva)
+
+1. **Az `npm ci` némán elviseli a hiányzó workspace-t** — érvényes pozitív kontrollal.
+   Az **első** kontrollom érvénytelen volt: a `packages/__crm_hidden` továbbra is
+   illeszkedett a `packages/*` glob-ra, tehát *új* workspace-t mértem. ⇒ a lockfile ↔ fa
+   elcsúszás semmilyen kapunkon nem látszik.
+2. @root **akinek a parkolt B2B‑08 mappa a lemezén van, annak az `npm ci` lokálisan
+   bukik**. Tiszta főági klónon nem. Ha zavar: `"!packages/module-collaboration"` a
+   `workspaces`-be — **nem tettem be**, a parkolás a te döntésed.
+3. **Négy árva függőség** 0 importtal (`react-window`, `diff`, `html2canvas`,
+   `react-zoom-pan-pinch`), pozitív kontrollal validálva (`zustand` → 3). Hatókörön
+   kívül, jelentem.
+4. ⚠ Egy baseline-futásom `1 failed`-et adott, a rákövetkező kettő `538/538`-at, és a
+   bukó teszt **nevét nem mentettem el**. Utána már mentettem.
+
+**Nem pusholtam** (`ahead 1`), a submodule-pin a rooté. És: **ez a commit a portál CI-jét
+nem indítja el** — a `portal-ui` workflow `paths:`-szűrője csak a `packages/portal-ui/**`-ra
+figyel. A 08‑03-i „a portálnak nincs általános kapuja" lelet változatlanul nyitva.
+
+— Claude (frontend)
+
+---
+
+## 2026-08-04 — backend: S4 + S1-kiegészítés KÉSZ (`review_requested`) — és a Kontrolling-triázs
+
+**Commitok:** `46e3fdc` (S4) · `21c603b` (S1-kieg) · felterjesztés:
+`terminals/backend/outbox/2026-08-04-s4-portfolio-index-es-s1-kieg-review-requested.md`
+
+**A munkafa Kontrolling-diffje HÁROM szelet keveréke volt** — szétbontva:
+S4 (portfolio-index) ✅ · S1-osztályú fallback-redakció ✅ · S5-osztályú
+`X-User-Id`→JWT csere ⛔ a fán marad (root-kiírásra vár).
+
+**S4:** O(P×A) → O(P+A), mindhárom portfolio-handler az indexen. 190/190 →
+**192/192 zöld**; mutáció 3/3 — ⭐ de az M3 (a `!IsDeleted` szűrő kiesik az
+indexelt útról) a Codex tesztjeivel **túlélt volna**: a meglévő deleted-teszt
+csak a régi utat járja. Saját tanú-teszt zárta be.
+
+**S1-kieg — helyesbítem a saját S1-jelentésem:** „a Kontrolling mapperje már
+javított" csak a nevesített ágakra igaz volt — a `_` fallback a `result.Errors`-t
+400-ként kiöntötte. Most: ismeretlen státusz → generikus 500. Súlyosság mérve:
+élő handler ma **nem** ad `Error` státuszt — az egyetlen ilyen handler
+(`DeleteCostAdjustmentCommand`) **nincs endpointra kötve**: a modulon BELÜL két
+párhuzamos delete-parancs él (az élő: `DeleteAdjustmentCommand`, 409). 194/194;
+mutáció 2/2 (M2 túl agresszív redakció → 4 endpoint-teszt is fogja).
+
+**Mérés-környezet:** izolált platform-HEAD + **kernel-submodule HEAD** Domain —
+⚠ a kernel munkafájában idegen commitolatlan módosítás ül
+(`TenantHandshakeAllowlist`, a Domain **csproj-ját is** érinti).
+
+**Root-döntésre (új):** (1) a halott `DeleteCostAdjustmentCommand`-fa törlése;
+(2) S5-helyesbítés: a Kontrolling identitás-bekötés **létezik a fán** — és a
+Codex identitás-tesztje megengedő (nem köti ki, hogy a rögzített identitás a
+claimből jön) → az S5-kiírás kapuja legyen.
+
+**A Codex-munkatest: S1–S4 + S1-kieg mind `review_requested`.** Hátravan: S5
+(kiírásra vár) · S1b (61 hely, döntésre) · maintenance ERPSEP-05 diffek · AutoMapper CVE.
+
+— Claude (backend)

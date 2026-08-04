@@ -164,9 +164,17 @@
       (verdikt: backend/inbox `2026-08-04_001`). Saját mérés: **710/710** zöld
       (a backend 580-a részhalmaz), M-ROOT mutáció + pozitív kontroll.
       ⇒ Két lelet ment tovább: **S1a** (Kontrolling, ld. lent) és a **2/8 fedezet**.
-- [ ] **backend PROJ-05** (Application + Infrastructure, `dc3dc28`) — felterjesztve
-      2026-08-03 21:04, **még nem bíráltam**.
+- [x] ~~**backend PROJ-05** + a kód-kiadó (`dc3dc28` + `a4d255c`)~~ **APPROVED 2026-08-04**
+      (verdikt: inbox `2026-08-04_002`). Saját mérés **64/64**; M-ROOT mutáció **túlélt**
+      (a 3. tábla RLS-e őrizetlen), pozitív kontroll 4 bukás.
+- [x] ~~**backend S2** (health-anonimizálás, `89da08e`)~~ **APPROVED 2026-08-04**
+      (verdikt: inbox `2026-08-04_003`). 82→85, M-ROOT harap. ⚠ A ⛔ besorolás **az én
+      kiírásom hibája** volt (nem mértem a „van-e hívó" premisszát).
+- [ ] **backend S3** (`EnabledModules`) — felterjesztve 2026-08-04, sorban.
 - [ ] **doccapture: a CI 6 oka rendezve** (2026-08-03 20:00) — felterjesztve, nem bíráltam.
+      *(Függetlenül ellenőrizve: a hivatkozott futás `30839170389` valóban `success`, és az
+      utána jött 2 commit CI-je is zöld — a tartalmi review még hátravan.)*
+- [ ] **doccapture: DC-01b írás-oldal + betűtípus-kapu részszállítás** (2026-08-04) — sorban.
 - [ ] **doccapture: betűtípus leszállítva** (`dda051b`, 2026-08-03 21:50) — a bináris-kapu
       (`binary_artifacts.json` + `binary_guard.py`) **átvehető mintája** a platformra is.
 - [x] ~~**Semmi.**~~ ⛔ **EZ TÉVEDÉS VOLT (2026-08-03).** A frontend `_009` felterjesztése
@@ -212,6 +220,17 @@
 - [ ] **Fedezet-tétel:** az S1 redakciója 8 EHS Api-fájlban él, HTTP-határ-teszt **2**-t
       rögzít (M-ROOT mutáció a Ppe-ben **túlélt**, pozitív kontroll a fedettben 1 bukás).
       Az S1b kapu-sorába kerüljön be a **fájlonkénti** határ-teszt.
+- [ ] ⛔ **Az engedélyező-listás kapu osztálya (PROJ-05-ből, de nem csak ott).** A projects
+      RLS-kapuja 2 táblát sorol fel, a modulnak 3 van — a harmadikról az RLS **teljes**
+      eltávolítása is **28/28 zölden** ment át (pozitív kontroll a listázott táblán: 4 bukás).
+      **Tiltó alapértelmezésre kell váltani** (a séma összes tábláját a katalógusból).
+      ⚠ Ugyanez az alak a HR `…_on_every_documented_table`-jében is — **az összes modulban
+      át kell nézni**, nem csak a projectsben.
+- [ ] ⛔ **Docker-függés program-szinten (Gábor-tétel).** Az S1-nél az első futásom **112**
+      bukást adott, a backend S2-alapmérése **4**-et — mindkettő puszta Docker-hiány. A
+      tesztek fail-closed buknak (helyes), de ebből következik, hogy a **„zöld suite"
+      kizárólag futó Dockerrel jelent bármit**, és **nincs CI-kapu** rá. Ez már nem egy
+      modul ügye.
 - [ ] **AutoMapper 13.0.2 pin nem tart** — a feloldott verzió **14.0.0**
       (`GHSA-rvv3-g6hj-g44x`, MAGAS), a modul fut és a repó publikus.
 - [ ] **@frontend: `packages/module-collaboration/` a portálon — 17 fájl, 07-29 óta

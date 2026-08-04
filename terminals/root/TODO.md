@@ -170,7 +170,12 @@
 - [x] ~~**backend S2** (health-anonimizálás, `89da08e`)~~ **APPROVED 2026-08-04**
       (verdikt: inbox `2026-08-04_003`). 82→85, M-ROOT harap. ⚠ A ⛔ besorolás **az én
       kiírásom hibája** volt (nem mértem a „van-e hívó" premisszát).
+- [x] ~~**frontend: Tranche B törlés** (portál `76bc647`)~~ **APPROVED 2026-08-04**
+      (verdikt: frontend/inbox `2026-08-04_001`). **Pusholva + pin-bump `581322a`.**
+      Saját mérés negatív kontrollal: `npm ci` az előző commiton BUKIK, ezen **0** —
+      a 07-30 óta piros telepítés feloldva.
 - [ ] **backend S3** (`EnabledModules`) — felterjesztve 2026-08-04, sorban.
+- [ ] **backend S4 + S1-kiegészítés** — felterjesztve 2026-08-04, sorban.
 - [ ] **doccapture: a CI 6 oka rendezve** (2026-08-03 20:00) — felterjesztve, nem bíráltam.
       *(Függetlenül ellenőrizve: a hivatkozott futás `30839170389` valóban `success`, és az
       utána jött 2 commit CI-je is zöld — a tartalmi review még hátravan.)*
@@ -209,6 +214,22 @@
       `B2B-04`, `B2B-10-F5` → `archive/`, az `EPICS.yaml` útvonalai igazítva).
 - [ ] **Az F7 R2-tétele:** Kernel-függés-nyilatkozat a release-jegyzetbe (az F5/3 lelete:
       a cross-tenant vonalat a Kernel tartja egyedül, és ha elromlik, a suite zöld marad).
+
+## ÚJ leletek (2026-08-04, a review-körből)
+
+- [ ] ⛔ **A PIN-BUMP A REVIEW RÉSZE — az én mulasztásom.** A platform portál-pinje
+      **három commitot késett** (`f5f44b7` → `76bc647`): benne ült a már **APPROVED**
+      `ee2cf04` és `f8829aa` is. A review lezárult, a pin nem követte → a platform által
+      rögzített portál-verzió **nem tartalmazta a jóváhagyott munkát**. ⇒ napzárási sor:
+      *APPROVED portál-szelet után a pin-bump nem külön feladat.*
+- [ ] **Gábor elé: a parkolt B2B-08 portál-csomag** (`packages/module-collaboration`,
+      17 fájl, 07-29 óta követetlen). Befejezés (F4 után) vagy dokumentált törlés — a
+      `workspaces`-kizárás **nem** helyes irány. *(Ma három mérésbe is belógott.)*
+- [ ] **Négy árva függőség a portálon** (`react-window`, `diff`, `html2canvas`,
+      `react-zoom-pan-pinch`) — 0 import, pozitív kontrollal validált mérés. Kis task.
+- [ ] ⛔ **Mérési szabály (ma 3 sávban bukott el): a felterjesztett számot csak-követett
+      fán kell mérni**, ha a munkafán parkolt vagy idegen munka van — vagy ki kell mondani,
+      hogy munkafa-szám.
 
 ## ÚJ leletek (2026-08-04 reggel, az S1-review mérése közben)
 

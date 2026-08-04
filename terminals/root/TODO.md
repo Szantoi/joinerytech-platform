@@ -160,6 +160,15 @@
 
 ## Rám váró review
 
+- [x] ~~**backend S1** (hibaüzenet-redakció, `6919666`)~~ **APPROVED 2026-08-04**
+      (verdikt: backend/inbox `2026-08-04_001`). Saját mérés: **710/710** zöld
+      (a backend 580-a részhalmaz), M-ROOT mutáció + pozitív kontroll.
+      ⇒ Két lelet ment tovább: **S1a** (Kontrolling, ld. lent) és a **2/8 fedezet**.
+- [ ] **backend PROJ-05** (Application + Infrastructure, `dc3dc28`) — felterjesztve
+      2026-08-03 21:04, **még nem bíráltam**.
+- [ ] **doccapture: a CI 6 oka rendezve** (2026-08-03 20:00) — felterjesztve, nem bíráltam.
+- [ ] **doccapture: betűtípus leszállítva** (`dda051b`, 2026-08-03 21:50) — a bináris-kapu
+      (`binary_artifacts.json` + `binary_guard.py`) **átvehető mintája** a platformra is.
 - [x] ~~**Semmi.**~~ ⛔ **EZ TÉVEDÉS VOLT (2026-08-03).** A frontend `_009` felterjesztése
       07-31 **16:04**-kor befutott az outboxába — a napzárásom (18:06) mégis „semmi"-t írt,
       és **három napig állt egy sáv** miatta. **Lezárva 2026-08-03: APPROVED** (portál
@@ -192,6 +201,27 @@
       `B2B-04`, `B2B-10-F5` → `archive/`, az `EPICS.yaml` útvonalai igazítva).
 - [ ] **Az F7 R2-tétele:** Kernel-függés-nyilatkozat a release-jegyzetbe (az F5/3 lelete:
       a cross-tenant vonalat a Kernel tartja egyedül, és ha elromlik, a suite zöld marad).
+
+## ÚJ leletek (2026-08-04 reggel, az S1-review mérése közben)
+
+- [ ] ⛔ **S1a — a Kontrolling MA szivárog a főágon.** A HEAD-en
+      `_ => BadRequest(FirstMessage(...))`, és két handler `Result<Guid>.Error(ex.Message)`-et
+      ad (AddOverheadRule, RemoveOverheadRule). Az S1 hatókör-táblája „már javított"-ként
+      zárta ki — **mert a piszkos munkafára mért**, ahol a Codex-patch javítása benne ül
+      commitolatlanul. **Kiadva a backendnek.**
+- [ ] **Fedezet-tétel:** az S1 redakciója 8 EHS Api-fájlban él, HTTP-határ-teszt **2**-t
+      rögzít (M-ROOT mutáció a Ppe-ben **túlélt**, pozitív kontroll a fedettben 1 bukás).
+      Az S1b kapu-sorába kerüljön be a **fájlonkénti** határ-teszt.
+- [ ] **AutoMapper 13.0.2 pin nem tart** — a feloldott verzió **14.0.0**
+      (`GHSA-rvv3-g6hj-g44x`, MAGAS), a modul fut és a repó publikus.
+- [ ] **@frontend: `packages/module-collaboration/` a portálon — 17 fájl, 07-29 óta
+      követetlen.** Az appból semmi nem hivatkozik rá, a **követett `package-lock.json`
+      viszont igen. Mérve: nem telepítés-blokkoló** (`npm ci --dry-run` a csak-követett fán
+      lefut). Kész munka a főágon kívül — a döntés (befejezni / commitolni / törölni) a
+      frontendé.
+- [x] ~~**5 pusholatlan commit a platformon**~~ (köztük maga az S1 biztonsági javítás; a CI
+      el sem indult rájuk) — **pusholva 2026-08-04**. A P0-listára: a napzárás **push**-sal
+      záruljon, ne commit-tal.
 
 ## Futó sávok (2026-07-31 este)
 

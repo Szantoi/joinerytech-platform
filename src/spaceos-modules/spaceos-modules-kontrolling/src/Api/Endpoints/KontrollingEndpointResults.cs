@@ -28,7 +28,7 @@ internal static class KontrollingEndpointResults
         ResultStatus.NotFound => NotFound(FirstMessage(result, "A kért erőforrás nem található.")),
         ResultStatus.Conflict => Conflict(FirstMessage(result, "Az erőforrás állapota ütközik a kéréssel.")),
         ResultStatus.Invalid => BadRequest(FirstValidationMessage(result)),
-        _ => BadRequest(FirstMessage(result, "Érvénytelen kérés."))
+        _ => InternalServerError()
     };
 
     /// <summary>400 — the payload is unusable.</summary>
@@ -42,6 +42,12 @@ internal static class KontrollingEndpointResults
     /// <summary>409 — the resource's state contradicts the request.</summary>
     public static IResult Conflict(string message) =>
         Results.Conflict(new { error = "Conflict", message });
+
+    /// <summary>Does not expose infrastructure or provider failure details.</summary>
+    private static IResult InternalServerError() =>
+        Results.Json(
+            new { error = "InternalServerError", message = "Váratlan kiszolgálóhiba történt." },
+            statusCode: StatusCodes.Status500InternalServerError);
 
     private static string FirstMessage(Ardalis.Result.IResult result, string fallback) =>
         result.Errors.FirstOrDefault() ?? fallback;

@@ -110,7 +110,13 @@ Gábor feloldotta (*„Bárki átveheti a codex munkát meg javítani is kell."*
       ⚠ **Mérés-érvényesség:** az első alapállapot 4 bukást adott, mert **nem futott a Docker**
       (mind 1 ms); a Docker a mérés közben indult el → **újramértem**. Ezek a tesztek Docker
       nélkül **buknak, nem kimaradnak** → a suite „zöldje" csak futó Dockerrel jelent valamit.
-- [ ] **S3 — `EnabledModules`** (ERPSEP-06, ~9 fájl): fail-closed, nincs élő kitettség.
+- [x] **S3 — `EnabledModules`: KÉSZ, `review_requested`** (`4e880f6`, 7 fájl / +121 −5).
+      Dev-identitás modul-entitlementje a Keycloak-úttal azonos JSON-tömb claim-alakban;
+      üres lista → nincs claim → a kapu tilt; Keycloak-módban a `Development:EnabledModules`
+      jelenléte **indulási hiba**. **85/85 → 90/90 zöld**, 0 warning; **mutáció 4/4 harapott**.
+      ⭐ M3-lelet: a flat-claim fallback **megengedő** — sérült wire-alakkal is átengedett
+      volna a kapu; egyedül az egzakt claim-alak teszt fogta. A maintenance `Program.cs`/`csproj`
+      (bootstrap + NuGet) **nem került be** — ERPSEP-05, külön szelet.
 - [ ] **S4 — Kontrolling portfolio-index** (~3 fájl): teljesítmény, nem biztonság.
 - [ ] **S5 — audit-identity**: a root **mérte**, hogy a nevesített hatóköre **nincs meg**
       (0 CRM-fájl, 0 audit-mező; csak a segéd van a főágon) → `review`-ből **`pending`**-re

@@ -305,7 +305,7 @@ kitettség szerint, szeletenként külön `review_requested` (inbox `2026-08-03_
 |---|---|---|
 | **S1** hibaüzenet-redakció (EHS/HR/QA) | **`review_requested`** (`6919666`) | 580/580 zöld; mutáció 2/2; + a HR approve/reject hamisítható audit-nyomának javítása; testvér-lelet: **61 hely 6 másik modulban** (S1b root-döntésre) |
 | **S2** health-anonimizálás (hosting) | **`review_requested`** (`89da08e`) | a `MapModuleHealth` már csak `{ status }`; 82/82 → **85/85 zöld**, 0 warning; **mutáció 3/3** sha1-bizonyítással. ⚠ **A ⛔ indok nem állt:** a főágon a függvénynek **nulla hívója** — a téves súlyosság forrása az ERPSEP-05 doksi 07-28-i, sosem commitolt munkát „kész"-nek író bejegyzése. ⭐ Hozzátett őr: az `.AllowAnonymous()` réteg (fallback-policy alatt 401 lett volna, és a 82 meglévő teszt nem szólt volna — M2 bizonyítja) |
-| **S3** `EnabledModules` (ERPSEP-06) | következik | fail-closed, nincs élő kitettség |
+| **S3** `EnabledModules` (ERPSEP-06) | **`review_requested`** (`4e880f6`) | dev-entitlement a Keycloak-úttal azonos JSON-tömb claimben; üres → nincs claim → kapu tilt; Keycloak-módban a dev-entitlement konfig **indulási hiba**; 85/85 → **90/90 zöld**, mutáció **4/4**. ⭐ M3: a flat-claim fallback megengedő — a sérült wire-alakot csak az egzakt claim-teszt fogta |
 | **S4** Kontrolling portfolio-index | vár | teljesítmény, nem biztonság |
 | **S5** audit-identity | **`pending`** (root-mérés) | a nevesített hatókör nincs meg; külön kiírást kér — az S1-ben talált hívó-identitás-javítás ezt részben helyesbíti |
 

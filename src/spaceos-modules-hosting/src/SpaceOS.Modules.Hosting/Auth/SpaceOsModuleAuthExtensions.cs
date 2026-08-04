@@ -58,6 +58,16 @@ public static class SpaceOsModuleAuthExtensions
                 $"'{SpaceOsModuleAuthOptions.KeycloakMode}' (default), '{SpaceOsModuleAuthOptions.DevelopmentMode}'.");
         }
 
+        // Development entitlements must never be silently accepted by the real JWT
+        // scheme. A typo in Jwt:Mode must stop the host before it serves a principal
+        // whose local module grants could be mistaken for production configuration.
+        if (section.GetSection("Development").GetSection("EnabledModules").Exists())
+        {
+            throw new InvalidOperationException(
+                "Jwt:Development:EnabledModules is only valid when Jwt:Mode=Development. " +
+                "Remove the development entitlement configuration before using Keycloak mode.");
+        }
+
         if (string.IsNullOrWhiteSpace(options.Authority))
         {
             throw new InvalidOperationException(

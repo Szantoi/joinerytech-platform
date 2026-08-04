@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using System.Text.Encodings.Web;
+using System.Text.Json;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -58,6 +59,12 @@ public sealed class DevelopmentAuthenticationHandler : AuthenticationHandler<Aut
             new(TenancyDefaults.TenantIdClaim, tenantId.ToString()),
         };
         claims.AddRange(identityOptions.Roles.Select(static role => new Claim(ClaimTypes.Role, role)));
+        if (identityOptions.EnabledModules.Length > 0)
+        {
+            claims.Add(new Claim(
+                TenancyDefaults.EnabledModulesClaim,
+                JsonSerializer.Serialize(identityOptions.EnabledModules)));
+        }
 
         var identity = new ClaimsIdentity(claims, SchemeName);
         return Task.FromResult(AuthenticateResult.Success(

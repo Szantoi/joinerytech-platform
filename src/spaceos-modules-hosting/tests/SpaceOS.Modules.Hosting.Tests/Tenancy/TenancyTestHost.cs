@@ -54,6 +54,13 @@ internal static class TenancyTestHost
                             hasTenant = tenant.HasTenant,
                         }));
 
+                        // Test-only wire-contract probe for synthetic development identities.
+                        // Production hosts never expose raw JWT claims through an endpoint.
+                        endpoints.MapGet("/claims/enabled-modules", (HttpContext context) => Results.Ok(new
+                        {
+                            value = context.User.FindFirst(TenancyDefaults.EnabledModulesClaim)?.Value,
+                        })).RequireAuthorization();
+
                         endpoints.MapGroup("/maintenance")
                             .RequireEnabledModule("spaceos.maintenance")
                             .MapGet("/protected", () => Results.Ok(new { ok = true }));

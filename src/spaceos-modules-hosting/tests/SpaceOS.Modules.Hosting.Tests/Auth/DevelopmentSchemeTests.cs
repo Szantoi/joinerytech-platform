@@ -18,16 +18,22 @@ public sealed class DevelopmentSchemeTests
 {
     private static readonly Guid DevTenant = Guid.Parse("11111111-1111-1111-1111-111111111111");
 
-    private static IConfiguration DevConfig() => new ConfigurationBuilder()
-        .AddInMemoryCollection(new Dictionary<string, string?>
+    private static IConfiguration DevConfig(params string[] enabledModules)
+    {
+        var values = new Dictionary<string, string?>
         {
             ["Jwt:Mode"] = "Development",
             ["Jwt:Development:TenantId"] = DevTenant.ToString(),
             ["Jwt:Development:Roles:0"] = "Admin",
-        })
-        .Build();
+        };
+        for (var index = 0; index < enabledModules.Length; index++)
+            values[$"Jwt:Development:EnabledModules:{index}"] = enabledModules[index];
+
+        return new ConfigurationBuilder().AddInMemoryCollection(values).Build();
+    }
 
     private sealed record WhoAmIResponse(bool HasTenant, Guid? TenantId);
+    private sealed record EnabledModulesClaimResponse(string? Value);
 
     [Fact]
     public async Task Development_host_authenticates_with_the_configured_tenant()
@@ -62,5 +68,69 @@ public sealed class DevelopmentSchemeTests
         var response = await client.SendAsync(request);
 
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Development_host_allows_the_configured_module()
+    {
+        using var host = await TenancyTestHost.StartAsync(
+            services => services.AddSpaceOsModuleAuth(
+                DevConfig("spaceos.maintenance"),
+                new Microsoft.Extensions.Hosting.Internal.HostingEnvironment { EnvironmentName = "Development" }),
+            environment: "Development");
+        using var client = host.GetTestClient();
+
+        var response = await client.GetAsync("/maintenance/protected");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Development_host_without_modules_is_forbidden_by_the_module_gate()
+    {
+        using var host = await TenancyTestHost.StartAsync(
+            services => services.AddSpaceOsModuleAuth(
+                DevConfig(),
+                new Microsoft.Extensions.Hosting.Internal.HostingEnvironment { EnvironmentName = "Development" }),
+            environment: "Development");
+        using var client = host.GetTestClient();
+
+        var response = await client.GetAsync("/maintenance/protected");
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Development_host_emits_configured_modules_as_a_json_array_claim()
+    {
+        using var host = await TenancyTestHost.StartAsync(
+            services => services.AddSpaceOsModuleAuth(
+                DevConfig("spaceos.maintenance", "spaceos.qa"),
+                new Microsoft.Extensions.Hosting.Internal.HostingEnvironment { EnvironmentName = "Development" }),
+            environment: "Development");
+        using var client = host.GetTestClient();
+
+        var response = await client.GetAsync("/claims/enabled-modules");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<EnabledModulesClaimResponse>();
+        Assert.Equal("[\"spaceos.maintenance\",\"spaceos.qa\"]", body!.Value);
+    }
+
+    [Fact]
+    public async Task Development_host_without_modules_emits_no_entitlement_claim()
+    {
+        using var host = await TenancyTestHost.StartAsync(
+            services => services.AddSpaceOsModuleAuth(
+                DevConfig(),
+                new Microsoft.Extensions.Hosting.Internal.HostingEnvironment { EnvironmentName = "Development" }),
+            environment: "Development");
+        using var client = host.GetTestClient();
+
+        var response = await client.GetAsync("/claims/enabled-modules");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<EnabledModulesClaimResponse>();
+        Assert.Null(body!.Value);
     }
 }

@@ -88,6 +88,20 @@ public sealed class AuthRegistrationTests
     }
 
     [Fact]
+    public void Keycloak_mode_with_development_entitlements_throws()
+    {
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            new ServiceCollection().AddSpaceOsModuleAuth(
+                Config(
+                    ("Jwt:Authority", "https://joinerytech.hu/auth/realms/spaceos"),
+                    ("Jwt:Audience", "maintenance-api"),
+                    ("Jwt:Development:EnabledModules:0", "spaceos.maintenance")),
+                Environment("Production")));
+
+        Assert.Contains("Jwt:Development:EnabledModules", exception.Message);
+    }
+
+    [Fact]
     public void Valid_Keycloak_configuration_registers_authentication()
     {
         var services = new ServiceCollection();

@@ -54,4 +54,11 @@ public sealed class DevelopmentIdentityOptions
 
     /// <summary>Role claims granted to the synthetic principal.</summary>
     public string[] Roles { get; set; } = [];
+
+    /// <summary>
+    /// Canonical module identifiers granted to the synthetic principal. This is only
+    /// interpreted by <c>Jwt:Mode=Development</c>; an empty list deliberately grants
+    /// no modules so module policies remain fail-closed during local development.
+    /// </summary>
+    public string[] EnabledModules { get; set; } = [];
 }

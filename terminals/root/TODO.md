@@ -175,7 +175,15 @@
       Saját mérés negatív kontrollal: `npm ci` az előző commiton BUKIK, ezen **0** —
       a 07-30 óta piros telepítés feloldva.
 - [ ] **backend S3** (`EnabledModules`) — felterjesztve 2026-08-04, sorban.
-- [ ] **backend S4 + S1-kiegészítés** — felterjesztve 2026-08-04, sorban.
+- [x] ~~**backend S4 + S1-kiegészítés** (`46e3fdc` + `21c603b`)~~ **APPROVED 2026-08-04**
+      (verdikt: inbox `2026-08-04_004`). Saját mérés izolált HEAD-másolaton **194/194**.
+      ⭐ M-ROOT: a **mapper megkerülése** egy bekötött hívási helyen **túlélt** (pozitív
+      kontroll a mapperben: 1 bukás) → **a kapu-lelet ma harmadszor**, három modulban.
+      ⚠ A backend „nincs élő `Result.Error` handler" állítása **mérve nem áll**: két
+      bekötött végpont (`POST`/`DELETE /overhead-config/rules`) vezet oda → a reggeli
+      verdiktem („ma szivárog") **áll**.
+- [ ] **doccapture: DC-01b-write** (2026-08-04, `review_requested` + egy megerősítendő
+      terv-eltérés) — sorban.
 - [ ] **doccapture: a CI 6 oka rendezve** (2026-08-03 20:00) — felterjesztve, nem bíráltam.
       *(Függetlenül ellenőrizve: a hivatkozott futás `30839170389` valóban `success`, és az
       utána jött 2 commit CI-je is zöld — a tartalmi review még hátravan.)*

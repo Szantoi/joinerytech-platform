@@ -1,7 +1,8 @@
 namespace SpaceOS.Modules.Hosting.Modules;
 
 /// <summary>
-/// Immutable identity exposed by a module package to a shared host and its health endpoint.
+/// Immutable identity used by a module package and its shared host bootstrap.
+/// Package metadata must not be exposed by anonymous liveness endpoints.
 /// </summary>
 public sealed record ModuleDescriptor
 {
@@ -20,7 +21,7 @@ public sealed record ModuleDescriptor
     /// <summary>Canonical catalog identifier, for example <c>spaceos.maintenance</c>.</summary>
     public string ModuleId { get; }
 
-    /// <summary>Package version exposed by the host.</summary>
+    /// <summary>Package version, for host bootstrap and authenticated telemetry only.</summary>
     public string Version { get; }
 
     /// <summary>Assembly that contains the module's Entity Framework migrations.</summary>

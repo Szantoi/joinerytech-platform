@@ -1,6 +1,6 @@
 # BACKEND Terminal State
 
-> **Frissítve:** 2026-08-03 este (Europe/Budapest)
+> **Frissítve:** 2026-08-04 reggel (Europe/Budapest)
 > **Kanonikus task-státusz:** [`EPICS.yaml`](../../EPICS.yaml) — a `done`/`APPROVED`
 > kimondása **root-review joga**, ez a fájl a végrehajtó nézete.
 > **Aktív task:** [`PROJ-01`](../../docs/knowledge/adr/ADR-072-projects-module-ownership.md) —
@@ -293,6 +293,26 @@ Az öt életciklus-címkét **conformance-teszt védi** a „továbbfejlesztés"
 `5cf9e7a..e22687a`, CI-mérés a pusholt állapoton (run `30482853132`): **430 zöld, 0 bukás**
 (Domain 263 / Infrastructure 52 / Host 70 / Solver.OrTools 26 / Integration 19).
 A kontraktus-kör lezárva, `1.0.0-preview.2` kézbesítve. **Következik az M5** (írási irány).
+
+---
+
+## 4b. Codex-munkatest átvétele (S1–S5) — FUT (kiadva 2026-08-03)
+
+Gábor feloldotta a gazdátlan Codex-munkatestet; a gazda én vagyok. Öt szelet,
+kitettség szerint, szeletenként külön `review_requested` (inbox `2026-08-03_001`).
+
+| Szelet | Állapot | Lényeg |
+|---|---|---|
+| **S1** hibaüzenet-redakció (EHS/HR/QA) | **`review_requested`** (`6919666`) | 580/580 zöld; mutáció 2/2; + a HR approve/reject hamisítható audit-nyomának javítása; testvér-lelet: **61 hely 6 másik modulban** (S1b root-döntésre) |
+| **S2** health-anonimizálás (hosting) | **`review_requested`** (`89da08e`) | a `MapModuleHealth` már csak `{ status }`; 82/82 → **85/85 zöld**, 0 warning; **mutáció 3/3** sha1-bizonyítással. ⚠ **A ⛔ indok nem állt:** a főágon a függvénynek **nulla hívója** — a téves súlyosság forrása az ERPSEP-05 doksi 07-28-i, sosem commitolt munkát „kész"-nek író bejegyzése. ⭐ Hozzátett őr: az `.AllowAnonymous()` réteg (fallback-policy alatt 401 lett volna, és a 82 meglévő teszt nem szólt volna — M2 bizonyítja) |
+| **S3** `EnabledModules` (ERPSEP-06) | következik | fail-closed, nincs élő kitettség |
+| **S4** Kontrolling portfolio-index | vár | teljesítmény, nem biztonság |
+| **S5** audit-identity | **`pending`** (root-mérés) | a nevesített hatókör nincs meg; külön kiírást kér — az S1-ben talált hívó-identitás-javítás ezt részben helyesbíti |
+
+Az S2 mérési tanulsága (átvihető): a Hosting-suite Testcontainers-tesztjei Docker nélkül
+**buknak, nem kimaradnak** — fail-closed, de a „zöld" verdikt csak futó Dockerrel jelent
+bármit, és erre a suite-ra nincs CI-kapu. Izolált `git archive HEAD`-másolatban mértem,
+hogy a munkafán ülő idegen (S3/ERPSEP) diffek ne szennyezzék a számot.
 
 ---
 

@@ -10248,3 +10248,40 @@ hibája volt, nem lelet* — a negatív eredményt megint külön kellett igazol
   (`GHSA-rvv3-g6hj-g44x`, MAGAS). A pin nem tartja. Felvéve.
 
 — Claude (root)
+
+---
+
+## 2026-08-04 — backend: S2 KÉSZ (`review_requested`) — és a ⛔ indoka nem állt
+
+**Commit:** `89da08e` (3 fájl / +121 −10) · felterjesztés:
+`terminals/backend/outbox/2026-08-04-s2-health-anonimizalas-review-requested.md`
+
+A megosztott `MapModuleHealth` válasza mostantól **kizárólag `{ status }`**
+(volt: `moduleId` + `version` + `migrationsAssembly`); unhealthy → változatlanul 503.
+
+**⚠ HELYESBÍTÉS a kiíráshoz — mérve:** a főágon a `MapModuleHealth`-nek
+**NULLA hívója van** (`git grep HEAD`: csak a definíció) — futó host ma **nem** ad ki
+`migrationsAssembly`-t. A szelet tehát **megelőző keményítés**, nem élő szivárgás
+elzárása. A téves ⛔ forrása: az **ERPSEP-05 doksi 07-28-i bejegyzése késznek**
+(„73/73 PASS") írja le a **sosem commitolt** javítást — a „task-doksi státusza nem
+hiteles" osztály újabb esete, ezúttal **túl-jelentett kész** alakban.
+
+Mérve a tényleges `/health`-felület mind a 11 hoston: 7 sima `Healthy`, 3 a modul
+**nevét** adja (dms, collaboration, joinery), verzió/assembly **sehol**.
+
+**⭐ Hozzátett réteg:** az `.AllowAnonymous()`-t semmi nem őrizte — fallback-policy
+alatt a probe 401-et adna, és a 82 meglévő teszt közül **egy sem venné észre**
+(M2-mutáció bizonyítja). Új teszt köti ki: a probe token nélkül is 200.
+
+**Mérés** (izolált `HEAD`-másolat, hogy a fán ülő S3-változások ne szennyezzék):
+alapállapot **82/82** → S2 után **85/85 zöld**, 0 warning; **mutáció 3/3 harap**
+sha1-alkalmazva-bizonyítással. ⚠ Az első alapállapot-mérés érvénytelen volt
+(a Docker a mérés közben indult el; 4 bukás 1 ms alatt) → **újramértem** azonos
+környezetben. Lelet: a Testcontainers-tesztek Docker nélkül **buknak, nem
+kimaradnak** — a Hosting-suite zöldje csak futó Dockerrel jelent bármit, CI-kapu nincs.
+
+**Root-döntést kér (a felterjesztésben):** (1) a 3 host modul-név-közlése legyen-e
+szelet — javaslatom: nem; (2) az ERPSEP-05 doksi hamis „kész" bejegyzését ki
+helyesbítse. Következő: **S3 (`EnabledModules`)**.
+
+— Claude (backend)

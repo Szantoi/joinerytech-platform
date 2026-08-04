@@ -96,8 +96,20 @@ Gábor feloldotta (*„Bárki átveheti a codex munkát meg javítani is kell."*
       ⭐ **Amit hozzátettem:** negatív kontroll mind a 3 modulra. Mérve, hogy a meglévő
       validációs tesztek **csak státuszkódot** néznek, tehát egy túl agresszív redakció
       teljesen zölden ment volna ki (az M2-mutáció ezt igazolta).
-- [ ] ⛔ **S2 — health-anonimizálás** (hosting, ~3 fájl): a `/health` ma kiadja a
-      `migrationsAssembly`/`moduleId`-t.
+- [x] **S2 — health-anonimizálás: KÉSZ, `review_requested`** (`89da08e`, 3 fájl / +121 −10).
+      A `MapModuleHealth` válasza már csak `{ status }`; az unhealthy marad **503**.
+      **82/82 → 85/85 zöld**, 0 warning, izolált `HEAD`-másolatból mérve (hogy az S3
+      Auth-változásai ne szennyezzék); **mutáció 3/3 harapott** sha1-alkalmazva-bizonyítással.
+      ⚠ **A ⛔ indok NEM állt:** a főágon a `MapModuleHealth`-nek **nulla hívója** van
+      (`git grep HEAD`) — futó host ma nem ad ki `migrationsAssembly`-t. A téves súlyosságot
+      az **ERPSEP-05 doksi** 07-28-i bejegyzése okozta, ami késznek írta a sosem commitolt
+      javítást. Mérve a tényleges felület: 7 host sima `Healthy`-t ad, 3 host (dms,
+      collaboration, joinery) a **modul nevét** — verzió/assembly **sehol**.
+      ⭐ **Amit hozzátettem:** az `.AllowAnonymous()` réteg őrizetlen volt — fallback-policy
+      alatt a probe 401-et adna, és a 82 meglévő teszt közül egy sem venné észre (M2 bizonyítja).
+      ⚠ **Mérés-érvényesség:** az első alapállapot 4 bukást adott, mert **nem futott a Docker**
+      (mind 1 ms); a Docker a mérés közben indult el → **újramértem**. Ezek a tesztek Docker
+      nélkül **buknak, nem kimaradnak** → a suite „zöldje" csak futó Dockerrel jelent valamit.
 - [ ] **S3 — `EnabledModules`** (ERPSEP-06, ~9 fájl): fail-closed, nincs élő kitettség.
 - [ ] **S4 — Kontrolling portfolio-index** (~3 fájl): teljesítmény, nem biztonság.
 - [ ] **S5 — audit-identity**: a root **mérte**, hogy a nevesített hatóköre **nincs meg**

@@ -49,9 +49,8 @@ public sealed class ListProjectsQueryHandler(
         var all = await projects.GetProjectsAsync(request.TenantId, ct).ConfigureAwait(false);
         var live = await adjustments.GetAllAsync(request.TenantId, ct).ConfigureAwait(false);
 
-        var rows = all
-            .Where(p => request.Status is null || p.Status == request.Status)
-            .Select(p => PortfolioCostView.ToListItem(p, live))
+        var rows = PortfolioCostView.ToListItems(
+                all.Where(p => request.Status is null || p.Status == request.Status), live)
             // Newest first, by business key (PRJ-2026-014 before PRJ-2026-013).
             .OrderByDescending(p => p.Id, StringComparer.Ordinal)
             .ToList();
@@ -157,7 +156,7 @@ public sealed class GetPortfolioSummaryViewQueryHandler(
         var all = await projects.GetProjectsAsync(request.TenantId, ct).ConfigureAwait(false);
         var live = await adjustments.GetAllAsync(request.TenantId, ct).ConfigureAwait(false);
 
-        var rows = all.Select(p => PortfolioCostView.ToListItem(p, live)).ToList();
+        var rows = PortfolioCostView.ToListItems(all, live);
 
         // No historic trend points: the module stores no cost snapshots, so the
         // only month it can state truthfully is the current one, computed from
@@ -188,7 +187,7 @@ public sealed class GetVarianceRowsQueryHandler(
         var all = await projects.GetProjectsAsync(request.TenantId, ct).ConfigureAwait(false);
         var live = await adjustments.GetAllAsync(request.TenantId, ct).ConfigureAwait(false);
 
-        var rows = all.Select(p => PortfolioCostView.ToListItem(p, live)).ToList();
+        var rows = PortfolioCostView.ToListItems(all, live);
         return PortfolioCostView.Variance(rows);
     }
 }

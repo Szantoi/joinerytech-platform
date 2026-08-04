@@ -33,10 +33,38 @@ public static class PortfolioCostView
     public static ProjectListItemDto ToListItem(
         ControllingProjectData project,
         IReadOnlyList<CostAdjustment> allAdjustments)
+        => ToListItemWithProjectAdjustments(
+            project,
+            ProjectScoped(allAdjustments, project.ProjectId));
+
+    /// <summary>
+    /// Computes all project rows after indexing project-scoped adjustments once.
+    /// This avoids re-scanning the complete tenant adjustment list for every
+    /// project in portfolio and variance views.
+    /// </summary>
+    public static IReadOnlyList<ProjectListItemDto> ToListItems(
+        IEnumerable<ControllingProjectData> projects,
+        IEnumerable<CostAdjustment> allAdjustments)
+    {
+        var byProject = allAdjustments
+            .Where(a => !a.IsDeleted && a.Scope == AdjustmentScope.Project && a.ProjectId.HasValue)
+            .GroupBy(a => a.ProjectId!.Value)
+            .ToDictionary(group => group.Key, group => (IReadOnlyList<CostAdjustment>)group.ToList());
+
+        return projects
+            .Select(project => ToListItemWithProjectAdjustments(
+                project,
+                byProject.GetValueOrDefault(project.ProjectId, [])))
+            .ToList();
+    }
+
+    private static ProjectListItemDto ToListItemWithProjectAdjustments(
+        ControllingProjectData project,
+        IReadOnlyList<CostAdjustment> projectAdjustments)
     {
         var (byCategory, totals) = ProjectCostView.Calculate(
             project,
-            ProjectScoped(allAdjustments, project.ProjectId));
+            projectAdjustments);
 
         return new ProjectListItemDto(
             Id: project.ProjectCode,

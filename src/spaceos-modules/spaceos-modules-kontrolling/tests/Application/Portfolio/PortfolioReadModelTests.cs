@@ -161,6 +161,42 @@ public sealed class PortfolioCostViewTests
     }
 
     [Fact]
+    public void ToListItems_AssignsIndexedProjectAdjustmentsOnlyToTheirOwnProject()
+    {
+        var first = Project("PRJ-A", lines: Line(CostCategory.Material, 100m, 100m));
+        var second = Project("PRJ-B", lines: Line(CostCategory.Material, 100m, 100m));
+        var ownAdjustment = CostAdjustment.Create(
+            Tenant, first.ProjectId, CostCategory.Material, Money.FromHUF(25m),
+            AdjustmentScope.Project, "Pótrendelés", Guid.NewGuid());
+        var portfolioAdjustment = CostAdjustment.Create(
+            Tenant, null, CostCategory.Overhead, Money.FromHUF(50m),
+            AdjustmentScope.Portfolio, "Energia", Guid.NewGuid());
+
+        var rows = PortfolioCostView.ToListItems(
+            [first, second], [ownAdjustment, portfolioAdjustment]);
+
+        rows.Single(row => row.Id == "PRJ-A").ActualTotal.Should().Be(125m);
+        rows.Single(row => row.Id == "PRJ-B").ActualTotal.Should().Be(100m);
+    }
+
+    [Fact]
+    public void ToListItems_IgnoresDeletedProjectAdjustmentsOnTheIndexedPath()
+    {
+        // DeletedAdjustments_AreIgnoredEverywhere only exercises the per-project
+        // ToListItem path; all three portfolio handlers now go through the index,
+        // so the IsDeleted filter of the indexed path needs its own witness.
+        var project = Project("PRJ-A", lines: Line(CostCategory.Material, 100m, 100m));
+        var deleted = CostAdjustment.Create(
+            Tenant, project.ProjectId, CostCategory.Material, Money.FromHUF(25m),
+            AdjustmentScope.Project, "Visszavont pótrendelés", Guid.NewGuid());
+        deleted.Delete(Guid.NewGuid());
+
+        var rows = PortfolioCostView.ToListItems([project], [deleted]);
+
+        rows.Single().ActualTotal.Should().Be(100m);
+    }
+
+    [Fact]
     public void DeletedAdjustments_AreIgnoredEverywhere()
     {
         var adjustment = CostAdjustment.Create(

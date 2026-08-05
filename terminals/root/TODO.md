@@ -223,8 +223,25 @@
       állandó +7 eltérés → koherens; a „73" ~68-at kívánna). A **negyedik `.Error`-termelő**
       megerősítve halottként; a törlés **hatóköre zárt** (mind a 3 függősége él máshol is),
       **de** eltüntet egy 10 perces cache-t, ami az élő úton **nincs** → ez magyarázza az S4-et.
-- [ ] **frontend: a suite-recept rése** (2026-08-05, `review_requested`) — **következő a soromban.**
-      Előzetesen: 3 tesztfájl egyetlen nevesített kapun kívül, kettő hozzáférés-vezérlést őriz.
+- [x] ~~**frontend: suite-recept rése + általános portál-kapu**~~ **APPROVED 2026-08-05, PUSHOLVA**
+      (`2987761` + `51d5484`; verdikt: frontend/inbox `2026-08-05_001`).
+      Saját mérés: `--dir src` **91** + `--dir packages` **88** = bare **179** (teljes, diszjunkt);
+      eslint **718 fájl / 102 probléma** — egyezik a 08-04-i független mérésemmel.
+      A racsni két „üresen zöld" megkerülését próbáltam — **mindkettő helyesen bukik** (negatív eredmény).
+      ⭐ **M-ROOT lelet:** a racsni a SZÁMOT méri, a HATÓKÖRT nem — a 102 probléma mind a
+      275 `src/`-fájlban ül, a 443 `packages/`-fájl 0-t ad ⇒ egy hatókör-szűkülés `COUNT=0`-t
+      adna, ami **átmegy**, és a figyelmeztetés jó hírnek olvasható. Kérve: a lintelt fájlszám kikötése.
+- [ ] ⛔ **portál lockfile platform-függő — a kapu ELSŐ futása fogta meg** (`31032910804` PIROS).
+      `npm ci` Linuxon: `Missing @emnapi/core@1.11.3, @emnapi/runtime@1.11.3`. Gyökér-ok mérve:
+      a `@emnapi/*` a wasm32-wasi ág **peer**-függősége (`package-lock.json:983-984`), amit a
+      Windowson generált lockfile nem old fel.
+      ⚠ **SAJÁT HELYESBÍTÉS:** a 08-04-i „a 07-30 óta piros telepítés feloldva" **túlzás volt** —
+      a `portal-ui` a Tranche B óta **egyszer sem futott**. Az ERESOLVE megszűnését bizonyítottam
+      (Windowson), a CI-telepítést **nem**.
+      **Feladat a frontendnek**; elfogadás **csak zöld CI-futással**. Két mért csapda: a
+      `--package-lock-only` beírja a parkolt `@spaceos/module-collaboration`-t; a VPS npm-je 10.9.4
+      a CI 11.6.2-je helyett.
+      ⇒ **A portál-pint addig NEM bumpolom.**
 - [x] ~~**doccapture: DC-03a**~~ **APPROVED 2026-08-05** (verdikt: doccapture/inbox `2026-08-05_002`).
       Saját mérés fagyasztva: **447 zöld**, 366/13/68 `KIHAGYVA=0`, mutáció **68/68**, 4 kapu tiszta.
       ⭐ **M-ROOT TÚLÉLT:** az átfedésnek KÉT előállító útja van, és csak az egyik fedett

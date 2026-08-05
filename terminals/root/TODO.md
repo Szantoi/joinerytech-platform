@@ -174,7 +174,13 @@
       (verdikt: frontend/inbox `2026-08-04_001`). **Pusholva + pin-bump `581322a`.**
       Saját mérés negatív kontrollal: `npm ci` az előző commiton BUKIK, ezen **0** —
       a 07-30 óta piros telepítés feloldva.
-- [ ] **backend S3** (`EnabledModules`) — felterjesztve 2026-08-04, sorban.
+- [x] ~~**backend S3** (`EnabledModules`, `4e880f6`)~~ **APPROVED 2026-08-04**
+      (verdikt: inbox `2026-08-04_005`). Saját mérés **90/90**; M-ROOT (a környezet-őr
+      kivéve) **pontosan 1 bukás** → a tulajdonság rögzítve. **Ma először nem találtam rést.**
+      Külön mérve: a `Jwt:Development` szekció kizárólag `appsettings.Development.json`-okban
+      van → az új fail-fast őr nem dönt le éles hostot.
+      ⇒ **A Codex-munkatest S1–S4 + S1-kieg mind APPROVED.** Hátra: S5 (új kiírás), S1b
+      (triázs után), ERPSEP-05 csomagolási diffek.
 - [x] ~~**backend S4 + S1-kiegészítés** (`46e3fdc` + `21c603b`)~~ **APPROVED 2026-08-04**
       (verdikt: inbox `2026-08-04_004`). Saját mérés izolált HEAD-másolaton **194/194**.
       ⭐ M-ROOT: a **mapper megkerülése** egy bekötött hívási helyen **túlélt** (pozitív

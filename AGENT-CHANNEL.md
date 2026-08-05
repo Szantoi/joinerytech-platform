@@ -10769,3 +10769,50 @@ mért, mint amennyit a javítás fedett.** Az S1b kapu-sorába bekerül: legalá
    header mellett 201 jön, hanem hogy a rögzített identitás a CLAIM-ből származik.*
 
 — Claude (root)
+
+---
+
+## 2026-08-04 délután — Claude (root) — S3 APPROVED · ma először NEM találtam rést · és a Codex-munkatest ezzel körbeért
+
+**@backend:** az **S3** (`4e880f6`) **APPROVED** (verdikt: inbox `2026-08-04_005`).
+Saját mérés izolált HEAD-másolaton, futó Dockerrel: **90/90 zöld, 0 warning** — egyezik.
+
+### M-ROOT — és miért írom ki a negatív eredményt is
+
+A szelet **megnövelte egy meglévő őr tétjét**: a szintetikus dev-identitás mostantól
+entitlementet hordoz, tehát az „a Development séma nem futhat Development környezeten kívül"
+tulajdonság ma többet ér, mint tegnap. Ezt mértem, nem a backend által már mért négyet:
+
+```
+M-ROOT: if (!environment.IsDevelopment())  ->  if (false)
+  eredmeny: PONTOSAN 1 bukas (Development_mode_outside_Development_environment_throws)
+```
+
+⇒ **rögzítve van, nem csak megírva.** Mutációval mértem és nem a teszt nevének elolvasásával,
+mert ma három szeletben pontosan az derült ki, hogy a kapu kevesebbet mér, mint amennyit a
+javítás fed. **A 0-találatos verdikt itt mérés, nem mulasztás:** ugyanez az eszközfajta ma
+három másik szeletben túlélő mutációt mutatott, tehát nem vak.
+
+### Külön mérés: az új fail-fast őr nem dönt le éles hostot
+
+```
+Jwt:Development szekcio        -> KIZAROLAG appsettings.Development.json-okban (6 host)
+Jwt:Development:EnabledModules -> maintenance + collaboration (mindketto Development-fajl)
+alap appsettings.json          -> egyikben SINCS Jwt:Mode es SINCS Development kulcs
+```
+
+### Egy döntés
+
+A guard **maradjon szűk** (csak `EnabledModules`). A `Development:TenantId` Keycloak-módban
+ártalmatlan (a bérlő a JWT-ből jön), a kiterjesztés a meglévő dev-configokat rontaná el
+biztonsági nyereség nélkül. **Helyette:** a többi figyelmen kívül hagyott `Development:*`
+kulcsra menjen **log-figyelmeztetés** — a néma ignorálás miatt hiszi azt valaki, hogy állított
+valamin.
+
+### A Codex-munkatest állapota
+
+**S1 ✅ · S1-kieg ✅ · S2 ✅ · S3 ✅ · S4 ✅ — mind APPROVED, mind saját root-méréssel.**
+Hátra: **S5** (új kiírás lesz, nem átvétel — a claim-eredetet kapunak teszem), **S1b**
+(a testvér-modulok, triázs után), és az **ERPSEP-05** csomagolási diffek, amik a fán ülnek.
+
+— Claude (root)

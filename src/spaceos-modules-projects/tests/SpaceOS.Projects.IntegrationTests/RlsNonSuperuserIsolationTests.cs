@@ -81,17 +81,35 @@ public sealed class RlsNonSuperuserIsolationTests : IAsyncLifetime
         Assert.False(rolBypassRls);
     }
 
+    /// <summary>
+    /// The only table allowed in the schema without RLS: EF's bookkeeping of applied migrations
+    /// holds no tenant rows. Every other exemption must be added HERE, by name, where a reviewer
+    /// sees it — not by the table simply never entering a list.
+    /// </summary>
+    private static readonly string[] RlsExemptTables = ["__EFMigrationsHistory"];
+
     [Fact]
-    public async Task Both_tables_have_RLS_enabled_AND_forced()
+    public async Task Every_table_in_the_schema_has_RLS_enabled_AND_forced()
     {
         // FORCE is the half that is easy to lose: plain ENABLE does not apply to the table owner,
         // and the deploy role frequently owns what it migrates, leaving the policies silently
         // inert. Read from the catalog, because that is where the difference is visible.
-        var states = await _fixture.ReadForceRlsCatalogAsync(
-            ProjectsDbContext.SchemaName, "projects", "project_epic_assignments");
+        //
+        // Deny-by-default on purpose. The previous shape of this gate named its tables — and the
+        // list went stale within one task: project_code_counters was born protected, but the gate
+        // never learned its name, so removing its RLS entirely left the suite green (root M-ROOT,
+        // 2026-08-04). Discovering the tables from the catalog makes a new table protected by
+        // default and a forgotten one a loud failure.
+        var states = await _fixture.ReadSchemaRlsCatalogAsync(ProjectsDbContext.SchemaName);
 
-        Assert.Equal(2, states.Count);
-        Assert.All(states, state =>
+        // Positive control on the discovery itself: an empty or half-created schema must not
+        // vacuously pass. These three are the tables the module has today; new ones need no entry.
+        foreach (var known in new[] { "projects", "project_epic_assignments", "project_code_counters" })
+            Assert.Contains(states, state => state.Table == known);
+
+        var tenantTables = states.Where(state => !RlsExemptTables.Contains(state.Table)).ToList();
+
+        Assert.All(tenantTables, state =>
         {
             Assert.True(state.RelRowSecurity, $"{state.Table}: RLS not enabled");
             Assert.True(state.RelForceRowSecurity, $"{state.Table}: RLS not FORCEd");

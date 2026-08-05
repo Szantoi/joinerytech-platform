@@ -40,6 +40,7 @@ public sealed class QueryFilterTests : IAsyncLifetime
     private static readonly Guid TenantB = Guid.NewGuid();
     private readonly Guid _projectA = Guid.NewGuid();
     private readonly Guid _projectB = Guid.NewGuid();
+    private readonly Guid _epicA = Guid.NewGuid();
 
     public async Task InitializeAsync()
     {
@@ -57,6 +58,21 @@ public sealed class QueryFilterTests : IAsyncLifetime
                 connection, _projectA, TenantA, "PRJ-2026-030", "Tenant A job");
             await InterceptorEndToEndTests.SeedProjectAsync(
                 connection, _projectB, TenantB, "PRJ-2026-031", "Tenant B job");
+
+            await RlsSql.ExecuteAsync(connection, $"""
+                INSERT INTO {ProjectsDbContext.SchemaName}."project_epic_assignments"
+                    ("Id", "ProjectId", "TenantId", "EpicId", "AssignedAtUtc")
+                VALUES (@id, @project, @tenant, @epic, now())
+                """,
+                ("id", Guid.NewGuid()), ("project", _projectA),
+                ("tenant", TenantA), ("epic", _epicA));
+
+            await RlsSql.ExecuteAsync(connection, $"""
+                INSERT INTO {ProjectsDbContext.SchemaName}."project_code_counters"
+                    ("TenantId", "Year", "LastValue")
+                VALUES (@tenantA, 2026, 30), (@tenantB, 2026, 31)
+                """,
+                ("tenantA", TenantA), ("tenantB", TenantB));
         }
         catch
         {
@@ -106,7 +122,7 @@ public sealed class QueryFilterTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Epic_assignments_carry_the_same_filter_as_their_project()
+    public async Task The_other_tenants_context_sees_only_its_own_project()
     {
         await using var context = CreateContext(TenantB);
 
@@ -117,13 +133,53 @@ public sealed class QueryFilterTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Epic_assignments_carry_their_own_filter_not_an_inherited_one()
+    {
+        // Queried directly, not through the project navigation: the assignment's filter compares
+        // its OWN TenantId column, and only a direct query proves that column's filter exists.
+        // (An earlier shape of this test queried Projects under this name and measured nothing
+        // about assignments — 2026-08-05.)
+        await using var contextA = CreateContext(TenantA);
+        await using var contextB = CreateContext(TenantB);
+
+        var mine = await contextA.Set<Domain.ProjectEpicAssignment>().ToListAsync();
+        var theirs = await contextB.Set<Domain.ProjectEpicAssignment>().ToListAsync();
+
+        Assert.Single(mine);
+        Assert.Equal(_epicA, mine[0].EpicId);
+        Assert.Empty(theirs);
+    }
+
+    [Fact]
+    public async Task Code_counters_are_tenant_data_and_carry_the_filter_too()
+    {
+        // How many projects a tenant opened this year is its business and nobody else's — and the
+        // gate that once forgot this table is exactly why it is asserted here by name
+        // (root M-ROOT, 2026-08-04: the counters table fell out of a hand-maintained list).
+        await using var context = CreateContext(TenantA);
+
+        var visible = await context.Set<ProjectCodeCounter>().ToListAsync();
+
+        var counter = Assert.Single(visible);
+        Assert.Equal(TenantA, counter.TenantId);
+    }
+
+    [Fact]
     public async Task With_no_tenant_resolved_the_filter_is_permissive_and_this_is_the_known_gap()
     {
-        // Not a wish — a measurement, pinned so nobody has to rediscover it. The filter switches
-        // itself OFF when no tenant is resolved (the platform pattern), which means on that path
-        // the ONLY thing standing between an anonymous caller and every tenant's projects is the
-        // interceptor's empty session key plus RLS. InterceptorEndToEndTests guards that path;
-        // this test documents WHY it has to.
+        // DECISION RECORD, not a defect report — this test pins a deliberately accepted state.
+        //
+        // The filter switches itself OFF when no tenant is resolved. That is the platform pattern
+        // (CRM, collaboration, kernel): startup, migrations and design-time tooling run without a
+        // tenant and must see the model. On that path the ONLY thing standing between an anonymous
+        // caller and every tenant's projects is the interceptor's empty session key plus RLS —
+        // InterceptorEndToEndTests guards that layer; this test documents WHY it has to.
+        //
+        // If you came here because this assertion went red after making the filter fail-closed:
+        // that is not a regression to restore — it is this decision being revisited. Lifting it
+        // requires (a) a platform-level decision that no-tenant contexts deny by default, applied
+        // to every module, and (b) a startup/migration path that still works without a tenant.
+        // Then INVERT this assertion; do not restore the permissive behaviour to keep it green.
         await using var context = CreateContext(null);
 
         var visible = await context.Projects.ToListAsync();

@@ -165,6 +165,40 @@ public sealed class NonSuperuserRlsFixture : IAsyncDisposable
     }
 
     /// <summary>
+    /// Reads <c>relrowsecurity</c>/<c>relforcerowsecurity</c> for <b>every ordinary table</b> in
+    /// <paramref name="schema"/>, discovered from the catalog rather than named by the caller.
+    /// </summary>
+    /// <remarks>
+    /// The deny-by-default counterpart of <see cref="ReadForceRlsCatalogAsync"/>: a gate built on
+    /// a caller-supplied table list stops measuring the moment a migration adds a table the list
+    /// does not know about — which happened in the projects module within a single task. A gate
+    /// built on this method makes the new table protected by default and the forgetting loud.
+    /// Callers that must exempt a table (the EF migrations-history table holds no tenant rows)
+    /// do so visibly, in their own assertion, where a reviewer can see the exemption.
+    /// </remarks>
+    public async Task<IReadOnlyList<CatalogRlsState>> ReadSchemaRlsCatalogAsync(string schema)
+    {
+        await using var admin = new NpgsqlConnection(AdminConnectionString);
+        await admin.OpenAsync().ConfigureAwait(false);
+
+        await using var cmd = admin.CreateCommand();
+        cmd.CommandText = """
+            SELECT c.relname, c.relrowsecurity, c.relforcerowsecurity
+            FROM pg_class c
+            JOIN pg_namespace n ON n.oid = c.relnamespace
+            WHERE n.nspname = @schema AND c.relkind = 'r'
+            ORDER BY c.relname
+            """;
+        cmd.Parameters.AddWithValue("schema", schema);
+
+        var results = new List<CatalogRlsState>();
+        await using var reader = await cmd.ExecuteReaderAsync().ConfigureAwait(false);
+        while (await reader.ReadAsync().ConfigureAwait(false))
+            results.Add(new CatalogRlsState(reader.GetString(0), reader.GetBoolean(1), reader.GetBoolean(2)));
+        return results;
+    }
+
+    /// <summary>
     /// Sets (or clears, when <paramref name="tenantId"/> is <c>null</c>) the
     /// <c>app.current_tenant_id</c> session GUC on an already-open connection, exactly mirroring
     /// <c>SpaceOsTenantSessionInterceptor</c>'s parameterised <c>set_config</c> call — including

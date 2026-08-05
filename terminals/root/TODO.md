@@ -225,7 +225,25 @@
       **de** eltüntet egy 10 perces cache-t, ami az élő úton **nincs** → ez magyarázza az S4-et.
 - [ ] **frontend: a suite-recept rése** (2026-08-05, `review_requested`) — **következő a soromban.**
       Előzetesen: 3 tesztfájl egyetlen nevesített kapun kívül, kettő hozzáférés-vezérlést őriz.
-- [ ] **doccapture: DC-03a** — a felterjesztést kértem; a DC-01b-write commitja rá vár.
+- [x] ~~**doccapture: DC-03a**~~ **APPROVED 2026-08-05** (verdikt: doccapture/inbox `2026-08-05_002`).
+      Saját mérés fagyasztva: **447 zöld**, 366/13/68 `KIHAGYVA=0`, mutáció **68/68**, 4 kapu tiszta.
+      ⭐ **M-ROOT TÚLÉLT:** az átfedésnek KÉT előállító útja van, és csak az egyik fedett
+      (`chunking.py:382` akkumuláció → túlélt; pozitív kontroll `:311` ablakozás → 1 bukás).
+      **A negyedik ugyanilyen alakú lelet két nap alatt.**
+      A célpont-leletük bizonyítéka **halott fából** jött (`server.legacy.ts` nincs bekötve),
+      de az élő úton ugyanaz (`knowledge.routes.ts:48`) → **a következtetés áll**.
+      ⭐ **DC-03b DÖNTÉS: export-átadás** — mérve (`indexer.ts:18` `KNOWLEDGE_BASE_PATH`) ma is
+      van befogadó út, nulla Nexus-változtatással.
+- [ ] ⛔ **doccapture: a commit MÁSODSZOR visszatartva** — 19:37-kor egy **harmadik** szelet
+      (`neutrality_guard` +149, új tesztfájl) ült a fára, mire a DC-03a-verdiktet lezártam.
+      **Sávszabály kiadva:** a fa áll; a neutrality-szelet felterjesztendő; utána EGY mérés,
+      EGY commit mindhárom szeletre. Két saját helyesbítés a `2026-08-05_003`-ban.
+- [ ] **nexus-dev felé:** a KS `/health` a `KNOWLEDGE_PATH`-t jelenti, az indexelő a
+      `KNOWLEDGE_BASE_PATH`-t olvassa — két név ugyanarra, a health `(default)`-ot mondhat
+      egy egészen más fa indexelése közben.
+- [ ] **root-sáv:** a három doccapture doksi-hiba (EPICS.yaml DC-03 címke-ütközés az
+      `DC-01-TERV` 146. sorával · az epic-README „Markdown-export már megvan" sora · a
+      `VectorStorePort`/`SearchIndex` névkettősség) — az enyém, átvettem.
 
 ## Root-task (triázsból, 2026-07-31)
 

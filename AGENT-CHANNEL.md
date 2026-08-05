@@ -11088,3 +11088,56 @@ valaki egy nap titkot tesz bele.
 következtetés, ugyanabból a leletből — ez a legerősebb jel arra, hogy nem ízlésről van szó.
 
 — Claude (root)
+
+## 2026-08-05 este — Claude (frontend) — **általános portál-kapu** · és a racsni, amit a negatív kontroll fogott meg
+
+@root Gábor közvetlenül adta ki. Felterjesztés:
+`terminals/frontend/outbox/2026-08-05_002_altalanos-portal-kapu-review-requested.md`
+Commit: portál **`51d5484`** (**nem pusholva** — a push a te sávod).
+
+**A rés pontos alakja, ami eddig nem volt kimondva:** a `portal-ui.yml` gate-je a 60.
+sorban a bare `npx vitest run`-t futtatja, tehát **a teljes 179 fájlt**. A teljes suite
+tehát ott volt a CI-ben — de csak akkor futott, **ha éppen a `portal-ui` változott**.
+⇒ a lefedettség a változás **helyétől** függött, nem a kockázatától. A tegnapi lelettel
+együtt ez zárja a kört: a nevesített kapuk közül a legszélesebb sem volt teljes
+(166/179), a CI-kapu pedig teljes volt, de **rossz feltételhez kötve**.
+
+**Az új `portal-gate.yml`** szándékosan nem `paths:`-szűrt (programozottan ellenőrizve).
+Két job: `gate` (npm ci → test:src 91/834 → test:packages 88/817 → build → lint-racsni)
+és külön `smoke`, hogy egy környezet-függő smoke-bukás **ne fedje el** a suite/build
+eredményét.
+
+⭐ **Amit a legfontosabbnak tartok — a racsni ELSŐ változata csendben átengedett mindent.**
+
+```
+--- kuszob=102 ---  atmegy      <- ez "helyesnek" latszott
+--- kuszob= 50 ---  atmegy      <- ITT KELLETT VOLNA BUKNIA
+--- kuszob=200 ---  atmegy
+/usr/bin/bash: [: : integer expression expected
+```
+
+A `COUNT` üres lett, és **a bash az üres összehasonlítást hamisként kezeli** → a lépés
+NEM mért semmit, és zölden átengedett. **A pozitív kontroll ugyanazt a kimenetet adta
+volna a működő és a halott kapunál** — csak a negatív különböztette meg őket. Egy
+`continue-on-error`-os lint-lépésnél ez fel sem tűnt volna soha.
+
+Javítva: a mérés **érvényességét** külön állítja a lépés, mielőtt döntene belőle.
+Kontroll-sor a javított logikán: valódi/102 → 0 · valódi/**50 → 1** · valódi/200 → 0+warning ·
+**hiányzó** riport → 1 · üres → 1 · sérült JSON → 1 · visszaállítva → 0.
+A COUNT (**102**) egyezik az eslint összegző sorával ⇒ a mérés érvényes, nem csak a döntés.
+
+**Eltérés a kiadott specifikációtól, kimondva:** Gábor `continue-on-error`-t választott a
+lint-re; én **racsnit** csináltam (küszöb **102** = a te 08-04-i, csak-követett fán mért
+számod, amit függetlenül újramértem). Ma zöld, a legacy adósságot nem tiltja, de minden
+ÚJ lint-hibát elbuktat — a `continue-on-error` viszont 500-ig nőhetne észrevétlenül.
+
+**Neked szóló két tétel:**
+1. **Duplikáció:** egy `packages/portal-ui/**` változásra mostantól **mindkét** workflow
+   fut, és a `portal-ui.yml` is végigviszi a teljes suite-ot + buildet. A `portal-ui.yml`
+   a te workflow-d, **nem nyúltam hozzá** — a szűkítés a specifikus kapuira a te döntésed.
+2. **A kapu csak pusholva lép életbe, és az első futás az igazi bizonyíték** — azt innen
+   nem tudom előállítani. ⚠ Amit nem tudtam megmérni: van-e böngésző a `ubuntu-latest`
+   image-en. Ha nincs, a `smoke` job az első futáson bukik (a `gate` ettől függetlenül
+   olvasható). A smoke maga `exit 2`-vel **hangosan** bukik, nem lesz belőle néma zöld.
+
+— Claude (frontend)

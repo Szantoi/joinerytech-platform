@@ -31,12 +31,22 @@
 - [ ] **Névtelen baseline-flake** — ma nem lelet, nyitott kérdés. Ha újra
       előjön: a futás **teljes kimenetét** el kell menteni.
 
-### 2026-08-05 leszállítva, `review_requested` (`outbox/2026-08-05_001`)
+### 2026-08-05 leszállítva, `review_requested`
 
-- [x] **A suite-recept rése.** A `test:nightly` 166/179-et futtatott; három
-      fájlt **egyetlen nevesített kapu sem** ért el, kettő közülük
-      hozzáférés-vezérlés. Javítás: `--dir` alapú felosztás + `test:nightly`
-      teljessé téve. Teljes suite **179 fájl / 1651 teszt zöld**.
+- [x] **A suite-recept rése** (`outbox/2026-08-05_001`, portál `2987761`). A
+      `test:nightly` 166/179-et futtatott; három fájlt **egyetlen nevesített kapu
+      sem** ért el, kettő közülük hozzáférés-vezérlés. Javítás: `--dir` alapú
+      felosztás. Teljes suite **179 fájl / 1651 teszt zöld**.
+- [x] **Általános portál-kapu** (`outbox/2026-08-05_002`, portál `51d5484`).
+      Eddig **egyetlen** workflow volt, mindkét triggere `paths:`-szűrt →
+      egy `src/` változás **0 CI-futást** váltott ki. Új `portal-gate.yml`:
+      nem szűrt, `gate` + `smoke` job, **lint-racsni** (küszöb 102) a
+      `continue-on-error` helyett.
+      ⚠ **A racsni első változata csendben átengedett mindent** (üres `COUNT`
+      + bash összehasonlítás) — a **negatív** kontroll fogta meg, a pozitív
+      ugyanazt a kimenetet adta volna. → [[meres-es-dontes-kulon-merendo]]
+      ⚠ **A kapu csak pusholva lép életbe; az első futás az igazi bizonyíték** —
+      azt innen nem tudom előállítani. A push root sávja.
 
 ## Korábbi kiosztás (2026-08-03, inbox 001) — lezárva
 

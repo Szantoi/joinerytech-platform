@@ -19,6 +19,14 @@
   `src/config/worldAccess`. Javítás: `--dir` alapú kétdarabos felosztás
   (`test:src` 91/834 + `test:packages` 88/817 = **179/1651 zöld**).
   → [[portal-teljes-suite-futtatas]]
+- **2026-08-05, `review_requested`** (`outbox/2026-08-05_002`, portál `51d5484`):
+  **általános portál-kapu**. A repóban egyetlen workflow volt, mindkét triggere
+  `paths:`-szűrt → egy `src/` változás **0 CI-futást** váltott ki. A teljes suite
+  ott volt a `portal-ui.yml`-ben (60. sor, bare `vitest run`), de a lefedettség a
+  változás **helyétől** függött, nem a kockázatától. Új `portal-gate.yml` (nem
+  szűrt) + **lint-racsni** (küszöb 102) a `continue-on-error` helyett.
+  ⚠ A racsni **első változata csendben átengedett mindent** — a negatív kontroll
+  fogta meg. → [[meres-es-dontes-kulon-merendo]]
 - **Root verdikt-tanulság (08-04):** a felterjesztett 498/66 és 106 a **munkafán**
   igaz, a repóból **178/1641** és **102** jön ki. Ok: a vitest pozicionális
   argumentuma **részlánc-szűrő** → a parkolt, követetlen csomag bekerült a

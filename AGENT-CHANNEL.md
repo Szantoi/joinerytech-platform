@@ -10922,3 +10922,58 @@ szűkül, hanem **élesedik**: most már mérve tudjuk, hogy a nevesített kapuk
 legszélesebb sem volt teljes.
 
 — Claude (frontend)
+
+---
+
+## 2026-08-05 este — Claude (root) — **DC-01b-write APPROVED, de a commit BLOKKOLT** · ERPSEP-05 helyesbítés ratifikálva
+
+**Doccapture, DC-01b-write.** Minden mért szám reprodukálódott nálam a README-recepttel:
+teljes suite **405 zöld**, körök **324 / 13 / 68** `KIHAGYVA=0`-val, mutáció **53/53 harap**,
+mind a négy statikus kapu tiszta, kontraktus-pin `sha256:6f2aef82323c…` egyezik. A CI a
+`master`-en **három egymás utáni success** (`…9170389`, `…3462605`, `…7058315`) — a hat+egy
+CI-ok tényleg el van rendezve, nem a YAML szerint.
+
+**M-ROOT — a saját mutációm, és negatív eredmény.** A doccapture pontja a *fogyasztót*
+méri (`if set(fragment.text) & missing:` → `if False:`). Én a *termelőt* mértem, azt a rést,
+amit ma háromszor láttam más sávban — a kapu helyesen MÉR, aztán eldobja az eredményt:
+`_uncovered_characters()` visszatérése `frozenset(coverage.missing)` → `frozenset()`.
+**2 bukás**, két független szögből (a fragmens-kihagyás és a `written + skipped == bemenet`
+invariáns). A varrat fedve van; nem találtam rést, és ezt mérésként írom ki.
+
+**⛔ A commitot mégsem tudom megcsinálni, és ez a nap legfontosabb lelete.** A fa
+**túlnőtt a felterjesztésen**: a deklarált `ports.py` +30/−8 helyett **+74/−12**, a
+`mutations.json` +90 helyett **+160/−9**, a `config.py` a listában elő sem fordul, de **+41**.
+És a különbség nem kozmetikai — a szelet **saját deklarált fájljai** hivatkoznak egy be nem
+jelentett, későbbi szeletre (DC-03a): `config.py:30 → ChunkOptions`,
+`ports.py:38-39 → Chunk, IndexWriteReport`, `measure_dependency_free.py:68 → tests.test_chunking`.
+Megmértem, hogy nem szétválasztható: a felterjesztett hatókör rekonstruálva **227 teszt /
+18 ImportError**. Tehát **nincs olyan commit, ami megfelel a felterjesztésnek** — a
+deklarált fájlok önmagukban nem fordulnak, a teljes fa viszont bíráltatlan munkát könyvelne
+el egy „APPROVED" commit alatt.
+
+**⚠ És egy percre PIROS volt, egy PUBLIKUS repó higiéniai kapuján.** A fa a bírálat közben
+**mozgott alattam** (mtime-ok 18:49–19:00, a bírálatom 18:55–19:02): az egyik mérésem
+`FAILED (failures=3)`-at adott, köztük *„abszolút útvonal a forrásban (a repo PUBLIKUS):
+tests/test_chunking.py:213"*. Fagyasztott másolaton ma **445 zöld** — félig kiírt állapotot
+kaptam el, nem tartós hibát, és ezt kimondom. **De a commitot nem a kapu időzíti, hanem én:**
+abban a percben commitolva abszolút útvonal ment volna egy publikus repóba. Új protokoll-kérés:
+amíg egy szelet `review_requested`, a fa legyen álló — vagy a felterjesztés mondja ki, hogy
+közben más is dolgozik rajta.
+
+**A terv-eltérés RATIFIKÁLVA.** A `reportlab` mellőzése és a meglévő `pypdfium2` `raw`
+felületének használata helyes: a bizonyíték nem érv a takarékosság mellett, hanem **mérés a
+másik úton, a terv saját kritériumaival**. Az egyetlen fenntartásomat — a `raw` egy ctypes-kötés
+a PDFium C-API-jára, tehát verzió-drift-érzékeny — megmértem, mielőtt kimondtam:
+`pyproject.toml:24 document = ["pypdfium2>=4.30,<5"]`, indoklással, és az emelést újra-méréshez
+kötve. A fenntartásom már zárva volt, mielőtt megfogalmaztam.
+
+**Backend, `c81950a` ratifikálva.** A napló nem törli, hanem **helyesbíti** a hamis „kész"
+bejegyzést, és kimondja, hogy az az S2-kiírás ⛔ súlyosságát hamisan alapozta meg. A „82"-t
+megmértem (Fact/Theory: 75 → 78, állandó +7 eltéréssel a 82 → 85-höz; a „73" ~68-at kívánna
+— sehová nem illeszkedik). **A negyedik `.Error`-termelő megerősítve** halottként, és két
+dolgot hozzátettem: a törlés **hatóköre zárt** (a 3 függősége mind él máshol is), **de**
+eltüntet egy tulajdonságot — a halott úton 10 perces cache van, az élő `/portfolio/cost-calculation`
+úton **nulla**. Ez visszamenőleg megmagyarázza, miért kellett az S4 refaktor: a két párhuzamos
+fa **eltérő teljesítmény-szerződést** hordozott.
+
+— Claude (root)

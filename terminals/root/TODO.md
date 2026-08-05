@@ -188,12 +188,20 @@
       ⚠ A backend „nincs élő `Result.Error` handler" állítása **mérve nem áll**: két
       bekötött végpont (`POST`/`DELETE /overhead-config/rules`) vezet oda → a reggeli
       verdiktem („ma szivárog") **áll**.
-- [ ] **doccapture: DC-01b-write** (2026-08-04, `review_requested` + egy megerősítendő
-      terv-eltérés) — sorban.
-- [ ] **doccapture: a CI 6 oka rendezve** (2026-08-03 20:00) — felterjesztve, nem bíráltam.
-      *(Függetlenül ellenőrizve: a hivatkozott futás `30839170389` valóban `success`, és az
-      utána jött 2 commit CI-je is zöld — a tartalmi review még hátravan.)*
-- [ ] **doccapture: DC-01b írás-oldal + betűtípus-kapu részszállítás** (2026-08-04) — sorban.
+- [x] ~~**doccapture: DC-01b-write + a CI-kör + a betűtípus-kapu**~~ **2026-08-05: a TARTALOM
+      APPROVED, a COMMIT BLOKKOLT** (verdikt: doccapture/inbox `2026-08-05_001`).
+      Saját mérés: **405 zöld**, körök 324/13/68 `KIHAGYVA=0`, mutáció **53/53**, 4 kapu tiszta,
+      pin egyezik. CI: **3 egymás utáni success** a `master`-en.
+      M-ROOT (a *termelő*, nem a fogyasztó: `_uncovered_characters` → `frozenset()`):
+      **2 bukás** → a varrat fedve, **negatív eredmény, kimondva**.
+      ⛔ **A commitot nem adtam ki:** a fa túlnőtt a felterjesztésen (`ports.py` +30/−8 helyett
+      **+74/−12**, `config.py` a listában nincs, de **+41**), és a deklarált fájlok **egy be nem
+      jelentett szeletre** (DC-03a) hivatkoznak → a hatókör rekonstruálva **18 ImportError**.
+      ⚠ A fa **mozgott a bírálat közben** (mtime 18:49–19:00), és egy percre **piros** volt egy
+      **abszolút útvonallal egy PUBLIKUS repó forrásában**. Fagyasztott másolaton 445 zöld.
+      ✅ **A terv-eltérés (nincs `reportlab`) RATIFIKÁLVA** — a `pypdfium2<5` felső korlát
+      indoklással megvan, tehát a `raw` ctypes-felület verzió-driftje fedett.
+      ⇒ **Kérve: a DC-03a saját `review_requested`-je**, utána két külön commit.
 - [ ] **doccapture: betűtípus leszállítva** (`dda051b`, 2026-08-03 21:50) — a bináris-kapu
       (`binary_artifacts.json` + `binary_guard.py`) **átvehető mintája** a platformra is.
 - [x] ~~**Semmi.**~~ ⛔ **EZ TÉVEDÉS VOLT (2026-08-03).** A frontend `_009` felterjesztése
@@ -209,6 +217,15 @@
 - [x] ~~**doccapture: faipari RAG 1. fázis**~~ **APPROVED 2026-07-31** saját VPS-méréssel
       (manifest-hash 5/5 · dry-run 1963 chunk · Chroma count=1998 · MCP-próbák).
       ⚠ Mért csapda: a 3460 `/health` 35-öt mond — a fájl-figyelő száma, nem a vektor-tár.
+
+- [x] ~~**backend: ERPSEP-05 helyesbítés** (`c81950a`)~~ **RATIFIKÁLVA 2026-08-05**
+      (verdikt: backend/inbox `2026-08-05_001`). A „82"-t megmértem (Fact/Theory 75→78,
+      állandó +7 eltérés → koherens; a „73" ~68-at kívánna). A **negyedik `.Error`-termelő**
+      megerősítve halottként; a törlés **hatóköre zárt** (mind a 3 függősége él máshol is),
+      **de** eltüntet egy 10 perces cache-t, ami az élő úton **nincs** → ez magyarázza az S4-et.
+- [ ] **frontend: a suite-recept rése** (2026-08-05, `review_requested`) — **következő a soromban.**
+      Előzetesen: 3 tesztfájl egyetlen nevesített kapun kívül, kettő hozzáférés-vezérlést őriz.
+- [ ] **doccapture: DC-03a** — a felterjesztést kértem; a DC-01b-write commitja rá vár.
 
 ## Root-task (triázsból, 2026-07-31)
 

@@ -11248,3 +11248,50 @@ mutató pin pont azt a hamis biztonságot adná, amit ez a kapu megszüntetni hi
 - ⚠ Deploy-blokkolók a Gábor-listára: `Projects:Kernel:BaseUrl` +
   `ConnectionStrings:ProjectsDatabase` (egyik sem fallbackol) + Keycloak
   `projects-api` audience-mapper.
+
+---
+
+## 2026-08-05 éjjel — Claude (root) — **PROJ-06 APPROVED** · az őr jelenléte fedve volt, a döntését én mértem · és a PROJ-05-verdiktemben volt egy hibám
+
+**PROJ-06 + az RLS-kapu-szelet: APPROVED.** Saját mérés futó Dockerrel, a `HEAD`-en —
+előbb megmérve, hogy a projects-fa **tiszta** és **nincs külső `ProjectReference`-e**, tehát
+az idegen commitolatlan kernel-munka ezt nem szennyezi:
+**unit 51/51**, **integráció 33/33**, 0 warning — mindkettő egyezik.
+
+**A PROJ-05-leletem rendesen lezárva.** Az új kapu nem a régi lista kibővítése, hanem más
+szerkezet: `ReadSchemaRlsCatalogAsync` a **katalógusból** fedezi fel a séma összes tábláját,
+a kivétel nevesített, és a **felfedezésre** külön pozitív kontroll áll (a három mai tábla
+jelenléte — kontrollként, nem az állítás helyén). ⇒ egy új tábla alapból védett, egy
+elfelejtett hangos bukás.
+
+**⚠ És a backend leletének egy fele RÁM szól — elfogadom.** Az `Epic_assignments_carry…`
+teszt a **nevében** ígért assignment-szűrőt, a törzse viszont a `Projects`-et kérdezte, és a
+fixture assignment-sort nem is seedelt — **a PROJ-05-verdiktemben pedig név alapján
+hivatkoztam rá**. A saját M-ROOT-om ott az RLS-t célozta (az túlélt, abból lett a lelet), a
+query-filter oldalt viszont a teszt **nevéből** fogadtam el, miközben a saját szabályom
+szerint egy teszt neve nem bizonyíték. A backend mutációja (a szűrő kivétele az eredeti
+teszttel zöld maradt volna) pontosan azt mérte, amit nekem kellett volna.
+
+**⭐ M-ROOT — az őr JELENLÉTE fedve volt, én a DÖNTÉSÉT mértem.** A backend ME-mutációja azt
+méri, hogy `If-Match` **nélkül** 428 jön. Én azt, hogy az őr helyesen **dönt**-e:
+`ProjectCommandHandlers.cs:112` `expected != project.RowVersion` → `false` (a 428-as ág
+érintetlenül hagyva). **2 bukás** — a handleren **és** a dróton
+(`A_stale_If_Match_is_refused…` + `A_stale_if_match_is_412_carrying_both_versions…`).
+Alkalmazva-bizonyítás: sha1 `f7222b41…` → `0bd77cb5…` → vissza `f7222b41…`, bájt-azonos.
+⇒ **Nem találtam rést**, és ezt mérésként írom ki: ugyanez az eszközfajta ma három másik
+sávban túlélő mutációt mutatott. És ez pont az az **endpoint-szintű** kapu, amit az S1b
+sorába kértem — itt magától megvan.
+
+**Amit a felterjesztésből külön kiemelek:** a backend egy háttérben indított futás **verdikt
+nélküli logját nem tekintette zöldnek**, hanem előtérben újrafuttatta. Egy verdikt nélküli
+log **nem negatív eredmény, hanem nincs eredmény** — a különbséget az szokta elmosni, hogy
+a futás „lefutott".
+
+**Döntések:** a deploy-blokkolók (`Projects:Kernel:BaseUrl`, `ConnectionStrings:ProjectsDatabase`,
+fallback nélkül, `ValidateOnStart`) **helyes irány** és a Gábor-listára mennek — egy default
+BaseUrl csendben a rossz Kernelt kérdezné. A `projects-api` audience-mapper szintén Gábor-kapu
+(mapper nélkül minden modul-API 401, és ez az élő realmban derül ki). A lapozás hiánya a v1-ben
+elfogadva, de kérem a **mért nagyságrendet** a doc-kommentbe: a „nincs lapozás" magában
+mulasztásnak látszik, a „mérve százas nagyságrend, ezért nincs" döntésnek.
+
+— Claude (root)

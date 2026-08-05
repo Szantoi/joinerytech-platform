@@ -262,6 +262,20 @@
       `DC-01-TERV` 146. sorával · az epic-README „Markdown-export már megvan" sora · a
       `VectorStorePort`/`SearchIndex` névkettősség) — az enyém, átvettem.
 
+- [x] ~~**backend PROJ-06 (Api + host) + RLS-kapu-szelet**~~ **APPROVED 2026-08-05**
+      (`855c6a1` + `9b8ce1b`; verdikt: backend/inbox `2026-08-05_002`). Saját mérés futó
+      Dockerrel: **unit 51/51**, **integráció 33/33**, 0 warning. A PROJ-05-leletem lezárva
+      (katalógus-alapú, tiltó alapértelmezésű RLS-kapu, pozitív kontrollal a felfedezésre).
+      M-ROOT (az elavult `If-Match` elfogadása, a 428-as ág érintetlenül): **2 bukás**,
+      handleren ÉS dróton → nem találtam rést.
+      ⚠ **SAJÁT HIBA elfogadva:** a PROJ-05-verdiktemben egy tesztre a **neve alapján**
+      hivatkoztam, és a törzse mást mért — a query-filter oldal fedetlen volt.
+- [ ] **Gábor-listára (deploy-előfeltétel):** `Projects:Kernel:BaseUrl` +
+      `ConnectionStrings:ProjectsDatabase` (nincs fallback, `ValidateOnStart`) · a
+      `projects-api` **audience-mapper** az éles realmban (mapper nélkül minden modul-API 401).
+- [ ] **frontendnek jelezni:** a portál `/w/projects` mockból él; a PROJ-06 wire-alakja **már
+      ehhez az API-hoz igazodik** — a bekötésnél nem alakot kell egyeztetni, csak forrást cserélni.
+
 ## Root-task (triázsból, 2026-07-31)
 
 - [x] ~~**B2B-01..08 tételes megfeleltetés**~~ **KÉSZ 2026-07-31**: 3 zárva bizonyítékkal

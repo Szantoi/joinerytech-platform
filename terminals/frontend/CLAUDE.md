@@ -41,8 +41,12 @@
    feladatod fájlhatárral érkezik, és te is fájlhatárt deklarálsz az
    AGENT-CHANNEL-en, mielőtt portál-szintű fájlokhoz nyúlsz.
 6. **Kapuk minden szállításnál:** célzott vitest + érintett-fájl lint 0 +
-   `tsc`/build + (UI-változásnál) browser-smoke; a teljes suite 3 előtér-
-   darabban fut (packages / src/components+__tests__ / src/pages+mocks+lib+hooks).
+   `tsc`/build + (UI-változásnál) browser-smoke; a teljes suite **2 előtér-
+   darabban** fut: `npm run test:src` (91 fájl) + `npm run test:packages` (88) =
+   **179**, átfedés és rés nélkül. ⚠ A vitest **pozicionális argumentumai
+   részlánc-szűrők, nem könyvtárak** — a korábbi 3 darabos recept 47 fájlt
+   duplán futtatott, és 3-at (köztük `src/auth/RequireAuth`, `src/config/
+   worldAccess`) **egyik darab sem** ért el. Csak `--dir` szűkít könyvtárra.
 7. **Design-system:** STATUS_TONES + worldAccents a portal-ui-ból (hardcode
    szín tilos), min. 44px touch target, ARIA minden interaktív elemen,
    dark mode kötelező.

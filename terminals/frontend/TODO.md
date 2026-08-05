@@ -1,124 +1,134 @@
 # FRONTEND Terminal TODO
 
-> **Frissítve:** 2026-07-29 délelőtt, Europe/Budapest
-> **Részletes állapot:** [`STATE.md`](STATE.md)
+> **Frissítve:** 2026-07-31 este, Europe/Budapest
+> **Részletes állapot + a mérési tanulságok:** [`STATE.md`](STATE.md)
 > **Kanonikus task-státusz:** `EPICS.yaml` + `docs/tasks/<EPIC>/<TASK>.md`
+> **Munkarend:** [`CLAUDE.md`](CLAUDE.md) — done/APPROVED KIZÁRÓLAG root-review
+
+---
 
 ## P0 — minden munkakezdés előtt
 
-- [ ] Friss `AGENT-CHANNEL.md` és `git status` a portálon; a Codex gating-sávja
-      (`src/auth`, `src/config`, `HomeScreen`, `RequireAuth`, `portal-core/auth`)
-      **tiltott zóna**, amíg le nem zárul. **A csatorna 2026-07-29-én tömörítve
-      lett (4155 → 560 sor); a 07-22…07-28 közti rész itt van:**
-      `docs/knowledge/archive/agent-channel/AGENT-CHANNEL-2026-07-22--2026-07-28.md`
-- [ ] **Közös fájlhoz nyúlás előtt nézd meg az időbélyeget is**, ne csak a
-      `git status`-t — 07-29-en a gating-fájlok a felmérésem közben változtak
-      meg, mert a másik író nem jelentett be a csatornán. A sáv-deklaráció
-      önmagában nem véd az ütközéstől.
-- [ ] Fájlhatár-deklaráció a csatornára, MIELŐTT portál-szintű közös fájlhoz
-      nyúlok (`App.tsx`, `src/index.css`, barrel-ek).
-- [ ] Mailbox-figyelés élesítése (persistent Monitor: `terminals/frontend/inbox`
-      + `AGENT-CHANNEL.md` `@frontend`/`@all`) — **session-váltáskor újra kell**.
+- [ ] **Inbox + `AGENT-CHANNEL.md` + `git status`** a portálon.
+- [ ] **Mailbox-Monitor élesítése** (persistent: `terminals/frontend/inbox` +
+      csatorna `@frontend`/`@all`) — **session-váltáskor ÚJRA kell**.
+- [ ] **Közös fájl előtt időbélyeg-ellenőrzés**, nem csak `git status` — a
+      csatornás sáv-deklaráció önmagában nem véd az ütközéstől (07-29).
+- [ ] Fájlhatár-deklaráció a csatornára portál-szintű közös fájl előtt
+      (`App.tsx`, `src/index.css`, barrel-ek).
 
-## Kész (2026-07-28) — PLAN-05, mind a négy szelet APPROVED
+## A sávom állapota: ÜRES (2026-08-05) — a Tranche B APPROVED (08-04)
 
-- [x] **F1** — `GanttChart` + `DependencyGraph` primitív, planning nézet-model,
-      a `TimelineRow`/`ExecutionTimeline` beolvasztása és törlése (`0b0dbce`).
-- [x] **F2** — `CapacityHeatmap` + `capacityLoadModel` + `CapacityConflictPanel`
-      (`794b2c4`), + 3 P2 az F1-ből.
-- [x] **F3** — `ConfirmDialog`/`useConfirm`, `usePrintScope`,
-      `useTimeCursor` + `dates.ts` (`ed0a786`), + 4 P2 az F2-ből.
-- [x] **F3+** — `ConfirmProvider` az App-ban (`b6f81e4`), `CatalogPanel` az első
-      `useConfirm`-fogyasztó 3 új teszttel (`83b6f4b`), + 3 P2.
+### Root által a listámra tett tételek (2026-08-04 verdikt)
 
-## Nyitott — kiosztásra vár (nem kezdem el magamtól)
+- [ ] **Négy árva függőség** (`react-window`, `diff`, `html2canvas`,
+      `react-zoom-pan-pinch`) — 0 import, pozitív kontrollal validált mérés.
+      **Root külön, kicsi taskot csinál belőle** — kiosztásra vár, nem indítom.
+- [ ] **A parkolt `packages/module-collaboration/`** (17 fájl, követetlen, B2B-08
+      `changes_requested` 07-29 óta) — **alacsony prio**, és a döntés
+      (befejezés F4 után **vagy** dokumentált törlés) **Gáboré**. A
+      `"!packages/module-collaboration"` kizárás **nem** a helyes irány (root).
+- [ ] **Névtelen baseline-flake** — ma nem lelet, nyitott kérdés. Ha újra
+      előjön: a futás **teljes kimenetét** el kell menteni.
 
-- [ ] **PLAN-05 F3 maradék:** `SheetTable` → `EditableDataTable` — a task-doksi
-      szerint CSAK az M4 revízió-szerkesztés döntése után.
-- [x] **M3-bekötés — `ExecutionGantt` ág: ROOT-REVIEW APPROVED (2026-07-29).**
-      Utókövetés nélkül. A commit a rootra vár (pathspec a csatornán).
-      `useApi.isPending` (additív) + lekérésenként külön `QueryGate` a
-      `SchedulingPage`-en. 26/26 célzott, 727/727 + 544/544 chunk, tsc/build
-      PASS, lint baseline 7 → 6.
-- [ ] **M3-bekötés — `CapacityConflictPanel` ág BLOKKOLT:** a panelnek ma
-      **nincs fogyasztója** a portálon, tehát nincs mit bekötni. Kell hozzá egy
-      terhelés-képernyő scope-döntés. (A scheduling `openapi.yaml` sincs a
-      platform-repóban — a federation-kézbesítés a Doorstarnak ment, generált
-      kliensre ma nem tudok építeni.)
-- [x] **`SchedulingPage` route-bekötés — KÉSZ (2026-07-29), review_requested.**
-      Gábor döntése: kapjon route-ot. `/w/production/scheduling` („Ütemezés"),
-      + magyarítás és design-system tokenek 7 komponensen. 112/112 célzott,
-      727/727 + 546/546 chunk, tsc/build PASS, lint baseline 9 → 7,
-      SHELL-H1 39/39 route, dark/light mérés 8/8.
-- [x] **PLAN-05 F6 — szerep-szótár bővítés: KÉSZ (review_requested).**
-      `PORTAL_ROLES` egyetlen forrásként, seedek, tesztek a valódi claim-úton,
-      Keycloak-profil. Az Admin felvéve a kiosztási jogba a mátrix szerint.
-- [x] **PLAN-05 F4 — strukturált ConfirmDialog: KÉSZ (review_requested).**
-      `ConfirmDetail`/`details` a primitíven, a kézzel írt overlay törölve,
-      MSW-handlerek, prioritás-sávozás egy modulba vonva.
-      **Böngésző-kapu 5/5** (fókuszcsapda + Escape + nincs kiosztás).
-- [x] **PLAN-05 F5 — dátumválasztó: KÉSZ (review_requested).**
-      `isoDate`/`addDays` a portal-ui-ból, a UTC-s kezdőérték cserélve,
-      napváltás-teszt (a régi nap adata nem marad kint).
-- [x] **F6/2 — az üzemi szerepek rácsa: KÉSZ (review_requested).** Gábor: „ne
-      kapjanak üreset"; a root ugyanezt döntötte. `production_manager` és
-      `machine_operator` → `['production', 'settings']`, `ROLE_PRIORITY` a
-      Designer mögé / Joiner elé. 3 teszt (nem üres · az entitlement felülír ·
-      a dev-seed az Admin rácsát kapja). 1298/1298, SHELL-H1 39 route, F4 5/5.
-- [x] **`WorkflowPage` dark mode: KÉSZ (review_requested).** 53 hardcode szín →
-      tokenek; dark módban 7 → 1 világos felület, és a maradék 1 a szándékos
-      inverzió (aktív chip, mért kontraszt 17.49:1 / 13.89:1 — AA mindkettőn).
-      **Audit: a 24 elérhető világ-route közül egy sem törik dark módban.**
-- [x] ~~a smoke `ROUTES` kézzel felsorolt~~ — a gatelt lista már a
-      `worldAccess.ts` forrásából olvasódik (drift-őr).
-- [ ] **`CatalogPanel` lint-adósság** (`handleDuplicate` deklaráció előtt,
-      + `exhaustive-deps`) — a root külön szeletet ígért rá.
+### 2026-08-05 leszállítva, `review_requested` (`outbox/2026-08-05_001`)
 
-## COMMITOLVA (2026-07-29 este) — Gábor felhatalmazásával
+- [x] **A suite-recept rése.** A `test:nightly` 166/179-et futtatott; három
+      fájlt **egyetlen nevesített kapu sem** ért el, kettő közülük
+      hozzáférés-vezérlés. Javítás: `--dir` alapú felosztás + `test:nightly`
+      teljessé téve. Teljes suite **179 fájl / 1651 teszt zöld**.
 
-Portál `55eedbc` → `47ecd29`, négy szelet, **fájl-diszjunkt pathspec-ekkel**:
+## Korábbi kiosztás (2026-08-03, inbox 001) — lezárva
 
-```
-66c8995  sr-only tablazat -> a class a burkolo divre (a11y, ket modul)
-258320f  WorkflowPage eszkoztar tordelese (375px tulcsordulas mobilon)
-24224eb  TOUCH-44: 44px erintesi zona pointer:coarse alatt + smoke-kapu
-47ecd29  PORTALUI-PUBLISH: a csomag fogyaszthatova tetele
-```
+A 2026-07-31-i nap mind a **9 szelete APPROVED** (a 9. ma, portál `ee2cf04`).
 
-A szivárgás-kaput a root commitolta (`0b1743d`).
+### MODULE-PACKAGES maradék follow-upjai — kiadva, MÉRVE
 
-⚠ **Szándékosan KIMARADT:** `packages/module-collaboration/` — a B2B-08
-`changes_requested` munkája. Az én `private: true` javításom benne marad a fában,
-amíg azt a szeletet nem commitolják.
+⚠ **A kiadott 3-ból KETTŐ már 2026-07-28 óta kész volt** (`50753ba` — ugyanaz a
+commit, amelyikben az eslint-őr is). A lista ma reggel **részben** lett helyesbítve
+(egy tétel), a maradék hármat senki nem mérte újra. → [[reszben-helyesbitett-lista]]
 
-**Commit után ellenőrizve:** `tsc` PASS · portál-build PASS · csomag-build PASS ·
-szivárgás-kapu önteszt 17/17.
+- [x] **1. wizard-MSW költöztetés — KÉSZ volt.** A shell `src/` egészében 0 db
+      `presigned`/`mock-s3` (pozitív kontrollal), a végpontok a csomagban, és a
+      regisztráció-lánc ép (`handlers.ts:6` → `:19` → `browser.ts`) — a némán halott
+      végpont esetét külön kizártam.
+- [x] **2. wildcard-alias szűkítés — KÉSZ volt.** `tsconfig.app.json`: 0 wildcard,
+      mind a 21 alias explicit `index.ts`-re mutat.
+- [ ] **3. lockfile-frissítés a collaboration visszavételekor** — ⚠ **NEM indul.**
+      A `packages/module-collaboration/` untracked, a B2B-08 review **7 P0-val
+      CHANGES REQUESTED**, és a visszavétel a B2B-10 **F4** valódi OpenAPI-jából
+      generált kliensre vár. Nem az én döntésem; ha belefutok, jelzem és otthagyom.
 
-**Nyitva, Gábor döntésére vár:** licenc (irányt adott: nyílt; a konkrét választás
-— MIT vs Apache-2.0 — még nyitva, a nesting-algoritmusok miatt Apache-2.0-t
-javasoltam) és a hat meg nem mért submodule.
+*(A negyedik tétel, az „eslint tiltott-import őr" NEM teendő volt, hanem már megvolt
+— a root helyesbítette az EPICS-jegyzetet a mérésem alapján.)*
 
-## Figyelt, más sávban lévő blokkolók
+### P2 — LESZÁLLÍTVA, `review_requested` (`outbox/2026-08-03_001`)
 
-- [x] ~~`/w/production/cutting` smoke-bukás~~ — **FELOLDVA** (Codex, 07-29 09:20),
-      saját méréssel igazolva. A `dev-harness/` kerülőút megszűnt.
-- [x] ~~`aria-current` 15 legacy világon~~ — **NEM hiba volt, hanem rossz
-      ellenőrzés** (review_requested). A 15 route `HIDDEN_LEGACY_WORLDS`-tag: a
-      `RequireAuth` a tiltó oldalt adja, tehát nincs navjuk. A kapu azt kérte
-      számon a gatingen, hogy ne működjön — ráadásul a h1-ük **üresen zöld**
-      volt (a tiltó oldal címét számolta). Átírva: **24 valódi világ-route** +
-      **17 gatelt route fail-closed bizonyítással** (köztük `/w/shopfloor` és
-      `/w/trade`, amik eddig sehol nem szerepeltek). A lista a `worldAccess.ts`
-      forrásából olvasódik → drift-őr. **A közös smoke ezzel teljesen ZÖLD.**
-- [x] ~~`SchedulingPage` nyelvi keveredése~~ — magyarítva (route-bekötés).
-- [x] ~~A terv dátuma be van fagyva~~ — dátumválasztó kész (F5).
+- [x] **`PUBLIC_SUBPATHS` olvasása a `package.json` `exports`-ból.** A beégetett
+      `{mocks, wizard}` halmaz **uniója** ma helyes, de **per-csomag vak**: mérve a
+      12 csomagon a `./wizard`-ot **egyedül a `module-ehs`** exportálja, a
+      `portal-core`/`portal-ui` pedig **csak `.`-ot** → az őr átengedne egy
+      `@spaceos/portal-ui/mocks` vagy `@spaceos/module-crm/wizard` importot. Drift
+      a másik irányban is: új publikus alútra **hamis riasztást** adna.
+- [ ] **M3 — `CapacityConflictPanel` ág: BLOKKOLT.** A panelnek nincs
+      fogyasztója a portálon → terhelés-képernyő scope-döntés kell. A
+      scheduling `openapi.yaml` sincs a platform-repóban (a federation-
+      kézbesítés a Doorstarnak ment), generált kliensre ma nem tudok építeni.
+- [ ] **P2 (root nyilvántartja):** `LeadDetailSlideOver` terhelés-flake — ha
+      újra bukik, bő timeouttal rendezendő (a controlling-tesztek mintájára).
 
-## Munkarend-emlékeztető
+## Emberi kapun áll — NEM az én lépésem
 
-- Done-t és APPROVED-ot **kizárólag a root-review** állít; én
-  `review_requested`-et jelentek bizonyítékokkal (teszt-számok, file:line,
-  futtatott kapuk). **Nem commitolok** — a commit a root lépése.
-- Kapuk minden szállításnál: célzott vitest + érintett-fájl lint 0 + `tsc`/build
-  + (UI-változásnál) böngésző-mérés.
-- Ha egy közös kapu piros: **stash-elt baseline-nal bizonyítsd**, hogy nem a te
-  diffed okozza, mielőtt jelented.
+| Tétel | Mire vár |
+|---|---|
+| ~~**Tranche B**~~ | ✅ **LEZÁRVA 2026-08-04.** Gábor döntött (*„nem lesz szerkeszthető rács"*) → törlés + `react-slider` ki; portál `76bc647`, **root-APPROVED** (inbox `2026-08-04_001`), pin-bump `581322a`. A 07-30 óta piros `npm ci` **feloldva**, root negatív kontrolljával igazolva |
+| ~~**`SheetTable` → `EditableDataTable`**~~ (PLAN-05 F3 maradék) | **NEM „átvétel"** — egyik sem létezik ebben a repóban (fa + teljes git-történet: 0 találat); a `SheetTable` a Doorstaré. A blokkoló feltétel („M4 revízió-szerkesztés") a `docs/` alatt **csak a PLAN-05-ben** él, önhivatkozásként → **nem értékelhető**. Ha kell, ez **új, specifikálandó fejlesztés** |
+| **PIN-backdoor** (`/shopfloor`) | a route sorsa (marad? DEV mögé? eltűnik?) — az ág eltávolítása authorizált, a helyettesítő viselkedés nem |
+| **Nem szabad gépre ejtés** | termékdöntés: sorba állítás vagy tiltás. Ha tiltás lesz, a `Busy`-teszt „nem tiltott" kikötését a döntéssel EGYÜTT kell átírni |
+| **Toast SR-szúrópróba** (`display:contents`) | manuális QA-kör, az EHS-WIZARD-HU QA-jával egy ülésben |
+| **`<title>jt-temp</title>`** | névválasztás (Gábor-lista apró tételei) |
+| **Trade-világ élesítése** | ha valaha: a `usePricingRules:67` ál-siker PUT az ELSŐ tétel |
+
+### Tranche B — amit 2026-08-03-án előre kimértem (a végrehajtás előtt)
+
+- ⛔ **A parkolás ára ma is folyik:** `npm install --dry-run` → **ERESOLVE**
+      (`react-slider@2.0.6` peer: `react@"^16 || ^17 || ^18"` vs a fán **19.2.7**).
+      Sima `npm install` **elbukik**; mindkét fogyasztó a Tranche B-ben van.
+      A `react-slider` **`dependencies`** (nem dev — a 07-31-i jelentésem tévedett).
+- ⚠ **KÉT `CatalogPanel`:** `components/catalog/` halott (törlendő),
+      `components/settings/` **ÉLŐ** (`SettingsPage.tsx:5`). Név-alapú törlés az
+      élőt vinné → fájl-szintű pathspec. → [[ket-parhuzamos-modul-fa]]
+- ⚠ **Árva teszt a klaszteren kívül:** `src/__tests__/ProductCard.test.tsx` —
+      a mappából induló lista kihagyja, tehát a **fájlszám nő**. Ez buktatta volna
+      a Tranche A-t is (58 → 59). → [[torles-ellenorzese-a-megmarado-fan]]
+- ✅ **A „prior art elvész" érv nem áll:** a Tranche A-ban törölt fájl tartalma ma
+      is előhívható (`git show f5f44b7^:<fájl>` — kimérve).
+
+## Állandó mérési fegyelem (a saját leckéimből)
+
+- **Mutáció:** `--no-cache` + `rm -rf node_modules/.vite`, ÉS bizonyítsd, hogy a
+  csere lefutott (diff/tartalom-kiírás). Visszaállítás **mentett bájt-másolatból**
+  — `sed -i` Windows-fán sorvég-hamis sha1-t ad.
+- **A mutáció a produkciót rontsa**, ne a tesztet.
+- **Bukó közös kapu:** előbb bizonyítsd, hogy nem a te diffed (egyedül-futtatás ·
+  újrafuttatás · a diff gépi érintettsége · a szomszéd darab változatlansága).
+- **A kapu léte ≠ hatása:** öntesztelj, pozitív ÉS zaj-kontrollal; a „0 találat"
+  csak akkor bizonyíték, ha a mérőeszköz lát (bejáró-kontroll).
+- **Töröléskor** az árva-importot a MEGMARADÓ fáról mérd, ne a lista
+  teljességét szemlézd; a lint-számot ELŐRE számold ki, aztán mérd.
+- **Lint-lelet triázsa:** mindig route-elérhetőséggel (kozmetikai `err: any` és
+  egy biztonsági backdoor ugyanazt a sort adja).
+- **Suite KÉT előtér-darabban:** `npm run test:src` (91) + `npm run test:packages`
+  (88) = **179**, átfedés és rés nélkül. A régi 3 darabos recept **hibás volt**
+  (2026-08-05-i mérés): 47 fájl duplán futott, 3 pedig **sehol** — köztük az
+  `src/auth/RequireAuth` és a `src/config/worldAccess`.
+- ⚠ **A vitest pozicionális argumentuma RÉSZLÁNC-szűrő, nem könyvtár.** A
+  `src/components` illeszkedik a `packages/portal-ui/src/components/...`-ra is.
+  Könyvtárra szűkíteni **csak `--dir`** tud. Ugyanez húzta be a parkolt,
+  követetlen `module-collaboration`-t a felterjesztett számaimba.
+- **Ha a munkafádon parkolt/idegen munka van:** a felterjesztett számot
+  csak-követett fán mérd, vagy **mondd ki, hogy munkafa-szám** (root, 08-04).
+
+---
+
+_A lezárt munka és a mérési tanulságok: [`STATE.md`](STATE.md)._

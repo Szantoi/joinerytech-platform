@@ -1,72 +1,184 @@
 # FRONTEND Terminal State
 
-> **Frissítve:** 2026-07-29 délután, Europe/Budapest
+> **Frissítve:** 2026-07-31 este, Europe/Budapest
+> **Operatív lista:** [`TODO.md`](TODO.md) · **Munkarend:** [`CLAUDE.md`](CLAUDE.md)
+> **Állapot-forrás:** `EPICS.yaml` + `docs/tasks/<EPIC>/<TASK>.md`
+> Done/APPROVED-ot **kizárólag a root-review** állít; én `review_requested`-et
+> jelentek mért bizonyítékkal (teszt-számok, file:line, futtatott kapuk).
 
-## Nap vége (2026-07-29 este) — a második kör
+---
 
-A hat reggeli szelet után továbbiak, mind `review_requested` vagy APPROVED:
+## Jelenlegi állapot (2026-08-05)
 
-| Szelet | Állapot | Lényeg |
+- **Portál:** `main@76bc647` (Tranche B törlés, **root-APPROVED**), platform pin
+  bumpolva (`581322a`). A 07-30 óta piros `npm ci` **feloldva** — root negatív
+  kontrollal igazolta (`f8829aa` ERESOLVE → `76bc647` exit 0).
+- **2026-08-05, `review_requested`** (`outbox/2026-08-05_001`): a
+  **suite-recept rése**. A `test:nightly` 166/179-et futtatott; három fájlt
+  **egyetlen nevesített kapu sem** ért el — köztük `src/auth/RequireAuth` és
+  `src/config/worldAccess`. Javítás: `--dir` alapú kétdarabos felosztás
+  (`test:src` 91/834 + `test:packages` 88/817 = **179/1651 zöld**).
+  → [[portal-teljes-suite-futtatas]]
+- **Root verdikt-tanulság (08-04):** a felterjesztett 498/66 és 106 a **munkafán**
+  igaz, a repóból **178/1641** és **102** jön ki. Ok: a vitest pozicionális
+  argumentuma **részlánc-szűrő** → a parkolt, követetlen csomag bekerült a
+  mérésembe. A gondosságom az **írásra** irányult, a mérés **hatókörére** nem.
+
+### Korábbi állapot (2026-08-03)
+
+- **Portál:** `main@f5f44b7` (a PORTAL-DEADTREE-A törlés), platform pin `a26a06a`.
+- **A sávom: KIOSZTVA és leszállítva** (inbox `2026-08-03_001` → outbox
+  `2026-08-03_001`, `review_requested`). A kiadott 3 follow-upból **kettő már
+  07-28 óta kész volt** (`50753ba`); a valóban nyitott munka a P2 volt, az kész.
+- **Boundary-őr szerkezeti teszt: APPROVED** (portál `ee2cf04`, 139 sor, egyetlen
+  fájl). Saját ellenőrzés a közös fán: a fájl **követett**, a teszt **6/6 zöld**.
+  A 3 napos állás oka root-mulasztás volt (a review-sora a csatornát + a saját
+  listáját nézte, a **terminál-outboxokat nem**) — a jelzés volt a helyes eljárás.
+- **2026-08-03: a rootnak jelentve a csatornán** (append-only igazolva: az első
+  513 663 bájt sha1-je változatlan, 513 663 → 515 460 B) → **4 percen belül verdikt**.
+- **Mailbox-őrség ÉL** (persistent Monitor `bkp0bp8xv`): `frontend/inbox` új fájl +
+  `AGENT-CHANNEL.md` növekmény `@frontend`/`@all` szűréssel. **Öntesztelve** 2
+  pozitív + 2 zaj-kontrollal és a zsugorodás-ággal; az élesítő esemény a valódi
+  célpontokat mérte (`inbox=0`, `csatorna=515460B`). Session-váltáskor ÚJRA kell.
+- **A terminál 2026-07-28 óta él.** Az eddigi szeletek MIND root-APPROVED-ok,
+  egy kivétellel (a fenti).
+
+---
+
+## 2026-08-03 — a nap: egy holtpont feloldva, egy szelet, két lelet
+
+| # | Tétel | Állapot |
 |---|---|---|
-| aria-current / smoke | APPROVED, commitolva | a kapu **egyszerre volt hamisan piros és hamisan zöld**; 24 valódi route + 17 gatelt, drift-őrrel |
-| `WorkflowPage` dark mode | APPROVED, commitolva | mért audit: a 24 route-ból **egy** tört; 7 → 1, és az 1 a detektorom téves riasztása (kontraszt 17.49/13.89 — AA) |
-| `sr-only` táblázat-csapda | APPROVED | a `width:1px` táblázaton nem fog; **két** modul, a második olyan képernyőn, amit a sweep be sem járt |
-| `TOUCH-44` | APPROVED | `pointer: coarse` — nem kellett választani a11y és terv között; smoke-kapuval, mutációval |
-| `PORTALUI-PUBLISH` | APPROVED, **publish Gábor-kapun** | a `publishConfig`-út `npm pack`-kel kimérve KIESETT; fogyasztói próba 7/7 + típus-mutáció |
-| Szivárgás-kapu | APPROVED + 3 utókövetés kész | a publikált **ref**-et méri; mind a 6 fájlt fogja; submodule-lefedettség gépileg kimondva |
+| 1 | A 3 napja álló 009-es felterjesztés megsürgetve a csatornán | **4 percen belül verdikt** → APPROVED, portál `ee2cf04` |
+| 2 | A kiadott 3 follow-up mérése | **kettő már 07-28 óta kész** (`50753ba`) — a #3 blokkolt, el sem indult |
+| 3 | P2: `PUBLIC_SUBPATHS` → `package.json` `exports` | **APPROVED**, portál `f8829aa` |
+| 4 | Gábor döntése a Codex-munkatestről továbbítva | érvénybe léptetve, gazda: **backend** |
+| + | Mailbox-őrség élesítve, majd zaj-hangolva | `bu1jfz2vd` |
 
-**A nap visszatérő tanulsága, négyszer:** az **ellenőrző eszköz** volt a hibás,
-nem a mért kód — a chip-kontraszt téves riasztása, a `process.env` negatív
-kontroll (ami a legveszélyesebb alakot nyomta el), a képzelt alakra mintázott
-pozitív korpusz, és a `rev-parse --git-dir`, ami a szülő-repót találta meg.
-→ [[kapu-epites-precedencia]], [[a-detektor-is-tevedhet]]
+### A nap két módszertani hozadéka
 
-**Nyitva, NEM az én sávom:** a token-rotáció (R1), a LICENSE-ek, és hat meg nem
-mért submodule. A biztonsági kört a doccapture/backend/root viszi.
+1. **A részben helyesbített lista.** A root reggel a négy follow-upból **egyet**
+   helyesbített — pont azt, amit én véletlenül megmértem a 009 közben —, a maradék
+   hármat nem mérte újra. Így egy **már javított** lista adott ki két elvégzett
+   munkát. *A javítás ténye megnöveli a maradék tekintélyét, holott semmi nem
+   igazolta őket.* → [[reszben-helyesbitett-lista]]
+2. **A „már kész" veszélyes félkész alakja.** A #1-nél nem elég azt mérni, hogy a
+   kód a helyén van-e: ha a **mozgatás** megvolt, de a **regisztráció** elmaradt, a
+   végpont némán halott. Ezért a teljes láncot mértem
+   (`handlers.wizardPhotos.ts` → `mocks/index.ts` → `handlers.ts` → worker).
 
-## A délelőtt mérlege — hat APPROVED szelet, mind COMMITOLVA
+### A P2 bizonyítás-sora (a zöld önmagában semmit nem ért volna)
 
-Root-review APPROVED: **M3-bekötés · route-bekötés · magyarítás+tokenek ·
-PLAN-05 F4 · F5 · F6 + F6/2**. A root a jelzésemre lezárta a gating-review-t
-(hogy a három közös fájl tisztán kezelhető legyen), majd commitolt:
-**portál `83b6f4b` → `ad8fd1b`, öt commit**, az általam javasolt fájl-diszjunkt
-csoportosítás szerint. Platform-oldal: `53efe8d` (submodule-pin, F5/F6 kiírások,
-és a `tenant-onboarding.sample.json`, ami addig untracked volt).
+teszt **8/8** · a fő „0 sértés" állítás a szigorítás után is átmegy (**0 hamis
+pozitív**) · **mutáció valódi fájllal** a bejáró útjában (sha1 `d6beb2e7`) → bukik ·
+**negatív kontroll: a HEAD-en lévő RÉGI őr ugyanazon a szondás fán 6/6 zölden
+átengedi** → a rés valódi volt. Kapuk: lint `exit 0` · `tsc` `exit 0` ·
+`src/components src/__tests__` **498/498** (baseline 496 + a 2 új teszt).
 
-Saját ellenőrzés a commit UTÁN: minden fájlom tracked, a törölt
-`AssignmentConfirmModal.tsx` tényleg eltűnt, `tsc` PASS, **729/729** a
-scheduling+auth+portal-ui halmazon. A `packages/module-collaboration/`
-szándékosan kimaradt (B2B-08, `changes_requested`) — széles `add`-del be ne
-kerüljön.
+⚠ **A root mérési anomáliája, amit ő maga mondott ki:** a darab első futása 4
+bukást adott, de akkor én ugyanazon a fán dolgoztam — **egyidejű futás = érvénytelen
+mérés** —, és a kimenetet nem mentette el, így a hipotézis nem igazolható.
+Megállapodás: közös fán jelezzük egymásnak a futás kezdetét.
 
-**A nap három legfontosabb lelete** (mind a beroutolás tette láthatóvá):
-1. **Halott operátor-lista** — `useEffect` importálva, sosem használva; a
-   `useApi` lusta, tehát a lista sosem töltődött be → köteget SENKI nem tudott
-   kiosztani. **A lint ezt végig jelezte**, én reggel „legacy adósságnak"
-   könyveltem. → [[lint-figyelmeztetes-mint-hibajelentes]]
-2. **Szerep-szótár ütközés** — a `useSchedulePermissions` olyan szerepekre volt
-   írva, amiket a `parseUserClaims` kiszűrt → a képernyő mindenkinek
-   csak-olvasható. Egy zöld teszt fedte el (nem létező szerepet mockolt).
-3. **UTC-s terv-dátum** (root lelete) — éjszakai műszakban a tegnapi tervet
-   mutatta volna mainak.
-> **Állapotforrás:** `EPICS.yaml` + `docs/tasks/<EPIC>/<TASK>.md`
-> **Munkarend:** [`CLAUDE.md`](CLAUDE.md) — done-t KIZÁRÓLAG a root-review állít
+---
 
-## Jelenlegi állapot
+## 2026-07-31 — a nap: 9 szelet, 8 APPROVED
 
-- **Terminál megnyitva 2026-07-28-án**, első nap: a PLAN-05 mind a négy szelete
-  leszállítva és root-review APPROVED.
-- **Portal:** `main@83b6f4b`. Az én szeleteim (alulról felfelé):
-  `0b0dbce` F1 → `794b2c4` F2 → `ed0a786` F3 → `b6f81e4` + `83b6f4b` F3+.
-  A commitokat a root készíti — én `review_requested`-et jelentek bizonyítékokkal.
-- **A portál working tree nem tiszta, de nem tőlem:** `packages/portal-core/
-  src/auth/AuthContext.tsx`, `src/auth/**`, `src/components/layout/HomeScreen*`
-  a Codex világ-gating sávja (ERPSEP-FE-WORLD-GATING), commitolatlan.
-- **PLAN-05 (Doorstar-vizualizációk általánosítása): DONE** — F1+F2+F3+F3+.
-  Az `EditableDataTable` a task-doksi szerint az M4 revízió-szerkesztés
-  döntéséig várakozik (nem az én nyitott tételem).
+| # | Szelet | Állapot | A lényeg egy sorban |
+|---|---|---|---|
+| 1 | Gép-státusz a kiosztás-megerősítőben | APPROVED `1ee7510` | a csend kivétele, nem tiltás; közös `machineStatus.ts` a zónával egy forrásból |
+| 2 | `PieceInputRow` DOM-id | APPROVED `746a85e` | duplikált/instabil id a PUBLIKUS űrlapon → `useId`; a címke az ELSŐ sor mezőjét nyitotta |
+| 3 | 10 gyanús lint-lelet route-triázsa | elfogadva | 6 gatelt → legacy-scope, 1 a PIN-döntéssel mozog, 2 léphető |
+| 4 | 3 designer-review verifikáció | mindhárom task `done` | **kettőt a saját doksija már 07-14-én lezárt** — a task-státusz volt elavult |
+| 5 | `WorkflowPage` csak-olvasható (b) | APPROVED `13a57ed` | a néma NO-OP drag-elnyelés megszűnt |
+| 6 | `lang="hu"` + ThemeToggle radiogroup | APPROVED `eede328` | őr-teszt a fájlra; roving tabindex + 4 nyíl |
+| 7 | axe-kör (shell + 7 világ) | elfogadva | 0 critical / 8 serious / 3 moderate; **5 világ tiszta** |
+| 8 | A 3 axe-javítás | APPROVED `1ef0798` | **újramérés 0/0/0/0** ugyanazzal a műszerrel |
+| 9 | **PORTAL-DEADTREE-A** | APPROVED `f5f44b7` | **59 fájl / 8 001 sor**; lint **172 → 125**, pontosan az ELŐRE számolt értékkel |
+| + | Boundary-őr két vak pontja | `review_requested` | az őr létezett, de 12-ből 10-et fogott — a 2 rés szerkezeti teszttel fedve |
 
-## Amit a PLAN-05-ben a portal-ui kapott (közös felület, mindenkinek)
+### A nap mérés-módszertani hozadéka (mind memóriában)
+
+1. **A kapu léte ≠ a hatása.** A boundary-őr megvolt és a CLAUDE.md hivatkozott
+   rá — öntesztre mégis **átengedte a dinamikus `import()`-ot** (amivel a portál
+   route-jai töltődnek) és a **3 szintű `../` visszanyúlást** (a konfig fixen
+   4-5 szintet nevez meg). A fán ma 0 sértés csúszik át → **lappangó** vakság.
+   A javítás nem tágabb regex (zajos kaput egy héten belül kikapcsolnak), hanem
+   **feloldás-alapú szerkezeti teszt** az eslint-szabály mellé.
+2. **Töröléskor az árva-importot a MEGMARADÓ fáról mérd.** A szemre teljes
+   58-as klaszter-listám kihagyott egy teszt-fájlt; a megmaradó fa import-
+   feloldása megfogta. Nélküle a suite azonnal tört volna → 59 fájl.
+3. **A lint-számot ELŐRE számold ki.** 125-öt jósoltam, 125 lett — ez azt is
+   bizonyítja, amit egy utólagos szám nem tud: a törlés **máshol nem hozott
+   létre új leletet**. (És a becslésem helyesbítése: a „~57" a Tranche B-t is
+   tartalmazta, Tranche A-ra a valós szám 47.)
+4. **A bundle-méret változatlansága a VÁRT eredmény** — a halott kód eleve nem
+   került bele. Aki ilyenkor „optimalizálást" ír, félrevezet.
+5. **Bukó közös kapu → négylépcsős bizonyítás.** (egyedül zöld · újrafuttatva
+   zöld · a diff gépileg 0 `packages/` fájlt érint · a szomszéd darab
+   változatlan). Nem „ismerős minta" alapján zártam le.
+6. **A detektor is tévedhet — oklch-korban különösen.** A kontraszt-mérőm első
+   futása **7 hamis FAIL**-t adott, mert a Chrome a computed színt a FORRÁS
+   színterében (`oklch(...)`) adja vissza, a parserem meg rgb-ként olvasta.
+   Javítás: canvas-visszaolvasás + a mérőfüggvény **öntesztje** a valódi mérés
+   ELŐTT.
+7. **A root mérési fogása:** `sed -i` a mutáció-visszaállításnál Windows-fán
+   CRLF→LF-et fordít → a sha1-bizonyítás sorvég-hamis pozitívot ad. **Mentett
+   bájt-másolatból** állíts vissza.
+
+### Számok, amiket a nap végén mértem
+
+`tsc`/build PASS · **packages 817/817** · `src/components src/__tests__`
+**496/496** · `src/pages src/mocks src/lib src/hooks` **693/693** · browser-smoke
+zöld · **lint 125** (117 error + 8 warning, 50 fájlban) · **axe 0/0/0/0**.
+
+---
+
+## Korábbi napok — sűrítve
+
+### 2026-07-30 — „a lint valódi hibákat takart, negyedszer"
+
+Hat szelet. A nap gerince: **180 lint-lelet élő/halott térképe** (11 ügynökös
+workflow) — 31 halott fájl / 57 lelet (**0/31 cáfolva** adverszáriálisan),
+32 teszt-lelet, 91 élő (13 gyanús). A 3 legsúlyosabb gyanús **élő, PUBLIKUS**
+route-on volt:
+
+1. **Hamis „elküldve"** (`PublicQuoteRequestPage`, `/quote-request`) — javítva.
+   ⭐ **A hibát egy TESZT védte:** a `'shows mock success when API fails'` a
+   hibát *elvárt viselkedésként* rögzítette; aki javítja a `catch`-et, piros
+   tesztet kap és visszacsinálja. → [[teszt-ami-kikoti-a-hibat]]
+2. **rules-of-hooks crash** (`SupplierPortalPage`) — javítva; a mutáció csak
+   `node_modules/.vite` törléssel volt érvényes (a build-cache a root mérését
+   is érvénytelenítette).
+3. **PIN-backdoor** (`OperatorLoginScreen`, `/shopfloor`) — nem nyúltam hozzá,
+   a route sorsa Gábor-kérdés.
+
+További: `CatalogPanel` lint-szelet (**három** valódi defekt egy figyelmeztetés
+mögött, kettőt a harmadik takart), szivárgás-kapu zaj-hangolása (72 → 51,
+−21/+0) és vak pontjai (30 → 33, +3/−0; a naiv alak 84-et adna).
+
+### 2026-07-29 — a11y- és design-system-kör
+
+`aria-current`/smoke (**a kapu egyszerre volt hamisan piros és hamisan zöld**;
+24 valódi route + 17 gatelt, drift-őrrel) · `WorkflowPage` dark mode (24
+route-ból egy tört; 7 → 1, és az 1 a detektorom téves riasztása volt) ·
+`sr-only` táblázat-csapda (`width:1px` táblázaton nem fog, **két** modul) ·
+`TOUCH-44` (`pointer: coarse` — nem kellett választani a11y és terv között) ·
+`PORTALUI-PUBLISH` (a `publishConfig`-út `npm pack`-kel kimérve KIESETT).
+
+**Három lelet, amit a beroutolás tett láthatóvá:** halott operátor-lista (a
+lint végig jelezte) · szerep-szótár ütközés (zöld teszt fedte el, nem létező
+szerepet mockolt) · UTC-s terv-dátum.
+
+### 2026-07-28 — PLAN-05, mind a négy szelet APPROVED
+
+F1 `GanttChart`+`DependencyGraph` (`0b0dbce`) · F2 `CapacityHeatmap` (`794b2c4`)
+· F3 `ConfirmDialog`/`usePrintScope`/`useTimeCursor` (`ed0a786`) · F3+
+`ConfirmProvider` (`b6f81e4`, `83b6f4b`).
+
+---
+
+## Referencia — amit a PLAN-05-ben a portal-ui kapott (közös felület)
 
 | Primitív / hook | Fájl | Lényeg |
 |---|---|---|
@@ -82,105 +194,21 @@ App-oldali rétegek: `src/lib/scheduling/{planningVisualizationModel,capacityLoa
 (nézet-modellek, magyar szöveg formatter-propban), `src/components/scheduling/
 {ExecutionGantt,CapacityConflictPanel}.tsx` (kompozíciók).
 
-## 2026-07-29 délelőtt — M3 pending/error bekötés — **ROOT-REVIEW: APPROVED**
+## Referencia — a portál mérőeszközei
 
-Root-mérés: 3 fájl / 26 teszt PASS, a kulcsdöntés kódban is ellenőrizve
-(`useApi.ts:92`). Utókövetést nem kért. **A commit még nem futott le** — a
-pathspec a csatornán megvan a rootnak (a `useApi.test.ts` untracked, `add` kell
-neki; az `OperatorAutocomplete.test.tsx` a hook-commitba tartozik, mert a
-típus-bővítés nélküle nem fordul).
+| Eszköz | Mit fog meg |
+|---|---|
+| `npm run test:smoke:keyboard` | layout-függő a11y (jsdom-ban elvileg sem fogható): fókuszcsapda, 44px érintés, SHELL-H1 route-onként, F4 dialógus |
+| `src/__tests__/workspaceBoundary.test.ts` | csomag-határok **feloldott úton** (az eslint-őr két vak pontja: dinamikus import, `../`-lánc mélysége) |
+| `src/__tests__/indexHtml.test.ts` | a dokumentum nyelve (`lang="hu"`) — jsdom nem tölti be az index.html-t, ezért a FÁJLT olvassa |
+| eldobható playwright-harness | axe-kör, kontraszt-mérés (⚠ oklch → canvas-feloldás + önteszt kell) |
 
-**Nyitva maradt, Gábor asztalán:** kap-e route-ot a `SchedulingPage`.
+---
 
-### A szelet tartalma
+## Ismert leletek — NEM az én sávom
 
-Nyitott kiosztás nem volt (inbox üres), ezért a TODO egyetlen **kimondott
-átvételi feltétellel** bíró tételét vittem végig. Jelentés:
-`outbox/2026-07-29_002_m3-bekotes-pending-error-review-requested.md`.
-
-- **`src/hooks/useApi.ts` — additív `isPending`.** A hook lusta (a fetch csak a
-  fogyasztó `useEffect`-jéből indul), ezért az első festéskor az `isLoading`
-  még `false` — aki arra gate-el, üres nézetet villant. Az implementáció a
-  `resolvedUrl`-t követi, nem egy `hasResolved` jelzőt: így az **url-váltás** is
-  „még nincs válasz", és egy **szabályos `null` törzs** sem ragad betöltésbe.
-  Az `isLoading` érintetlen → a 40 fogyasztóból egy sem törik.
-- **`src/pages/SchedulingPage.tsx` — lekérésenként külön `QueryGate`** (köteg /
-  gép / idősáv). Az idősáv közös kaput kap, mert két lekérésből áll össze: ha az
-  egyik hiányzik, a rács nem részleges, hanem hamis. A darabszám sem ír „(0)"-t,
-  amíg nincs válasz.
-- ÚJ: `src/hooks/__tests__/useApi.test.ts` (6 eset — a hooknak eddig nem volt
-  tesztje) + 5 új eset a `SchedulingPage.test.tsx`-ben.
-- Kapuk: célzott **26/26** · pages+hooks+lib+mocks **727/727** ·
-  components+`__tests__` **544/544** · `tsc` PASS · `build` PASS ·
-  lint az érintett fájlokon **baseline 7 → 6**.
-
-**Lelet: a `SchedulingPage` sehonnan nincs beroutolva** — nulla hivatkozás rá a
-portálon a saját fájlján és tesztjén kívül. Az `ExecutionGantt` egyetlen
-fogyasztója tehát ma elérhetetlen a futó appból. Root-döntést kértem róla.
-(Munka közben vettem észre, nem előtte — a fogyasztó elérhetőségét első
-lépésben kell ellenőrizni.)
-
-## 2026-07-29 délután — SchedulingPage route-bekötés (review_requested)
-
-Gábor döntése: kapjon route-ot. `/w/production/scheduling` = **„Ütemezés"**, a
-production világ alatt, a `machining` után. Jelentés:
-`outbox/2026-07-29_003_scheduling-route-bekotes-review-requested.md`.
-
-- **A csomagon kívül maradt**, a `WorkflowPage` precedense szerint (a
-  `ProductionPage` fejléc-kommentje eddig is kimondta ezt a kivételt).
-- **A saját `h1`-je kiesett:** a `WorldShell` az egyetlen dokumentum-főcím
-  (`WorldShell.tsx:247`) — nélküle a „route-onként pontosan egy h1" kapu bukott
-  volna. Új jsdom-teszt őrzi, hogy ne kerüljön vissza.
-- **A smoke `ROUTES` listája kézzel felsorolt** (`keyboard-smoke.mjs:232`) — a
-  regiszter bővítése önmagában NEM ad lefedettséget új route-nak.
-- **A szelet nőtt:** a lap önálló, teljes képernyős lapnak épült, végig
-  `stone-*` színekkel és angol szöveggel → 7 komponens magyarítása + tokenek.
-- Kapuk: 112/112 célzott · 727/727 + 546/546 chunk · tsc/build PASS ·
-  lint baseline **9 → 7** · SHELL-H1 **39/39 route** · dark/light **8/8**.
-
-## World-gating P1 — átvettem, majd visszaadtam (2026-07-29, versenyhelyzet)
-
-Gábor a gazdátlan gating-P1-et rám osztotta; deklaráltam a sávot és nekiálltam a
-felmérésnek. **A fájlok a kezem alatt változtak meg** (`HomeScreen.tsx` +
-`AuthContext.tsx` 07:57:57, `worldAccess.ts` 07:58:10) — egy új Codex-session
-percekkel korábban felvette a root csatorna-jelzéséből. **Egy sort sem
-módosítottam**, jeleztem a csatornán, visszaléptem.
-
-**Root sáv-döntése:** a bent lévő író fejezze be (egy félig megírt fájlkészletet
-átvenni rosszabb, mint befejezni). A Codex azóta `review_requested`-et jelentett
-(5 fájl / 26 teszt PASS). **A sáv nem az enyém.**
-
-**Amit a felmérés hozott — bekerült a review-ba:** a `Joiner` a metszet alatt
-üres rácsot kapott volna (`ROLE_WORLDS.Joiner = ['shopfloor']`, a `shopfloor`
-viszont `HIDDEN_LEGACY_WORLDS`-tag → a metszet üres; a `settings` sem menti,
-mert az `isWorldEnabled` settings-kivétele csak az entitlement-tengelyen él).
-**Gábor döntése: `Joiner` → `production` + `settings`.** A root szerint enélkül
-„ez a hiba zöld teszttel ment volna át".
-
-**Tanulság a következő session-nek:** a sáv-deklaráció a csatornán **nem
-elég** ütközés ellen, ha a másik fél nem jelent be. Közös fájlhoz nyúlás előtt
-érdemes az időbélyeget is megnézni, nem csak a `git status`-t.
-
-## Ismert leletek (NEM az én sávom, bizonyítottan előzetesek)
-
-1. ~~`/w/production/cutting` smoke-bukás~~ — **FELOLDVA** a Codex 2026-07-29
-   09:20-as gating-javításával; saját méréssel igazolva (38 route SHELL-H1
-   PASS). A `dev-harness/` kerülőútra nincs többé szükség.
-2. **`npm run test:smoke:keyboard` továbbra is piros, de MÁS okból:**
-   `aria-current` hiányzik 15 legacy világ-route nav-elemén (`/w/sales`,
-   `/w/design`, `/w/finance`, `/w/masterdata`, `/w/interior`, `/w/service`,
-   `/w/tasks`, `/w/attendance`, `/w/ai`, `/w/execbi`, `/w/logistics`,
-   `/w/mfgprep`, `/w/projects`, `/w/supervisor`, `/w/shop`). Stash-elt
-   baseline-nal igazolva, hogy a diffem nélkül ugyanez. A „~16 legacy világ"
-   adósság accessibility-lába.
-3. **Legacy lint-adósság az érintett fájlokban, amihez nem nyúltam:**
-   `CatalogPanel.tsx` (`handleDuplicate` deklaráció előtt használva: 1 error +
-   1 warning — root külön szeletet ígért rá), `SchedulingPage.tsx` (3),
-   `MachineDropZone.tsx` (2), `OperatorAutocomplete.tsx` (1).
-
-## Kapu-számok — 2026-07-28 nap vége (PLAN-05 zárás)
-
-- `vitest run packages`: **810/810 PASS** (87 fájl)
-- `packages/portal-ui` + `src/lib/scheduling` + `src/components/scheduling`: **237/237**
-- lint: 0 az általam írt/módosított fájlokon · `npm run build`: PASS
-- böngésző-mérés (eldobható harness): F1 39/39, F2 21/21, F3 22/22
+- **`/w/trade` (gatelt):** a `usePricingRules:67` sikertelen PUT után lokálisan
+  átírja az árat és `return true`-t ad → a hívó sikerként zárja. A hamis
+  „elküldve" családja; ha a trade-világ élesedik, ez az ELSŐ tétel.
+- **`LeadDetailSlideOver`** terhelés-flake (root P2-listáján).
+- **`packages/module-collaboration/`** — B2B-08, `changes_requested`, más sáv.

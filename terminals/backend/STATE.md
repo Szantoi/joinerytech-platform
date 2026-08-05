@@ -1,10 +1,12 @@
 # BACKEND Terminal State
 
-> **Frissítve:** 2026-08-04 reggel (Europe/Budapest)
+> **Frissítve:** 2026-08-05 este (Europe/Budapest)
 > **Kanonikus task-státusz:** [`EPICS.yaml`](../../EPICS.yaml) — a `done`/`APPROVED`
 > kimondása **root-review joga**, ez a fájl a végrehajtó nézete.
 > **Aktív task:** [`PROJ-01`](../../docs/knowledge/adr/ADR-072-projects-module-ownership.md) —
-> `spaceos.projects` v1 (`in_progress`); a domain-mag kész, a **PROJ-05** következik.
+> `spaceos.projects` v1: a **PROJ-06 (Api + host) `review_requested`** (`9b8ce1b`); a
+> Codex-munkatest mind az 5 szelete + a PROJ-05 **APPROVED** (2026-08-04-i verdiktek);
+> az ERPSEP-05 doksi-helyesbítés leszállítva (`c81950a`, root-ratifikálásra vár).
 > A **B2B-10 F5 LEZÁRVA** (mind a 4 szelet APPROVED); az F7 root-kiírásra vár.
 
 ## Hol van a kód
@@ -196,8 +198,8 @@ Project-mezőre ma nem tartjuk be.
 | Szelet | Állapot | Bizonyíték |
 |---|---|---|
 | **PROJ-04** domain-mag | **kész** (`eb11735`) | **16/16 zöld, 0 warning**; mutáció **2/2 harapott** (cross-aggregátum epic-őr; `ProjectCode` nagybetűsítés), visszaállítva |
-| **PROJ-05** Application + Infrastructure (EF, RLS, migráció) | **kész, `review_requested`** (`dc3dc28` + `a4d255c`) | **64/64 zöld, 0 warning** tiszta build-cache-sel (36 unit + 28 integrációs, valódi Testcontainers-PostgreSQL NOSUPERUSER/NOBYPASSRLS szerepen); **mutáció 4 kapun harapott** (egy ötödik próbálkozás túlélt — ld. lent), sha1-alkalmazva-bizonyítással |
-| **PROJ-06** Api + host | **nem blokkolt** (a §7.3 eldőlt) | `/api/projects/v1`, ETag/Idempotency-Key, ADR-067 modul-kapu; az epic-hozzárendelés az F5/2 adapter-mintájával ellenőrizze a FlowEpic létét |
+| **PROJ-05** Application + Infrastructure (EF, RLS, migráció) | ✅ **APPROVED** (root 08-04, inbox `2026-08-04_002`; `dc3dc28` + `a4d255c`) | root saját mérése egyezik (64/64). ⭐ Root M-ROOT: az RLS-kapu **kézzel karbantartott listája** lemaradt a counters-tábláról — a védelem megvolt, a kapu volt vak rá → tiltó alapértelmezésű kapu kérve (leszállítva: `855c6a1`) |
+| **PROJ-06** Api + host | **kész, `review_requested`** (`9b8ce1b`, 28 fájl / +2423; + `855c6a1`) | `/api/projects/v1` teljes felület; kötelező Idempotency-Key (create) + If-Match (mutációk); RFC 7807 + correlation id; modul-kapu a csoporton; epic-ellenőrzés F5/2 on-behalf-of; wire-státusz a portál írásmódjával EnumWireMap-en. **84/84 zöld, 0 warning; mutáció 6/6 + 3/3** célzott-tanú-attribúcióval; E2E deploy-alakban (`PRJ-2026-001` → replay → `PRJ-2026-002`). ⚠ Deploy-blokkolók: `Projects:Kernel:BaseUrl`, `ProjectsDatabase`, Keycloak `projects-api` audience |
 
 ### `ProjectCode`-kiadó — a §7.3-döntés (Gábor, 2026-08-03), `a4d255c`
 
@@ -303,11 +305,11 @@ kitettség szerint, szeletenként külön `review_requested` (inbox `2026-08-03_
 
 | Szelet | Állapot | Lényeg |
 |---|---|---|
-| **S1** hibaüzenet-redakció (EHS/HR/QA) | **`review_requested`** (`6919666`) | 580/580 zöld; mutáció 2/2; + a HR approve/reject hamisítható audit-nyomának javítása; testvér-lelet: **61 hely 6 másik modulban** (S1b root-döntésre) |
-| **S2** health-anonimizálás (hosting) | **`review_requested`** (`89da08e`) | a `MapModuleHealth` már csak `{ status }`; 82/82 → **85/85 zöld**, 0 warning; **mutáció 3/3** sha1-bizonyítással. ⚠ **A ⛔ indok nem állt:** a főágon a függvénynek **nulla hívója** — a téves súlyosság forrása az ERPSEP-05 doksi 07-28-i, sosem commitolt munkát „kész"-nek író bejegyzése. ⭐ Hozzátett őr: az `.AllowAnonymous()` réteg (fallback-policy alatt 401 lett volna, és a 82 meglévő teszt nem szólt volna — M2 bizonyítja) |
-| **S3** `EnabledModules` (ERPSEP-06) | **`review_requested`** (`4e880f6`) | dev-entitlement a Keycloak-úttal azonos JSON-tömb claimben; üres → nincs claim → kapu tilt; Keycloak-módban a dev-entitlement konfig **indulási hiba**; 85/85 → **90/90 zöld**, mutáció **4/4**. ⭐ M3: a flat-claim fallback megengedő — a sérült wire-alakot csak az egzakt claim-teszt fogta |
-| **S4** Kontrolling portfolio-index | **`review_requested`** (`46e3fdc`) | O(P×A)→O(P+A), szemantika változatlan; 190/190 → **192/192**; mutáció 3/3 — de az M3 (törölt-szűrő) a Codex-tesztekkel túlélt volna → saját tanú-teszt |
-| **S1-kieg** Kontrolling fallback-ág | **`review_requested`** (`21c603b`) | a `_` ág `result.Errors`-t öntött 400-ként → generikus 500 + InternalsVisibleTo + 2 teszt; 194/194; mutáció 2/2. Mérve: élő handler nem ad `Error`-t — a `DeleteCostAdjustmentCommand`-fa **halott** (két párhuzamos delete-parancs modulon belül), törlése root-döntés |
+| **S1** hibaüzenet-redakció (EHS/HR/QA) | ✅ **APPROVED** (root 08-04, `6919666`) | 580/580 zöld; mutáció 2/2; + a HR approve/reject hamisítható audit-nyomának javítása; testvér-lelet: **61 hely 6 másik modulban** (S1b root-döntésre) |
+| **S2** health-anonimizálás (hosting) | ✅ **APPROVED** (root 08-04, `89da08e`) | a `MapModuleHealth` már csak `{ status }`; 82/82 → **85/85 zöld**, 0 warning; **mutáció 3/3** sha1-bizonyítással. ⚠ **A ⛔ indok nem állt:** a főágon a függvénynek **nulla hívója** — a téves súlyosság forrása az ERPSEP-05 doksi 07-28-i, sosem commitolt munkát „kész"-nek író bejegyzése. ⭐ Hozzátett őr: az `.AllowAnonymous()` réteg (fallback-policy alatt 401 lett volna, és a 82 meglévő teszt nem szólt volna — M2 bizonyítja) |
+| **S3** `EnabledModules` (ERPSEP-06) | ✅ **APPROVED** (root 08-04, `4e880f6`) | dev-entitlement a Keycloak-úttal azonos JSON-tömb claimben; üres → nincs claim → kapu tilt; Keycloak-módban a dev-entitlement konfig **indulási hiba**; 85/85 → **90/90 zöld**, mutáció **4/4**. ⭐ M3: a flat-claim fallback megengedő — a sérült wire-alakot csak az egzakt claim-teszt fogta |
+| **S4** Kontrolling portfolio-index | ✅ **APPROVED** (root 08-04, `46e3fdc`) | O(P×A)→O(P+A), szemantika változatlan; 190/190 → **192/192**; mutáció 3/3 — de az M3 (törölt-szűrő) a Codex-tesztekkel túlélt volna → saját tanú-teszt |
+| **S1-kieg** Kontrolling fallback-ág | ✅ **APPROVED** (root 08-04, `21c603b`) | a `_` ág `result.Errors`-t öntött 400-ként → generikus 500 + InternalsVisibleTo + 2 teszt; 194/194; mutáció 2/2. ⚠ **Root-helyesbítés:** a „élő handler nem ad `Error`-t" állításom NEM állt — a grep-em a `Result.Error(` alakra szűkült, a generikus `Result<Guid>.Error(` alakot nem fogta; két **bekötött** overhead-rule handler `catch`-ből adja (a `catch` a `SaveAsync`-et is fedi) → élő út zárult le. ⭐ M-ROOT (S1b-kapuba): a mapper hívási helyen megkerülhető, 194/194 zölddel — endpoint-szintű „nem mehet ki" teszt kell. Halott fák (S1b-triázsba, addig nem nyúlok): `DeleteCostAdjustmentCommand`-fa + a 08-05-ös visszamérés új lelete, a `GetPortfolioSummaryQuery`+handler (az endpoint a View-queryt küldi) |
 | **S5** audit-identity | **`pending`** (root-mérés) | a nevesített hatókör nincs meg; külön kiírást kér — DE: a Kontrolling `X-User-Id`→JWT bekötés **létezik a munkafán** (a root verdiktje a patch-re igaz, a fára nem); a Codex identitás-tesztje megengedő (nem köti ki, hogy a rögzített identitás a claimből jön) — az S5-kiírás kapuja legyen |
 
 Az S2 mérési tanulsága (átvihető): a Hosting-suite Testcontainers-tesztjei Docker nélkül

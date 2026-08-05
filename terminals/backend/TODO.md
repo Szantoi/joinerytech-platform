@@ -75,17 +75,30 @@ Gábor elé megy** — az elfogadás az ő joga) · ✅ **KIADVA**: `EPIC-PROJEC
 - [x] **PROJ-05 — Application + Infrastructure**: **KÉSZ, `review_requested`** (`dc3dc28`,
       30 fájl / 2301 sor). **58/58 zöld, 0 warning** tiszta build-cache-sel; **mutáció 3/3
       harapott** sha1-alkalmazva-bizonyítással. Részletek és a két menet közbeni lelet: `STATE.md`.
-- [ ] **PROJ-06 — Api + host** (a §7.3-döntés óta **nem blokkolt**). `/api/projects/v1`, ETag/`If-Match`,
-      `Idempotency-Key` a create-en, ADR-067 `RequireEnabledModule` kapu, ProblemDetails +
-      correlation id; az **epic-hozzárendelés az F5/2 `HttpProjectAdapter` mintájával** ellenőrizze
-      a FlowEpic létét on-behalf-of.
+- [x] **PROJ-06 — Api + host: KÉSZ, `review_requested`** (`9b8ce1b`, 28 fájl / +2423; +
+      `855c6a1` a PROJ-05-verdikt két kérése). `/api/projects/v1` (create/lista/get/rename/
+      status/epic-assign/release), kötelező `Idempotency-Key` a create-en (F3/3 mechanika, új
+      RLS-es tábla), kötelező `If-Match` minden mutáción (428/412/`*`), RFC 7807 + correlation
+      id, `RequireEnabledModule` a csoporton, epic-ellenőrzés F5/2 on-behalf-of (422/502/503,
+      BaseUrl default nélkül), wire-státusz a portál írásmódjával `EnumWireMap`-en.
+      **84/84 zöld** (unit 51 + integráció 33), 0 warning; **mutáció 6/6 + 3/3** sha1-
+      bizonyítással, mindet a célzott tanú fogta; E2E deploy-alakban (admin migrál,
+      NOSUPERUSER fut): create → `PRJ-2026-001` → replay (számláló nem ég) → `PRJ-2026-002`.
+      ⭐ Lelet: a QueryFilterTests assignment-tesztje a nevében ígért, a törzsében mást mért —
+      az assignment-szűrő fedetlen volt; javítva + memória. ⚠ Deploy-blokkolók a Gábor-listára:
+      `Projects:Kernel:BaseUrl` + `ProjectsDatabase` (nem fallbackol) + Keycloak `projects-api`
+      audience-mapper. Az idempotencia-pruning a collaborationnel közös üzemeltetési adósság.
 
 ## P1c — Codex-munkatest átvétele (KIADVA, root 2026-08-03, inbox `2026-08-03_001`)
 
 Gábor feloldotta (*„Bárki átveheti a codex munkát meg javítani is kell."*). **A gazda én vagyok.**
 Öt szelet, **kitettség szerinti** sorrendben, **szeletenként külön `review_requested`**:
 
-- [x] **S1 — hibaüzenet-redakció: KÉSZ, `review_requested`** (`6919666`, 20 fájl / +497 −114).
+- [x] **S1 — hibaüzenet-redakció: ✅ APPROVED** (root, 2026-08-04, inbox `2026-08-04_001`;
+      `6919666`, 20 fájl / +497 −114). ⚠ Root-leletek: (1) a „Kontrolling már javított" sorom
+      **piszkos munkafára** mért — a HEAD-en élt a szivárgás (→ S1a, leszállítva `21c603b`-ben);
+      (2) M-ROOT: a redakció 8 EHS-fájlból **2-ben** van HTTP-határ-teszttel rögzítve — az S1b
+      kapu-sorába kerül a fájlonkénti teszt; (3) „X/X zöld"-nél mondjam ki, mely suite-okra.
       **580/580 zöld** (EHS 124 / HR 213 / QA 243), 0 kód-warning; **mutáció 2/2** harapott.
       ⚠ **A hatóköre kisebb volt, mint a kiírásé:** a CRM és a Kontrolling mapperje **már
       07-16/07-18 óta javított** — a task-doksi tévesen sorolja ide őket.
@@ -96,7 +109,7 @@ Gábor feloldotta (*„Bárki átveheti a codex munkát meg javítani is kell."*
       ⭐ **Amit hozzátettem:** negatív kontroll mind a 3 modulra. Mérve, hogy a meglévő
       validációs tesztek **csak státuszkódot** néznek, tehát egy túl agresszív redakció
       teljesen zölden ment volna ki (az M2-mutáció ezt igazolta).
-- [x] **S2 — health-anonimizálás: KÉSZ, `review_requested`** (`89da08e`, 3 fájl / +121 −10).
+- [x] **S2 — health-anonimizálás: ✅ APPROVED** (root, 2026-08-04, inbox `2026-08-04_003`; `89da08e`, 3 fájl / +121 −10).
       A `MapModuleHealth` válasza már csak `{ status }`; az unhealthy marad **503**.
       **82/82 → 85/85 zöld**, 0 warning, izolált `HEAD`-másolatból mérve (hogy az S3
       Auth-változásai ne szennyezzék); **mutáció 3/3 harapott** sha1-alkalmazva-bizonyítással.
@@ -110,26 +123,38 @@ Gábor feloldotta (*„Bárki átveheti a codex munkát meg javítani is kell."*
       ⚠ **Mérés-érvényesség:** az első alapállapot 4 bukást adott, mert **nem futott a Docker**
       (mind 1 ms); a Docker a mérés közben indult el → **újramértem**. Ezek a tesztek Docker
       nélkül **buknak, nem kimaradnak** → a suite „zöldje" csak futó Dockerrel jelent valamit.
-- [x] **S3 — `EnabledModules`: KÉSZ, `review_requested`** (`4e880f6`, 7 fájl / +121 −5).
+- [x] **S3 — `EnabledModules`: ✅ APPROVED** (root, 2026-08-04, inbox `2026-08-04_005`;
+      `4e880f6`, 7 fájl / +121 −5). Root M-ROOT: a környezet-őr rögzítve (1 bukás). Éles
+      configok végigmérve: egyik host indulása sem veszélyeztetett. ⭐ **Új kis szelet
+      (az S5 mellé):** Keycloak-módban a némán ignorált többi `Development:*` kulcsra
+      **log-figyelmeztetés** (nem fatális); a guard hatóköre marad szűk (root-döntés).
       Dev-identitás modul-entitlementje a Keycloak-úttal azonos JSON-tömb claim-alakban;
       üres lista → nincs claim → a kapu tilt; Keycloak-módban a `Development:EnabledModules`
       jelenléte **indulási hiba**. **85/85 → 90/90 zöld**, 0 warning; **mutáció 4/4 harapott**.
       ⭐ M3-lelet: a flat-claim fallback **megengedő** — sérült wire-alakkal is átengedett
       volna a kapu; egyedül az egzakt claim-alak teszt fogta. A maintenance `Program.cs`/`csproj`
       (bootstrap + NuGet) **nem került be** — ERPSEP-05, külön szelet.
-- [x] **S4 — Kontrolling portfolio-index: KÉSZ, `review_requested`** (`46e3fdc`).
+- [x] **S4 — Kontrolling portfolio-index: ✅ APPROVED** (root, 2026-08-04, inbox `2026-08-04_004`; `46e3fdc`).
       O(P×A) → O(P+A); **190/190 → 192/192 zöld**; mutáció 3/3 — de az M3 (törölt-szűrő)
       a Codex tesztjeivel **túlélt volna**: a meglévő deleted-teszt csak a régi utat járta →
       saját tanú-teszt. Izolált mérés: platform HEAD + **kernel-submodule HEAD** Domain
       (a kernel munkafájában idegen commitolatlan módosítás ül, a csproj-t is érinti).
-- [x] **S1-kiegészítés — Kontrolling fallback-ág: KÉSZ, `review_requested`** (`21c603b`).
-      A `_` ág a `result.Errors`-t 400-ként kiöntötte → generikus 500. **Helyesbíti a saját
-      S1-jelentésem** („a Kontrolling már javított" — csak a nevesített ágakra igaz).
-      Súlyosság mérve: élő handler nem ad `Error`-t — az egyetlen ilyen handler
-      (`DeleteCostAdjustmentCommand`) **halott fa** (két párhuzamos delete-parancs a modulon
-      belül; az élő a 409-es `DeleteAdjustmentCommand`). 194/194 zöld; mutáció 2/2
-      (M2: túl agresszív redakció — 4 endpoint-teszt is fogja). Root-döntésre: a halott
-      delete-fa törlése; S5-kiíráskor kapu legyen, hogy a rögzített identitás a claimből jön.
+- [x] **S1-kiegészítés — Kontrolling fallback-ág: ✅ APPROVED** (root, 2026-08-04, inbox
+      `2026-08-04_004`; `21c603b`). A `_` ág a `result.Errors`-t 400-ként kiöntötte → generikus 500.
+      ⚠ **A root HELYESBÍTETTE a súlyosság-mérésem:** a „élő handler nem ad `Error`-t" állításom
+      **nem állt** — a grep-em a `Result.Error(` alakra szűkült, a **generikus**
+      `Result<Guid>.Error(ex.Message)` alakot nem fogta. Két **bekötött** overhead-rule handler
+      `catch (InvalidOperationException)`-ből adja, és a `catch` a `SaveAsync`-et is fedi →
+      a javítás ÉLŐ utat zárt le, nem megelőző keményítés volt.
+      ⭐ **M-ROOT (nem blokkoló, az S1b kapu-sorába):** a mapper megkerülése egyetlen hívási
+      helyen 194/194 zölddel túlél — a „nem mehet ki" irányt csak a mapper-unit-teszt védi,
+      a 10 `Failure(result)` hívási hely egyike sincs endpoint-szinten kikötve.
+      ⭐ **Saját visszamérés (2026-08-05):** van egy NEGYEDIK `.Error`-termelő is —
+      `GetPortfolioSummaryQueryHandler:71` —, de az **halott fa** (az endpoint a
+      `GetPortfolioSummaryViewQuery`-t küldi; a `GetPortfolioSummaryQuery`-t semmi nem hivatkozza)
+      → a triázs-blokk törlés-jelöltje a delete-fa mellett.
+      Root-döntés megvan: a halott delete-fa törlés-jelölt, **de az S1b-triázs blokkjában**,
+      addig NEM nyúlok hozzá; az S5-kiírásba bekerül a claim-eredet kapu.
 - [ ] **S5 — audit-identity**: a root **mérte**, hogy a nevesített hatóköre **nincs meg**
       (0 CRM-fájl, 0 audit-mező; csak a segéd van a főágon) → `review`-ből **`pending`**-re
       minősítve. **Külön kiírást kér, nem átvételt.**

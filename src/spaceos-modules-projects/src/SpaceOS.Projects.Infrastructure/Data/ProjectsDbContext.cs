@@ -79,5 +79,10 @@ public class ProjectsDbContext : DbContext
         // its business and nobody else's.
         modelBuilder.Entity<ProjectCodeCounter>()
             .HasQueryFilter(c => CurrentTenantId == null || c.TenantId == CurrentTenantId);
+
+        // An idempotency record replays a tenant's own responses; another tenant reading it would
+        // read response bodies that are not its own.
+        modelBuilder.Entity<ProjectIdempotencyRecord>()
+            .HasQueryFilter(r => CurrentTenantId == null || r.TenantId == CurrentTenantId);
     }
 }

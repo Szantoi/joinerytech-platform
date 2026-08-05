@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+  <ItemGroup>
+    <!--
+      Application for the commands/queries, Hosting for the tenancy/entitlement/wire primitives
+      (ADR-061/062/067). NOT Infrastructure: the API maps HTTP to the application layer and must
+      stay ignorant of how anything is stored — the host is the only place the two meet.
+    -->
+    <ProjectReference Include="../SpaceOS.Projects.Application/SpaceOS.Projects.Application.csproj" />
+    <ProjectReference Include="../../../spaceos-modules-hosting/src/SpaceOS.Modules.Hosting/SpaceOS.Modules.Hosting.csproj" />
+  </ItemGroup>
+</Project>

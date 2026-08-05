@@ -19,6 +19,8 @@
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
   <ItemGroup>
+    <!-- The E2E create-path test boots the real host (Program) around the container database. -->
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="8.0.11" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
     <PackageReference Include="xunit" Version="2.9.2" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2">
@@ -33,6 +35,7 @@
     <ProjectReference Include="..\..\src\SpaceOS.Projects.Domain\SpaceOS.Projects.Domain.csproj" />
     <ProjectReference Include="..\..\src\SpaceOS.Projects.Application\SpaceOS.Projects.Application.csproj" />
     <ProjectReference Include="..\..\src\SpaceOS.Projects.Infrastructure\SpaceOS.Projects.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\host\SpaceOS.Projects.Host.csproj" />
     <!--
       The STAB-RLS-PROOF fixture: a real PostgreSQL container plus a NOSUPERUSER/NOBYPASSRLS
       application role. Without the non-superuser role every RLS assertion here would pass even

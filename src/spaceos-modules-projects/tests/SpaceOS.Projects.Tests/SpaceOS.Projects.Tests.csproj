@@ -7,6 +7,11 @@
     <IsTestProject>true</IsTestProject>
   </PropertyGroup>
   <ItemGroup>
+    <!-- The API contract tests boot a TestServer around the real pipeline. -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.TestHost" Version="8.0.11" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
     <PackageReference Include="xunit" Version="2.9.2" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2">
@@ -17,5 +22,6 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\SpaceOS.Projects.Domain\SpaceOS.Projects.Domain.csproj" />
     <ProjectReference Include="..\..\src\SpaceOS.Projects.Application\SpaceOS.Projects.Application.csproj" />
+    <ProjectReference Include="..\..\src\SpaceOS.Projects.Api\SpaceOS.Projects.Api.csproj" />
   </ItemGroup>
 </Project>

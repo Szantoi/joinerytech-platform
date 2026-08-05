@@ -73,6 +73,15 @@ public sealed class QueryFilterTests : IAsyncLifetime
                 VALUES (@tenantA, 2026, 30), (@tenantB, 2026, 31)
                 """,
                 ("tenantA", TenantA), ("tenantB", TenantB));
+
+            await RlsSql.ExecuteAsync(connection, $"""
+                INSERT INTO {ProjectsDbContext.SchemaName}."project_idempotency_records"
+                    ("Id", "TenantId", "Key", "Fingerprint", "ClaimedAtUtc")
+                VALUES (@idA, @tenantA, 'key-a', 'fp-a', now()),
+                       (@idB, @tenantB, 'key-b', 'fp-b', now())
+                """,
+                ("idA", Guid.NewGuid()), ("tenantA", TenantA),
+                ("idB", Guid.NewGuid()), ("tenantB", TenantB));
         }
         catch
         {
@@ -162,6 +171,20 @@ public sealed class QueryFilterTests : IAsyncLifetime
 
         var counter = Assert.Single(visible);
         Assert.Equal(TenantA, counter.TenantId);
+    }
+
+    [Fact]
+    public async Task Idempotency_records_replay_bodies_and_carry_the_filter_too()
+    {
+        // A recorded response body is tenant data — another tenant reading it would read answers
+        // that are not its own. Witnessed HERE, the day the entity is born, so the filter never
+        // exists uncovered (the exact gap the assignments filter sat in until 2026-08-05).
+        await using var context = CreateContext(TenantB);
+
+        var visible = await context.Set<ProjectIdempotencyRecord>().ToListAsync();
+
+        var record = Assert.Single(visible);
+        Assert.Equal(TenantB, record.TenantId);
     }
 
     [Fact]

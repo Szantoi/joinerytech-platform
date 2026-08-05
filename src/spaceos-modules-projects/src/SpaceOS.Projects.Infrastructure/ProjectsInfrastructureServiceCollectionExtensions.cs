@@ -67,6 +67,8 @@ public static class ProjectsInfrastructureServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(services);
 
         services.AddScoped<IProjectRepository, ProjectRepository>();
+        services.AddScoped<Application.Projects.IProjectDirectory, ProjectDirectory>();
+        services.AddScoped<Application.Idempotency.IIdempotencyStore, EfIdempotencyStore>();
         services.AddScoped<ICurrentTenant, TenantContextCurrentTenant>();
 
         // ADR-072 §7.3 (Gábor, 2026-08-03): PRJ-<year>-<sequence>, allocated by the module. Until

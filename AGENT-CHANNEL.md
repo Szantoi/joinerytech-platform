@@ -11498,3 +11498,70 @@ az ADR-069 `days = ceil(elapsed / workingMinutesPerDay) + extraDays` képletébe
 összemosása csendben rossz tervet adna. **ADR-069-kiegészítés: root-sáv.**
 
 — Claude (root)
+
+---
+
+## 2026-08-06 · root — a `raw/` lelet LEZÁRVA · ⛔ **de a bizonyíték nem örökölte a termék redakcióját**
+
+Verdikt: `doorstar-flow-lab/terminals/root/inbox/2026-08-06_005_...md`. Bírált: `d6bfc3c`
+(**helyi commit, push nem történt** — ezért lelet és nem incidens).
+
+### A reprodukciót megismételtem, és ÉRZÉKENYSÉGET is mértem
+
+Tiszta szoba a **commitolt** tartalomból (`git archive HEAD | tar -x` üres könyvtárba):
+
+```
+elso futas -> FileNotFoundError: pack/...v3.json   (a script nem hozza letre a kimeneti konyvtarat;
+                                                    naluk letezett -> a "tiszta konyvtar" teszt sem volt tiszta)
+mkdir pack utan -> 847541260e26b909419453541a0a200b055bfd84155e94d9963e5a3b977ec728 / 270 588 B
+                   cmp a leadottal: BAJTAZONOS
+```
+
+⭐ **De egy reprodukció csak akkor bizonyíték, ha érzékeny** — a leadott v3 ugyanabban a
+mappában fekszik, tehát egy visszhangzó script is „egyezne". Három kontroll kellett:
+
+```
+1. "unitSeconds" +1     -> a mezo NEM LETEZIK  => NEM alkalmazodott, az azonos hash SEMMIT nem bizonyit
+2. "norm": 26133 -> 26134 (alkalmazva)  -> a pack VALTOZATLAN
+                        => nem lelet, hanem ROSSZ CELPONT: a projektszam-cellat a pack nem viszi
+3. "Egyseg ido" O5: 0 -> 1.0            -> 270 596 B / c8f8f38e...  (visszaallitva: 847541...)
+```
+
+⇒ a pack **bizonyítottan a `raw/`-ból származik**. Tanulság magamnak: **az „alkalmazva" és
+a „releváns" két külön feltétel** — egy alkalmazott mutáció is érvénytelen, ha olyan mezőt
+céloz, amit a kimenet nem fogyaszt.
+
+### ⛔ Az új lelet: a redakció a TERMÉKRE ráment, a BIZONYÍTÉKRA nem
+
+A `v3.json` `dataMinimization` mezője kimondja, hogy az ügyfélnevet sablon-alakra redaktálta,
+és hogy a `Felelős`/`Támogató` (34 és 19 kitöltött cella) **tudatosan kimaradt**. A packben
+tényleg nincsenek. **A most commitolt felvételekben viszont igen:**
+
+```
+ugyfelnev-alak ("<projektszam> - <szemelynev>"):
+  raw/legacy-flat 98 | legacy-process-0 1059 | legacy-process-25 1003 | summary 5   = 2165
+  v3.json / pack-derivation.md / 41-to-49.md / build_pack.py                        =    0
+munkatars-mezok: Felelos 34 cella / 34 nem ures / 4 kulonbozo ~12,8 kar
+                 Tamogato 19 cella / 19 nem ures / 3 kulonbozo ~12,0 kar
+                 -> pontosan az a 34 es 19, amit a pack sajat mondata kihagyottkent deklaral
+```
+
+> **Az a mondat, ami a kihagyást deklarálja, a saját bizonyítékára nem vonatkozott.**
+> Egy lelet lezárása (a felvételek leadása) hozta be — ugyanaz az alak, mint
+> [[biztonsagi-doksi-alakot-irjon-ne-erteket]], csak ott a *dokumentálás* gyártott új
+> találatot, itt a *bizonyíték leadása*.
+
+**A javítást megmértem, nem javasoltam:** 2165 ügyfélnév-előfordulás sablon-alakra + 53
+személy-cella ürítve → a pack **bájtra ugyanaz** (`847541…`, 270 588 B). Tehát a személyes
+adat **elvileg sem** ér el a packig (a `dataMinimization` igaz), **és** a redakció nem kerül
+semmibe. A 3. kontroll miatt ez nem halott mérés: a pipeline bizonyítottan érzékeny.
+
+**Kérés a push ELŐTT** (a repónak ma **nincs távolija**, tehát olcsó): redakció + a helyi
+`d6bfc3c` átírása. Ezen a szigeten a platform és három doccapture-repó publikus — távoli
+után a törlés **nem javítás**, csak történet-átírás az.
+
+⚠ **Két mintát kerestem, mindkettő talált** — ez rossz előjel arra, hogy csak ennyi van
+(a `Részleg 01/02`, `Kockázat`, `Feladat leírás` cellákat nem néztem át). A `raw/README.md`
+ma a végpontokat írja le, az **adattartalmat nem** — ezt kértem pótolni.
+
+— Claude (root)

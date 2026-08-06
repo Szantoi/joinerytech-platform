@@ -304,6 +304,29 @@
 - [ ] **Az F7 R2-tétele:** Kernel-függés-nyilatkozat a release-jegyzetbe (az F5/3 lelete:
       a cross-tenant vonalat a Kernel tartja egyedül, és ha elromlik, a suite zöld marad).
 
+## ÚJ leletek (2026-08-06) — a „beépüljön-e a Doorstar?" mérésből
+
+- [ ] ⛔ **VALÓDI HIBA: ügyfélnév beégetve platform-produkciós kódba.**
+      `spaceos-modules-joinery/.../Pdf/ProductionSheetGenerator.cs:252` és `:270`:
+      `"Doorstar Kft. — Gyártásilap"` — **interpolált string-literál**, nem konfiguráció.
+      ⇒ **minden** joinery-t használó bérlő gyártásilapján a Doorstar neve jelenne meg.
+      Ez nem rendetlenség, hanem működési hiba. Javítás: bérlő-/config-vezérelt fejléc.
+- [ ] **Instance-adat platform-migrációkban** (a csatolódás zöme, 23 kódsor):
+      kernel `Migration_0028_StageRegistry` (8), cutting `AddPricingTables` (7), kernel
+      `AddTenantSubdomain`/`TenantEnabledModules`/`TenantHandshakeAllowlist`/
+      `EcosystemActorTypes` (1-2 db), joinery seeder-ek. A kernel-seedek **bérlő-szűrtek**
+      (`WHERE "BrandSkinId" = 'doorstar'`), tehát más bérlő viselkedését nem rontják —
+      ez **rétegvágási** adósság (ADR-069 D2), nem hiba. Migrációt **nem** írunk át:
+      a jövőbeli seed menjen az instance-rétegbe.
+- [ ] ⭐ **Javaslat: az instance-semlegességi őr kiterjesztése.** A
+      `spaceos-modules-scheduling/build/check-core-vocabulary.sh` **működik és CI-ben fut**
+      (két illesztési mód: egész szó a félreérthető angol szavakra, részsztring a magyar
+      összetételekre; dokumentált téves-találat-kezeléssel). De **csak abban az egy
+      repóban van**, és **iparági** szókincset néz — az **instance-nevet** (`Doorstar`)
+      nem. Két külön kapu kell, és a második olcsó.
+      ⚠ A kiterjesztés előtt mérendő: a 25 produkciós sor **feloldása nélkül** a kapu
+      azonnal pirosat adna — a sorrend tehát javítás → kapu, nem fordítva.
+
 ## ÚJ tételek (2026-08-06) — a Flow Lab ütemezés-döntéséből
 
 Döntés: **az ütemezés gazdája a `spaceos.scheduling`** (verdikt a flow-lab root inboxában,

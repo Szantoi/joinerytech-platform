@@ -11627,3 +11627,74 @@ reprodukció tiszta szobából · a három kontroll és az „alkalmazva ≠ rel
 a hiányzó `os.makedirs(PACK)` · és hogy a `raw/` lelet **lezárva**.
 
 — Claude (root)
+
+---
+
+## 2026-08-06 · root — **„Be kell épülnie a Doorstarnak a platformba?" — NEM, és mérve nem is kell**
+
+Gábor kérdése. A válasz **nem vélemény**: a leválaszthatóság már a tervezett rend, van rá
+**működő kikényszerítő mechanizmus**, és a tényleges csatolódás **kicsi**.
+
+### 1. A rétegrend már megvan, és egy BUILD-ŐR tartja
+
+`spaceos-modules-scheduling/build/check-core-vocabulary.sh` — a CI **első** lépése:
+
+```
+ADR-067 / ADR-069 §3: a scheduling CORE iparag-semleges marad.
+ket illesztesi mod, mert egy nem szolgal ki ket nyelvet:
+  WORD_TERMS      egesz szokent  (door|cabinet|joinery|tok|... -- kulonben a "token"-re is tuzelne)
+  SUBSTRING_TERMS barhol         (ajtó|szekrény|élzár|prés|... -- a magyar osszetetel odaragad)
+scope-jegyzet: a tests/Fixtures KIVETEL, mert ott a hash-pinnelt Doorstar pack all
+               -- annak atirasa a pint es a kontraktust torne
+```
+
+⇒ **ha faipari szó kerülne a magba, a build elhasal.** Ez nem fegyelem kérdése, hanem kapu.
+
+### 2. A tényleges csatolódás mérve — és kisebb, mint amilyennek látszik
+
+```
+"Doorstar" a platform src/-jeben : 100 elofordulas / 39 fajl   <- a nyers szam
+szetvalasztva:
+  PRODUKCIOS KOD : 19 fajl /  25 kod-sor  (+19 komment)
+  TESZT          : 20 fajl /  54 kod-sor  <- fixture, artalmatlan
+a 25 produkcios sor eloszlasa:
+  8  kernel  Migration_0028_StageRegistry      <- SEED, es BERLO-SZURT:
+                                                  WHERE "BrandSkinId" = 'doorstar'
+  7  cutting AddPricingTables                  <- SEED
+  2+1+1+1 kernel tenant-migraciok              <- SEED
+  2+1 joinery seederek                         <- SEED
+  2  joinery ProductionSheetGenerator          <- ⛔ NEM seed (lasd 3.)
+```
+
+⇒ a csatolódás **~92%-a migrációs seed-adat, nem logika** — és a kernel-seedek
+bérlő-szűrtek, tehát más bérlő viselkedését nem befolyásolják. Ez **rétegvágási adósság**
+(ADR-069 D2: az instance-adat az instance-rétegé), nem beépültség.
+
+### 3. ⛔ Egy VALÓDI hiba viszont előkerült
+
+```
+spaceos-modules-joinery/.../Pdf/ProductionSheetGenerator.cs:252
+  $"Doorstar Kft. — Gyártásilap — {DateTime.UtcNow:yyyy-MM-dd}"
+                             :270
+  col.Item().Text("Doorstar Kft. — Gyártásilap")
+```
+
+**Beégetett ügyfél-cégnév egy platform-modul produkciós kódjában** — interpolált literál,
+nem konfiguráció. ⇒ **minden** joinery-t használó bérlő gyártásilapján a Doorstar neve
+jelenne meg. Ez nem rendetlenség: működési hiba, és pont az az osztály, amit a
+semlegességi őr hivatott megfogni.
+
+### 4. Az irány
+
+**A Doorstarnak nem kell beépülnie — és nem is szabad.** A platform üzleti értéke az, hogy
+**faipar SaaS platform**, azaz egynél több céget szolgál ki; a 3. réteg beolvasztása a
+2.-ba pont ezt számolná fel. A rétegrend: SpaceOS-mag (iparág-semleges) → JoineryTech
+(faipar) → Doorstar (instance).
+
+**Javaslat (root):** az instance-semlegességi őr **kiterjesztése** a többi modulra — a
+script kész és jó, de (a) csak egy repóban van, és (b) **iparági** szókincset néz, az
+**instance-nevet** nem. Két külön kapu kell. ⚠ **Sorrend: előbb a 25 sor feloldása, utána
+a kapu** — fordítva a kapu az első percben pirosat adna, és a „majd kikapcsoljuk"
+mintát tanítaná.
+
+— Claude (root)

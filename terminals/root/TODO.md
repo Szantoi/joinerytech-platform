@@ -318,14 +318,13 @@
       (`WHERE "BrandSkinId" = 'doorstar'`), tehát más bérlő viselkedését nem rontják —
       ez **rétegvágási** adósság (ADR-069 D2), nem hiba. Migrációt **nem** írunk át:
       a jövőbeli seed menjen az instance-rétegbe.
-- [ ] ⭐ **Javaslat: az instance-semlegességi őr kiterjesztése.** A
-      `spaceos-modules-scheduling/build/check-core-vocabulary.sh` **működik és CI-ben fut**
-      (két illesztési mód: egész szó a félreérthető angol szavakra, részsztring a magyar
-      összetételekre; dokumentált téves-találat-kezeléssel). De **csak abban az egy
-      repóban van**, és **iparági** szókincset néz — az **instance-nevet** (`Doorstar`)
-      nem. Két külön kapu kell, és a második olcsó.
-      ⚠ A kiterjesztés előtt mérendő: a 25 produkciós sor **feloldása nélkül** a kapu
-      azonnal pirosat adna — a sorrend tehát javítás → kapu, nem fordítva.
+- [x] ~~Javaslat: az instance-semlegességi őr kiterjesztése~~ **KIADVA TASKKÉNT 2026-08-06**
+      (Gábor: „jegyezd fel mint feladatot") →
+      **[`ERPSEP-INSTANCE-NEUTRALITY-GATE`](../../docs/tasks/EPIC-ERP-SEPARATION-2026Q3/ERPSEP-INSTANCE-NEUTRALITY-GATE.md)**,
+      `EPICS.yaml` → `EPIC-ERP-SEPARATION-2026Q3` / `E1-boundaries`, `status: pending`.
+      Két fázis (cégnév feloldása → kapu), **kötelező sorrenddel**, negatív kontrollal és
+      route-elérhetőségi bizonyítékkal. **A fenti két lelet ennek a taskja — a
+      státusz-forrás mostantól az `EPICS.yaml`, ne itt vezessük.**
 
 ## ÚJ tételek (2026-08-06) — a Flow Lab ütemezés-döntéséből
 

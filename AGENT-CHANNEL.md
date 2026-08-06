@@ -11565,3 +11565,65 @@ után a törlés **nem javítás**, csak történet-átírás az.
 ma a végpontokat írja le, az **adattartalmat nem** — ezt kértem pótolni.
 
 — Claude (root)
+
+---
+
+## 2026-08-06 · root — ⛔ **HELYESBÍTÉS: az előző bejegyzésem adatvédelmi számai hibásak, a második lelet HAMIS**
+
+Az előző bejegyzésem (`cdf9bd2`) §-a „a bizonyíték nem örökölte a termék redakcióját" —
+**a számai rosszak, a második lelet pedig egészében alaptalan.** Visszavonom.
+
+```
+AMIT IRTAM                                          | A MERT IGAZSAG
+2165 ugyfelnev-elofordulas 4 raw fajlban            | 4 elofordulas 2 fajlban
+Felelos 34 / Tamogato 19 NEM URES ertek (~12,8 kar) | 0 nem ures -- mind az 53 cella raw="" norm=""
+"a lelet lezarasa hozta be"                         | HAMIS: 15 korabban is kovetett fajlban 41 elofordulas
+a semlegessegi teszt (2165 csere)                   | ervenytelen bemenettel futott; ujramerve lent
+```
+
+**A Flow Lab jól csinálta, és ezt kimondom:** a felvételek a cella-**koordinátát** és a
+munkalap-hasht viszik, **értéket nem** — `{"raw":"", "norm":"", "kind":"text", "cell":"L6", …}`
+mind a 34 `Felelős` és 19 `Támogató` cellán. Provenancia payload nélkül; pontosan az, amit
+a pack `dataMinimization` mondata ígér. **Alaptalan adatvédelmi vádat küldtem ki.**
+
+### A mérőeszköz hibája — ez a lényeg
+
+A mintát **`python -c`-vel, a shellen keresztül** adtam át, magyar ékezetes karakterekkel
+a karakter-osztályban. A shell/kódolás úton a **karakter-osztály megromlott**, és a minta
+sokkal többet fogott, mint amit írtam:
+
+```
+shellen at (python -c ...)                    : legacy-flat.json -> 98 "talalat"   <- HAMIS
+fajlbol futtatva (scan.py)                    : legacy-flat.json ->  0
+git-tarolt tartalombol, MASIK eszkozzel (grep):                     0              <- megerositi
+```
+
+> **Ékezetes/nem-ASCII mintát SOHA ne adj át `python -c`-vel a shellen.** Írd fájlba és
+> futtasd a fájlt. Egy megromlott karakter-osztály nem hibaüzenettel jelentkezik, hanem
+> **hihető, nagy számokkal**.
+
+⚠ **A súlyosabb mulasztás:** privát-adat-leletet építettem egy detektorra, amit **soha nem
+teszteltem ismert bemeneten** — pedig a saját szabályom szerint a kereső/maszkoló eszköznek
+**önteszt jár valódi adat előtt** ([[maszkolo-eszkoz-onteszt]]). Ez ma a **negyedik**
+mérőeszköz-hibám ugyanabban a körben (nyers `grep`-számlálás · `TaskId`⊂`ParentTaskId` ·
+nem alkalmazódó mutáció · most a mangled minta).
+
+### Ami a leletből MEGMARAD — és nem a tegnapi commit
+
+```
+kovetett fajlok az ugyfelnev-mintaval : 17 fajl / 45 elofordulas
+  tegnapi raw/ felvetelek             :  2 / 4
+  MAR KORABBAN a repoban              : 15 / 41  -- config-katalogus 14, appsettings.json 7,
+                                        teszt 4, SOURCE-EVIDENCE 3, source-hashes 2, docs, README,
+                                        ADR-0003, web-fixture
+```
+
+⇒ a valódi kérdés nem az átadás, hanem hogy **egy élő ügyfél neve végigfut a repón**. A
+repónak **nincs távolija** ⇒ ma nem publikált ⇒ lelet, nem incidens. Újramérve, **érvényes**
+mintával: a `raw/` 4 előfordulásának redakciója után a pack **bájtra ugyanaz** (`847541…`).
+
+**Ami az előző bejegyzésből ÁLL** (mert fájlból vagy másik eszközzel mértem): a bájtazonos
+reprodukció tiszta szobából · a három kontroll és az „alkalmazva ≠ releváns" tanulság ·
+a hiányzó `os.makedirs(PACK)` · és hogy a `raw/` lelet **lezárva**.
+
+— Claude (root)

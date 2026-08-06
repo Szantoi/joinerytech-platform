@@ -16,6 +16,15 @@
 
 ## 🔴 Gábor előtt — sürgősségi sorrendben
 
+- [ ] ⛔ **ÚJ 2026-08-06 — a `spaceos-modules-scheduling` repónak NINCS gazdája a
+      sziget-struktúrában.** Mérve: nincs a platform `.gitmodules`-ában (11 gitlink, egyik
+      sem ez), és **nincs `terminals/` mappája** — vagyis nincs terminál-sávja, nincs
+      inbox/outbox, nincs hova felterjeszteni. Közben a commit-üzenetei már hivatkoznak
+      „root-review kötelező pontjára", és most **platform-oldali munkát írtam elő rá**
+      (input-pack v3 befogadása + a hash-pin kapu mutációja). **Kérdés: ki dolgozik rajta,
+      és melyik root bírálja?** Amíg nincs eldöntve, a v3-befogadás gazdátlan — és pont az
+      a lépés, ami nélkül a Flow Lab ütemezője nem építhető le.
+
 - [x] ~~**`ADR-072` elfogadása**~~ **ELFOGADVA 2026-07-31 (Gábor: „ADR-072 az legyen
       független").** A root rögzítette az **ADR-066 §9.1 felülírását** is (a `ProjectRef`
       tulajdonosa már nem a Kernel `FlowEpic`) — mindkét ADR frissítve.

@@ -1,7 +1,9 @@
 # ROOT Terminal TODO
 
-> **Frissítve:** 2026-07-31 este (napzárás) · **Részletes állapot:** [`STATE.md`](STATE.md)
+> **Frissítve:** 2026-08-06 este (napzárás) · **Részletes állapot:** [`STATE.md`](STATE.md)
 > **Kanonikus státusz:** [`EPICS.yaml`](../../EPICS.yaml) — a task-doksik státusz-sora **nem hiteles**.
+> ⚠ **2026-08-06: a yaml is ALUL-jelentett** (PROJ-05/06 hiányzott belőle) — az eltérés
+> **mindkét irányban** jön, ld. „Fel NEM oldott státusz-eltérések".
 
 ---
 
@@ -408,7 +410,19 @@ kernel FlowManagement 0 migráció 0 route · scheduling Domain.Tests **263/263 
       el sem indult rájuk) — **pusholva 2026-08-04**. A P0-listára: a napzárás **push**-sal
       záruljon, ne commit-tal.
 
-## Futó sávok (2026-07-31 este)
+## Futó sávok (2026-08-06 este)
+
+| Sáv | Mi fut | Blokk |
+|---|---|---|
+| **Flow Lab** (doorstar) | katalógus-ADR (1%-os javítás, hash-rotáció) — **engedélyeztem**; a `raw/` 4 maradék ügyfélnév-előfordulása | a **solver leépítése BLOKKOLT** a v3-befogadásig |
+| backend | `PROJ-01`/`PROJ-02`, `STAB-RLS-INTERCEPTOR-E2E` (6 modul, a CRM a minta) | — |
+| doccapture | a neutrality-szelet felterjesztésére vár | **a fa hold alatt**, 3 szelet egy commitban zárul |
+| frontend | a portál lockfile platform-függősége | a CI-kapu **piros**; a portál-pint **nem bumpolom** |
+| **platform (root)** | `ERPSEP-INSTANCE-NEUTRALITY-GATE` kiadva, kiosztásra vár | a 2. fázis függ az 1.-től |
+
+<details><summary>Korábbi pillanatkép (2026-07-31 este)</summary>
+
+
 
 - [ ] **backend `PROJ-01`** — a `spaceos.projects` v1 azonosság-magja (Gábor mai
       termékdöntése). Kötelező: hosting-csomag a kezdetektől · interceptor-E2E a
@@ -423,9 +437,11 @@ kernel FlowManagement 0 migráció 0 route · scheduling Domain.Tests **263/263 
 - [x] **B2B-10 F5 mind a 4 szelete APPROVED** — az F5 LEZÁRVA; az F7 üresnek mérve.
 - [x] **DC-01a APPROVED** (9/9 szám újramérve) · **PORTAL-DEADTREE-A APPROVED** (8001 sor).
 
+</details>
+
 ---
 
-## Root-tételek, amiket ma átvettem
+## Root-tételek, amiket 2026-07-31-én átvettem
 
 - [x] ~~**`ClaimsPrincipalUserIdExtensions.cs` untracked**~~ **MEGOLDVA 2026-07-31**
       (`3468fe4`): a besorolás volt hibás — nem idegen sáv folyamatban lévő munkája,
@@ -468,7 +484,36 @@ kernel FlowManagement 0 migráció 0 route · scheduling Domain.Tests **263/263 
 
 ---
 
+## Ma lezárva (2026-08-06) — részletek a `STATE.md`-ben
+
+- [x] **Az ütemezés gazdája: `spaceos.scheduling`** (`3763a0b`) — a döntő lelet, hogy az
+      FS-normalizálás **az importban** történik, tehát az ADR-069 §4 bemenetét pusztítja el.
+- [x] **A fogyasztás NEM NuGet** (`179c5ab`) — a scheduling nem publikál csomagot; a
+      szerződés a `docs/openapi.yaml`. NuGet a **hostingra** kell, nem az ütemezőre.
+- [x] **Munkamegosztás** (`e571f5d`) — a v3-at a Flow Lab **állítja elő**, a platform
+      **veszi be**: egy kapu, aminek a bemenetét a mért fél állítja be, sosem bukhat el.
+- [x] **v3-átadás APPROVED** (`832567f`) + **a `raw/` lelet lezárva** (`cdf9bd2`).
+- [x] ⭐ **A hash-pin kapu mutációval bizonyítva** — a v3-befogadás előfeltétele **teljesült**.
+- [x] ⚠ **Két saját helyesbítés publikálva** (`832567f`, `7e352dc`): a családkulcs-bontásom
+      mind a 9 családon rossz volt, és egy **adatvédelmi vádam alaptalan** volt (ékezetes
+      minta a shellen → megromlott karakter-osztály → 2165 hamis „találat" 4 helyett).
+- [x] **`ERPSEP-INSTANCE-NEUTRALITY-GATE` kiadva** (`64c1054`) — beégetett ügyfél-cégnév
+      egy platform-modul PDF-generátorában, route-elérhetőséggel triázsolva.
+- [x] **PROJ-05/06 retroaktívan bejegyezve** az `EPICS.yaml`-ba (93/143).
+
+---
+
 ## ⚠ Fel NEM oldott státusz-eltérések (gazdát kérnek, nem találgatom)
+
+- [ ] ⛔ **ÚJ 2026-08-06 — `PROJ-NUMBERING-GAP` (`EPICS.yaml`, open).** A
+      `docs/tasks/EPIC-PROJECTS-MODULE-2026Q3/` mappa **ÜRES** (0 task-doksi), a git-log
+      **PROJ-01 után egyből PROJ-05-re ugrik**, és a **PROJ-01 `in_progress`, miközben a rá
+      épülő PROJ-05/06 `done`**. Belsőleg ellentmondásos. **A backend mondja meg**, hogy a
+      PROJ-02/03/04 (a) beolvadt, (b) elmaradt, vagy (c) más néven készült el — és hogy a
+      PROJ-01 valójában zárt-e. Amíg nyitva, **ennek az epicnek a done-aránya nem hiteles**.
+- [ ] **`DC-01b-write` és `DC-03` `pending` a yaml-ban, pedig APPROVED** — a commit
+      szándékosan visszatartva a doccapture-sávban (hold). A yaml akkor javul, ha a három
+      szelet egy commitban zárul.
 
 | Task | `EPICS.yaml` | task-doksi |
 |---|---|---|
@@ -489,7 +534,7 @@ kernel FlowManagement 0 migráció 0 route · scheduling Domain.Tests **263/263 
 
 ---
 
-## Ma lezárva (2026-07-31) — részletek a `STATE.md`-ben
+## Korábban lezárva (2026-07-31)
 
 **12 review APPROVED, mind saját méréssel.** B2B-10 **F5 mind a 4 szelete** (az F5
 LEZÁRVA) · **DC-01 terv + DC-01a** (9/9 szám újramérve) · **faipari RAG 1. fázis**

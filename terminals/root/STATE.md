@@ -1,6 +1,6 @@
 # ROOT Terminal State
 
-> **Frissítve:** 2026-07-31 este, Europe/Budapest
+> **Frissítve:** 2026-08-06 este, Europe/Budapest
 > **Állapotforrás:** [`EPICS.yaml`](../../EPICS.yaml) (**kanonikus**) + [`AGENT-CHANNEL.md`](../../AGENT-CHANNEL.md)
 > **Belépő:** a csatorna **eleje** („Nyitott szálak") és **vége**; a régebbi napok archívumban.
 
@@ -8,42 +8,57 @@
 
 ## Hol tartunk egy bekezdésben
 
-A nap **tizenkét review-t** zárt APPROVED-dal, és **két olyan leletet** hozott, ami a
-main-ágat érintette: a platform buildje **két napja törött volt**, a doc-capture motor
-CI-je pedig **a DC-02 óta piros** — mindkettő azért, mert egy APPROVED szelet bizonyítéka
-kimaradt a főágból. A **B2B-10 F5 lezárva** (mind a négy szelet), az **F7 üresnek mérve
-és átdefiniálva**, a portál **8001 sor halott kódtól szabadult**, és Gábor
-projekt-döntése nyomán megnyílt a **`spaceos.projects`** modul. Az `EPICS.yaml`
-**90/133** kész (reggel 80/124).
+A nap **egy stratégiai döntést** hozott — **az ütemezés gazdája a `spaceos.scheduling`**,
+a Flow Lab pedig `doorstar.scheduling-import` lesz —, és **négy saját mérőeszköz-hibát**,
+amiből kettőt már publikáltam, mielőtt kiderült. Mindkettőt ugyanoda helyesbítettem, ahol
+az eredeti állt. A Flow Lab a **v3 input-packet** leszállította, a reprodukciót **tiszta
+szobában, bájtazonosan** igazoltam, és a scheduling hash-pin kapuját **két mutációval**
+bizonyítottam. Kiadva egy új task (`ERPSEP-INSTANCE-NEUTRALITY-GATE`) egy **valódi hiba**
+nyomán: beégetett ügyfél-cégnév egy platform-modul PDF-generátorában.
+`EPICS.yaml` **93/143** (07-31: 90/133) — de **a szám nem hiteles**, ld. lentebb.
 
 ---
 
-## ⭐ A nap két legfontosabb lelete — ugyanaz a hibaosztály, két repóban
+## ⭐ A nap döntése: az ütemezés gazdája a platform
 
-### 1. A platform buildje két napja törött volt az origin/main-en
+**Kérdés (Gábor közvetítette a Flow Lab rootjától):** a `spaceos.scheduling` az ütemezés
+gazdája, vagy a Flow Lab ütemezője marad az? **Válasz: a platformé.** Négy mért ok, de
+egy közülük eldönti:
 
-A `dotnet-build-gate` a létrehozása óta piros volt, és az **első diagnózisom rossz volt**
-(„idegen sáv munkája, nem nyúlok hozzá"). Az újramérés megfordította: a
-`ClaimsPrincipalUserIdExtensions.cs` **szállított függőség hiánya** volt — a fogyasztója
-07-29-én kiment a főágra **root-review APPROVED-dal**, a szolgáltató fájl viszont sosem
-került be.
+> **A Flow Lab 27 SS+részleges élt FS-re normalizált — az IMPORT rétegben.** Ott a
+> `releaseThresholdPercent` és az SS-jelleg **megszűnik létezni, mielőtt az ütemezőhöz
+> érne**, tehát az ADR-069 §4 szemantikája **elvileg sem alkalmazható**. Nem két szabály
+> versenyez: **az egyik réteg elpusztítja a másik bemenetét.**
 
-**A mérés helye számított:** tiszta `origin/main` kicsomagoláson (nem a munkafán, mert az
-hazudik) **2 hiba → 0 hiba, 0 warning**. Commitolva (`3468fe4`), fájl-szintű pathspeckel.
-**A kapu azóta zöld — a létrehozása óta először.**
+**Megőrzés teszt-korpuszként, nem kód-átemeléssel:** a Flow Lab kimenete
+`doorstar-planning-input-pack.v3` + `.sha256` alakban a scheduling-repóba; a solver
+leépítése **csak a v3 zöld befogadása után** — addig a Flow Lab ütemezője a **bizonyíték
+egyetlen példánya**.
 
-### 2. A doc-capture motor CI-je a DC-02 óta piros — HAT okból, ötöt javítottam
+**Két kiegészítés, amit külön kértek:** a fogyasztás **nem NuGet** (a scheduling nem
+publikál csomagot; a szerződés a `docs/openapi.yaml`, és a motor behúzása megkerülné az
+ADR-069 D6 host-oldali garanciáit) — NuGet a **hostingra** kell. És a v3-at a Flow Lab
+**előállítja**, de a scheduling-repóba **a platform veszi be**: *egy kapu, aminek a
+bemenetét a mért fél állítja be, soha nem bukhat el.*
 
-A legsúlyosabb: a **DC-02 aranypéldánya sosem ért be a repóba**, mert a `.gitignore`
-`samples/` sora (üzleti binárisokra való) elnyelte a `contracts/samples/` alatti
-**normatív JSON**-t is. A teszt helyesen bukott: *„nincs aranypéldány — a mérés vakon
-zöld lenne."* Javítás: a szabály **szűkítése**, bizonyítva **mindkét irányban**.
+---
 
-**A közös gyökér:** a kapuk olyan gépen készültek, ahol **minden telepítve van**. A
-függőség-mentes kör az importokat a saját folyamatában blokkolja, az **alprocessz viszont
-nem örökli** — így egy modul valójában a telepített csomagokat mérte, és a kör állítása
-ennyivel hamis volt. **A 6. okot szándékosan nem javítottam** (tervezői döntés, a
-terminálé).
+## ⚠ A nap másik tanulsága: négy saját mérőeszköz-hiba, kettő publikálva
+
+| # | A hiba | Hogyan derült ki |
+|---|---|---|
+| 1 | nyers `grep -oE` **élek mutatóit és kommenteket** számolt sornak (82 vs. 41) | **a Flow Lab** mérte meg helyettem |
+| 2 | a `TaskId = "` minta a **`ParentTaskId`-t is** fogja (73 vs. 41) | összeg-kontroll |
+| 3 | a `unitSeconds` mutáció **nem alkalmazódott** (a mező nem létezik) | assert |
+| 4 | **ékezetes minta `python -c`-vel a shellen** → a karakter-osztály megromlik, és **2165-öt** ad 4 helyett | két saját mérésem ellentmondott |
+
+A 4. a legsúlyosabb: **adatvédelmi vádat** építettem rá egy detektorral, amit **soha nem
+teszteltem ismert bemeneten**. Visszavonva (`7e352dc`); a Flow Lab valójában **jól**
+csinálta — a felvételek cella-koordinátát visznek, értéket nem.
+
+> **Új szabály: nem-ASCII mintát soha ne adj át `python -c`-vel a shellen — írd fájlba és
+> futtasd a fájlt.** Egy megromlott karakter-osztály nem hibaüzenettel jelentkezik, hanem
+> **hihető, nagy számokkal.**
 
 ---
 
@@ -51,38 +66,60 @@ terminálé).
 
 | Szelet | Mérés |
 |---|---|
-| **B2B-10 F5/0 · F5/1 · F5/2 · F5/3** — az F5 **mind a négy** szelete | 89/89 · 256+52 · 277+53 · élő Kernel-mátrix; mindegyiknél saját mutáció |
-| **DC-01 terv · DC-01a** | a terv 4 root-döntéssel elfogadva; a 9 leállási szám **újramérve** (326 OK · 295/13/18 · 26/26) + saját K8-mutáció |
-| **faipari RAG 1. fázis** | saját VPS-mérés: manifest-hash 5/5 · dry-run 1963 chunk · Chroma **count=1998** |
-| **frontend ×7**: gép-státusz · PieceInputRow · designer-verifikáció · workflow read-only · lang+ThemeToggle · axe-kör · 3 axe-javítás | mind mutációval; **axe 0/0/0/0** a shell + 7 világon |
-| **PORTAL-DEADTREE-A** | **59 fájl / 8001 sor**; lint **172 → 125**, a 125 a törlés ELŐTT kiszámolva |
+| **Flow Lab v3-átadás** | reprodukció **tiszta szobában, bájtazonos** (`847541…`, 270 588 B); **3 kontroll** kellett az érzékenységhez, az első kettő érvénytelen volt |
+| **scheduling hash-pin kapu** (a v3-befogadás előfeltétele) | **M-ROOT-1**: pack romlik → 5 bukás, és a **teljes szám 263→246** (a pin dob, tesztek el sem indulnak) · **M-ROOT-2**: a **dokumentált** frissítési út (pack + `.sha256` együtt) → a hash-kapu átengedi, de a viselkedési vektor **így is bukik** |
+| **a `raw/` lelet lezárása** | a Flow Lab a nehezebb utat választotta (leadta a 12 felvételt) — elfogadva |
 
-**Root-munka:** CRM interceptor-E2E pilot (`6f1ef5f`) · a 3 árva gitlink eltávolítva
-(`d6e647e` — a `git submodule status` először ad kimenetet) · **F7 hatókör-elemzés** ·
-B2B-01..08 tételes megfeleltetés · befejezetlen-epic triázs · EPIC-DOC-CAPTURE és
-EPIC-PROJECTS-MODULE regisztrálva · a doc-capture CI öt javítása.
+**Root-munka:** a Doorstar-csatolódás mérése · `ERPSEP-INSTANCE-NEUTRALITY-GATE` kiadva ·
+a PROJ-05/06 **retroaktív** bejegyzése az `EPICS.yaml`-ba.
 
 ---
 
-## Gábor termékdöntése — kihirdetve
+## ⛔ Új, valódi hiba — task kiadva
 
-> **„A projekt az epikek felett egy összefogó egység."** (2026-07-31)
+```
+joinery/.../Pdf/ProductionSheetGenerator.cs:252 és :270
+   "Doorstar Kft. — Gyártásilap"   <- beégetett string-literál, NEM konfiguráció
+elérhetőség MÉRVE: DI-singleton -> 3 PDF query-handler -> GyartasilapEndpoints.cs
+```
 
-A döntés közvetlenül a backendnek hangzott el; ők **nem hajtották végre csendben**, hanem
-feladták a rootnak → kihirdetve a csatornán. Új epic (`EPIC-PROJECTS-MODULE-2026Q3`),
-`PROJ-01` kiadva. **ADR-072 = javaslat, Gábor elé megy.**
+⇒ **minden** joinery-t használó bérlő gyártásilapján a Doorstar neve jelenne meg.
+Task: **`ERPSEP-INSTANCE-NEUTRALITY-GATE`** (E1-boundaries), két fázissal és **kötelező
+sorrenddel**: előbb a feloldás, **utána** a kapu — fordítva a kapu az első percben pirosat
+adna a meglévő 25 soron, és a kikapcsolás mintáját tanítaná.
 
-⛔ **Időkritikus:** az ADR-066 §9.1 (07-21: „a `ProjectRef` tulajdonosa a Kernel
-`FlowEpic`") **felülírt** — és az **F4 kötelező eleme**, hogy a publikált szerződés
-kimondja: a `projectId` **opak korrelációs azonosító**. Enélkül a javítás később
-verziózott **törő** változás a Doorstar felé.
+**A jó hír a mérésből:** „Doorstar" 100 nyers előfordulás a platform `src/`-jében, de
+szétválasztva **25 produkciós kódsor** (54 teszt), és abból **~92% migrációs seed** —
+a kernel-seedek ráadásul **bérlő-szűrtek**. **A Doorstar nincs beépülve; rétegvágási
+adósság van.**
+
+---
+
+## ⚠ Az `EPICS.yaml` alul-jelent — a 93/143 nem hiteles
+
+Ma mérve, a saját szabályom fordítva ütött vissza (*a task-doksi státusza nem hiteles* →
+most a **yaml** volt az, ami hiányzott):
+
+- **PROJ-05 és PROJ-06 nem is szerepelt** a yaml-ban, pedig **mindkettőt én zártam
+  APPROVED-dal** → retroaktívan bejegyezve, `⚠ RETROAKTÍV` megjelöléssel.
+- **`PROJ-NUMBERING-GAP` (open):** a `docs/tasks/EPIC-PROJECTS-MODULE-2026Q3/` mappa
+  **üres**, a git-log PROJ-01 után egyből PROJ-05-re ugrik, és a **PROJ-01 `in_progress`
+  a rá épülő PROJ-05/06 `done`-ja mellett.** Belsőleg ellentmondásos — **nem találgatom
+  ki**, a backend mondja meg.
+- `DC-01b-write` és `DC-03` `pending`, pedig mindkettő **APPROVED** (a commit szándékosan
+  visszatartva a doccapture-sávban).
 
 ---
 
 ## 🔴 Gábor előtt — a részletes lista a [`TODO.md`](TODO.md)-ban
 
-**Ha csak hármat:** a **négy kulcs visszavonása** · a **`NOBYPASSRLS`** telepítése (mindkettő
-élő kitettség, a javítás kész) · a **licenc-kérdés** (egy aláírás feloldja a DC-01c-t).
+**Ha csak hármat:**
+
+1. **A `spaceos-modules-scheduling` gazdája** — nincs a `.gitmodules`-ban, nincs
+   `terminals/` mappája, 39 commit 07-28/29-ből, a sziget-struktúrán kívül. **Ez blokkolja
+   a v3 befogadását, az pedig a Flow Lab leépítését.**
+2. **A 48 könyv-oldal** a publikus repóban (+ a hiányzó bináris-kapu).
+3. **A `NOBYPASSRLS` telepítése** és a **licenc-kérdés** (egy aláírás feloldja a DC-01c-t).
 
 ---
 
@@ -90,22 +127,22 @@ verziózott **törő** változás a Doorstar felé.
 
 | Sáv | Mi fut |
 |---|---|
-| backend | **`PROJ-01`** (projects v1 mag) + a 6 modul interceptor-átállása (`STAB-RLS-INTERCEPTOR-E2E`, a CRM a minta) |
-| doccapture | a motor CI 6. oka (tervezői döntés), utána **DC-01b** |
-| designer | **`WORLDS-WAREHOUSE-REVIEW`** (07-28 óta állt, ma kiadva) |
-| frontend | a sávja **elfogyott** — mind a 4 nyitott tétele emberi kapun áll |
+| **Flow Lab** (doorstar) | katalógus-ADR (1%-os javítás, hash-rotáció) — **engedélyezve**; a `raw/` 4 maradék-előfordulása; a solver leépítése **BLOKKOLT** |
+| backend | `PROJ-01`/`PROJ-02` és a 6 modul interceptor-átállása (`STAB-RLS-INTERCEPTOR-E2E`, a CRM a minta) |
+| doccapture | a neutrality-szelet felterjesztésére vár; **a fa hold alatt**, 3 szelet egy commitban zárul |
+| frontend | a portál **lockfile platform-függő** — a CI-kapu piros; **a portál-pint nem bumpolom, amíg nem zöld** |
 
 ---
 
 ## Nyitott szerkezeti leletek (nem sürgős, de nevesítve)
 
-- **Orphan `spaceos-modules-ehs` fa**: nem fut, **nem is fordul**, a `Program.cs` az
-  interceptor nélküli DI-t hívja. Törlés vagy javítás — scope-döntés.
-- **`Production.Tests`**: kereszt-repó kontraktus-sodródás a `contracts` pinjén.
-- **Kontrolling**: az `AddSpaceOsModuleTenancy()` az API-rétegben van, nem az
-  Infrastructure-ben. Fail-loud, de döntés kell.
-- **ADR-070 D4**: a Python doc-capture motorban nincs lockfile.
-- **ERPSEP**: 5 státusz-eltérés (yaml↔doksi), és a sáv **gazdátlan**.
+- **Orphan `spaceos-modules-ehs` fa**: nem fut, nem is fordul.
+- **Instance-adat platform-migrációkban** (kernel StageRegistry, cutting AddPricingTables,
+  joinery seederek) — migrációt **nem** írunk át, a szabály a jövőbeli seedre szól.
+- **Kontrolling**: az `AddSpaceOsModuleTenancy()` az API-rétegben van.
+- **ADR-069 hiánya:** nincs **indítási késleltetés** fogalom — az `extraDays` a *tartamhoz*
+  ad, a késleltetés a *kezdést* tolja. A Flow Lab helyesen **nem** simította el.
+- **ERPSEP**: a sáv **gazdátlan**.
 
 ---
 
@@ -113,20 +150,25 @@ verziózott **törő** változás a Doorstar felé.
 
 1. Csatorna **eleje + vége**, `EPICS.yaml`, ez a state, `TODO.md`.
 2. **A két Monitort újra kell élesíteni.**
-3. **`gh run list` push után** — ma ez kétszer hozott elő main-ágat érintő hibát.
-4. **A munkafa nem a publikált állapot.** Ha egy kapu piros, a diagnózist **tiszta
-   `origin/main` kicsomagoláson** mérd, ne a saját fádon.
-5. **A negatív eredmény érvényességét külön igazold** (ma háromszor látszott hiánynak egy
-   érvénytelen mérés): futott-e le, illik-e a műszer, van-e pozitív kontroll.
+3. **`gh run list` push után** — „van workflow" ≠ „fut rá" ≠ „zöld".
+4. **A munkafa nem a publikált állapot.** Piros kapunál tiszta `origin/main`
+   kicsomagoláson mérj.
+5. **A negatív eredmény érvényességét külön igazold:** futott-e le, illik-e a műszer,
+   van-e **pozitív** kontroll.
 6. Nincs `git add -A` vegyes fán; **review-nként, fájl-szintű pathspeckel** commitolj.
-7. Done/APPROVED kizárólag root-review, **saját méréssel** — a **warning-szám is mért tétel**.
-8. **Mutáció:** a produkciós oldalt rontsd, alkalmazva-bizonyítással, tiszta
-   build-cache-sel — és **csak akkor, ha semmilyen build nincs röptében** ugyanabból a fából.
-9. **Kiadás előtt mérd a task hatókörét** — egy 90%-ban kész task kiadva hamis munkát
-   könyvel el.
+7. Done/APPROVED kizárólag root-review, **saját méréssel** — a warning-szám is mért tétel.
+8. **Mutáció:** a produkciós oldalt rontsd, alkalmazva-bizonyítással — és az **„alkalmazva"
+   ≠ „releváns"**: ha a mért kimenet nem fogyasztja a rontott bemenetet, a változatlan
+   eredmény a **célzásom** hibája, nem a kapu vaksága.
+9. **Kiadás előtt mérd a task hatókörét.**
 10. Idegen repóban nincs destruktív parancs; VPS/éles migráció/credential csak
     Gábor-jóváhagyással.
-11. Egy hiba után **keresd meg a testvéreit**, és más ágens **mérőeszköz-hibáját**
-    alkalmazd a sajátodra is.
-12. **Shell-be írt szöveg:** idézőjeles heredoc (`<<'EOF'`), különben a backtickek
-    parancsként futnak és **szavak esnek ki** (ma egy commit-üzenetben megtörtént).
+11. Egy hiba után **keresd meg a testvéreit**; más ágens mérőeszköz-hibáját alkalmazd a
+    sajátodra is.
+12. **Shell-be írt szöveg:** idézőjeles heredoc (`<<'EOF'`).
+13. ⭐ **Nem-ASCII (ékezetes) mintát SOHA ne adj át `python -c`-vel** — írd fájlba és
+    futtasd a fájlt. A megromlott karakter-osztály **hihető nagy számokkal** hazudik.
+14. ⭐ **Kereső/maszkoló eszközt tesztelj ismert bemeneten, MIELŐTT valódi adaton futtatod**
+    — főleg, ha a lelet **vádat** fogalmaz meg valakiről.
+15. ⭐ **Bontás + összeg csak akkor bizonyíték együtt, ha az összeg a bontásból adódik.**
+    Külön parancsból jövő stimmelő összeg **hitelesít egy hibás bontást**.

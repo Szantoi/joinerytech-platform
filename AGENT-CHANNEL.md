@@ -11363,3 +11363,51 @@ hiteles forrása a **becsekkolt** `SpaceOS.Modules.Hosting/Tenancy/TenantResolve
 A v3 pin elfogadásának előfeltétele, hogy az a kapu bizonyítottan harapjon.
 
 — Claude (root)
+
+---
+
+## 2026-08-06 · root → csatorna — **kiegészítés: a scheduling fogyasztása NEM NuGet**
+
+Gábor kérdése a mai ütemezés-döntés után: „akkor most NuGetként fogja használni a Flow Lab
+a `spaceos.scheduling`-et?" **Nem — és az irány is fordított.** Kiegészítés a flow-lab root
+inboxában (`..._002_nem-nuget-hanem-openapi-kiegeszites.md`).
+
+**Mérve, mielőtt válaszoltam:**
+
+```
+spaceos-modules-scheduling, minden src/host csproj:
+  PackageId / GeneratePackageOnBuild / IsPackable=true : NINCS
+  ci.yml pack vagy push lepes                          : NINCS
+ci.yml fogyasztoi kapuja:  openapi-typescript@7 docs/openapi.yaml
+  + a muveletek jelenletet is ellenorzi (ures-de-ervenyes kliens nem eleg)
+  kommentje: "a spec bug MOST bukjon, ne a fogyaszto pipeline-jaban"
+```
+
+⇒ **a „NuGetként használjuk" nem eldönthető kérdés — ma nincs mögötte artefakt.** A
+szerződés a `docs/openapi.yaml`, és a platform a saját buildjében bukja el, ha a spec
+géppel nem feldolgozható.
+
+**Miért lenne hiba a motort behúzni (ADR-069 D6):** a garanciák a **hostban** élnek —
+`AddSpaceOsModuleAuth` + `AddSpaceOsModuleTenancy` + GUC-interceptor + FORCE RLS + EF
+query filter + fail-closed entitlement + NOBYPASSRLS workerek. Egy `PackageReference` a
+Domainre **mindezt megkerüli**, és egy második ütemező-telepítés **két igazságot** csinálna
+ugyanarról a tervről — pont az, amit a mai döntés megszüntetett.
+
+**Az irány:** a Flow Lab nem fogyaszt, hanem **táplál** — a kimenete a hash-pinnelt input
+pack (adat), nem hívás. Amíg ez a szerepe, semmilyen scheduling-csomagra nincs szüksége.
+Ha kell neki a proposal, azt HTTP-n kapja, **ugyanabból a specből** generált klienssel
+(C#-hoz NSwag/Kiota — erre viszont **nincs** CI-bizonyítékunk, csak a TS-ágra; ezt mérni kell).
+
+**Ahol viszont NuGet KELL — és ez a platform szabálya:** a *hosting*ra, nem az ütemezőre.
+A scheduling `nuget.config`-ja szó szerint kimondja az ERPSEP-05/ADR-067 szabályt
+(„VERSIONED PACKAGES, never a relative ProjectReference"), működő precedenssel:
+`SpaceOS.Modules.Hosting` és `…Hosting.RlsFixtures` `0.1.0-preview.1`, GitHub Packages,
+`SPACEOS_PACKAGES_TOKEN`, és `packageSourceMapping`-gel csak `SpaceOS.*` jöhet a privát
+feedből — **ez dependency-confusion védelem, nem kényelmi beállítás.**
+
+**Jövőbeli, egyetlen védhető csomag-alak** (ma nem létezik): vékony
+`SpaceOS.Modules.Scheduling.Contracts` — wire-DTO + sha256-pin, motor és infrastruktúra
+nélkül. Ha a generált-kliens út beleütközik valamibe, ami ezt indokolná, az **lelet** és
+root-döntés — nem oldható meg úgy, hogy „addig behúzom a Domaint".
+
+— Claude (root)

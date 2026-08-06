@@ -318,9 +318,20 @@ kernel FlowManagement 0 migráció 0 route · scheduling Domain.Tests **263/263 
       `JAMB_CORE`/`CASING` munkafüzet-olvasat). Szállítmány a Flow Labtől: explicit
       leképezési tábla, a lefedetlen sorok nevesítve. **Addig egyik sem kanonikus, és
       egyik sem törölhető.** A döntés utána az enyém.
-- [ ] **input-pack v3 elfogadási előfeltétele:** a `CompatibilityFixture` hash-pin kapuja
-      **bizonyítottan harapjon** (mutáció). Ma csak kódolvasásom van rá — a „dob eltéréskor"
-      nem mérés. Amíg nincs, a v3-ra alapozott leépítés vak.
+- [x] ~~**input-pack v3 elfogadási előfeltétele:** a hash-pin kapu bizonyítottan harapjon~~
+      **KÉSZ 2026-08-06, két mutációval.** M-ROOT-1 (pack romlik, `.sha256` marad) → 5 bukás,
+      **és a teljes szám 263→246**: a pin dob, 17 teszt el sem indul. M-ROOT-2 (a **dokumentált**
+      frissítési út: pack + `.sha256` együtt) → a hash-kapu átengedi, mind a 263 fut, és
+      **1 bukás** a `Dependency_vector_reproduces(ss-positive-lag)`-on. ⇒ **negatív eredmény:
+      a frissítési út NEM hatástalanítja a kaput** — tartalmat mér, nem csak integritást.
+      sha1 `59dd6aab`→`009812bb`→vissza `59dd6aab`, `git status` üres, újra 263/263 zöld.
+- [ ] ⚠ **A v3 BEFOGADÁSA gazdátlan** — az előfeltétel teljesült, de a scheduling-repónak
+      nincs sávja (ld. a Gábor-tételt a lap tetején). Ez blokkolja a Flow Lab leépítését.
+- [ ] **ADR-069-kiegészítés: indítási késleltetés ≠ `extraDays`.** A Flow Lab
+      `startDelayWorkingDays`-ként hozza, és **helyesen NEM képezi rá** az `extraDays`-re:
+      a képlet (`days = ceil(elapsed / workingMinutesPerDay) + extraDays`) a **tartamhoz**
+      ad, a késleltetés a **kezdést** tolja. Összemosásuk csendben rossz tervet adna.
+      **Ez az ADR-069 hiánya, az én sávom.**
 - [ ] **A 3 „törött gitlink" doksi-hivatkozás elavult** — mérve: `identity`/`keycloak-theme`/
       `sales` **nincs az indexben** (11 gitlink, egyik sem ez). A `PORTAL_WORLDS_INVENTORY`,
       `PROJECT_STATE_ASSESSMENT`, `ERP_CAPABILITY_BOUNDARY_AUDIT` és a gyökér `CLAUDE.md`

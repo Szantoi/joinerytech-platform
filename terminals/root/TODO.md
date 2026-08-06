@@ -295,6 +295,29 @@
 - [ ] **Az F7 R2-tétele:** Kernel-függés-nyilatkozat a release-jegyzetbe (az F5/3 lelete:
       a cross-tenant vonalat a Kernel tartja egyedül, és ha elromlik, a suite zöld marad).
 
+## ÚJ tételek (2026-08-06) — a Flow Lab ütemezés-döntéséből
+
+Döntés: **az ütemezés gazdája a `spaceos.scheduling`** (verdikt a flow-lab root inboxában,
+csatorna-bejegyzés `+68 −0`). Mérve: ADR-069 §4 szó szerint · joinery 41 sor / 9 családkulcs ·
+kernel FlowManagement 0 migráció 0 route · scheduling Domain.Tests **263/263 zöld**.
+
+- [ ] ⚠ **Joinery rétegvágás-adósság:** a `spaceos-modules-joinery` **Doorstar-specifikus
+      adatot seedel egy PLATFORM-modulban** (`DoorstarSeedData.cs`, 41 `ProcessTaskTemplate`,
+      9 családkulcs). Az ADR-069 D2 szerint ez az **instance-rétegé**. Nem törlöm, amíg a
+      41 ↔ 4 leképezési tábla nincs meg — a seed lehet az egyetlen példány.
+- [ ] **A 41 ↔ 4 folyamatdefiníció-ütközés** (`GyI-*` seed vs. `PREPARATION`/`DOOR_LEAF`/
+      `JAMB_CORE`/`CASING` munkafüzet-olvasat). Szállítmány a Flow Labtől: explicit
+      leképezési tábla, a lefedetlen sorok nevesítve. **Addig egyik sem kanonikus, és
+      egyik sem törölhető.** A döntés utána az enyém.
+- [ ] **input-pack v3 elfogadási előfeltétele:** a `CompatibilityFixture` hash-pin kapuja
+      **bizonyítottan harapjon** (mutáció). Ma csak kódolvasásom van rá — a „dob eltéréskor"
+      nem mérés. Amíg nincs, a v3-ra alapozott leépítés vak.
+- [ ] **A 3 „törött gitlink" doksi-hivatkozás elavult** — mérve: `identity`/`keycloak-theme`/
+      `sales` **nincs az indexben** (11 gitlink, egyik sem ez). A `PORTAL_WORLDS_INVENTORY`,
+      `PROJECT_STATE_ASSESSMENT`, `ERP_CAPABILITY_BOUNDARY_AUDIT` és a gyökér `CLAUDE.md`
+      máig „kicsekkolatlan almodulként" írja le őket — ez küldött téves kérést a Flow Labtől.
+      Root-sáv: a leírás igazítása a mért állapothoz.
+
 ## ÚJ leletek (2026-08-04, a review-körből)
 
 - [ ] ⛔ **A PIN-BUMP A REVIEW RÉSZE — az én mulasztásom.** A platform portál-pinje

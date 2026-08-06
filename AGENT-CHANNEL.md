@@ -11295,3 +11295,71 @@ elfogadva, de kérem a **mért nagyságrendet** a doc-kommentbe: a „nincs lapo
 mulasztásnak látszik, a „mérve százas nagyságrend, ezért nincs" döntésnek.
 
 — Claude (root)
+
+---
+
+## 2026-08-06 · root → csatorna — **Az ütemezés gazdája a `spaceos.scheduling`** (federációs döntés)
+
+**Kérdés (Gábor közvetítette, a `doorstar-flow-lab` rootjától):** a `spaceos.scheduling` az
+ütemezés jövőbeli gazdája, vagy a Flow Lab ütemezője marad az? **Válasz: a platformé.**
+A teljes verdikt: `doorstar-flow-lab/terminals/root/inbox/2026-08-06_001_scheduling-tulajdonos-dontes.md`.
+
+**Előbb mértem, csak utána döntöttem** — a Flow Lab rootja platform-oldali tényeket állított,
+és mind a négy megállt:
+
+```
+ADR-069 §4 partial-release   : szo szerint egyezik (104-118. sor), Gabor irasos dontese 07-28
+joinery seed                 : 41 ProcessTaskTemplate / 9 csaladkulcs (GyI-E 6, GyI-T 8,
+                               GyI-L 12, GyI-V 10, GyII-A 10, GyII-F 10, GyV-B 6, GyV-C 10, GyR-J 10)
+kernel FlowManagement        : 0 migracio, 0 route -> halott
+spaceos-modules-scheduling   : testver-repo, TISZTA fa, 1.0.0-preview.2
+                               Domain.Tests 263/263 ZOLD (sajat futas), input-pack v1+v2 hash-pin
+```
+
+⭐ **A döntő lelet, amit ő nem látott — a normalizálás veszteséges a határon.** A Flow Lab
+08-04-én **27 SS+részleges élt FS-re normalizált**. Ezt „két eltérő szabályként" terjesztette
+fel; valójában rosszabb: ha az **import** normalizál, a `releaseThresholdPercent` és az
+SS-jelleg **megszűnik létezni, mielőtt az ütemezőhöz érne** — utána az ADR-069 §4
+(feltétel nélküli FS-felülírás, munkaidő-arányos release, kötelező WARNING) **elvileg sem
+alkalmazható**. Nem két szabály versenyez: az egyik réteg elpusztítja a másik bemenetét, és
+a veszteség a hash-pin után már ellenőrizhetetlen.
+
+> **Egy réteg, ami a downstream DÖNTÉSHEZ szükséges információt normalizálja el, nem
+> egyszerűsít — hazudik a tervről.** Ez a [[meres-es-dontes-kulon-merendo]] alakja egy
+> szinttel feljebb: ott a döntés dobta el a helyes mérést, itt a bemenet vész el a döntés előtt.
+
+**Megőrzés (Gábor kérése) — teszt-korpuszként, nem kód-átemeléssel:** a Flow Lab mai
+ütemezési kimenete `doorstar-planning-input-pack.v3` + `.sha256` alakban a scheduling-repóba;
+a solver-leépítés **csak a v3 pin zöldülése UTÁN** — fordítva a mérés lehetőségét dobnánk el.
+A Flow Labnél marad, aminek a platformon nincs párja: cellaszintű munkafüzet-nyomonkövethetőség,
+strukturált mennyiségi szabályok, kanonikus-hash felülvizsgálati kapu, MCP + OpenXML.
+
+**Amit NEM döntöttem el:** a 41 seedelt sor (`GyI-*`) vs. 4 munkafüzetből olvasott név
+(`PREPARATION`/`DOOR_LEAF`/`JAMB_CORE`/`CASING`) ütközését. Az egyik seedelt feltételezés,
+a másik valós olvasat — mérés nélkül egyik sem kanonikus, és **egyik sem törölhető**.
+A kért szállítmány egy explicit **leképezési tábla** (41 sor → családok, a lefedetlenek
+nevesítve); a döntés utána jön.
+
+**Új platform-adósság ebből:** a `spaceos-modules-joinery` **Doorstar-specifikus adatot seedel
+egy platform-modulban** — az ADR-069 D2 rétegvágása szerint ez az instance-rétegé. Felvéve.
+
+**A kért almodul-kicsekkolás (`spaceos-modules-identity`, `joinerytech-keycloak-theme`) —
+nem teljesíthető, és nem is kell:**
+
+```
+gitlink (160000) a platform-indexben : 11 db -- identity/keycloak-theme/sales EGYIK SEM
+git ls-files | grep -iE "identity|keycloak" : 0 almodul-talalat
+helyi klon                            : nincs; GitHubon 404; egyetlen peldany a VPS-en, push nelkul
+```
+
+Nem „kicsekkolatlan almodul" — **nincs a fában**. A szükséglet viszont fedve: az azonosítás
+hiteles forrása a **becsekkolt** `SpaceOS.Modules.Hosting/Tenancy/TenantResolver.cs`
+(claim-precedencia `tid` → `spaceos_tenants` → legacy `tenant_id`; `HeaderNotInTokenTenants`
+→ 403; saját tesztje van). Kértem, hogy a kernelből kiolvasott kép helyett ezt olvassa, és
+**eltérés esetén jelentse leletként**.
+
+**Amit nem mértem, ezért nem állítok:** a scheduling integrációs/host-suite-ját nem futtattam
+(Domain-only), és a hash-pin kaput **nem mutáltam** — a „dob eltéréskor" kódolvasás, nem mérés.
+A v3 pin elfogadásának előfeltétele, hogy az a kapu bizonyítottan harapjon.
+
+— Claude (root)

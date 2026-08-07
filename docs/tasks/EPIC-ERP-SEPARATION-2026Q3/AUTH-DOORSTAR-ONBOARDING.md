@@ -42,7 +42,23 @@ these headers."* ⇒ **nem architektúra-fordítás, hanem egy vállalt ígéret
 hitelesítetlen header volt; az ADR-061/062 a JWT `tid` claimjére cserélte, hamisított header →
 403. **A minta kész, csak át kell hozni egy másik futtatókörnyezetbe.**
 
-Mivel a Doorstar **nincs kitéve**, ez **nem incidens**. A „biztonságos növekedés" azt jelenti,
+⛔ **HELYESBÍTÉS 2026-08-07 este: a Doorstar KI VAN TÉVE.** A korábbi állításom
+(*„nincs telepítve a VPS-en"*) **hibás volt** — a `systemctl | grep spaceos` szűrőm zárta ki,
+mert a service neve `doorstar-production-service.service`. Mérve:
+
+```
+doorstar-production-service.service   ACTIVE (running) 2026-07-22 ota -- 2 HETE
+  /usr/bin/node dist/server.js   *:4610   nginx: https://doorstar.asztalostech.hu (TLS)
+  /api/production/orders  ->  HTTP 200 HITELESITES NELKUL a nyilt internetrol
+     (418 bajt, mezok: done/id/label/position -> munkafolyamat-szerkezet, NEM ugyfeladat)
+```
+
+**Személyesadat-szivárgás ezen az úton nincs bizonyítva.** A súlyos rész az **írási út**:
+az `X-Role`/`X-Station` kliens-oldali header, és a `tasks.ts` **négy helyen 403-mal kapuz**
+rájuk — egy hamisított `X-Role: administrator` az internetről **elfogadódna**.
+**Ezt NEM teszteltem**, mert éles adatot módosítana.
+
+⇒ **A határidő nem a második ügyfél, hanem MOST.** A „biztonságos növekedés" azt jelenti,
 hogy a **második ügyfél előtt** legyen kész — mert a header-alapú szerepkör egy bérlős
 környezetben még elviselhető, kettőnél már **kereszt-bérlős** kockázat.
 

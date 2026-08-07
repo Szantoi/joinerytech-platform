@@ -1,6 +1,6 @@
 # ROOT Terminal TODO
 
-> **Frissítve:** 2026-08-06 este (napzárás) · **Részletes állapot:** [`STATE.md`](STATE.md)
+> **Frissítve:** 2026-08-07 este (napzárás) · **Részletes állapot:** [`STATE.md`](STATE.md)
 > **Kanonikus státusz:** [`EPICS.yaml`](../../EPICS.yaml) — a task-doksik státusz-sora **nem hiteles**.
 > ⚠ **2026-08-06: a yaml is ALUL-jelentett** (PROJ-05/06 hiányzott belőle) — az eltérés
 > **mindkét irányban** jön, ld. „Fel NEM oldott státusz-eltérések".
@@ -77,22 +77,13 @@
       Patch mentve lokálisan: `artifacts/orphaned-codex-worktree-2026-08-03/` (sha1
       `06e026b6`) + scratchpad-másolat; a publikus repóba szándékosan nem megy.
 
-- [ ] ⛔ **ÚJ, 2026-08-03 — a portál CI-je 07-30 ÓTA PIROS, és a `Tranche B` törlése oldja fel.**
-      A frontend döntési anyagából indult, root-méréssel megerősítve:
-      - a `react-slider@2.0.6` **`dependencies`-ben** van (nem dev!), peer-igénye
-        `react@^16||^17||^18`, a fán **React 19.2.7** → **`npm install` ÉS `npm ci`
-        is ERESOLVE-val bukik** egy friss klónon;
-      - a **`portal-ui` munkafolyamat** (a Doorstar felé publikált csomag kapuja)
-        emiatt **2026-07-30 óta piros**, pontosan ezen a hibán;
-      - ma **nem futott le**, mert `paths:`-szűrője csak a `packages/portal-ui/**`-ra
-        figyel — a mai két commitom nem érintette. **Vagyis nem „zöld" volt, hanem
-        nem is volt kapu alatt.**
-      - ⚠ **A portálnak NINCS általános CI-je**: a `portal-ui` az EGYETLEN munkafolyamat,
-        és egy csomagra szűkített. Minden más (app-`src/`, a többi csomag) **kapu nélkül** él.
-      - a két fogyasztó (`PriceRangeSlider`, `VersionSlider`) **mindkettő a Tranche B-ben**
-        → a törlés a blokkolót nyom nélkül megszünteti.
-      **Kérdés Neked:** mehet-e a Tranche B törlése? (A prior art nem vész el: a
-      Tranche A-ban törölt kód `git show`-val ma is előhívható.)
+- [x] ~~⛔ **a portál CI-je 07-30 óta piros, a `Tranche B` törlése oldja fel**~~
+      **LEZÁRVA 2026-08-07 — a törlés MÁR MEGTÖRTÉNT** (portal `76bc647`, pusholva), és a
+      platform-pin **már rajta áll**. Gábortól döntést kértem arra, ami el volt intézve —
+      **mérnem kellett volna, mielőtt elé teszem.** ⚠ A CI **továbbra is piros**, de **más
+      okból**: `Missing: @emnapi/core@1.11.3 from lock file` = a nyilvántartott
+      **platform-függő lockfile** (Windowson generált lock, hiányzó Linux-only opcionális
+      függőségek). Frontend-sáv. **A portál-pint nem bumpolom.**
 - [ ] **ÚJ: az „`EditableDataTable`-átvétel" tétel ROSSZUL VAN FELTÉVE — mérve.**
       A lista úgy hordozta, mintha egy kész komponens átvételére várna a jóváhagyásod.
       Root-mérés: **`EditableDataTable` és `SheetTable` 0 commit-találat a teljes
@@ -104,49 +95,49 @@
       ⇒ Ez **nem elmaradt döntés, hanem meg nem specifikált fejlesztés** egy
       kiértékelhetetlen feltételen. Vagy új kiírást kap, vagy lekerül a listáról.
 
-- [ ] **`/shopfloor` PIN-backdoor.** A `PIN=1234` ág eltávolítása authorizált; a
-      kérdés az, hogy **egy nem működő világ mit keres publikus route-on**
-      (se backend, se MSW-mock → a PIN az egyetlen működő belépő). A frontend
-      készen áll, a végrehajtás a route-döntés után indul.
-- [ ] ⛔⛔ **ÚJ, 2026-08-03 — 48 KÖNYV-OLDAL SZKENN A PUBLIKUS REPÓBAN.**
-      A doccapture `.gitignore`-leletét a saját sávomra alkalmazva került elő:
-      - `docs/joinerytech/uploads/` alatt **48 db `szega_book_*_oldal_*.jpg`**
-        (+11 png, 4 md) — **követett fájlok, és `origin/main`-en is bent vannak**;
-      - a platform `.gitignore`-ja **egyetlen bináris alakot sem fog**: mérve a
-        `.ttf`/`.zip`/`.dll`/`.exe`/`.xlsx`/átnevezett `.dat`/`.png` **mind bemehet**.
-        Felsorolás, nem szabály — pontosan az a rés, amit a doccapture ma a saját
-        repójában megmért és bezárt.
-      **Miért más ez, mint egy token:** harmadik fél szerzői joga alá eső anyag, amit
-      **nem lehet „rotálni"**. A publikus történetből való eltávolítás **history-rewrite**,
-      és a repó publikus volta miatt a fork/cache másolatok akkor sem szűnnek meg.
-      **A döntés a Tiéd, én nem nyúlok hozzá.** Amit javaslok eldönteni:
-      (1) törlés + history-rewrite, vagy a repó priváttá tétele; (2) a hiányzó
-      bináris-kapu megépítése (a doccapture `binary_artifacts.json` + `binary_guard.py`
-      mintája kész és működik — átvehető); (3) a maradék 405 kép (`screenshots/`,
-      `docs/knowledge/qa/assets/`) átnézése: ERP-képernyőképek **ügyféladatot**
-      mutathatnak — ezt **nem mértem**, csak a kockázatot nevezem meg.
+- [ ] ⛔ **`/shopfloor` PIN-backdoor — ÚJ SÚLY 2026-08-07.** A `PIN=1234` **közös**
+      belépő, ami **szembemegy** a mai Gábor-döntéssel (*„mindenkinek személyes fiókja
+      legyen — a valódi audit nyomvonal"*). **A két tételt EGYÜTT kell eldönteni**,
+      különben a platform és az instance **ellentétes mintát tanít**. A régi kérdés
+      változatlan: egy nem működő világ mit keres publikus route-on (se backend, se
+      MSW-mock). A frontend készen áll.
+- [x] ~~⛔⛔ **48 könyv-oldal szkenn a publikus repóban**~~ **LEZÁRVA 2026-08-07**
+      (Gábor: *„a szerzői jog fontos, törölni kell"* + *„igen, írjuk át a történetet"*).
+      `ef16466` a fából · `78c4802` a **teljes történetből** (`filter-repo`, külön
+      mirror-klón, 85 MB bundle-mentés + `verify`). **Friss GitHub-klónnal igazolva:**
+      0 találat, pozitív kontroll 1, 394 commit, **HEAD-fa bájtra azonos**. A 15 saját
+      fájl megvan. VPS-en is törölve, 11/11 service fut.
+      ⚠ **Nyitva:** a VPS `/opt/joinerytech` a **régi** történeten áll (`b123146`) → ott a
+      következő `git pull` **elszáll**. Friss klón vagy `fetch --force` + reset —
+      **telepítési döntés.** *(Opcionális: GitHub Support a szerver-oldali objektumokra.)*
+      ⚠ **A bináris-kapu továbbra sem épült meg** (a `.gitignore` egyetlen bináris alakot
+      sem fog) — a doccapture `binary_guard.py` mintája átvehető, **döntést kér.**
+      ⚠ A maradék **405 kép** (`screenshots/`, qa assets) átnézése **NEM történt meg.**
 - [ ] **Négy kulcs visszavonása:** Google Gemini · **két** Brave Search
       (`061ddd503f`, `cefeb3edee`) · a forrás-prototípus **két
       modell-szolgáltatói kulcsa** (egyikük a **futó app** `settings.json`-jában).
-- [ ] ⚠ **`NOBYPASSRLS` — A TÉTEL ÁTMINŐSÍTVE (root-mérés, 2026-07-31 este):
-      ez NEM egy `ALTER ROLE`, hanem KÉT MODUL ÚJRATELEPÍTÉSE.** A VPS-felhatalmazásod
-      után megmértem, mielőtt hozzányúltam volna — és jó, hogy megmértem:
-      - a két worker **ma is `rolbypassrls=t`**, és mindkét service **FUT**;
-      - a `SECURITY DEFINER` függvények az éles DB-ben **NINCSENEK TELEPÍTVE**
-        (a 8-ból 0; egyetlen függvény van a sémákban, az sem definer);
-      - a VPS-checkoutok **2026-07-22**-iek, a migrációk **07-27**-iek → a kint futó
-        worker-kód **nem ismeri** az új függvényeket.
-      **Ha csak az `ALTER ROLE`-t futtatom, mindkét háttér-worker NÉMÁN leáll**
-      (az RLS 0 sort adna nekik). Helyes sorrend: worker-kód deploy → migráció →
-      `ALTER ROLE` → záró mérés. Ez saját, tervezett deploy-ablakot kér.
+- [x] ~~⚠ **`NOBYPASSRLS` — két modul újratelepítése kell**~~ **ÉLESÍTVE 2026-08-07**
+      (Gábor: *„most is mehet"*, majd *„maradjon"*). Mind a **három** worker-szerep
+      `bypassrls=false`; mérés utána: mindkét service `active`, **0** permission-denied /
+      42501 / row-level hiba, a hibatípusok előtte/utána azonosak.
+      ⚠ **A 07-31-i saját felmérésem megdőlt:** a `SECURITY DEFINER` függvények hiányát
+      vettem előfeltételnek, de ezek a modulok **nem azt használják** — a telepített
+      (07-22) kódban a `TenantSessionInterceptor` **megvan és be van kötve**, az élő
+      DB-ken **áll az RLS** (inventory 6 tábla FORCE + 6 policy, procurement 14+14).
+      **Rossz műszert néztem, és egy nem létező deploy-igényt tettem Gábor asztalára.**
+      ⚠ **Eltérés a 07-27-i sorrendtől, kimondva:** a 2. lépés (**szűk SECURITY DEFINER
+      függvények**) **nem készült el**, és én a 3.-at hajtottam végre. Latens kockázat: a
+      keresztbérlős háttérműveletek GUC nélkül **néma no-op**-pá válhatnak (mért enyhítő:
+      `procurement_outbox` 0 sor). **A definer-függvények Gábor döntésével előre sorolva.**
 - [ ] **CI-hatókör:** PAT a privát `spaceos-kernel`-hez (a build-kapu ma 6/15
       projektet mér) · teszt-kapu (Docker; a collaboration suite **13 m 19 s**).
 - [ ] **`npm publish`** a `@spaceos/portal-ui`-ra · **VPS-IP** maradhat-e a
       publikus repóban · a **3 platform-submodule pushja**.
-- [ ] **ÚJ (DC-01 tervből, 2026-07-31): licenc-blokkoló** — a `SpaceOS.Modules.Hosting`
-      (+`.RlsFixtures`) `PackageLicenseExpression`-je és a platform-repó gyökér-`LICENSE`
-      (+ `RepositoryUrl` kettősség). PUBLIKUS repó licenc nélkül = minden jog fenntartva
-      minden fogyasztónak; a DC-01c ezen blokkolt.
+- [x] ~~**licenc-blokkoló**~~ **LEZÁRVA 2026-08-07 (Gábor: „ne legyen blokkoló").**
+      ⚠ A `DC-01c` **`blocked` MARAD**: a licenc a **három** blokkolójából csak az egyik
+      volt; a (2) NuGet-fogyasztási út és a (3) hiányzó .NET projektek **műszaki**
+      hiányok. Amit a döntés nem old fel: publikus repó licenc nélkül = „minden jog
+      fenntartva" **minden fogyasztónak**, a Doorstarra is.
 - [x] ~~**ÚJ (DC-01): betűtípus-politika** a DC-01b előtt~~ **ELDŐLT 2026-08-03 (Gábor):
       LiberationSans OFL-1.1 alatt szállítva + konfigurálható felülírás; hiányzó vagy
       nem fedő betűtípusnál fail-closed (`FontUnusableError`) a kimeneti fájl
@@ -169,6 +160,57 @@
       fail-fast, a néma localhost-fallback tiltása miatt). Élesítés előtt VPS-config.
 
 ---
+
+## ⭐ 2026-08-07 — a nap tétele: a platform-munka NEM háttér
+
+Gábor: *„most a Doorstarnak kell terméket szállítani, a platform-fejlesztés háttér."*
+**Mérve az ellenkezője:** a `DSCONV-02…09` **mind `dependency-blocked`**, és **négy
+platform-kapun** állnak (`PLATFORM-GATES.md`: *„ezeket kizárólag conductor vagy root
+zárhatja"*). A kapuk az **ERPSEP**-sávon → **amit háttérnek hívtunk, az a szűk
+keresztmetszet.**
+
+- [ ] ⭐ **`ERPSEP-04` F1 — domain-szerződés doksi. AZ ENÉM, INDUL.**
+      Gábor kimondta a döntést (*„szét kell választani az ERP-t, a SpaceOS-t és a
+      JoineryTech-et, hogy tudjak szolgáltatni"*) — de **a döntés 2026-07-25 óta megvan**
+      (külön repó: `spaceos-erp-core`, GitHub Packages, **nem** forrás-submodule), a 4 fázis
+      kiírva, és az epic `owner: root`. **13 napja `pending`, és én „gazdátlan sávnak"
+      neveztem a saját epicemet.**
+      A fizikai ok, újramérve: a kanonikus CRM-ben **0** Order/Quote/Customer aggregátum,
+      a rendelés-fogalom viszont `Joinery/DoorOrder.cs` és `Procurement/PurchaseOrder.cs`.
+      **Nincs ERP-mag** → egy második ügyfélhez ma a `DoorOrder`-t is vinni kellene.
+      **Gábor döntése: (a) — a `DoorOrder` MARAD és hivatkozik** a semleges `Order`-re;
+      a szétválasztás nem vehet el a működő terméktől. Később (b), migrációval.
+- [ ] **`GATE-INSTANCE` zárása — a legolcsóbb első kapu.** 5-ből 3 bemenet kész
+      (ERPSEP-02 ✓, ERPSEP-03 ✓, ADR-072 ✓); hiányzik az **`ERPSEP-07`** (architect,
+      pending) és egy **kompatibilitási/breaking-change policy**. Ez bizonyítja, hogy a
+      kapu-mechanizmus egyáltalán működik.
+- [ ] **A scheduling 9 review nélküli commitja** → gitlink-bump → **v4-befogadás** → a Flow
+      Lab solverének leépítése. *(A v3 elavult 8 tagcsoportban; a Flow Lab a v4-et
+      leszállította, a burkot **a platform** rakja össze.)*
+- [ ] **`AUTH-DOORSTAR-ONBOARDING`** — **hatókör-szűkítve**: az instance-oldalt már lefedi a
+      `DSCONV-03` (P0, és részletesebben). Ez a task **csak a platform tartozása**:
+      auth/tenant **szerződés** + **audience-mapper** + **identity-modul gazdába vétele**.
+
+### Ma lezárva (2026-08-07)
+
+- [x] **A scheduling-repó gazdája a platform** (`ddbaf15`) — 12. gitlink, pin `d63f317`
+      (**nem** a HEAD: 9 commit áll review nélkül).
+- [x] **Történet-átírás** (`78c4802`) · **NOBYPASSRLS** (`a0dcc51`) · **demóadat
+      fertőtlenítés** (`6d35d35`) · **`DC-PII-IMPORT-GATE`** kiírva a doccapture-nek
+      (`f766ff9`).
+- [x] **A tegnapi visszavonásom volt téves** (`5fd8dcf`) — az adatvédelmi lelet **ÁLLT**;
+      a már redaktált fán mértem nullát.
+- [x] **Flow Lab:** 4 üzenet (`008`–`011`), a **termékesítési blokkolójuk feloldva**;
+      a képesség helye a **doc-capture termékvonal** (saját terminál).
+
+### ⚠ 5 review-kérés áll 2026-08-05 óta
+
+backend **PROJ-06 API-host** · backend **ERPSEP-05 helyesbítés** · doccapture **DC-03a** ·
+frontend **suite-recept** · frontend **általános portál-kapu**.
+**Kettő közülük (PROJ-06, ERPSEP-05) a kritikus úton van.**
+
+---
+
 
 ## Rám váró review
 

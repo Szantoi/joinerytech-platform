@@ -1,227 +1,177 @@
 # ROOT Terminal State
 
-> **Frissítve:** 2026-08-07, Europe/Budapest
+> **Frissítve:** 2026-08-07 este, Europe/Budapest
 > **Állapotforrás:** [`EPICS.yaml`](../../EPICS.yaml) (**kanonikus**) + [`AGENT-CHANNEL.md`](../../AGENT-CHANNEL.md)
 > **Belépő:** a csatorna **eleje** („Nyitott szálak") és **vége**; a régebbi napok archívumban.
 
 ---
 
-## Hol tartunk egy bekezdésben
+## ⭐ A nap tétele: a platform-munka NEM háttér — az a szállítási út
 
-A nap **egy stratégiai döntést** hozott — **az ütemezés gazdája a `spaceos.scheduling`**,
-a Flow Lab pedig `doorstar.scheduling-import` lesz —, és **négy saját mérőeszköz-hibát**,
-amiből kettőt már publikáltam, mielőtt kiderült. Mindkettőt ugyanoda helyesbítettem, ahol
-az eredeti állt. A Flow Lab a **v3 input-packet** leszállította, a reprodukciót **tiszta
-szobában, bájtazonosan** igazoltam, és a scheduling hash-pin kapuját **két mutációval**
-bizonyítottam. Kiadva egy új task (`ERPSEP-INSTANCE-NEUTRALITY-GATE`) egy **valódi hiba**
-nyomán: beégetett ügyfél-cégnév egy platform-modul PDF-generátorában.
-`EPICS.yaml` **93/143** (07-31: 90/133) — de **a szám nem hiteles**, ld. lentebb.
+**Gábor prioritása:** *„Most a Doorstarnak kell terméket szállítani; a platform-fejlesztés
+fontos háttér, ami a jövőt alapozza meg — hogy gyorsan tudjunk **tesztelt és validált**
+megoldást szállítani."*
 
----
+Megmérve viszont a Doorstar-oldali konvergencia-lánc:
 
-## 2026-08-07 — a scheduling-repó GAZDÁJA a platform (Gábor döntése)
+```
+DSCONV-01        completed
+DSCONV-02..08    pending (dependency-blocked)
+DSCONV-00, 09    blocked
+```
 
-A tegnapi 1. számú blokkoló **feloldva**. Amit tettem, és amit közben **helyesbítenem kellett**:
+**Az egész lánc NÉGY platform-kapun áll** (`PLATFORM-GATES.md`: *„ezeket kizárólag conductor
+vagy root zárhatja"*), a kapuk pedig az **ERPSEP**-sávon:
 
-**Bekapcsolva a sziget-fába:** `.gitmodules` **+3 −0**, `src/spaceos-modules-scheduling`,
-gitlink-szám **11 → 12**. A **pin `d63f317` (M4/4), nem a HEAD** — a gitlink ugyanaz a
-vállalás, mint a portál-pin: azt az állapotot jelöli, amit a platform **vállal**.
-
-> ⛔ **Ezért nem a HEAD:** a d63f317 után **9 commit áll root-review nélkül** — m4-5 (solver
-> DI), m4-6 (shadow-diff read-model) és kontraktus/1..7, az utolsó **„1.0.0-preview.2 —
-> kézbesítésre kész"** verzió-emeléssel. Review-nyom sehol (`EPICS.yaml`, csatorna).
-> Az önjelentett készültség érvénytelen — és itt egy **verzió-emelés** hordozza, ami a
-> Doorstar felé kézbesítési jelzés. **A 9 commit review-ja most az én sávom.**
-
-**⚠ Két tegnapi saját állításom TÉVES volt** — mindkettőt visszavontam a csatornában:
-
-| amit írtam | a mért igazság |
-|---|---|
-| „nincs `terminals/` mappája → nincs hova felterjeszteni" | **egyetlen** modul-submodule-nak sincs; a sáv a platform backend-terminálja, és működött (M1..M4 APPROVED) |
-| „M4/3+M4/4 nincs pusholva, CI nem futott rajtuk" | mindkettő `origin/main`-en, a CI utolsó **5/5 futama success** |
-
-A valódi hiány **kizárólag a gitlink** volt. **A „hiányzik" verdikt is mérendő, nem csak a
-„megvan"** — ez ugyanaz az osztály, mint a tegnapi négy mérőeszköz-hiba.
-
-**Klón-buktató, nevesítve:** az `url.insteadOf` a platform-repóban **lokális**, és a
-`git submodule add` klón-**alprocessze nem örökli** → `fatal: Could not read from remote`.
-Megkerülés: `git -c url."https://github.com/".insteadOf="git@github.com:" submodule add …`.
-Valószínűleg ez magyarázza a 3 kicsomagolatlan gitlinket is.
-
----
-
-## ⭐ 2026-08-06 döntése: az ütemezés gazdája a platform
-
-**Kérdés (Gábor közvetítette a Flow Lab rootjától):** a `spaceos.scheduling` az ütemezés
-gazdája, vagy a Flow Lab ütemezője marad az? **Válasz: a platformé.** Négy mért ok, de
-egy közülük eldönti:
-
-> **A Flow Lab 27 SS+részleges élt FS-re normalizált — az IMPORT rétegben.** Ott a
-> `releaseThresholdPercent` és az SS-jelleg **megszűnik létezni, mielőtt az ütemezőhöz
-> érne**, tehát az ADR-069 §4 szemantikája **elvileg sem alkalmazható**. Nem két szabály
-> versenyez: **az egyik réteg elpusztítja a másik bemenetét.**
-
-**Megőrzés teszt-korpuszként, nem kód-átemeléssel:** a Flow Lab kimenete
-`doorstar-planning-input-pack.v3` + `.sha256` alakban a scheduling-repóba; a solver
-leépítése **csak a v3 zöld befogadása után** — addig a Flow Lab ütemezője a **bizonyíték
-egyetlen példánya**.
-
-**Két kiegészítés, amit külön kértek:** a fogyasztás **nem NuGet** (a scheduling nem
-publikál csomagot; a szerződés a `docs/openapi.yaml`, és a motor behúzása megkerülné az
-ADR-069 D6 host-oldali garanciáit) — NuGet a **hostingra** kell. És a v3-at a Flow Lab
-**előállítja**, de a scheduling-repóba **a platform veszi be**: *egy kapu, aminek a
-bemenetét a mért fél állítja be, soha nem bukhat el.*
-
----
-
-## ⚠ A nap másik tanulsága: négy saját mérőeszköz-hiba, kettő publikálva
-
-| # | A hiba | Hogyan derült ki |
+| kapu | platform-bemenet | állapot |
 |---|---|---|
-| 1 | nyers `grep -oE` **élek mutatóit és kommenteket** számolt sornak (82 vs. 41) | **a Flow Lab** mérte meg helyettem |
-| 2 | a `TaskId = "` minta a **`ParentTaskId`-t is** fogja (73 vs. 41) | összeg-kontroll |
-| 3 | a `unitSeconds` mutáció **nem alkalmazódott** (a mező nem létezik) | assert |
-| 4 | ~~ékezetes minta `python -c`-vel~~ → **2026-08-07: EZ A 4. TÉTEL MAGA VOLT A HIBA** | ld. lentebb |
+| **GATE-INSTANCE** ⭐ | ERPSEP-02 ✅ · ERPSEP-03 ✅ · ADR-072 ✅ · **ERPSEP-07 pending** · kompat-policy | **3/5 — a legolcsóbban zárható** |
+| **GATE-SECURITY** | STAB-RLS-PROOF ✅ · **ERPSEP-06 blocked** · JWT/tenant szerződés · hosting-verzió | blokkolja a `DSCONV-03`-at (P0 auth) |
+| **GATE-BUNDLE** | **ERPSEP-08/09 blocked** (infra) · Maintenance pilot | legtávolabb |
+| **GATE-HANDSHAKE** | B2B-lánc | a pilot kapuja |
 
-**⛔ 2026-08-07 — a 4. tétel visszavonva, mert a VISSZAVONÁS volt téves.** Az eredeti
-adatvédelmi lelet **IGAZ volt**; `7e352dc`-vel alaptalanul vontam vissza. Bizonyíték: a
-redakció nyoma (`ProjektNev`) **fájlonként pontosan** ott van, ahol az ügyfélnév volt —
-`98 / 1057 / 1001 / 5 = 2161` —, és a jelenlegi 53 üres cella épp az a 34+19, amit a Flow
-Lab **az előző percben ürített ki**. Én azt vettem a hamisság bizonyítékának.
-
-```
-20:26 en: lelet (2165)   20:40 ok: REDAKCIO commitolva (d6bfc3c -> 4be3711 ATIRVA)
-                         20:46 en: "a lelet HAMIS"  <- ekkor mar csak a redaktalt fa letezett
-```
-
-A `python -c`-s mérés **helyes volt** (98 a legacy-flat-ben — ma a sablon-nyom is 98). A két
-mérésem **nem mondott ellent**: két különböző időpontot mértek. A „megromlott
-karakter-osztály" gyökér-okot **én találtam ki**, és szabályt írtam rá.
-
-> **A valódi tanulság:** a **visszavonás ugyanolyan súlyú állítás, mint a lelet** — ugyanaz
-> a bizonyítási teher. És ha a másik fél gyorsan, jól javított, az **ugyanaz a „javító
-> mechanizmus"**, amiről a saját szabályom szól: mérd a javítás **előtti** állapotot.
-
-⇒ A „karakter-osztályaim túl szűkek" mintázat valódi példányszáma **3, nem 4**.
+⇒ **amit „háttérnek" hívtunk, az a szűk keresztmetszet.**
 
 ---
 
-## Ma lezárt review-k — mind saját méréssel
+## ⛔ És amit kerülgettem — Gábor mondta ki
 
-| Szelet | Mérés |
-|---|---|
-| **Flow Lab v3-átadás** | reprodukció **tiszta szobában, bájtazonos** (`847541…`, 270 588 B); **3 kontroll** kellett az érzékenységhez, az első kettő érvénytelen volt |
-| **scheduling hash-pin kapu** (a v3-befogadás előfeltétele) | **M-ROOT-1**: pack romlik → 5 bukás, és a **teljes szám 263→246** (a pin dob, tesztek el sem indulnak) · **M-ROOT-2**: a **dokumentált** frissítési út (pack + `.sha256` együtt) → a hash-kapu átengedi, de a viselkedési vektor **így is bukik** |
-| **a `raw/` lelet lezárása** | a Flow Lab a nehezebb utat választotta (leadta a 12 felvételt) — elfogadva |
-
-**Root-munka:** a Doorstar-csatolódás mérése · `ERPSEP-INSTANCE-NEUTRALITY-GATE` kiadva ·
-a PROJ-05/06 **retroaktív** bejegyzése az `EPICS.yaml`-ba.
-
----
-
-## ⛔ Új, valódi hiba — task kiadva
+*„Teljesen szét kell választani az ERP-t, a SpaceOS-t és a JoineryTech-et, hogy tudjak
+szolgáltatni."* Megmérve: **a döntés nem hiányzott.**
 
 ```
-joinery/.../Pdf/ProductionSheetGenerator.cs:252 és :270
-   "Doorstar Kft. — Gyártásilap"   <- beégetett string-literál, NEM konfiguráció
-elérhetőség MÉRVE: DI-singleton -> 3 PDF query-handler -> GyartasilapEndpoints.cs
+EPIC-ERP-SEPARATION-2026Q3   started 2026-07-18   owner: root   <- EN
+ERPSEP-04 "ERP-mag kulon repoban"   pending 13 napja
+   ELHELYEZES ELDONTVE (Gabor, 2026-07-25): kulon repo (spaceos-erp-core),
+   GitHub Packages, NEM forras-submodule.  4 fazis kiirva.
 ```
 
-⇒ **minden** joinery-t használó bérlő gyártásilapján a Doorstar neve jelenne meg.
-Task: **`ERPSEP-INSTANCE-NEUTRALITY-GATE`** (E1-boundaries), két fázissal és **kötelező
-sorrenddel**: előbb a feloldás, **utána** a kapu — fordítva a kapu az első percben pirosat
-adna a meglévő 25 soron, és a kikapcsolás mintáját tanítaná.
+**Én neveztem „gazdátlan sávnak" a saját epicemet**, és Gábor döntési listájára tettem egy
+végrehajtási adósságot. A fizikai ok, amiért nem lehet szolgáltatni (ma újramérve):
 
-**A jó hír a mérésből:** „Doorstar" 100 nyers előfordulás a platform `src/`-jében, de
-szétválasztva **25 produkciós kódsor** (54 teszt), és abból **~92% migrációs seed** —
-a kernel-seedek ráadásul **bérlő-szűrtek**. **A Doorstar nincs beépülve; rétegvágási
-adósság van.**
+```
+kanonikus CRM : Lead.cs, Opportunity.cs ... de Order/Quote/Customer aggregatum: 0
+a rendeles    : Joinery/DoorOrder.cs + Procurement/PurchaseOrder.cs
+=> NINCS ERP-mag; egy masodik ugyfelhez ma a DoorOrder-t is vinni kellene
+```
 
----
-
-## ⚠ Az `EPICS.yaml` alul-jelent — a 93/143 nem hiteles
-
-Ma mérve, a saját szabályom fordítva ütött vissza (*a task-doksi státusza nem hiteles* →
-most a **yaml** volt az, ami hiányzott):
-
-- **PROJ-05 és PROJ-06 nem is szerepelt** a yaml-ban, pedig **mindkettőt én zártam
-  APPROVED-dal** → retroaktívan bejegyezve, `⚠ RETROAKTÍV` megjelöléssel.
-- **`PROJ-NUMBERING-GAP` (open):** a `docs/tasks/EPIC-PROJECTS-MODULE-2026Q3/` mappa
-  **üres**, a git-log PROJ-01 után egyből PROJ-05-re ugrik, és a **PROJ-01 `in_progress`
-  a rá épülő PROJ-05/06 `done`-ja mellett.** Belsőleg ellentmondásos — **nem találgatom
-  ki**, a backend mondja meg.
-- `DC-01b-write` és `DC-03` `pending`, pedig mindkettő **APPROVED** (a commit szándékosan
-  visszatartva a doccapture-sávban).
+**Gábor döntése az (a) útra:** a `DoorOrder` **marad és hivatkozik** a semleges `Order`-re —
+a szétválasztás nem vehet el a működő terméktől. **Indul az ERPSEP-04 1. fázisa (enyém).**
 
 ---
 
-## 🔴 Gábor előtt — a részletes lista a [`TODO.md`](TODO.md)-ban
+## Gábor mai döntései — mind rögzítve
 
-**Ha csak hármat:**
+| # | döntés | hol |
+|---|---|---|
+| 1 | a `spaceos-modules-scheduling` gazdája a **platform** | `.gitmodules` 12. gitlink, pin `d63f317` |
+| 2 | a 48 könyv-oldal **törlendő** + **történet-átírás** | `ef16466`, `78c4802` (forced) |
+| 3 | Tranche B mehet *(közben már meg is volt)* · licenc **ne legyen blokkoló** | EPICS |
+| 4 | `NOBYPASSRLS` **most mehet**, és **maradjon** élesben | mind a 3 role `f` |
+| 5 | auth: **(A) üzemeltetői onboarding**, nem önkiszolgáló | `AUTH-DOORSTAR-ONBOARDING` |
+| 6 | **személyes fiók mindenkinek** — „a valódi audit nyomvonal" | ADR-jelölt: állomás mint aláírt claim |
+| 7 | **ERPSEP-04 (a)**: a `DoorOrder` marad és hivatkozik | ERPSEP-04 indul |
+| 8 | *„Integráljuk ezt a tudást — sok cégtől kell Excelből átvenni"* | **`DC-PII-IMPORT-GATE`** |
 
-1. ~~A `spaceos-modules-scheduling` gazdája~~ — **LEZÁRVA 2026-08-07: a platform.**
-2. **A 48 könyv-oldal** a publikus repóban (+ a hiányzó bináris-kapu).
-3. **A `NOBYPASSRLS` telepítése** és a **licenc-kérdés** (egy aláírás feloldja a DC-01c-t).
+---
+
+## Ma végrehajtva
+
+- **Történet-átírás** (`filter-repo`, külön mirror-klón, 85 MB bundle-mentés): a 48 fájl
+  eltűnt a **teljes** történetből; friss GitHub-klónnal igazolva (0 találat, pozitív kontroll
+  1, HEAD-fa **bájtra azonos**). VPS-en is törölve, 11/11 service fut.
+- **NOBYPASSRLS élesítve** mindkét workeren; 0 új hiba, a hibatípusok előtte/utána azonosak.
+- **Demóadat fertőtlenítve** a publikus repóban: 11 e-mail + 35 személynév-mező, 3 fájlban.
+- **Kiadva:** `AUTH-DOORSTAR-ONBOARDING` (szűkítve: csak platform-oldal), `DC-PII-IMPORT-GATE`
+  (a `doccapture` terminál inboxába), `STAB-INV-REORDER-OUTBOX`, `STAB-RLS-POLICY-MISSINGOK`.
+- **Flow Lab:** 4 üzenet ki (`008`–`011`); a **termékesítési blokkolójuk feloldva**.
+
+---
+
+## ⚠ A mai saját hibáim — mind ugyanabból a családból
+
+| # | hiba | hogyan derült ki |
+|---|---|---|
+| 1 | a **visszavont lelet IGAZ volt** — a már redaktált fán mértem nullát | a redakció **nyoma** fájlonként egyezett |
+| 2 | „nincs `terminals/` mappája" → **egyetlen** modulnak sincs | a társak megmérése |
+| 3 | a **doksi 2. felében** állt a kötelező sorrend (definer-függvények) | a jegyzet végigolvasása |
+| 4 | **rossz FÁT mértem** kétszer: auth (7 modul máshol), OOXML (motor külön repóban) | képesség-alapú kérdés |
+| 5 | **13 napos végrehajtási adósságot** döntési kérdésnek álcáztam | `owner: root` a yaml-ban |
+| 6 | a PII-doksiba **beleírtam a valódi nevet** példaként | a saját utóellenőrzésem |
+
+> **A 4. a legdrágább:** a hamis negatív alapján **utasítást adtam** a Flow Labnak, hogy
+> építsenek meg négy képességet — **háromból három már létezett**, root-jóváhagyva.
+> A hamis pozitív az én időmet viszi; a hamis negatív **más munkáját**.
+
+---
+
+## 🔴 Gábor előtt
+
+1. **`/shopfloor` PIN-route** — a `PIN=1234` **közös** belépő, ami szembemegy a mai
+   „személyes fiók" döntéssel. **A kettőt együtt kell eldönteni.**
+2. **A Codex-sáv gazdája** (9 task) · **`npm publish` + VPS-IP + 3 submodule push**
+3. **4 kulcs rotálása** (Gemini, 2× Brave, 2 modell-szolgáltatói) — **ez a te kezed kell**
+4. `B2B-10-F7` (`root+gabor`) · PyMuPDF (AGPL) · S3 vagy MinIO
+5. *(opcionális)* GitHub Support a szerver-oldali objektumokra
 
 ---
 
 ## Futó sávok
 
-| Sáv | Mi fut |
+| sáv | mi fut |
 |---|---|
-| **root / scheduling** ⭐ | **ÚJ SÁV (08-07): a 9 review nélküli commit átvétele** (m4-5, m4-6, kontraktus/1..7 + a `1.0.0-preview.2` verzió-emelés) → utána gitlink-bump d63f317-ről; majd a **v3 input-pack befogadása** |
-| **Flow Lab** (doorstar) | katalógus-ADR (1%-os javítás, hash-rotáció) — **engedélyezve**; a `raw/` 4 maradék-előfordulása; a solver leépítése **BLOKKOLT** (a v3-befogadásig) |
-| backend | `PROJ-01`/`PROJ-02` és a 6 modul interceptor-átállása (`STAB-RLS-INTERCEPTOR-E2E`, a CRM a minta) |
-| doccapture | a neutrality-szelet felterjesztésére vár; **a fa hold alatt**, 3 szelet egy commitban zárul |
-| frontend | a portál **lockfile platform-függő** — a CI-kapu piros; **a portál-pint nem bumpolom, amíg nem zöld** |
+| **root** ⭐ | **ERPSEP-04 F1** (domain-szerződés) · a scheduling **9 review nélküli commitja** → gitlink-bump → v4-befogadás · ADR-069 indítási késleltetés |
+| doccapture | **`DC-PII-IMPORT-GATE`** (kiírva ma) · DC-01b-write · DC-03 |
+| backend | ERPSEP-05/06 · PROJ-01 · a 6 modul interceptor-átállása · `STAB-INV-REORDER-OUTBOX` |
+| frontend | a portál **lockfile platform-függő** → CI piros; **a pint nem bumpolom** |
+| Flow Lab | katalógus-séma átadás + mennyiségi szabály-modell; **a solver leépítése BLOKKOLT** a pack befogadásáig |
+
+**⚠ Két napja áll 5 review-kérés** (08-05): backend PROJ-06 · ERPSEP-05 helyesbítés ·
+doccapture DC-03a · 2× frontend. Kettő közülük **a kritikus úton van**.
 
 ---
 
-## Nyitott szerkezeti leletek (nem sürgős, de nevesítve)
+## Nyitott szerkezeti leletek
 
-- **Orphan `spaceos-modules-ehs` fa**: nem fut, nem is fordul.
-- **Instance-adat platform-migrációkban** (kernel StageRegistry, cutting AddPricingTables,
-  joinery seederek) — migrációt **nem** írunk át, a szabály a jövőbeli seedre szól.
-- **Kontrolling**: az `AddSpaceOsModuleTenancy()` az API-rétegben van.
-- **ADR-069 hiánya:** nincs **indítási késleltetés** fogalom — az `extraDays` a *tartamhoz*
-  ad, a késleltetés a *kezdést* tolja. A Flow Lab helyesen **nem** simította el.
-- **ERPSEP**: a sáv **gazdátlan**.
+- **A VPS `/opt/joinerytech` a RÉGI történeten áll** (`b123146`) → a következő `git pull` ott
+  **elszáll**. Friss klón vagy `fetch --force` + reset — **telepítési döntés**.
+- `spaceos-modules-identity`: **fut a VPS-en, de nincs a `.gitmodules`-ban** (üres mappa).
+- **Duplikált ID az `EPICS.yaml`-ban:** `EHS-WIZARD-HU` kétszer, mindkettő `blocked`.
+- `PORTAL-DEADTREE-B` `blocked`, pedig a munka **kész** (portal `76bc647`).
+- Orphan `spaceos-modules-ehs` fa · Kontrolling `AddSpaceOsModuleTenancy` az API-rétegben.
+- **ADR-069 hiánya:** nincs *indítási késleltetés* fogalom (az `extraDays` a tartamhoz ad).
 
 ---
 
 ## Újraindítási védelem
 
 1. Csatorna **eleje + vége**, `EPICS.yaml`, ez a state, `TODO.md`.
-2. **A két Monitort újra kell élesíteni.**
+2. **A két Monitort újra kell élesíteni** — ma emiatt maradt olvasatlan 2 inbox-üzenet.
 3. **`gh run list` push után** — „van workflow" ≠ „fut rá" ≠ „zöld".
-4. **A munkafa nem a publikált állapot.** Piros kapunál tiszta `origin/main`
-   kicsomagoláson mérj.
+4. **A munkafa nem a publikált állapot.** Piros kapunál tiszta `origin/main`-en mérj.
 5. **A negatív eredmény érvényességét külön igazold:** futott-e le, illik-e a műszer,
    van-e **pozitív** kontroll.
 6. Nincs `git add -A` vegyes fán; **review-nként, fájl-szintű pathspeckel** commitolj.
-7. Done/APPROVED kizárólag root-review, **saját méréssel** — a warning-szám is mért tétel.
-8. **Mutáció:** a produkciós oldalt rontsd, alkalmazva-bizonyítással — és az **„alkalmazva"
-   ≠ „releváns"**: ha a mért kimenet nem fogyasztja a rontott bemenetet, a változatlan
-   eredmény a **célzásom** hibája, nem a kapu vaksága.
+7. Done/APPROVED kizárólag root-review, **saját méréssel**.
+8. **Mutáció:** a produkciós oldalt rontsd; az **„alkalmazva" ≠ „releváns"**.
 9. **Kiadás előtt mérd a task hatókörét.**
 10. Idegen repóban nincs destruktív parancs; VPS/éles migráció/credential csak
     Gábor-jóváhagyással.
-11. Egy hiba után **keresd meg a testvéreit**; más ágens mérőeszköz-hibáját alkalmazd a
-    sajátodra is.
+11. Egy hiba után **keresd meg a testvéreit**.
 12. **Shell-be írt szöveg:** idézőjeles heredoc (`<<'EOF'`).
-13. ⭐ **VISSZAVONVA 2026-08-07 — hamis alapon állt.** (Eredetileg: „nem-ASCII mintát soha
-    ne adj át `python -c`-vel".) A `python -c`-s mérésem **pontosan helyes volt**; a
-    különbséget az okozta, hogy a másik mérésem a **már megjavított** fát nézte. Helyette:
+13. ~~Nem-ASCII minta `python -c`-vel~~ **VISSZAVONVA (hamis alapon állt).** Helyette:
     **ha egy leletet a másik fél már javíthatott, a visszavonás előtt bizonyítsd, hogy a
-    javítás ELŐTTI állapotot méred** (`git show <pre-sha>:<path>`) — és ha az állapot
-    eltűnt, a visszavonás **nem megalapozott**, csak a bizonytalanság mondható ki.
-    **Ne gyárts gyökér-okot:** két eltérő mérésnél az első hipotézis az legyen, hogy
-    **mást mértek** (idő, fa, commit), és csak azután, hogy az eszköz romlott el.
-14. ⭐ **Kereső/maszkoló eszközt tesztelj ismert bemeneten, MIELŐTT valódi adaton futtatod**
-    — főleg, ha a lelet **vádat** fogalmaz meg valakiről.
-15. ⭐ **Bontás + összeg csak akkor bizonyíték együtt, ha az összeg a bontásból adódik.**
-    Külön parancsból jövő stimmelő összeg **hitelesít egy hibás bontást**.
-16. ⭐ **A „hiányzik" verdiktet a TÁRSAKON mérd, ne magában.** „Nincs `terminals/` mappája"
-    csak akkor lelet, ha a többinek **van** — itt egyiknek sem volt. Egy hiány anomália
-    voltát a **társ-populáció** dönti el; enélkül a normát jelentem hibának.
-    (Rokona: 5. — de az a *saját mérés* érvényességéről szól, ez a *referencia-keretről*.)
+    javítás ELŐTTI állapotot méred.** Ne gyárts gyökér-okot: két eltérő mérésnél az első
+    hipotézis az legyen, hogy **mást mértek** (idő, fa, commit).
+14. **Kereső/maszkoló eszközt tesztelj ismert bemeneten, MIELŐTT valódi adaton futtatod** —
+    főleg, ha a lelet **vádat** fogalmaz meg.
+15. **Bontás + összeg csak akkor bizonyíték együtt, ha az összeg a bontásból adódik.**
+16. **A „hiányzik" verdiktet a TÁRSAKON mérd**, ne magában.
+17. ⭐ **A „nincs ilyen képesség" a MÉRT FA tulajdonsága lehet.** Verdikt előtt sorold fel a
+    fákat (`.gitmodules`, testvér-repók, **külön repós termékvonalak**), és keress a
+    **képesség nevére** az `EPICS.yaml`-ban, ne a könyvtárra. **Ha a verdikt MÁS munkáját
+    irányítja, a mérés legyen szélesebb, mint amit a kérdés kér.**
+18. ⭐ **Mielőtt bármit „gazdátlannak" nevezel, olvasd el az epic `owner` mezőjét.** Ha a
+    döntés dátumozva megvan és a terv is, akkor **munka**, nem döntés — a felterjesztése álca.
+19. ⭐ **A privát-adat-szkennt futtasd le a SAJÁT frissen írt doksidra is**, mielőtt
+    commitolod. Aki szivárgást dokumentál, új találatot gyárt.

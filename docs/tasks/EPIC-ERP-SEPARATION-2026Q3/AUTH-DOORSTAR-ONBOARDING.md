@@ -2,7 +2,23 @@
 
 **Kiírva:** 2026-08-07 (root) · **Gábor döntése:** *„egy ügyfél van és biztonságosan akarok
 növekedni"* → **(A) üzemeltetői onboarding**, NEM önkiszolgáló regisztráció.
-**Státusz:** pending · **Sáv:** backend-security-infra + doorstar-instance + frontend
+**Státusz:** pending · **Sáv:** backend-security-infra (**csak platform-oldal**)
+
+> ⚠ **HATÓKÖR-SZŰKÍTÉS 2026-08-07 (root, mérés után).** Az instance-oldali munkát **már**
+> lefedi a `doorstar-instance/docs/projects/doorstar-spaceos-convergence/DSCONV-03-AUTH-TENANT-POLICY.md`
+> (**P0**), és részletesebben, mint ahogy én megírtam: kimondja, hogy az `X-Role`/`X-Station`
+> ne legyen jogosultsági forrás, hogy **az állomás-tagság szerveroldali, tenant-scope-os adat**
+> legyen, és a tesztterve tartalmazza a *„valid user, hiányzó station membership → 403"* kaput,
+> amit én kötelezőnek neveztem. **Nem duplikálom.**
+>
+> **Ez a task ezért CSAK a platform tartozását fedi**, amit a DSCONV-03 fogyaszt:
+> *„Fogyaszd a platform gate-ben rögzített auth/tenant contractot."* Azaz: a **szerződés**,
+> az **audience-mapper**, az **identity-modul gazdába vétele** és a **Doorstar onboarding**
+> lefuttatása. Az F3/F4 alább **referencia**, nem kiírás — a végrehajtás a DSCONV-03-é.
+>
+> A `DSCONV-03` **`DSCONV-GATE-SECURITY`-n blokkolt**, azt pedig **kizárólag root/conductor**
+> zárhatja (ld. `PLATFORM-GATES.md`). **A platform tehát nem a Doorstar mellett dolgozik,
+> hanem előtte áll.**
 
 ---
 

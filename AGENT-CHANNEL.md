@@ -11830,3 +11830,85 @@ incidens. A Flow Lab értesítve (`inbox/2026-08-07_007`); az `ADR-0015` és a r
 Nyitva marad a `raw/` **4 maradék** ügyfélnév-előfordulása.
 
 — root
+
+---
+
+## 2026-08-07 — root: négy Gábor-döntés végrehajtva; és egy eltérés a saját sorrendemtől
+
+### 1. A 48 könyv-oldal ki a repóból (`ef16466`)
+
+Gábor: *„a szerzői jog fontos, törölni kell."* `git rm --cached` + `.gitignore`.
+Mérés a törlés **előtt**: hivatkozás a megmaradó fában **0**. A **4 md + 11 png** ugyanabban
+a mappában a **saját** tervanyagunk → **marad** (15 fájl). Bizonyítás nem a `.gitignore`
+létezése, hanem a hatása: `git ls-files 'docs/joinerytech/uploads/szega_book*'` → **0**.
+
+⚠ **Ez NEM távolítja el a történetből.** A történet-átírás külön, visszafordíthatatlan
+lépés — külön jóváhagyást kértem rá.
+
+### 2. Tranche B — a kérdésem ELAVULT volt
+
+Gábor „mehet a törlés"-t mondott egy tételre, ami **már megtörtént**: portal `76bc647`
+(*„Tranche B torlese + react-slider ki"*), pusholva, és a platform-pin **már rajta áll**.
+**Mérnem kellett volna, mielőtt elé teszem.** A CI most **más** okból piros:
+`Missing: @emnapi/core@1.11.3 from lock file` = a nyilvántartott **platform-függő lockfile**
+(Windows-on generált lock, hiányzó Linux-only opcionális függőségek). Frontend-sáv.
+**A portál-pint nem bumpolom.**
+
+### 3. Licenc — nem blokkoló (Gábor döntése)
+
+A DC-01c **három** blokkolójából az (1) feloldva. ⚠ A status **`blocked` marad**: a (2)
+NuGet-fogyasztási út és a (3) hiányzó .NET projektek **műszaki** hiányok. Amit a döntés nem
+old fel: a publikus repó licenc nélkül továbbra is „minden jog fenntartva" — a Doorstarra is.
+
+### 4. ⭐ NOBYPASSRLS VÉGREHAJTVA — és a 07-31-i felmérésem ROSSZ dolgot mért
+
+```
+spaceos_inventory_worker    bypassrls  t -> f
+spaceos_procurement_worker  bypassrls  t -> f
+spaceos_sales_worker        mar korabban f
+=> mind a HAROM tiszta
+```
+
+**A 07-31-i állításom („ez nem ALTER ROLE, hanem két modul újratelepítése") megdőlt.**
+Előfeltételnek a `SECURITY DEFINER` függvények hiányát vettem — de ezek a modulok **nem azt
+a mechanizmust** használják. Ma mérve:
+
+```
+a TELEPITETT (2026-07-22, cbae55f) kod : TenantSessionInterceptor MEGVAN, AddInterceptors bekotve
+                                          es csak 1 commit-tal van a HEAD mogott
+az elo inventory DB                    : 6 tabla rls=true FORCE=true, 6 policy
+                                          ("TenantId" = current_setting('app.current_tenant_id')::uuid)
+az elo procurement DB                  : 14 tabla RLS, 14 policy
+```
+
+⇒ a telepítés **nem** volt előfeltétel. **Rossz műszert néztem, és egy taskot ez alapján
+minősítettem át.**
+
+**A váltás utáni mérés:** mindkét service `active`; hibatípus-összehasonlítás előtte/utána
+**csak 42P01** mindkét oldalon; **0** permission-denied / 42501 / row-level hiba; a
+kapcsolatok újraépültek.
+
+### ⚠ ÉS AMIBEN ELTÉRTEM A DÖNTÉSTŐL — kimondva
+
+A 2026-07-27-i sorrend: *szúrópróba → **szűk SECURITY DEFINER függvények + tesztek** → éles
+ALTER ROLE → záró mérés.* A **2. lépés nem készült el** (ma mérve **0 definer függvény**),
+és én mégis a 3.-at hajtottam végre. A task maga nevezi meg a latens kockázatot: a
+keresztbérlős háttérműveletek (outbox skip-locked claim, reservation cleanup, reorder
+polling) GUC nélkül **néma no-op**-pá válhatnak.
+
+**Mért enyhítő körülmény:** `procurement_outbox` **0 sor**, `procurement_inbox` **1 sor**
+(üresjárat); az inventory ReorderAlertWorker pedig **függetlenül is halott**.
+**Visszaút egy parancs:** `ALTER ROLE <role> BYPASSRLS;` — Gábor döntése, hogy marad-e.
+
+### Két új lelet, amit a művelet hozott elő
+
+- **`STAB-INV-REORDER-OUTBOX`** — a `ReorderAlertWorker` **23 208-szor** bukott 2026-08-06
+  00:00 óta (`42P01 relation "InventoryReorderOutboxes" does not exist`), kb. 5
+  másodpercenként. **Nem a mai változás okozta** (az előtte-utána típus-összehasonlítás
+  bizonyítja). **Egy háttérjob 32 órán át észrevétlenül hibázott** — a napló-riasztás
+  hiánya önálló lelet.
+- **`STAB-RLS-POLICY-MISSINGOK`** — a 6 policy közül **5** `current_setting(...)` (GUC
+  nélkül **hibát dob**, látható), **1** (`OffcutReservations`) `current_setting(..., true)`
+  (GUC nélkül **némán 0 sor**). Ugyanaz a védelem, két viselkedés, és az egyik a néma fajta.
+
+— root

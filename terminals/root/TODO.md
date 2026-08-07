@@ -18,14 +18,15 @@
 
 ## 🔴 Gábor előtt — sürgősségi sorrendben
 
-- [ ] ⛔ **ÚJ 2026-08-06 — a `spaceos-modules-scheduling` repónak NINCS gazdája a
-      sziget-struktúrában.** Mérve: nincs a platform `.gitmodules`-ában (11 gitlink, egyik
-      sem ez), és **nincs `terminals/` mappája** — vagyis nincs terminál-sávja, nincs
-      inbox/outbox, nincs hova felterjeszteni. Közben a commit-üzenetei már hivatkoznak
-      „root-review kötelező pontjára", és most **platform-oldali munkát írtam elő rá**
-      (input-pack v3 befogadása + a hash-pin kapu mutációja). **Kérdés: ki dolgozik rajta,
-      és melyik root bírálja?** Amíg nincs eldöntve, a v3-befogadás gazdátlan — és pont az
-      a lépés, ami nélkül a Flow Lab ütemezője nem építhető le.
+- [x] ~~⛔ **a `spaceos-modules-scheduling` repónak nincs gazdája**~~ **LEZÁRVA
+      2026-08-07 — Gábor: a gazda a JoineryTech platform (root + csapat).** Bekapcsolva
+      **12. gitlinkként** (`.gitmodules` +3 −0), pin **`d63f317` (M4/4), nem a HEAD**.
+      ⚠ A kérdés **két indoklása téves volt** (újramérve, csatornában visszavonva):
+      `terminals/` mappája **egyetlen** modul-submodule-nak sincs, a sáv a platform
+      backend-terminálja (M1..M4 root-APPROVED bizonyítja); az M4/3+M4/4 push-kapu pedig
+      **fel van oldva** (mindkettő `origin/main`-en, CI 5/5 success). A valódi hiány
+      **kizárólag a gitlink** volt → 16. újraindítási szabály: a hiány-verdiktet a
+      **társakon** kell mérni, nem magában.
 
 - [x] ~~**`ADR-072` elfogadása**~~ **ELFOGADVA 2026-07-31 (Gábor: „ADR-072 az legyen
       független").** A root rögzítette az **ADR-066 §9.1 felülírását** is (a `ProjectRef`
@@ -349,8 +350,15 @@ kernel FlowManagement 0 migráció 0 route · scheduling Domain.Tests **263/263 
       **1 bukás** a `Dependency_vector_reproduces(ss-positive-lag)`-on. ⇒ **negatív eredmény:
       a frissítési út NEM hatástalanítja a kaput** — tartalmat mér, nem csak integritást.
       sha1 `59dd6aab`→`009812bb`→vissza `59dd6aab`, `git status` üres, újra 263/263 zöld.
-- [ ] ⚠ **A v3 BEFOGADÁSA gazdátlan** — az előfeltétel teljesült, de a scheduling-repónak
-      nincs sávja (ld. a Gábor-tételt a lap tetején). Ez blokkolja a Flow Lab leépítését.
+- [ ] ⛔ **ÚJ 2026-08-07 — 9 COMMIT ROOT-REVIEW NÉLKÜL a scheduling-repóban. Ez most az
+      én sávom** (a gazda-döntéssel a kapu hozzám került). A `d63f317` (M4/4, utolsó
+      APPROVED) után: `7cd7276` m4-5 solver DI-bekötés · `5cf9e7a` m4-6 shadow-diff
+      read-model · `8da898a..e22687a` kontraktus/1..7. Az utolsó commit egy
+      **1.0.0-preview.2 — kézbesítésre kész** verzió-emelés: **önjelentett készültség,
+      ami a Doorstar felé kézbesítési jelzés** — a review-kapu szerint érvénytelen.
+      Sorrend: **review → gitlink-bump → v3-befogadás → Flow Lab solver leépítése.**
+- [x] ~~⚠ **A v3 BEFOGADÁSA gazdátlan**~~ **FELOLDVA 2026-08-07** — a mérő fél a platform.
+      A befogadás a fenti 9-commit-review **után** jön.
 - [ ] **ADR-069-kiegészítés: indítási késleltetés ≠ `extraDays`.** A Flow Lab
       `startDelayWorkingDays`-ként hozza, és **helyesen NEM képezi rá** az `extraDays`-re:
       a képlet (`days = ceil(elapsed / workingMinutesPerDay) + extraDays`) a **tartamhoz**

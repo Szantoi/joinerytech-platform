@@ -1,6 +1,6 @@
 # ROOT Terminal State
 
-> **Frissítve:** 2026-08-06 este, Europe/Budapest
+> **Frissítve:** 2026-08-07, Europe/Budapest
 > **Állapotforrás:** [`EPICS.yaml`](../../EPICS.yaml) (**kanonikus**) + [`AGENT-CHANNEL.md`](../../AGENT-CHANNEL.md)
 > **Belépő:** a csatorna **eleje** („Nyitott szálak") és **vége**; a régebbi napok archívumban.
 
@@ -19,7 +19,38 @@ nyomán: beégetett ügyfél-cégnév egy platform-modul PDF-generátorában.
 
 ---
 
-## ⭐ A nap döntése: az ütemezés gazdája a platform
+## 2026-08-07 — a scheduling-repó GAZDÁJA a platform (Gábor döntése)
+
+A tegnapi 1. számú blokkoló **feloldva**. Amit tettem, és amit közben **helyesbítenem kellett**:
+
+**Bekapcsolva a sziget-fába:** `.gitmodules` **+3 −0**, `src/spaceos-modules-scheduling`,
+gitlink-szám **11 → 12**. A **pin `d63f317` (M4/4), nem a HEAD** — a gitlink ugyanaz a
+vállalás, mint a portál-pin: azt az állapotot jelöli, amit a platform **vállal**.
+
+> ⛔ **Ezért nem a HEAD:** a d63f317 után **9 commit áll root-review nélkül** — m4-5 (solver
+> DI), m4-6 (shadow-diff read-model) és kontraktus/1..7, az utolsó **„1.0.0-preview.2 —
+> kézbesítésre kész"** verzió-emeléssel. Review-nyom sehol (`EPICS.yaml`, csatorna).
+> Az önjelentett készültség érvénytelen — és itt egy **verzió-emelés** hordozza, ami a
+> Doorstar felé kézbesítési jelzés. **A 9 commit review-ja most az én sávom.**
+
+**⚠ Két tegnapi saját állításom TÉVES volt** — mindkettőt visszavontam a csatornában:
+
+| amit írtam | a mért igazság |
+|---|---|
+| „nincs `terminals/` mappája → nincs hova felterjeszteni" | **egyetlen** modul-submodule-nak sincs; a sáv a platform backend-terminálja, és működött (M1..M4 APPROVED) |
+| „M4/3+M4/4 nincs pusholva, CI nem futott rajtuk" | mindkettő `origin/main`-en, a CI utolsó **5/5 futama success** |
+
+A valódi hiány **kizárólag a gitlink** volt. **A „hiányzik" verdikt is mérendő, nem csak a
+„megvan"** — ez ugyanaz az osztály, mint a tegnapi négy mérőeszköz-hiba.
+
+**Klón-buktató, nevesítve:** az `url.insteadOf` a platform-repóban **lokális**, és a
+`git submodule add` klón-**alprocessze nem örökli** → `fatal: Could not read from remote`.
+Megkerülés: `git -c url."https://github.com/".insteadOf="git@github.com:" submodule add …`.
+Valószínűleg ez magyarázza a 3 kicsomagolatlan gitlinket is.
+
+---
+
+## ⭐ 2026-08-06 döntése: az ütemezés gazdája a platform
 
 **Kérdés (Gábor közvetítette a Flow Lab rootjától):** a `spaceos.scheduling` az ütemezés
 gazdája, vagy a Flow Lab ütemezője marad az? **Válasz: a platformé.** Négy mért ok, de
@@ -115,9 +146,7 @@ most a **yaml** volt az, ami hiányzott):
 
 **Ha csak hármat:**
 
-1. **A `spaceos-modules-scheduling` gazdája** — nincs a `.gitmodules`-ban, nincs
-   `terminals/` mappája, 39 commit 07-28/29-ből, a sziget-struktúrán kívül. **Ez blokkolja
-   a v3 befogadását, az pedig a Flow Lab leépítését.**
+1. ~~A `spaceos-modules-scheduling` gazdája~~ — **LEZÁRVA 2026-08-07: a platform.**
 2. **A 48 könyv-oldal** a publikus repóban (+ a hiányzó bináris-kapu).
 3. **A `NOBYPASSRLS` telepítése** és a **licenc-kérdés** (egy aláírás feloldja a DC-01c-t).
 
@@ -127,7 +156,8 @@ most a **yaml** volt az, ami hiányzott):
 
 | Sáv | Mi fut |
 |---|---|
-| **Flow Lab** (doorstar) | katalógus-ADR (1%-os javítás, hash-rotáció) — **engedélyezve**; a `raw/` 4 maradék-előfordulása; a solver leépítése **BLOKKOLT** |
+| **root / scheduling** ⭐ | **ÚJ SÁV (08-07): a 9 review nélküli commit átvétele** (m4-5, m4-6, kontraktus/1..7 + a `1.0.0-preview.2` verzió-emelés) → utána gitlink-bump d63f317-ről; majd a **v3 input-pack befogadása** |
+| **Flow Lab** (doorstar) | katalógus-ADR (1%-os javítás, hash-rotáció) — **engedélyezve**; a `raw/` 4 maradék-előfordulása; a solver leépítése **BLOKKOLT** (a v3-befogadásig) |
 | backend | `PROJ-01`/`PROJ-02` és a 6 modul interceptor-átállása (`STAB-RLS-INTERCEPTOR-E2E`, a CRM a minta) |
 | doccapture | a neutrality-szelet felterjesztésére vár; **a fa hold alatt**, 3 szelet egy commitban zárul |
 | frontend | a portál **lockfile platform-függő** — a CI-kapu piros; **a portál-pint nem bumpolom, amíg nem zöld** |
@@ -172,3 +202,7 @@ most a **yaml** volt az, ami hiányzott):
     — főleg, ha a lelet **vádat** fogalmaz meg valakiről.
 15. ⭐ **Bontás + összeg csak akkor bizonyíték együtt, ha az összeg a bontásból adódik.**
     Külön parancsból jövő stimmelő összeg **hitelesít egy hibás bontást**.
+16. ⭐ **A „hiányzik" verdiktet a TÁRSAKON mérd, ne magában.** „Nincs `terminals/` mappája"
+    csak akkor lelet, ha a többinek **van** — itt egyiknek sem volt. Egy hiány anomália
+    voltát a **társ-populáció** dönti el; enélkül a normát jelentem hibának.
+    (Rokona: 5. — de az a *saját mérés* érvényességéről szól, ez a *referencia-keretről*.)

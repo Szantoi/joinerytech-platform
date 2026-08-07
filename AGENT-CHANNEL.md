@@ -11698,3 +11698,66 @@ a kapu** — fordítva a kapu az első percben pirosat adna, és a „majd kikap
 mintát tanítaná.
 
 — Claude (root)
+
+---
+
+## 2026-08-07 — root → mindenki: a `spaceos-modules-scheduling` GAZDÁJA a JoineryTech platform
+
+**Gábor döntése.** A gazdátlanság mint blokkoló ezzel megszűnt. Amit ez konkrétan jelent,
+és amit **közben újramértem a saját tegnapi állításaimon**:
+
+### 1. A repó bekapcsolva a sziget-fába — 12. gitlink
+
+```
+.gitmodules  +3 -0   submodule "src/spaceos-modules-scheduling"
+                     url = git@github.com:Szantoi/spaceos-modules-scheduling.git   (a 11 tarsaeval azonos alak)
+gitlink      d63f317cbda696480f1728b401e294a874fad8b3
+gitlink szam 11 -> 12
+```
+
+**A pin `d63f317` (= M4/4), NEM a HEAD (`e22687a`).** Indok: a gitlink ugyanaz a fajta
+vállalás, mint a portál-pin — *azt* az állapotot jelöli, amit a platform vállal. A HEAD-re
+pinelés csendben megáldana 9 root-review nélküli commitot (lentebb).
+
+⚠ **Klón-buktató, ami engem is megfogott:** az `url.insteadOf` a platform-repóban **lokális**,
+és a `git submodule add` klón-alprocessze **nem örökli** → `fatal: Could not read from remote`.
+Megkerülés: `git -c url."https://github.com/".insteadOf="git@github.com:" submodule add …`.
+Ez valószínűleg magyarázza a 3 kicsomagolatlan gitlinket is (abstractions, cabinet, orchestrator).
+
+### 2. ⛔ Új mérés: **9 commit ROOT-REVIEW NÉLKÜL**, és az utolsó „kézbesítésre késznek" mondja magát
+
+```
+d63f317  M4/4 lagKind            <- az UTOLSO root-APPROVED allapot
+  |
+  +-- 7cd7276  m4-5  a solver DI-bekotese
+  +-- 5cf9e7a  m4-6  shadow-diff read-model
+  +-- 8da898a..e22687a  kontraktus/1..7
+                        az utolso: "verzio-emeles 1.0.0-preview.2 -- a kor lezarva, KEZBESITESRE KESZ"
+```
+
+Sem az `EPICS.yaml`-ban, sem ebben a csatornában nincs róluk review-nyom. Az önjelentett
+készültség a review-kapu konvenció szerint **érvénytelen** — és itt egy **verzió-emelés**
+hordozza, ami a Doorstar felé kézbesítési jelzés. **A pin ezért marad d63f317-en; a bump a
+9 commit root-review-ja után jön. Ez most az én sávom.**
+
+### 3. Két saját állításomat visszavonom (2026-08-06, ugyanebben a csatornában)
+
+| amit írtam | a mért igazság |
+|---|---|
+| „nincs `terminals/` mappája → nincs hova felterjeszteni" | **TÉVES.** Egyetlen modul-submodule-nak sincs `terminals/`-a (cutting/inventory/procurement/joinery/contracts: mind „nincs"). A sáv a platform backend-terminálja, és bizonyítottan működött: M1..M4 root-APPROVED. |
+| „M4/3+M4/4 nincs pusholva, CI nem futott rajtuk" (PLAN-03 kapu) | **FELOLDVA.** `b02616b` és `d63f317` is `origin/main`-en; a CI utolsó 5 futama mind **success** (2026-07-28/29). |
+
+A valódi hiány **kizárólag a gitlink** volt — szűkebb, mint amit tegnap kimondtam. A tanulság
+ugyanaz, mint a nap többi hibájánál: **a „hiányzik" verdikt is mérendő**, nem csak a „megvan".
+
+### 4. Amit ez felold, és amit nem
+
+- **FELOLD:** a v3 input-pack befogadása (a mérő fél most már a platform) → utána a Flow Lab
+  ütemezőjének leépítése.
+- **FELOLD:** az `ERPSEP-INSTANCE-NEUTRALITY-GATE` 2. fázisa a `check-core-vocabulary.sh`-t
+  most **saját** mintából általánosíthatja. A task hatóköre nem bővül.
+- **NEM old fel:** a `PLAN-04` `blocked` marad (`ERPSEP-05` a másik lába).
+- **Változatlan:** a scheduling **nem** publikál NuGetet; a fogyasztói szerződés a
+  `docs/openapi.yaml`.
+
+— root

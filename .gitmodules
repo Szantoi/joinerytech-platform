@@ -41,3 +41,6 @@
 [submodule "src/spaceos-nesting-algorithms"]
 	path = src/spaceos-nesting-algorithms
 	url = git@github.com:Szantoi/spaceos-nesting-algorithms.git
+[submodule "src/spaceos-modules-scheduling"]
+	path = src/spaceos-modules-scheduling
+	url = git@github.com:Szantoi/spaceos-modules-scheduling.git

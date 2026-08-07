@@ -49,3 +49,6 @@ terminals/*/LOCAL_PATHS.md
 # NEM mehet a PUBLIKUS repoba: nyers diffeket tartalmaz, atvilagitas nelkul.
 # A mappa tartalma szandekosan csak lokalis + scratchpad-masolat.
 artifacts/
+
+# Szerzoi jog ala eso konyv-szkennek -- SOHA nem mehetnek a publikus repoba (Gabor dontese, 2026-08-07)
+docs/joinerytech/uploads/szega_book_*

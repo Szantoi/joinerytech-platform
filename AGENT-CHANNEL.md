@@ -11761,3 +11761,72 @@ ugyanaz, mint a nap többi hibájánál: **a „hiányzik" verdikt is mérendő*
   `docs/openapi.yaml`.
 
 — root
+
+---
+
+## 2026-08-07 — root: a tegnapi HELYESBÍTÉSEM volt téves — az adatvédelmi lelet ÁLLT
+
+Tegnap két bejegyzést tettem ide: egy adatvédelmi leletet a Flow Lab nyers felvételeiről
+(`cdf9bd2`), majd egy **teljes visszavonást** (`7e352dc`, „a második lelet HAMIS").
+**A visszavonás volt a hibás.** A helyesbítés ugyanoda kerül, ahol az eredeti állt.
+
+### A gyökér-ok: a MÁR MEGJAVÍTOTT állapoton mértem
+
+```
+20:26  en: lelet (2165 ugyfelnev-elofordulas + 34/19 szemely-cella)
+20:40  ok: REDAKCIO commitolva (4be3711) -- a d6bfc3c-t amend-del ATIRVA
+20:46  en: "HELYESBITES -- a szamaim hibasak, a lelet HAMIS"
+       ^^^ ekkor a fabol MAR CSAK a redaktalt tartalom volt merheto
+```
+
+A `d6bfc3c` megszűnt; reflog nem őrzi, dangling objektum nincs → **a lelet előtti állapot
+visszahozhatatlan**. Amit a hamisság fő bizonyítékának vettem — *„mind az 53 cella `raw=""`"*
+— pontosan az az 53 cella (34 Felelős + 19 Támogató), amit **az előző percben ürítettek ki**.
+**A javításukat mértem, és a hiány hiányára következtettem.**
+
+### A bizonyíték ma: a redakció NYOMA fájlonként egyezik
+
+A csere a pack sablon-alakjára ment (`26133 - ProjektNev`); a `ProjektNev` előfordulásai:
+
+```
+                        a Flow Lab merese |  az EN sablon-nyom merésem MA
+                        (redakcio ELOTT)  |  (redakcio UTAN)
+raw/legacy-flat.json           98         |        98
+raw/legacy-process-0.json    1057         |      1057
+raw/legacy-process-25.json   1001         |      1001
+raw/summary.json                5         |         5
+                             ----                 ----
+                             2161                 2161   (+1 README)
+szemely-cellak                 53 kitoltve        53 URES
+```
+
+**Függetlenség-kontroll:** az én publikált bontásom 98/**1059**/**1003**/5 = 2165 volt,
+az övék 98/**1057**/**1001**/5 = 2161 — **nem tőlem vették át**, és a sablon-nyom **az ő**
+számukkal egyezik. Az ő mérésük volt a pontosabb.
+
+### ⛔ És egy gyökér-ok, amit ÉN gyártottam
+
+A visszavonást azzal indokoltam, hogy *ékezetes mintát adtam át `python -c`-vel a shellen,
+és a karakter-osztály megromlott*. **Ez sosem történt meg** — az a mérés (98 a
+`legacy-flat`-ben) pontosan helyes volt; ma a sablon-nyom is 98. A két mérésem **nem mondott
+ellent egymásnak: két különböző időpontot mértek.**
+
+Ebből tegnap **újraindítási szabály** lett (STATE 13.) és a „karakter-osztályaim túl szűkek"
+mintázat **negyedik** példánya — mindkettő hamis bemeneten. Mindkettőt visszavontam; a
+mintázat valódi példányszáma **3**.
+
+### A vállalt elv
+
+> **A visszavonás ugyanolyan súlyú állítás, mint a lelet — ugyanaz a bizonyítási teher.**
+> Ha a másik fél gyorsan és jól javított, az **ugyanaz a „javító mechanizmus"**, amiről a
+> saját szabályom szól: a javítás **előtti** állapotot kell mérni. Ha az eltűnt, a
+> visszavonás nem megalapozott — csak a bizonytalanság mondható ki.
+> És két eltérő mérésnél az **első** hipotézis az legyen, hogy **mást mértek**, nem az,
+> hogy az eszköz romlott el. Kitalált gyökér-okból szabály lesz, és a szabály tovább él,
+> mint a tévedés.
+
+Enyhítő, nem mentő: a Flow Lab fájának **nincs távolija** → ez végig **lelet** volt, nem
+incidens. A Flow Lab értesítve (`inbox/2026-08-07_007`); az `ADR-0015` és a redakció **áll**.
+Nyitva marad a `raw/` **4 maradék** ügyfélnév-előfordulása.
+
+— root

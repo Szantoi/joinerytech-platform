@@ -81,15 +81,28 @@ bemenetét a mért fél állítja be, soha nem bukhat el.*
 | 1 | nyers `grep -oE` **élek mutatóit és kommenteket** számolt sornak (82 vs. 41) | **a Flow Lab** mérte meg helyettem |
 | 2 | a `TaskId = "` minta a **`ParentTaskId`-t is** fogja (73 vs. 41) | összeg-kontroll |
 | 3 | a `unitSeconds` mutáció **nem alkalmazódott** (a mező nem létezik) | assert |
-| 4 | **ékezetes minta `python -c`-vel a shellen** → a karakter-osztály megromlik, és **2165-öt** ad 4 helyett | két saját mérésem ellentmondott |
+| 4 | ~~ékezetes minta `python -c`-vel~~ → **2026-08-07: EZ A 4. TÉTEL MAGA VOLT A HIBA** | ld. lentebb |
 
-A 4. a legsúlyosabb: **adatvédelmi vádat** építettem rá egy detektorral, amit **soha nem
-teszteltem ismert bemeneten**. Visszavonva (`7e352dc`); a Flow Lab valójában **jól**
-csinálta — a felvételek cella-koordinátát visznek, értéket nem.
+**⛔ 2026-08-07 — a 4. tétel visszavonva, mert a VISSZAVONÁS volt téves.** Az eredeti
+adatvédelmi lelet **IGAZ volt**; `7e352dc`-vel alaptalanul vontam vissza. Bizonyíték: a
+redakció nyoma (`ProjektNev`) **fájlonként pontosan** ott van, ahol az ügyfélnév volt —
+`98 / 1057 / 1001 / 5 = 2161` —, és a jelenlegi 53 üres cella épp az a 34+19, amit a Flow
+Lab **az előző percben ürített ki**. Én azt vettem a hamisság bizonyítékának.
 
-> **Új szabály: nem-ASCII mintát soha ne adj át `python -c`-vel a shellen — írd fájlba és
-> futtasd a fájlt.** Egy megromlott karakter-osztály nem hibaüzenettel jelentkezik, hanem
-> **hihető, nagy számokkal.**
+```
+20:26 en: lelet (2165)   20:40 ok: REDAKCIO commitolva (d6bfc3c -> 4be3711 ATIRVA)
+                         20:46 en: "a lelet HAMIS"  <- ekkor mar csak a redaktalt fa letezett
+```
+
+A `python -c`-s mérés **helyes volt** (98 a legacy-flat-ben — ma a sablon-nyom is 98). A két
+mérésem **nem mondott ellent**: két különböző időpontot mértek. A „megromlott
+karakter-osztály" gyökér-okot **én találtam ki**, és szabályt írtam rá.
+
+> **A valódi tanulság:** a **visszavonás ugyanolyan súlyú állítás, mint a lelet** — ugyanaz
+> a bizonyítási teher. És ha a másik fél gyorsan, jól javított, az **ugyanaz a „javító
+> mechanizmus"**, amiről a saját szabályom szól: mérd a javítás **előtti** állapotot.
+
+⇒ A „karakter-osztályaim túl szűkek" mintázat valódi példányszáma **3, nem 4**.
 
 ---
 
@@ -196,8 +209,14 @@ most a **yaml** volt az, ami hiányzott):
 11. Egy hiba után **keresd meg a testvéreit**; más ágens mérőeszköz-hibáját alkalmazd a
     sajátodra is.
 12. **Shell-be írt szöveg:** idézőjeles heredoc (`<<'EOF'`).
-13. ⭐ **Nem-ASCII (ékezetes) mintát SOHA ne adj át `python -c`-vel** — írd fájlba és
-    futtasd a fájlt. A megromlott karakter-osztály **hihető nagy számokkal** hazudik.
+13. ⭐ **VISSZAVONVA 2026-08-07 — hamis alapon állt.** (Eredetileg: „nem-ASCII mintát soha
+    ne adj át `python -c`-vel".) A `python -c`-s mérésem **pontosan helyes volt**; a
+    különbséget az okozta, hogy a másik mérésem a **már megjavított** fát nézte. Helyette:
+    **ha egy leletet a másik fél már javíthatott, a visszavonás előtt bizonyítsd, hogy a
+    javítás ELŐTTI állapotot méred** (`git show <pre-sha>:<path>`) — és ha az állapot
+    eltűnt, a visszavonás **nem megalapozott**, csak a bizonytalanság mondható ki.
+    **Ne gyárts gyökér-okot:** két eltérő mérésnél az első hipotézis az legyen, hogy
+    **mást mértek** (idő, fa, commit), és csak azután, hogy az eszköz romlott el.
 14. ⭐ **Kereső/maszkoló eszközt tesztelj ismert bemeneten, MIELŐTT valódi adaton futtatod**
     — főleg, ha a lelet **vádat** fogalmaz meg valakiről.
 15. ⭐ **Bontás + összeg csak akkor bizonyíték együtt, ha az összeg a bontásból adódik.**

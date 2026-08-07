@@ -11912,3 +11912,81 @@ polling) GUC nélkül **néma no-op**-pá válhatnak.
   (GUC nélkül **némán 0 sor**). Ugyanaz a védelem, két viselkedés, és az egyik a néma fajta.
 
 — root
+
+---
+
+## 2026-08-07 — root: TÖRTÉNET-ÁTÍRÁS végrehajtva (Gábor döntése) — és két csapda, ami majdnem átvitte a leletet
+
+**Gábor: „Igen, írjuk át a történetet."** A 48 könyv-oldal eltávolítva a **teljes**
+`joinerytech-platform` történetből.
+
+```
+main    a0dcc51 -> 78c4802   (forced update)
+v0.2.0  445cdc6 -> de94365   (forced update)
+meret   84,67 -> 68,02 MiB
+commit  394 -> 394           (valtozatlan)
+HEAD fa 4cb2a015 -> 4cb2a015 (BAJTRA AZONOS: a jelenlegi tartalom nem valtozott)
+```
+
+**Eszköz:** `git filter-repo --path-glob 'docs/joinerytech/uploads/szega_book*' --invert-paths`
+egy **külön mirror-klónon** — a munkafámhoz nem nyúltam, benne 23 commitolatlan idegen fájllal.
+
+**Mentés előbb:** `git bundle --all` (85 MB), `git bundle verify` → *„The bundle records a
+complete history."* A scratchpadben áll.
+
+**Független ellenőrzés — friss klón a GitHubról, nem a saját fámból:**
+
+```
+szega_book barhol a tortenetben : 0
+POZITIV KONTROLL (megmarado md) : 1     <- a kereses bizonyitottan mukodik
+commitok                        : 394
+HEAD fa                         : 4cb2a015  (azonos)
+a 15 SAJAT fajl (4 md + 11 png) : 15       <- megvan
+```
+
+### ⚠ Csapda 1: egy ref, ami közvetlenül egy FÁRA mutat
+
+```
+refs/codex/turn-diffs/captures/1785317029034/.../base   -> TREE, benne mind a 48 kep
+```
+
+A `filter-repo` **nem írja át** (nem commit-ref), a `git log --all --full-history -- <út>`
+**nem mutatja** (nincs commit az útvonalon), és a `git for-each-ref` szerint „csak egy ref".
+Mégis 47 objektumot tartott életben. **Csak a `git rev-list --objects --all | grep <név>`
+fogta meg** — ezért mértem blob-szinten is, nem csak commit-szinten.
+
+**Jó hír:** ez a ref **lokális volt, nem került fel az originra** (`git ls-remote` = HEAD +
+main + tag). A Codex hozta létre a saját munkafáján.
+
+### ⚠ Csapda 2: a `git fetch` NEM frissíti a meglévő taget
+
+Az átírás után a **saját** repóm még mindig 27 objektumot ért el — a **lokális `v0.2.0` tag**
+a régi tag-objektumon állt, mert a `fetch` alapból nem írja felül a meglévő tageket.
+`git fetch --tags --force` után lett 0.
+
+> **Ez MINDENKIT érint, akinek klónja van:** a `git pull` önmagában **nem** takarítja el a
+> régi történetet. Kell: `git fetch --tags --force` + `git reset --hard origin/main`, vagy
+> egyszerűbben **friss klón**.
+
+### Amit ez NEM old meg — kimondva
+
+- **A GitHub szerver-oldalon** az elérhetetlenné vált objektumok egy ideig **közvetlen
+  SHA-URL-lel** még lehívhatók lehetnek, amíg a GitHub le nem futtatja a saját gc-jét.
+  Teljes bizonyossághoz GitHub Support-megkeresés kell.
+- **A fork/cache másolatok** (ha bárki forkolt) érintetlenek.
+- **A 48 fájl Gábor lemezén megvan** (gitignore-olva) — azok sorsa az ő döntése.
+
+### Elvégzett utómunka
+
+```
+sajat munkafa : fetch + reset --soft origin/main -> a 23 commitolatlan idegen fajl MEGMARADT
+                codex-ref torolve, tag force-frissitve, gc --prune=now -> 0 objektum
+VPS klon      : a 48 fajl torolve a lemezrol (egyetlen service sem hivatkozott rajuk)
+                a 15 sajat fajl megvan, mind a 11 spaceos-service fut
+```
+
+⚠ **Nyitva marad:** a VPS `/opt/joinerytech` checkoutja a **régi** történeten áll (`b123146`),
+ami az originon már nem létezik → a következő `git pull` ott el fog szállni. Friss klón vagy
+`fetch --force` + reset kell — **ez telepítési döntés, nem csináltam meg egyedül.**
+
+— root

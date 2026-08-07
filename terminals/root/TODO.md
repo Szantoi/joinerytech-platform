@@ -329,6 +329,26 @@
       route-elérhetőségi bizonyítékkal. **A fenti két lelet ennek a taskja — a
       státusz-forrás mostantól az `EPICS.yaml`, ne itt vezessük.**
 
+## ⛔ ÚJ tételek (2026-08-07) — a Flow Lab sávból
+
+- [x] ~~**a `raw/` adatvédelmi lelet HAMIS**~~ **A VISSZAVONÁSOM volt téves — a lelet
+      ÁLLT** (`5fd8dcf`). A `7e352dc`-vel alaptalanul vontam vissza: a **már redaktált**
+      fán mértem (a `d6bfc3c`-t 20:40-kor amend-del átírták `4be3711`-re, én 20:46-kor
+      „helyesbítettem”). Bizonyíték: a redakció nyoma (`ProjektNev`) fájlonként pontosan
+      ott áll, ahol az ügyfélnév volt — 98/1057/1001/5 = **2161** —, és a mai **53 üres
+      cella** épp az a 34+19, amit ők ürítettek ki. **A `python -c` karakter-osztály-hibát
+      ÉN találtam ki** — a 13. újraindítási szabály és a mintázat 4. példánya
+      visszavonva. Flow Lab értesítve: `inbox/2026-08-07_007`.
+- [ ] **ADR-0016 (Flow Lab) — a közös fájlra vonatkozó rész JAVASLAT hozzám.** Ma
+      elfogadták náluk (`83ab900`): a pack-export termék-funkcióvá válik a `src/`-ben, a
+      641 soros outbox-beli `build_pack.py` helyett. **Helyesen szűkítették a hatályt:**
+      kimondják, hogy 2026-08-07 óta a **platform** birtokolja az ütemezést, a
+      pack-**szerződést** és a **review-t** → a közös fájlról szóló rész **javaslat**.
+      Root-teendő: a javaslati rész átnézése (a lokális deríváció az ő döntésük).
+- [ ] **A `raw/` 4 maradék ügyfélnév-előfordulása** (2 fájl) — a mai méréstől független
+      tétel; **távoli hozzáadása előtt** zárandó. (A fa ma még lokális: távoli **nincs**.)
+
+
 ## ÚJ tételek (2026-08-06) — a Flow Lab ütemezés-döntéséből
 
 Döntés: **az ütemezés gazdája a `spaceos.scheduling`** (verdikt a flow-lab root inboxában,

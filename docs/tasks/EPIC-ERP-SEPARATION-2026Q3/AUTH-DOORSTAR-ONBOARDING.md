@@ -70,10 +70,53 @@ A `requester.ts` lecserélése: `X-Role`/`X-Station`/`X-Principal` helyett **val
 - **Kapu:** teszt, ami bizonyítja, hogy **hamisított header → 403**, nem „szerep=reader".
 
 ### F4 — a frontend belépés *(uzemi-tabla-web)*
+
+**GÁBOR DÖNTÉSE 2026-08-07: mindenkinek SZEMÉLYES fiókja legyen** — *„a valódi audit
+nyomvonal"*. Az állomás-fiók (a gép lép be) elvetve.
+
 A `roles.ts` szerep-választója helyett valódi belépés. A capability-függvények
-(`canCreateSalesOrder`, …) **maradnak** — csak a szerep forrása változik.
-⚠ A műhely-UI-nak **megosztott állomásgépei** vannak: a belépés alakja (állomás-fiók vs.
-személyes fiók + állomás-kontextus) **termékdöntés**, nem technikai.
+(`canCreateSalesOrder`, …) **maradnak** — csak a szerep **forrása** változik.
+Az `X-Principal` fallback (`legacy-role:<szerep>`) megszűnik: minden audit-sor **valódi
+személyt** kap.
+
+#### ⛔ A döntés helyes, de ÖNMAGÁBAN NEM ELÉG — mérve
+
+```
+tasks.ts:186 / 190 / 221 / 224   ->  403 "not_your_station"
+                                     (a 221/224 ZAROLT tranzakcion belul)
+```
+
+**Az állomás nem szűrő, hanem JOGOSULTSÁG.** Az `X-Station` — amit szintén a frontend küld —
+ma **kapu** írási műveletek felett. Személyes fiókkal a *„ki"* megoldódik, de a *„hol"*
+nyitva marad: a header átírásával bárki **más állomás feladatát zárhatná le a saját nevén**.
+
+> **Ez rontaná az audit-nyomvonalat, nem javítaná:** igaz nevet rögzítene hamis állomáshoz —
+> ami rosszabb, mint a mai őszintén névtelen `legacy-role:` bejegyzés, mert **hihető**.
+
+**Ezért az állomásnak is hitelesítettnek kell lennie.** Három út, ajánlással:
+
+| út | alak | értékelés |
+|---|---|---|
+| **(1) állomás mint aláírt claim** ⭐ | a felhasználó belépéskor **állomást választ**, a session ezt **aláírt claimként** hordozza | **Ajánlott.** Kérésenként nem cserélhető; illik a személyes fiókhoz; a választás naplózható. Kis Keycloak-munka. |
+| (2) állomás-hozzárendelés a felhasználóhoz | a jogosultság mondja meg, mely állomás(oko)n dolgozhat | Merev: a műhelyben a dolgozók váltanak állomást; adminisztrációs terhet ad. |
+| (3) eszköz-identitás | a gépnek saját hitelesítője van (kliens-tanúsítvány/eszköz-token) | A legerősebb, de eszközparkot és tanúsítvány-életciklust kér. **Későbbre.** |
+
+**Kötelező kapu az F4-hez:** teszt, ami bizonyítja, hogy egy **érvényes tokennel**, de
+**idegen állomásra** küldött írás **403** — ne csak az legyen tesztelve, hogy token nélkül 403.
+
+#### Műhely-ergonómia — a döntés ára, amit kezelni kell
+
+Megosztott gépen a személyes belépés súrlódást hoz (kesztyű, piszkos kéz, gyakori váltás).
+Enélkül a dolgozók **egyetlen közös fiókot** fognak használni, és az audit-nyomvonal
+**papíron** lesz meg, a valóságban nem. Kezelendő:
+- **rövid, tétlenség-alapú automatikus kiléptetés** (az állomás ne maradjon nyitva);
+- **gyors újrabelépés** (személyes PIN vagy NFC-kártya a jelszó helyett — **személyenként**,
+  nem állomásonként);
+- a belépés **ne szakítsa meg** a folyamatban lévő munkát.
+
+⚠ **Kapcsolódik a `/shopfloor` PIN-route nyitott Gábor-döntéshez** (platform-portál): ott a
+`PIN=1234` egy **közös** belépő, ami pont az ellentéte ennek a döntésnek. A két tételt együtt
+kell eldönteni, különben a platform és az instance ellentétes mintát tanít.
 
 ### F5 — Doorstar bérlő-rekord + onboarding lefuttatása *(a meglévő runbookkal)*
 Dry-run → végrehajtás → konvergencia-ellenőrzés.

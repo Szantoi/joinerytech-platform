@@ -58,7 +58,25 @@ az `X-Role`/`X-Station` kliens-oldali header, és a `tasks.ts` **négy helyen 40
 rájuk — egy hamisított `X-Role: administrator` az internetről **elfogadódna**.
 **Ezt NEM teszteltem**, mert éles adatot módosítana.
 
-⇒ **A határidő nem a második ügyfél, hanem MOST.** A „biztonságos növekedés" azt jelenti,
+### ⚠ ÚJRA-HELYESBÍTVE — Gábor, ugyanaznap
+
+> *„Nincs telepítve a Doorstar, az egy **régi pilot**, amiben megmutattam, mi lehet majd.”*
+
+**A mérés tényei állnak** (fut, publikus, `/api/production/orders` 200 auth nélkül), **a
+következtetésem viszont túlzott volt**: ez **demó, nem éles rendszer** → **nem incidens**,
+és a határidő **nem most**. Mérve: `/opt/doorstar/src/production-service`, commit
+`1ba2647` (2026-07-22) = **16 napos pilot**, külön fában, nem a termék. Az adat tesztadat.
+
+⇒ **A `DSCONV-03` sürgőssége marad a korábbi: a valódi telepítés előtt.**
+
+**Ami nyitott kérdés marad (Gábor-döntés):** egy 16 napos, felügyelet nélküli pilot ül egy
+publikus hostnéven TLS-sel, auth nélkül, header-alapú szerepkörrel. **Maradjon** (demó,
+amit mutatsz), **kapjon védelmet** (basic auth / IP-lista / demók között leállítva), vagy
+**vonuljon vissza**?
+
+> ⚠ **Önkritika:** ma **kétszer lőttem túl** — reggel visszavontam egy **igaz** leletet, este
+> egy **demót** minősítettem élesnek. A helyes lépés mindkétszer ugyanaz lett volna:
+> **a mért tényt tartani, a következtetést szűkíteni.** A „biztonságos növekedés" azt jelenti,
 hogy a **második ügyfél előtt** legyen kész — mert a header-alapú szerepkör egy bérlős
 környezetben még elviselhető, kettőnél már **kereszt-bérlős** kockázat.
 

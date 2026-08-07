@@ -42,7 +42,7 @@ bizonyítékokba és a naplókba.
 | # | Szabály | A hiba, amiből jön |
 |---|---|---|
 | 1 | **Alak-alapú detektor ELŐSZÖR** (e-mail, név-alak, telefon), **névlistás csak ellenőrzésre** | az ismert-név-detektorom „0 munkatárs-nevet" mondott — igaz volt és félrevezető; alak-alapúra váltva azonnal 3 további személynév jött elő |
-| 2 | **A találat KÖRNYEZETE dönt, nem a darabszám** | a vezetéknév egyben gyakori szó és helységnév-előtag volt → **6-ból 5 hamis pozitív** (szín, „Fehérvár") |
+| 2 | **A találat KÖRNYEZETE dönt, nem a darabszám** | a vezetéknév egyben **gyakori színnév** és **helységnév-előtag** volt → **6-ból 5 hamis pozitív** |
 | 3 | **Önteszt ismert bemeneten, VALÓDI adat ELŐTT** — pozitív **és** negatív kontrollal | egy validálatlan detektorral **adatvédelmi vádat** fogalmaztam meg |
 | 4 | **A bizonyíték örökölje a termék redakcióját** | a leadott nyers felvételek nem örökölték a pack redakcióját — valódi lelet volt |
 | 5 | **A redakció bizonyíthatósága**: a javítás **előtti** állapotot külön mérni; ha eltűnt, a visszavonás nem megalapozott | a már redaktált fán mértem nullát, és **visszavontam egy igaz leletet** |

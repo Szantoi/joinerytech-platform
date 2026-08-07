@@ -71,21 +71,21 @@ const PARTNERS = [
     apiKey: "flb_••••••••••c0d2",
     delegated: ["Szabászat alvállalkozás", "Élzárás"],
     sharedOrders: 31,
-    contact: "Fehér László · info@flb.hu",
+    contact: "Példa Piroska · kapcsolat@pelda.hu",
   },
   {
-    id: "p-konyha", name: "Várdai Konyhastúdió",   type: "trader",    status: "active",  joined: "2025-04-02",
+    id: "p-konyha", name: "Minta Márton",   type: "trader",    status: "active",  joined: "2025-04-02",
     apiKey: "vks_••••••••••1f88",
     delegated: ["Megrendelés feltöltés"],
     sharedOrders: 12,
-    contact: "Várdai Eszter · eszter@vardai.hu",
+    contact: "Teszt Tamás · kapcsolat@pelda.hu",
   },
   {
     id: "p-bognar", name: "Bognár Bútor Kft.",     type: "manufacturer", status: "active", joined: "2025-04-15",
     apiKey: "bgn_••••••••••72ac",
     delegated: ["Közös gyártás"],
     sharedOrders: 8,
-    contact: "Bognár István · iroda@bognarbutor.hu",
+    contact: "Demo Dóra · kapcsolat@pelda.hu",
   },
   {
     id: "p-pending1", name: "Helios Faipar Zrt.",  type: "manufacturer", status: "pending", joined: "2026-04-22",
@@ -95,9 +95,9 @@ const PARTNERS = [
 ];
 
 const PARTNER_INVITES = [
-  { email: "kapcsolat@regiofa.hu",  type: "supplier", sent: "2026-04-26", state: "pending" },
+  { email: "kapcsolat@pelda.hu",  type: "supplier", sent: "2026-04-26", state: "pending" },
   { email: "info@hettich.hu",       type: "supplier", sent: "2026-04-24", state: "pending" },
-  { email: "p.szabo@cnc-mester.hu", type: "cutter",   sent: "2026-04-21", state: "expired" },
+  { email: "kapcsolat@pelda.hu", type: "cutter",   sent: "2026-04-21", state: "expired" },
 ];
 
 const PARTNER_TYPES = {

@@ -537,3 +537,61 @@ epics:
         közül egy sem vár Gáborra; a modul v1-e döntés-oldalról szabad.
         ROOT-HELYESBÍTÉS (2026-08-03): a backend kísérőlevele "mostantól kettő" nyitott
         kérdést írt, a saját ADR-je viszont "egy nyitva"-t — a mért, helyes szám EGY.
+
+  - id: EPIC-DOORSTAR-CHAIN-2026Q3
+    title: "Doorstar-lánc egyesítés: sales→felmérés→tervezés→kalkuláció→flow→üzemi tábla egy egységként, több-bérlős irányba"
+    owner: root
+    coordinator: root
+    started: 2026-08-10
+    status: in_progress
+    plan_doc: docs/knowledge/architecture/DOORSTAR_CHAIN_INTEGRATION_PLAN_2026-08-10.md
+    goal: >
+      A három Doorstar-repó (doorstar-instance, doorstar-calculation-lab, doorstar-flow-lab)
+      adatlánca egy egységgé áll össze a JoineryTech keretében; a flow az Excelről a
+      calculatorra vált (golden-master kapuval); az általános calc/flow-értékek a platformra
+      emelődnek; a cél-architektúra több-bérlős. Gábor-döntések (2026-08-10): D1 publikus
+      pilot visszavonás · D2 egység+multi-tenant · D3 lift a kódtárba · D4 calc UI/UX ·
+      D5 szabály- és sablonkönyvtár + árazó folyamat (sales árat ad, gyártás-előkészítés használja).
+    stop_condition: >
+      A lánc mind a 6 állomása commitolt, kontraktus-kötött úton adja tovább az adatot;
+      a flow Excel-függése megszűnt (66/66 golden-master egyezés + emberi szabály-review után);
+      a lift-lista (L1-L12) platformra emelve vagy elvetve, indoklással; élesítés csak a
+      DSORD-18/DSCONV-03 auth-kapuk után.
+    note: >
+      A végrehajtás nagy része a HÁROM DOORSTAR-REPÓBAN történik (ez az epic a platform-oldali
+      kanonikus nyilvántartás); a Codex-szel egyeztetés kötelező az instance-t érintő lépések
+      előtt (N1: a ~397 dirty fájl szerzősége). Duplikátum-őrszabályok a plan_doc 9. szakaszában.
+    milestones:
+      - id: DSC0-biztositas
+        status: in_progress
+        done_when: "calc-lab + flow-lab privát remote-tal és első committal; instance dirty fa tisztázva+commitolva; pilot visszavonva; kontraktus-doksik szinkronban (v4→v5, CALC-002 státusz)"
+        tasks:
+          - { id: DSC-00, role: root, title: "Repo-biztosítás: privát remote + első commit (calc-lab 0 commit!, flow-lab, instance dirty fa)", status: pending, note: "Publikus minta TILOS — ügyféladat-közeli repók. Az instance commitja előtt N1 (Codex-szerzőség) tisztázandó." }
+          - { id: DSC-01, role: root, title: "D1: publikus pilot (doorstar.asztalostech.hu) visszavonása a VPS-en", status: in_progress, note: "Adat szintetikus, reprodukálható (Gábor). DB-dump archívum opcionális biztosításként, utána service+nginx le." }
+          - { id: DSC-02, role: root, title: "Doksi-szinkron: calc-lab leltár v4→v5 + CALC-002 státusz-eltérés rendezése", status: pending }
+      - id: DSC1-lanc-alja
+        status: pending
+        done_when: "közös G0 a flow↔tábla v1.1 csomagról; DSFLB-08 harness PASS; egy valós artefakt-kör lefutott (élesítés nélkül)"
+        tasks:
+          - { id: DSC-10, role: root, title: "G0-döntés a v1.1 kontraktuscsomagról (FL-EXT-01) + harness PASS + valós artefakt-kör", status: pending }
+      - id: DSC2-excel-levalasztas
+        status: in_progress
+        done_when: "66/66 golden-master egyezés bizonyítva; szabály-review lezárva (axisSemanticsUnreviewed feloldva); CALC-002 kontraktus elfogadva; CALC-004 adapter él; a flow a ComponentSnapshot-ot fogyasztja"
+        tasks:
+          - { id: DSC-20, role: root, title: "Rekonsiliációs eszköz: calc-lab candidate vs flow-lab SourceSetPreview, közös forrás-hash-re kötve (c3231fe1…)", status: in_progress, note: "Read-only, egyik repóba sem ír; a szabály-review bemenete. Nem igényel blokkolt kaput." }
+          - { id: DSC-21, role: root, title: "Emberi szabály-review a legacy-26133 profilon (tengely-szemantika, kerekítés, fix/mozgó)", status: pending, depends_on: [DSC-20] }
+          - { id: DSC-22, role: root, title: "CALC-002 revízió-hatókörű bemeneti kontraktus + CALC-004 adapter (+ instance fogadó-séma bővítés: ruleKey+lineage)", status: pending, depends_on: [DSC-00] }
+      - id: DSC3-platform-savok
+        status: pending
+        done_when: "lift-lista végrehajtva/elvetve; szabály- és sablonkönyvtár ADR + v1; árazó réteg terv; calc UI/UX kör"
+        tasks:
+          - { id: DSC-30, role: root, title: "D3 lift-sáv: L1-L12 a plan_doc 6. szakasza szerint (prioritás: L1 PII-kapu, L2 canonical-hash 3→1, L3 OpenAPI+drift tooling az F4-hez)", status: pending }
+          - { id: DSC-31, role: root, title: "D5: szabály- és sablonkönyvtár ADR (platform-mechanizmus + bérlő-tartalom; calc capture + TechnicalProductRuleLibrary + cutting ár-táblák egyesítése)", status: pending }
+          - { id: DSC-32, role: root, title: "D5: árazó folyamat terv (külön réteg a calc/flow kimenetén; sales-ajánlat + gyártás-előkészítés fogyasztók; erp-core Quote-kapcsolat)", status: pending, depends_on: [DSC-31] }
+          - { id: DSC-33, role: designer, title: "D4: calc UI/UX kör (sablon-szerkesztés, projekt-alkalmazás, candidate-review a workbenchben)", status: pending, depends_on: [DSC-00] }
+    coordination:
+      note: >
+        Auth: DSORD-18/DSCONV-03 + AUTH-DOORSTAR-ONBOARDING közös kapu minden élesítésre —
+        zöldmezős auth az instance-ben tilos. Ütemezés-funkció kizárólag a spaceos.scheduling
+        modulba. Negyedik OOXML-olvasó tilos (ADR-0017). A doorstar-repók állapotforrása a
+        saját EPICS/TASKS fájljaik — ez az epic a platform-oldali tükör és a döntés-napló.

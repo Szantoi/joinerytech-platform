@@ -656,3 +656,108 @@ kihirdetve**, `PROJ-01` kiadva.
     alkalmazd a sajátodra is.
 14. **Egy ponton a további mérés maga válik halogatássá** — ezt a vezetőnek kell
     kimondania, nem a mérőnek.
+
+---
+
+## Plant multi-tenant / product landing — 2026-08-14
+
+- [x] Külön `joinerytech.plant` human CustomerProduct forrás-contract,
+      Manufacturer-only katalógus, claims-only projekció és jogosultság-alapú
+      Portal landing elkészítése, default-OFF Plant célkonfigurációval.
+- [x] Plant tenant scope + műveletspecifikus authority, tenant-kompozit
+      PostgreSQL kulcsok, FORCE RLS, külön migrátor/runtime szerep, pontos ACL és
+      kétirányú role-membership tiltás forrásoldali implementációja és review-ja.
+- [x] Doorstar–Plant v2 fogadó/producer source-only seam rögzítése auth-before-body
+      sorrenddel; route, hálózat és tartós v2 lifecycle továbbra nincs aktiválva.
+- [x] Explicit engedéllyel futtatni a friss, izolált három-credentiales PostgreSQL
+      migráció/RLS tesztet: azonos tenant-lokális ID-k, missing/wrong GUC,
+      cross-tenant write/read/ACK, pool reuse, role-topológia és rollback.
+      Az eredeti és a visszaállított PostgreSQL 16 adatbázison is 4/4 PASS;
+      a teljes live Plant verify API-ága 98 tesztet futtatott, 0 skip mellett.
+- [ ] Review-zott Keycloak Plant audience/client/native-array mapperek, exact
+      readback, Office service-principal registry és fresh-token revoke/downgrade
+      E2E elkészítése; az operator device/station/cnf/PoP külön kapu.
+- [ ] Plant Web OIDC/BFF session adapter és böngészős tenant-isolation smoke
+      után, külön jóváhagyással konfigurálni a Plant URL-t és trusted origint.
+      A DB backup/restore/rollback rész 2026-08-14-én külön zöldre zárult; az
+      identity/browser rész teljesüléséig nincs éles kiszolgálás vagy redirect.
+- [x] A table-ACL bizonyíték után feltárt `pg_attribute.attacl` P1 lezárása:
+      third-role grantok migration-preflight és API-startup deny, silent revoke
+      nélkül; tiszta live 4/4 és teljes verify API 99 / PostgreSQL skip 0.
+
+---
+
+## Tesztüzemi aktiválási kapuk — 2026-08-20
+
+- [x] A publikus Shopfloor PIN/mock session lezárása route-, compatibility
+      import-, mock-adat- és production-artifact szinten.
+- [x] A recovery termékválasztó kanonikus Portal-integrációja strict native
+      authorityval és cross-product route boundaryval.
+- [x] Consumer-specifikus Door/Plant human projection és exact Office service
+      vocabulary forrás-contract; legacy flat/realm-role provisionerek retired.
+- [x] Doorstar és Plant strict consumer/online-state contract, default-off route
+      állapot; Portal/Hosting canonical OIDC validator és helyi E2E.
+- [x] Production és test dependency audit: .NET hostok, mind a 18 közvetlen
+      Testcontainers gráf, a feltárt legacy module-gráfok, Portal, Doorstar és
+      Plant ismert advisory nélkül; Doorstar 738/738.
+- [x] Az új Keycloak offline mutation-safety contract: signed ownership/adoption
+      és custody receipt, desired/observed digest, teljes kétpasszos realm
+      reverse-binding inventory, browser posture és import/transport hard-off.
+- [x] Default-off Kernel online authority provider exact state-readbackkel,
+      source-owned innermost HTTPS transporttal, teljes request-attestationnel,
+      bounded retry/cache/readiness szerződéssel és adverszárius regressziókkal.
+- [x] Helyi valós OIDC protokoll-E2E discovery/JWKS + egyszer használható S256
+      Authorization Code flow-val, két tenanttal, revoke/deactivate/fresh-token és
+      A→A+B→B rotation mátrixszal; strict duplicate-safe JWKS, LKG-off, max-age és
+      ingressfüggetlen prewarm production wrapperrel.
+- [ ] Az új Keycloak apply csak külön review-zott production trust anchor és
+      szerveroldali serialized writer/lock/SPI atomikus CAS-bizonyítéka után
+      nyílhat; a classic Admin REST scaffold nem éleszthető vissza kapcsolóval.
+- [ ] Élő két-tenant Authorization Code + PKCE, exact `iss/aud/azp`, fresh-token
+      permission change, revoke/downgrade/deactivate, stale/wrong tenant és JWKS
+      rotation negatív E2E valós Keycloak + autoritatív Kernel providerrel; ehhez
+      production endpoint-pin, module-host service trust és hét host explicit opt-in is kell.
+- [ ] Plant browser/BFF vagy biztonságos PKCE, operátori DPoP/mTLS-equivalent,
+      `cnf.jkt`/nonce/jti/method/URL binding, device enrollment/revoke, lejáró
+      station membership és queue-drain friss újraengedélyezés.
+- [ ] DPEX autoritatív resource registry, bounded tenant-fair workerek,
+      lease/backoff/DLQ/requeue, commit utáni idempotens ACK, cancellation-intent
+      és reconciliation; task execution addig 503.
+- [ ] Docker-képes CI-ben a 170 DB/RLS teszt; TLS/proxy-trust/origin/rate/body/
+      timeout ingress; restore/shadow/single-station cutover/rollback gyakorlat.
+- [ ] A legacy EHS Application→Infrastructure réteghiba és a Production hiányzó
+      Maintenance event-contract külön rendezése, majd a most audit-tiszta
+      gráfokon teljes Release build és Dockeres integrációs újrafutás.
+- [ ] Review-zott tiszta commitokból immutable artifact, SBOM, provenance,
+      dependency/container scan, image signing és külön rollback pin; csak ezután
+      külön aktiválási jóváhagyás.
+
+---
+
+## 🔴 Következő folytatás — Kernel séma-konformancia, majd Doorstar (2026-08-21)
+
+- [ ] Fejezd be a forward-only 0037_ReconcileRefreshTokens fail-closed szerződését:
+      külső, a táblára mutató FK; PostgreSQL inheritance mindkét iránya; canonical
+      táblával együtt jelen levő case-lookalike; publication/subscription membership
+      mind legyen tiltott. Minden hibás ágnál migration-history változatlan maradjon.
+- [ ] A RefreshTokens rehearsalben külön bizonyítsd a hét aktív oszlopos és az
+      attisdropped állapot elutasítását, a fresh és applied history pontos tartalmát,
+      valamint a 0013 nem-discoverable állapotát.
+- [ ] Készüljön metadata-only generated-script verifier: 0036 < 0037 <
+      __EFMigrationsHistory-be írás, a required preflightok jelen vannak, nincs
+      kézi 0013/history stamp.
+- [ ] Független source review és teljes statikus/build teszt után futtasd újra a
+      kontrollált helyi Docker rehearsal-t; csak zöld futás után jelölhető a
+      séma-konformancia kapu teljesítettnek.
+- [ ] Döntsd el külön a globális AppDbContext snapshot-paritás rendezését.
+      has-pending-model-changes jelenleg NO-GO; snapshotot vagy migration-historyt
+      nem szabad ennek megkerülésére kézzel módosítani.
+- [ ] Csak a Kernel DB-kapu zöldre zárása után kezdd a Doorstar adapter-szeletet:
+      rövid életű service token (client_credentials + private_key_jwt) →
+      Kernel /api/internal/identity-authority/resolve; emberi bearer token és a
+      régi /api/tenant-access/authorize szerződés nem továbbítható.
+
+### ⛔ Mai befagyasztás
+
+- [ ] Ne indíts új Dockeres rehearsal-t, ne deployolj, és ne nyúlj Doorstarhoz,
+      Keycloakhöz, VPS-hez vagy éles adatbázishoz új folytatási jóváhagyás nélkül.

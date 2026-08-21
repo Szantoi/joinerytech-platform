@@ -120,3 +120,143 @@ joinerytech-portal@1f3ca31 (45 fájl), pin-bump kész. RISKS-5X5-FE done +
 archiválva. TANULSÁG (entanglement-feloldás mintája): a blokkolt APPROVED
 szelet leggyorsabb feloldása a másik félkész szelet TELJES befejezése volt,
 nem a diff-szétvágás. EHS-WIZARD-HU done-hoz: Gábor vizuális QA.
+
+---
+
+## Plant több-bérlős és termék-routing invariánsok — 2026-08-14
+
+- `joinerytech.plant` önálló customer product. Nem `joinerytech.door` alias és
+  nem Doorstar membership-handoff cél. A human authority kizárólag az exact
+  `joinerytech.plant.view|edit|admin` grant és `joinerytech.plant` modul;
+  az Office adapter külön, jövőbeli service-principal boundary.
+- A termék landinget csak az exact, hitelesített permission/module halmaz
+  határozhatja meg. `preferred_product`, realm role, URL, query, fragment vagy
+  browser storage nem authority. Több jogosult termék explicit választót kér.
+- A Plant cél URL-je csak külön validált HTTPS root origin lehet, token/tenant/
+  grant átadása nélkül. Üres konfiguráció vagy hiányzó allowlist fail-closed;
+  a forrás elkészülte önmagában nem jelent kiszolgálást vagy aktiválást.
+- Plant DB-runtime csak közvetlen, non-owner, NOINHERIT credential lehet. Sem a
+  runtime role nem lehet más role tagja, sem más login nem lehet a runtime role
+  tagja; a védett táblákon kizárólag owner + exact runtime direct ACL maradhat.
+- “Source-ready” nem “activation-ready”: live PG/RLS, identity/JWKS/readback,
+  browser session, PoP, recovery és rollback bizonyíték nélkül minden külső
+  Plant-belépés és DPEX-v2 fogadás alapértelmezetten OFF marad.
+
+## Plant élő adatbázis-bizonyíték — 2026-08-14
+
+- A Plant három-credentiales PostgreSQL/RLS és backup/restore kapuja már élő,
+  izolált PostgreSQL 16-on zöld; ezt a régi „nem futott live DB” bejegyzések
+  fölé író új állapotként kell olvasni. A Kernel 0038 Up/Down policy is valódi
+  PostgreSQLön bizonyított.
+- Az `aclexplode` rekord sorrendje `grantor, grantee, privilege_type,
+  is_grantable`; ezt explicit teszt pineli. Az exact ACL fogalma a táblaszintű
+  és oszlopszintű ACL-ek együttes, fail-closed allowlistjét jelenti.
+- A zöld DB nem jelent identity-aktiválást. A Plant cél URL, receiver mount,
+  Office worker és parancsvégrehajtás maradjon OFF, amíg a friss-tokenes
+  mapper/readback/revoke, tartós lifecycle, browser OIDC/BFF és operator PoP
+  külön el nem készül és jóváhagyást nem kap.
+- Az „exact ACL” bizonyított jelentése két katalógus együtt: table
+  `pg_class.relacl` és direct column `pg_attribute.attacl`. A migration csak az
+  explicit PUBLIC/runtime column grantot vonhatja vissza atomikusan; idegen role
+  grantjánál módosítás nélkül kell leállnia, a runtime startupnak pedig minden
+  nem-owner direct column ACL-t tiltania kell.
+
+## Identity- és supply-chain invariánsok — 2026-08-20
+
+- A tagsági registry és a JWT wire projection két külön adatmodell. A registry
+  tarthat több membershipet, lifecycle/metaadatot és több product grantot; egy
+  konkrét consumer tokenje csak az adott `azp`/audience számára szükséges exact
+  claim-alakot és minimális product grantot kaphatja.
+- A flat `tid`/top-level permission vagy realm-role authorityt kibocsátani képes
+  régi provisioner veszély akkor is, ha az új consumer már megtagadja: egy későbbi
+  operator visszaírhatná a régi mappereket. Ilyen CLI-t profile/credential/network
+  előtt kell hard-retire-olni, nem pusztán dokumentációban elavultnak jelölni.
+- Audit-zöld nem lehet támogatás nélküli tranzitív major override eredménye. A
+  szülőcsomagot támogatott gráfra kell emelni, majd compile/load/runtime határig
+  bizonyítani; a Docker nélküli create/start és DB/RLS út külön nyílt gate marad.
+- Production-only dependency audit nem elég biztonságos tesztüzemhez: a test/dev
+  toolchain critical/high találatait is zárni kell. Ugyanakkor vak `audit fix
+  --force` helyett minimális pin/override, teljes suite és build szükséges.
+- A csomagcsere utáni `--no-restore` audit elavult `project.assets.json` alapján
+  hamis maradékot mutathat. A helyes sorrend: tulajdonos csomag azonosítása
+  (`dotnet nuget why`), célzott módosítás, friss restore, build/teszt, majd az
+  egész érintett solution vagy harness-leltár transzitív újraauditja.
+- Source-ready és local-signer-E2E nem aktiválási evidencia. Valós Keycloak JWKS,
+  friss token, online registry, revoke/rotation, PoP, ingress/recovery és aláírt
+  immutable release nélkül a deny-all/default-off állapotot meg kell tartani.
+- Frozen/released hash driftet nem szabad a jelenlegi dirty fához repinelni. Új,
+  breaking szerződéshez új verzió, tiszta provenance és új evidence kell; a régi
+  receiptet történeti bizonyítékként változatlanul kell hagyni.
+
+## Keycloak mutációs invariánsok — 2026-08-20
+
+- Egy nem nulla digest önmagában nem ownership vagy custody evidence. A receipt
+  csak source-pinned public trust anchorral, exact realm/resource/internal UUID/
+  owned-state/config/change-id kötéssel és rövid időablakkal jelent bizonyítékot.
+- Két egymással azonos teljes read-only inventory passz csökkenti a driftet, de
+  nem atomikus CAS. A classic Admin REST observe→PUT versenyét csak szerveroldali
+  serialized writer/lock/SPI zárhatja; addig az apply kódút legyen fizikailag
+  raise-only, ne egy módosítható feature flag mögötti latent scaffold.
+- A reverse inventory teljes csak akkor, ha minden kliens és scope paginálva,
+  minden direct/attached mapper és default/optional edge exact immutable ID–név
+  párral szerepel. Azonos ID alias néven vagy identikus duplikátum is hiba.
+- Secret-szűrésnél a kulcsnév-részletre épülő denylist veszélyes: a legitim
+  `access.token.claim` mapper flag nem secret. Exact/path-aware secret schema és
+  canonical mapper round-trip teszt szükséges.
+- Nem létező browser runtime-hoz nem szabad callbacket kitalálni. A Plant kliens
+  maradjon disabled és explicit activation Block, amíg külön review-zott frontend,
+  origin és PKCE redirect contract nincs.
+
+## Online authority és JWKS invariánsok — 2026-08-20
+
+- A konfigurált HTTPS URL nem source pin. A tényleges abszolút URI-t a legbelső
+  transport-boundaryn, minden késői HttpClientFactory handler/default-header/
+  primary módosítás után újra kell attestálni. TestServer-kivétel csak internal
+  friend markerrel élhet; publikus Development flag nem bizalmi bizonyíték.
+- A service-auth adapter nem birtokolhat ellenőrizetlenül mutálható kérést és nem
+  bízhatjuk rá a teljes timeoutot. Method/URI/content/header/proof lenyomat,
+  független teljes budget és exception-normalizálás szükséges; adapter-hibára nincs
+  retry vagy token-claim fallback.
+- JWKS-frissességet nem mérhet cache-hit. Csak teljes, hálózatról beolvasott,
+  strict JSON-ként parse-olt és exact issuer/key-setként validált konfiguráció
+  mozdíthatja a success időpontot. LKG legyen explicit tiltva; max-age után auth
+  fail-closed, refresh-hibán readiness azonnal unhealthy.
+- A duplikált kid tiltása nem azonos a duplicate-safe JSON-nal. Discovery és JWKS
+  minden objektumszintjén a nyers, dekódolt property-nevek duplikációját még az
+  upstream parser előtt el kell utasítani.
+- Readiness-gated ingress mellett a hideg, passzív JWKS cache holtpontot okozhat.
+  Source-owned bounded prewarm/retry szükséges, amely nem hosszabbít cache-időt,
+  shutdownot tisztel, és kiesést nem rejt el stale konfigurációval.
+
+- A `JwtBearerOptions` pre-request attestációja önmagában nem elég: a framework
+  később shallow-clone-olja a TVP-t és await közben a public events/handler/
+  crypto-factory referenciák mutálhatók. A validációhoz minden kérésen külön,
+  forrástulajdonú options, TVP, token-handler és sealed events snapshot kell;
+  a public config csak drift-detektálási input lehet.
+- A JWKS `kid` egyezése nem jelent signing jogosultságot. A trustot közvetlenül
+  validált, public RSA `n`/`e` anyagból kell építeni; `use=enc`, idegen `alg`,
+  x5c/alternatív key-material, privát/szimmetrikus mező, hibás exponent vagy
+  gyenge modulus nem válhat access-token validációs kulccsá.
+
+---
+
+## Kernel–Doorstar tesztüzemi checkpoint — 2026-08-21 (mára befagyasztva)
+
+- A kontrollált migration rehearsal kizárólag helyi Docker Desktoptal, eldobható
+  PostgreSQL-lel, explicit opt-innel, lokális endpoint-ellenőrzéssel és pull nélküli
+  konténerpolitikával futhat. Ez nem deploy- és nem production-adatbázis-út.
+- A valós rehearsal az EF relációs modell és PostgreSQL között 23 eltérést hozott
+  felszínre. A helyes reakció a tárolási szerződés tisztázása, nem history-stamp,
+  snapshot-hamisítás vagy vak adatkonverzió.
+- A történeti SprintC TEXT tárolás marad modelloldali explicit text mappinggal;
+  FlowEpics.CurrentStageCode varchar(30), ExternalAuthTokenRef varchar(512).
+  Az IntentDataJson text marad: jsonb-re alakítása megváltoztathatja a raw JSON
+  alapú LastStateHash integritását.
+- A nem discoverelt történeti 0013 RefreshTokens migrationt nem szabad utólag
+  discoverable-é tenni. A biztonságos út egy új, forward-only 0037: hiányzó
+  táblát pontosan létrehoz, meglévőt csak teljesen kanonikus shape, owner, ACL,
+  index és függőségi felület mellett adoptál, minden más állapotnál fail-closed.
+- Folytatási sorrend: 0037 catalog/negatív rehearsal lezárása → független review
+  és statikus kapuk → kontrollált Docker újrafutás → snapshot-paritás döntése →
+  Doorstar service-token adapter. Sem emberi bearer továbbítás, sem Keycloak/Doorstar/
+  VPS/éles DB művelet nem engedett e kapuk előtt.

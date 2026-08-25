@@ -1,0 +1,134 @@
+{
+  "schemaVersion": "spaceos.door-manufacturing-auth-profile/v1",
+  "id": "spaceos-door-manufacturing-auth-profile",
+  "version": "1.0.0",
+  "status": "released-contract-not-activated",
+  "issuedAt": "2026-08-11T18:00:00.000Z",
+  "releaseSemantics": {
+    "releasedMeans": "This is the versioned, hash-verifiable public JWT and authorization profile that an Instance may pin.",
+    "doesNotMean": "It does not state that the Door Manufacturing clients, tenant, user, station policy, Instance Context endpoint, database migration, or application route are live."
+  },
+  "identityProvider": {
+    "realm": "spaceos",
+    "publicIssuer": "https://joinerytech.hu/auth/realms/spaceos",
+    "jwksUrl": "https://joinerytech.hu/auth/realms/spaceos/protocol/openid-connect/certs",
+    "signing": {
+      "allowedAlgorithms": [
+        "RS256"
+      ],
+      "rejectedAlgorithms": "Every algorithm other than RS256, including ES256 and alg=none, is rejected."
+    },
+    "operationalAdminBaseUrl": "http://127.0.0.1:8080/auth",
+    "operationalAdminBaseUrlPurpose": "VPS-local Keycloak Admin API operations only. It is never a public issuer, JWKS URL, browser origin, or bearer-token validation target."
+  },
+  "browserClient": {
+    "clientId": "doormanufacturing-web",
+    "publicOrigin": "https://doormanufacturing.joinerytech.hu",
+    "grant": "authorization_code_with_pkce_s256",
+    "redirectUris": [
+      "https://doormanufacturing.joinerytech.hu/flow/auth/callback",
+      "https://doormanufacturing.joinerytech.hu/calc/auth/callback"
+    ],
+    "prohibitedBrowserGrants": [
+      "implicit",
+      "direct_access_grants",
+      "service_accounts"
+    ]
+  },
+  "accessToken": {
+    "tokenType": {
+      "claim": "typ",
+      "value": "Bearer"
+    },
+    "authorizedParty": {
+      "claim": "azp",
+      "value": "doormanufacturing-web"
+    },
+    "audience": {
+      "claim": "aud",
+      "mustContain": "doormanufacturing-instance-api"
+    },
+    "subject": {
+      "claim": "sub",
+      "rule": "A non-empty signed subject is required. The Instance may derive a non-reversible internal correlation key, but must not treat a client header as a subject."
+    },
+    "tenant": {
+      "claim": "tid",
+      "format": "RFC-variant UUID, normalized to lowercase",
+      "rule": "Exactly this claim is accepted. tenant_id, spaceos_tenants, request headers, query parameters, and browser storage are not compatibility fallbacks for this profile."
+    },
+    "moduleEntitlement": {
+      "claim": "enabled_modules",
+      "rule": "A non-empty, duplicate-free string array is required. The first Door Manufacturing route profile requires joinerytech.door; other module values do not substitute it."
+    },
+    "realmRoles": {
+      "claim": "realm_access.roles",
+      "unknownRoles": "grant_no_instance_authority",
+      "capabilityMap": {
+        "doormanufacturing.admin": [
+          "instance.read",
+          "instance.write",
+          "instance.admin"
+        ],
+        "doormanufacturing.production-manager": [
+          "instance.read",
+          "instance.write"
+        ]
+      },
+      "rejectedGenericRoles": [
+        "Admin",
+        "production_manager"
+      ]
+    }
+  },
+  "tenantDirectory": {
+    "lookup": "Server-side only: active local Tenant.key equals the normalized tid, then use the local Tenant.id as the persistence context.",
+    "prohibited": [
+      "token-driven tenant creation",
+      "inactive-tenant reactivation",
+      "request-selected local tenant",
+      "unresolved-tenant fallback"
+    ]
+  },
+  "errorContract": {
+    "mediaType": "application/problem+json",
+    "unauthenticated": {
+      "status": 401,
+      "cases": [
+        "missing bearer credential",
+        "malformed or invalid signature",
+        "wrong issuer, audience, algorithm, typ, or azp",
+        "expired or otherwise invalid time claims"
+      ]
+    },
+    "forbidden": {
+      "status": 403,
+      "cases": [
+        "missing or malformed tid",
+        "absent required enabled_modules value",
+        "no mapped scoped realm role",
+        "unknown or inactive local tenant mapping",
+        "missing tenant-scoped station membership"
+      ]
+    },
+    "correlation": {
+      "location": "body",
+      "name": "correlationId",
+      "rule": "Every 401 and 403 ProblemDetails response includes a non-empty correlationId. It is diagnostic only and must not contain a secret, raw bearer value, or tenant selector."
+    }
+  },
+  "station": {
+    "source": "tenant-scoped Door Manufacturing database policy",
+    "jwtClaim": "none",
+    "requestHeader": "not_authoritative",
+    "status": "not_implemented_in_this_release"
+  },
+  "activationGates": [
+    "The exact Keycloak client and mapper profile must converge through a read-only verification after an explicitly approved apply.",
+    "The two scoped realm roles must be provisioned and assigned through approved identity onboarding; generic Admin and production_manager roles never substitute for them.",
+    "An active local tenant mapping must be provisioned before any production route is mounted.",
+    "Tenant-scoped station membership and authorization must be implemented and tested; this contract intentionally carries no station claim.",
+    "The Instance Context OpenAPI reference remains a draft and its runtime endpoint is not live.",
+    "The Instance tenant_id migration, PostgreSQL FORCE RLS, two-tenant isolation, and connection-pool reuse proof remain separate release gates."
+  ]
+}

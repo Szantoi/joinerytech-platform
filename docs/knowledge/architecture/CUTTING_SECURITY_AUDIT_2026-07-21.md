@@ -1,6 +1,7 @@
 # Cutting biztonsági audit — 2026-07-21
 
-- **Állapot:** javítások a munkafában, független security review és deploy-rollout szükséges
+- **Állapot:** második kör + containment addendum 2026-07-22; a Cutting edge P0
+  lezárva, a trusted-proxy/tenant javítás lokálisan review-zott, a külön Nexus P0 nyitott
 - **Hatókör:** Cutting API, tenant/auth határ, internal API, publikus API, adapterek,
   fájl- és processzhatár, email, NuGet ellátási lánc
 - **Kapcsolódó task:**
@@ -21,9 +22,19 @@ fail-closed működésre cseréli. Ugyanebben a körben bezárult az adapter
 rate limiter, a production `changeme` adatbázis-fallback és a sérülékeny
 MailKit/MimeKit runtime lánc.
 
-Deploy **nem engedélyezett**, amíg a hívó szolgáltatások ugyanazt a rotált
-`SPACEOS_INTERNAL_SECRET` értéket nem kapják meg, és független review nem igazolja a
-változást.
+Az éles állapot külön ellenőrzése kimutatta, hogy a VPS még a régi `bf9bd4e`
+Cutting commitot futtatja, miközben az Nginx a teljes `/cutting/` namespace-t
+proxyzza. Emiatt az internal `true` fejléc hiba jelenleg kívülről elérhető útvonalon
+él. Az első lépés az edge `/cutting/internal/` tiltása, utána jöhet a review-zott
+backend és a rotált caller rollout.
+
+Ez volt az auditkori stop-döntés. **2026-07-22 containment addendum:** a külön
+`STAB-CUTTING-EDGE-PROXY-INCIDENT` végrehajtása során az Nginx internal deny és a
+review-zott `4341390` backend rollout megtörtént; külső internal `404`, health `200`,
+loopback legacy-header `403`, listener PID = service MainPID bizonyított. Az azonnali
+edge P0 ezért lezárt. A később elkészült trusted-proxy/tenant-host szelet review-zott,
+de még nincs deployolva; ehhez továbbra is éles proxy/tenant konfiguráció, Nginx
+header-szerződés és staging smoke kell.
 
 ## 2. Bizonyított leletek
 
@@ -116,7 +127,145 @@ Hivatalos advisoryk:
 4. **Belső auth platformosítása.** Cutting, Joinery, Inventory, Procurement és Kernel
    eltérő header/Bearer/loopback mintáit közös hosting security csomagba kell emelni.
 
-## 4. Bizonyíték
+## 4. Második kör — attack-path és aktiválási audit (2026-07-22)
+
+### 4.1 Prioritási és kitettségi mátrix
+
+| ID | Súlyosság | Kitettség | Lelet | Kijelölt task |
+|---|---:|---|---|---|
+| SEC-CUT-07 | kritikus | **aktív production** | A régi `true` internal auth az általános Nginx `/cutting/` proxy mögött fut | `STAB-CUTTING-EDGE-PROXY-INCIDENT` |
+| SEC-CUT-08 | magas | **aktív production** | A legacy quote tenantját kliens által küldhető `X-Original-Host` választja; az Nginx nem írja felül és nem törli | proxy hardening + tenant resolver |
+| SEC-CUT-09 | magas | aktív auth út | A `ManufacturerOnly` csak tenant-típust kér; quote/adapter adminhoz nincs finom jogosultság, adapter actor `sub` hiányában tenant ID-ra esik vissza | security hardening |
+| SEC-CUT-10 | magas | publikus action élesítése előtt | 48 bites, plaintext, lejárat nélküli token ugyanazzal a scope-pal trackel és acceptál | `STAB-CUTTING-PUBLIC-CAPABILITY` |
+| SEC-CUT-11 | magas | aktív email/admin út | Approve/reject recipient kliensvezérelt; nyers HTML mezők, PII-logok és commit utáni szinkron SMTP | notification outbox + email hardening |
+| SEC-CUT-12 | magas | **latent activation** | CLI executable payload metadata; REST DNS/redirect/IPv6 SSRF védelem hiányos | `STAB-CUTTING-ADAPTER-ACTIVATION-GATE` |
+| SEC-CUT-13 | közepes | aktív public create | A modern B2C quote tenant/space-owner nélküli PII rekordot ír; két párhuzamos quote modell sodródik | `STAB-CUTTING-PUBLIC-QUOTE-OWNERSHIP` |
+| SEC-CUT-14 | közepes | aktív input út | Public validator és DB maxhossz eltér, attachment count nincs limitálva, az elfogadott attachmentet a handler eldobja | public contract gate |
+| SEC-CUT-15 | közepes | repo/supply-chain | A Cutting `publish-fix/` alatt 517 követett build artifact, kb. 51,54 MiB, PDB és stale dependency snapshot él | release reproducibility |
+| SEC-PLAT-01 | magas | platform auth drift | Kernel cross-module dispatcher továbbra is `X-SpaceOS-Internal: true` értéket küld és production HMAC kulcs hiányában `dev-hmac-key` fallbacket használ; receiver HMAC-verifikáció nem található | platform internal identity ADR |
+
+### 4.2 Éles edge bizonyíték
+
+Read-only VPS ellenőrzés eredménye:
+
+- Cutting deployment commit: `bf9bd4ee9161d451adb5bc861ae1555e39c5d4c1`;
+- service: `spaceos-cutting-svc`, active/running;
+- listener: `127.0.0.1:5005`, PID megegyezik a systemd `MainPID` értékével;
+- Nginx: `location /cutting/ { proxy_pass http://cutting_backend/; ... }`;
+- nincs `location ^~ /cutting/internal/` vagy azzal egyenértékű deny;
+- a proxy `Host`, `X-Real-IP`, `X-Forwarded-For`, `X-Forwarded-Proto` fejléceket
+  beállítja, de a kliens `X-Original-Host` fejlécét nem törli;
+- a deploy env-ben az internal secret kulcsnevek jelen vannak, értékük nem került
+  kiolvasásra;
+- mutáló támadáspróba nem történt.
+
+Az azonnali, backend deploytól független containment részletes terve:
+[`STAB-CUTTING-EDGE-PROXY-INCIDENT`](../../tasks/EPIC-PLATFORM-STABILITY-2026Q3/archive/STAB-CUTTING-EDGE-PROXY-INCIDENT.md).
+
+### 4.3 Host/tenant és limiter trust boundary
+
+Az endpoint sorrendje jelenleg:
+
+```text
+X-Original-Host (tetszőleges kliens header) ?? Request.Host
+  → első DNS label
+  → Tenants.Subdomain SQL lookup
+  → public quote létrehozás a kiválasztott tenantban
+```
+
+Az Nginx alapértelmezésben továbbítja az ismeretlen request headereket, ezért egy
+külső kliens más tenant subdomainjét állíthatja be. A resolver ezen felül nem
+validálja a regisztrált root domaint; csak az első pont előtti címkét használja.
+
+A worktree per-IP limitere `RemoteIpAddress` alapján dolgozik, de a Cutting hostban
+nincs `UseForwardedHeaders`. Reverse proxy mögött ezért minden ügyfél azonos
+loopback/proxy partitionbe kerülhet. A javítás feltétele:
+
+- `X-Original-Host` teljes eltávolítása az authority útból;
+- `Request.Host` vagy framework `X-Forwarded-Host` feldolgozás kizárólag
+  konfigurált `KnownProxy`/`KnownNetwork` mellett;
+- host canonicalizálás és exact domain/host registry;
+- forwarded middleware az auth/rate limiter előtt;
+- külön create/track/accept limiter budget.
+
+### 4.4 Publikus capability és digitális elfogadás
+
+A jelenlegi tracking token 6 random byte (48 bit), plaintext unique indexszel,
+expiry és hash nélkül. A read és accept ugyanazt a tokent használja. Ismeretlen
+token esetén a handler a nyers beküldött értéket hibaüzenetben visszatükrözi.
+
+Pozitív kontroll: az accept csak `Quoted` állapotból fut, az aggregate `Version`
+optimista concurrency token, és az order+quote egy `SaveChanges` tranzakcióba kerül.
+Nyitott hiba: párhuzamos accept concurrency exceptionje várhatóan generikus `500`,
+nem determinisztikus replay eredmény.
+
+A SpaceOS kézfogás/digitális szerződés irány miatt a puszta bearer link nem nevezhető
+önmagában jogilag erős aláírásnak. Az action capabilityt külön scope, expiry,
+one-time state, quote+terms snapshot hash és append-only acceptance evidence kell
+kiegészítse. Részletes task:
+[`STAB-CUTTING-PUBLIC-CAPABILITY`](../../tasks/EPIC-PLATFORM-STABILITY-2026Q3/STAB-CUTTING-PUBLIC-CAPABILITY.md).
+
+### 4.5 Email, PII és public input
+
+- A publikus endpoint, az `EmailService` és a stub `QuoteNotificationService`
+  teljes email címet logol; a rejection reason is logba kerül.
+- A HTML template nyersen interpolál quote number, customer email, reason,
+  currency és URL mezőket.
+- Approve/reject bodyban a hitelesített tenant user tetszőleges `CustomerEmail`
+  címet adhat, így a modul tenanton belüli mail relay/phishing eszközzé válhat.
+- A modern public quote rekordnak nincs `TenantId`/`SpaceId` tulajdonosa, így a
+  PII tenant-access, törlés és retention szerződése nem határozható meg.
+- A public validator telefont 50 karakterig, edge/surface mezőt 100 karakterig
+  enged, a DB rendre 20/50 karakterre korlátoz; validnak jelzett input `500`-at
+  okozhat.
+- Attachmentenként van méretellenőrzés, darabszám-limit nincs, a handler pedig az
+  elfogadott attachment adatot nem perzisztálja és nem jelzi az eldobást.
+
+A notification ownership/outbox és HTML encoding már külön taskot kapott. A public
+quote két modelljének owner-aware konszolidációja:
+[`STAB-CUTTING-PUBLIC-QUOTE-OWNERSHIP`](../../tasks/EPIC-PLATFORM-STABILITY-2026Q3/STAB-CUTTING-PUBLIC-QUOTE-OWNERSHIP.md).
+
+### 4.6 Adapter activation trap
+
+Az adapter konfiguráció olyan transportkombinációkat is enged, amelyeket a runtime
+nem használ. A resolver csak az adapternevet olvassa; a DI OptiCut→file és
+CutRite→CLI kötése fix. A converterek nem adják át a transport által elvárt
+tenant/adapter metadata mezőket, ezért a veszélyes ágak jelenleg még a processz vagy
+hálózati hívás előtt elbuknak.
+
+Ez nem felmentés, hanem aktiválási csapda: ha valaki egyszerűen „beköti” a tenant
+`ConfigJson` értékeit, a payload `executable` RCE-vé, a DNS-t nem ellenőrző REST
+transport SSRF-fé válhat. Az IPv6 `::1`, `fc00::/7`, több IPv4 special-use tartomány,
+redirect és DNS rebinding jelenleg nincs blokkolva. Részletes task:
+[`STAB-CUTTING-ADAPTER-ACTIVATION-GATE`](../../tasks/EPIC-PLATFORM-STABILITY-2026Q3/STAB-CUTTING-ADAPTER-ACTIVATION-GATE.md).
+
+### 4.7 Platform internal identity drift
+
+Az exact `/internal/ingest-order` production hívóját a forrásfa-keresés nem találta.
+A Kernel általános `CrossModuleOutboxDispatcher` ugyanakkor továbbra is literális
+`true` internal fejlécet küld minden subscription endpointnak. Emellett:
+
+- HMAC config hiányában `dev-hmac-key` fallback van;
+- a repóban `X-SpaceOS-Hmac` receiver-verifikáció nem található;
+- az inbox endpoint DB-configból jön, de URL security policy nincs a domainben.
+
+Ezért a Cutting rollout előtt caller-leltár kell, hosszabb távon pedig egységes
+workload identity + tenant delegation, audience, replay és destination registry.
+
+### 4.8 Követett build artifact
+
+A `spaceos-modules-cutting/publish-fix/` 517 követett fájlt és kb. 51,54 MiB build
+kimenetet tartalmaz, köztük DLL-eket, PDB-ket és deps snapshotokat. Ez:
+
+- megkerülheti a source reviewt, ha valaki artifactként használja;
+- stale/vulnerable dependencyt tarthat a repóban a forrásfrissítés után;
+- PDB-ben környezeti/build információt őrizhet;
+- rontja a reprodukálhatóságot és a secret-scant.
+
+A tipből való eltávolítás, ignore-szabály, tiszta CI publish és SBOM/provenance kapu
+szükséges. History rewrite csak külön koordinációval indokolt.
+
+## 5. Bizonyíték
 
 - célzott internal + storage regresszió: **36/36 zöld**;
 - SignalR tenant regresszió: **3/3 zöld**;
@@ -129,7 +278,7 @@ Hivatalos advisoryk:
 - teljes solution clean build: **0 warning, 0 error**;
 - független reviewer: még kötelező kapu.
 
-## 5. Review ellenőrzőlista
+## 6. Review ellenőrzőlista
 
 - [ ] a `true` fejléc sem delete, sem ingest esetén nem hitelesít;
 - [ ] hiányzó szerver-secret fail-closed;
@@ -141,3 +290,14 @@ Hivatalos advisoryk:
 - [ ] runtime dependency audit tiszta;
 - [ ] internal hívók és deployment secret rollout dokumentált;
 - [ ] maker és reviewer külön agent/személy.
+
+Második kör kiegészítése:
+
+- [ ] az edge nem proxyzza a Cutting internal namespace-t;
+- [ ] `X-Original-Host` nem authority, idegen root domain elutasított;
+- [ ] trusted forwarded headers a limiter előtt, untrusted spoof hatástalan;
+- [ ] adapter/quote adminhoz explicit permission és kötelező `sub` tartozik;
+- [ ] public capability scope/expiry/hash/replay és acceptance evidence bizonyított;
+- [ ] email recipient aggregate-owned, HTML/URL encoded, PII log redaktált;
+- [ ] külső adapter csak teljes activation conformance után enabled;
+- [ ] követett publish artifact nincs, CI artifact forrásból reprodukálható.

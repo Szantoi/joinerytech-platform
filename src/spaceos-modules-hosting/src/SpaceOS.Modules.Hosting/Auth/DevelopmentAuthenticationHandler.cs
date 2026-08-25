@@ -11,7 +11,8 @@ namespace SpaceOS.Modules.Hosting.Auth;
 /// <summary>
 /// An authentication scheme for LOCAL DEVELOPMENT ONLY that authenticates every caller
 /// with a config-driven synthetic identity (lifted from the kontrolling host per ADR-061,
-/// extended with a real <c>tid</c> claim so the tenancy pipeline works unchanged).
+/// extended with the exact native <c>spaceos_tenants</c> projection so development
+/// exercises the same tenant parser as a Keycloak access token).
 /// </summary>
 /// <remarks>
 /// SAFETY: registration (<see cref="SpaceOsModuleAuthExtensions.AddSpaceOsModuleAuth"/>)
@@ -56,15 +57,22 @@ public sealed class DevelopmentAuthenticationHandler : AuthenticationHandler<Aut
             new(ClaimTypes.NameIdentifier, identityOptions.UserId),
             new("sub", identityOptions.UserId),
             new("preferred_username", identityOptions.UserName),
-            new(TenancyDefaults.TenantIdClaim, tenantId.ToString()),
         };
         claims.AddRange(identityOptions.Roles.Select(static role => new Claim(ClaimTypes.Role, role)));
-        if (identityOptions.EnabledModules.Length > 0)
+        var modules = identityOptions.EnabledModules.Order(StringComparer.Ordinal).ToArray();
+        var projection = new[]
         {
-            claims.Add(new Claim(
-                TenancyDefaults.EnabledModulesClaim,
-                JsonSerializer.Serialize(identityOptions.EnabledModules)));
-        }
+            new
+            {
+                tenant_id = tenantId.ToString("D").ToLowerInvariant(),
+                // Development mode is already process-environment guarded. Grant admin
+                // within the explicitly configured modules so local write endpoints use
+                // the same method-aware authorization path as production.
+                permissions = modules.Select(static module => $"{module}.admin").ToArray(),
+                enabled_modules = modules,
+            },
+        };
+        claims.Add(new Claim(TenancyDefaults.TenantListClaim, JsonSerializer.Serialize(projection)));
 
         var identity = new ClaimsIdentity(claims, SchemeName);
         return Task.FromResult(AuthenticateResult.Success(

@@ -1,148 +1,38 @@
-# ADR-index — JoineryTech platform
+# JoineryTech ADR-index
 
-> Az „első kör" (EPIC-UI-PORTAL-2026Q3) során felgyűlt architektúra-döntések.
-> **6 ADR (059–064), mind ELFOGADVA az ajánlás szerint — Gábor, 2026-07-16.**
-> Számozás a `docs/knowledge/architecture/ADR_CATALOGUE.md` folytatása (utolsó: ADR-058).
-> **Ez a fájl a 059-től kezdődő ADR-ek KANONIKUS indexe** — a katalógus nem folytatódik.
->
-> Végrehajtási sorrend (a függőségek szerint): **① 061+062** (hosting-csomag: auth + tenant
-> JWT-ből + RLS — deploy-blokkolók) és vele párhuzamosan **② 060 + 063** (HR-taxonómia,
-> QA-rework — domain-rétegek), majd **③ 059** (EnumWireMap — a 060/063 utáni enum-készletre)
-> és **④ 064** részletei.
+Az Architecture Decision Record (ADR) a döntés indokát, hatályát és következményét őrzi. Ez az index az ADR-059-től induló döntések kanonikus navigációja; az ADR-001–058 történeti katalógusa az [`architecture/ADR_CATALOGUE.md`](../architecture/ADR_CATALOGUE.md).
 
----
+Az aktuális megvalósítási sorrend vagy epic-státusz **nem** ebből az indexből olvasandó. Azt az [`EPICS.yaml`](../../../EPICS.yaml) és az érintett taskok tartalmazzák.
 
-## ⚠️ Először ezt olvasd el — a sürgősség helyes értelmezése
+## Platform-, tenant- és wire-határok
 
-**A 7 JoineryTech modul (ehs, qa, hr, dms, maintenance, crm, kontrolling) MA NEM FUT ÉLESBEN
-— nincs VPS-deployjuk.** A VPS-en futó 11 service a **spaceos-világ** moduljai (kernel,
-orchestrator, inventory, cutting, procurement, identity, sales…), nem ezek
-(`architecture/VPS_SERVICE_STATE_2026-07-16.md:47-64`).
-
-Ezért:
-
-| | |
+| ADR | Tárgy |
 |---|---|
-| 🟢 **Ami NEM igaz** | „Most szivárog tenant-adat." **Nincs aktív adatvédelmi incidens.** Nincs éles adat, nincs éles kitettség. |
-| 🔴 **Ami igaz** | Az EHS/QA jelenlegi kódja **néma tenant-szivárgást** okozna, a CRM-ben **semmilyen izoláció nincs** — **a deploy pillanatában**. Ezek **deploy-blokkolók**, nem tűzoltás. |
+| [059](ADR-059-wire-nyelv.md) | Wire-nyelv és kanonikus enum-szókincs |
+| [060](ADR-060-hr-enum-taxonomia.md) | HR enum-taxonómia |
+| [061](ADR-061-host-auth-es-tenant-identitas.md) | Modulhost auth és tenant-identitás |
+| [062](ADR-062-rls-tenant-izolacio.md) | Tenant-izoláció és RLS minta |
+| [063](ADR-063-qa-rework-conditional.md) | QA rework / Conditional ág |
+| [064](ADR-064-kontraktus-reszletek.md) | Keresztmodul kontraktusrészletek |
 
-**Következmény a prioritásra:** az RLS/auth ADR-ek (062, 061) **nem ma éjjel sürgősek** — de a
-7 modul VPS-deployja **nem indulhat el** a döntésük és végrehajtásuk nélkül. A ma legdrágább
-halasztás valójában az **ADR-059**: minden nap, amíg áll, a portal fetcher-átállása áll 4 modulon.
+## Modularitás, termékcsomagok és tulajdonjog
 
----
+| ADR | Tárgy |
+|---|---|
+| [065](ADR-065-kernel-scope-absztrakcio.md) | Kernel core-elemek domain-mentessége |
+| [066](ADR-066-erp-module-contract-boundaries.md) | ERP-modulok közti kontraktus- és referenciahatárok |
+| [067](ADR-067-module-catalog-and-lifecycle.md) | Kanonikus ModuleId, modul-katalógus és lifecycle |
+| [068](ADR-068-project-core-and-b2b-collaboration-ownership.md) | Projekt-orchestration és B2B kézfogás ownership |
+| [069](ADR-069-planning-domain-and-product-package.md) | Planning domain és termékcsomag |
+| [070](ADR-070-scheduling-core-external-dependencies.md) | Scheduling külső függőségei |
+| [071](ADR-071-model-reading-versus-deterministic-decision.md) | Modellolvasás és determinisztikus döntés határa |
+| [072](ADR-072-projects-module-ownership.md) | Önálló `spaceos.projects` modul tulajdonjoga |
 
-## A tábla
+## Hogyan használd az ADR-t?
 
-| ADR | A kérdés egy mondatban | Ajánlás | Sürgősség | Függőség |
-|---|---|---|---|---|
-| **[059](ADR-059-wire-nyelv.md)** — Wire-nyelv | Magyar vagy angol enum-kulcsok a dróton, és hol fordítunk? | **Magyar wire, fordítás a backend varratán** (`EnumWireMap`, kontrolling-precedens); a domain angol marad; EHS is HU-ra igazodik | 🟠 **Nem élesítés-blokkoló, de a legdrágább halasztás** — a portal fetcher-átállását blokkolja 4 modulon; a migrációs ablak (nulla adat) most nyitva | **Nincs — ez a többi 3 előfeltétele** |
-| **[060](ADR-060-hr-enum-taxonomia.md)** — HR taxonómia | A HR készség-/részleg-készlete a faipari (portal) vagy az általános ipari (backend) legyen? | **Backend átveszi a faipari taxonómiát**; a `PayGrade` sáv-enum + config-ráta; a törzsadat-verzió (referencia-tábla) későbbre jegyezve | 🟠 **A HR élesítését blokkolja** — ma a fetcher-átállás nem lehet „MSW-lekapcsolás" | **059** (nyelv) + **062** (a séma-létrehozás közös körben) |
-| **[061](ADR-061-host-auth-es-tenant-identitas.md)** — Host-auth + tenant-identitás | Hol lakik a modul-hostok közös auth-wiringje, és honnan jön a tenant-azonosító? | **Sziget-szintű platform-csomag** (kernel = referencia, nem függőség) + **a tenant a JWT-claimből** jöjjön, ne hitelesítetlen headerből | 🔴 **DEPLOY-BLOKKOLÓ** — a 7 modul VPS-deployja előtt kötelező. *(Ma nincs kitettség.)* **+2 azonnali bug**: CRM host használhatatlan; EHS/DMS védtelen | Testvér: **062** |
-| **[062](ADR-062-rls-tenant-izolacio.md)** — RLS tenant-izoláció | Egységes tenant-izolációs minta — hol, milyen kulccsal, hány réteggel? | **Közös baseline a 061 csomagjában**, kernel-minta, `app.current_tenant_id`, **`FORCE RLS`**, `HasQueryFilter` 2. rétegként — és **az interceptor soha ne nyelje el a hibát** | 🔴 **DEPLOY-BLOKKOLÓ — a csomag legmagasabb kockázata.** EHS/QA: **néma szivárgás**; CRM: **semmi izoláció**; HR: a séma sosem jött létre. *(Ma nincs kitettség.)* | Testvér: **061** — **egyik sem izolál a másik nélkül** |
-| **[063](ADR-063-qa-rework-conditional.md)** — QA rework/Conditional | Kell-e feltételes megfelelés + javítási hurok, és hol modellezzük? | **A hurok a Ticket-domainben** (már kész, reopennel); az Inspection immutable marad; újraellenőrzés = új Inspection | 🟡 **Nem élesítés-blokkoló** — de a QA fetcher-átállását blokkolja (3↔4 státusz) | **059** + **designer** |
-| **[064](ADR-064-kontraktus-reszletek.md)** — Gyűjtő (5 tétel) | Assign-identitás/`createdBy`, Maint `Reported→InProgress`, DMS archive/reopen, Kontrolling `AppliesTo`, multi-currency | Guid + **írás-idejű** név-denormalizáció · él marad törölve · **DMS lezárva** · kontraktus nyer · HUF-only kimondva | 🟢 **Egyik sem élesítés-blokkoló** — az 1. tétel a 061-re vár; a UI addig Guidot mutatna | **061** (assign) + **059** (DMS-nyelv) |
+1. Keresd meg a témához tartozó rekordot és olvasd el teljesen.
+2. Ellenőrizd a döntés mezőjét, a kapcsolódó rekordokat és a fájlban jelölt hatályt.
+3. Keresd meg az implementációs epicet az `EPICS.yaml`-ban.
+4. Ha a kód vagy egy szerződés eltérést mutat, ne írd át önkényesen: rögzítsd a kompatibilitási vagy migrációs döntést.
 
-
----
-
-## Második kör — ADR-065…071 (mind ELFOGADVA)
-
-> **Miért került ide külön táblába:** a fenti tábla az „első kör" **eldöntendő**
-> kérdéseit írja le (opció · ajánlás · kockázat). Ezek már **eldöntött**
-> döntések — más az alakjuk, tehát összekeverni őket félrevezető lenne.
->
-> ⚠ **Ez a szakasz egy MÉRT hiány pótlása** (2026-07-30, root): az
-> `ADR_CATALOGUE.md` **ADR-058-nál áll meg**, ez a README pedig **064-ig** ért,
-> tehát **hét elfogadott ADR egyetlen indexben sem szerepelt**. A leletet a
-> doc-capture terminál mérte ki; a root újramérte (a fájlok 059–071-ig léteznek).
-> **Egy döntés, amit nem lehet megtalálni, hat hónap múlva újra elő fog jönni** —
-> és akkor valaki más fogja eldönteni, máshogy.
-
-| ADR | Tárgy | Elfogadva | Mit köt meg |
-|---|---|---|---|
-| **[065](ADR-065-kernel-scope-absztrakcio.md)** | Kernel core-elemek **domain-mentessége** — `FlowEpicScope` absztrakció | Gábor, 2026-07-18 | a Kernel nem tudhat a faipari doménről; a szent mag érintetlensége |
-| **[066](ADR-066-erp-module-contract-boundaries.md)** | ERP-modulok közti **kontraktus- és semleges-referencia határok** | 2026-07-25 | modulok közt mi hivatkozhat mire; a semlegességi elv szerkezete |
-| **[067](ADR-067-module-catalog-and-lifecycle.md)** | Kanonikus **`ModuleId`**, aláírt **modul-katalógus**, modul-életciklus | Gábor, 2026-07-27 | a `RequireEnabledModule` és a világ-gating alapja |
-| **[068](ADR-068-project-core-and-b2b-collaboration-ownership.md)** | **Projekt-orchestration + B2B kézfogás** — ownership, két bounded context | Gábor, 2026-07-27 | a B2B-10 F-szeletek normatív forrása (host/guest szerepek, §13) |
-| **[069](ADR-069-planning-domain-and-product-package.md)** | **Planning** — ütemezés-domain, termékcsomag, API-kontraktus | Gábor, 2026-07-28 | a `spaceos.scheduling` M1–M5 mérföldkövek kerete |
-| **[070](ADR-070-scheduling-core-external-dependencies.md)** | A `spaceos.scheduling` **külső függőségei** (solver, naptár) | 2026-07-28 | D2: a könyvtár típusai **nem** jelennek meg a kontraktusban · D3: a nem-determinisztikus motor **kimondott** kezelése · D4: committolt lockfile |
-| **[071](ADR-071-model-reading-versus-deterministic-decision.md)** | **A modell határa** a dokumentum-befogadásban — olvasás vs. döntés | Gábor, 2026-07-30 | LLM az **olvasáshoz**, determinisztikus szabály a **könyveléshez**; a doc-capture G2-tétele |
-
-**Az ADR-070 három precedense a szigeten túl is köt** — a doc-capture ADR-071-e
-kimondottan átveszi őket (D2 teljesítve a DC-02-ben; D3 az OCR-nél élő kérdés;
-D4 nyitott, mert a Python motorban **nincs lockfile**).
-
----
-
-## Javasolt döntési sorrend — két párhuzamos sáv
-
-A sürgősségnek **két, eltérő tengelye** van; érdemes nem összekeverni őket.
-
-### 1. sáv — kontraktus-döntések (a fetcher-átállást nyitják; **059 a kapu**)
-
-```
-ADR-059 (wire-nyelv)  ←── ELŐSZÖR: ez blokkolja a másik hármat
-   ├── ADR-060 (HR taxonómia)     ← + ADR-062 séma-körrel együtt
-   ├── ADR-063 (QA rework)        ← + designer
-   └── ADR-064 (gyűjtő)           ← + ADR-061 az assign-tételhez
-```
-
-### 2. sáv — deploy-blokkolók (döntés-függetlenül indítható, **nincs 059-függés**)
-
-```
-ADR-061 (auth + tenant-claim)  ─┐
-                                ├── együtt adnak tenant-izolációt
-ADR-062 (RLS enforcement)      ─┘
-```
-
-**Ha csak egy dolgot döntesz ma: ADR-059.** Az 1. sáv teljesen áll nélküle, és a
-migrációs ablak (nulla adat mindenhol) záródni fog.
-
-**Ha csak egy dolgot indítasz el ma: ADR-061+062 közös csomagja.** Nem sürgős órákban,
-de ~4-6,5 nap munka a deploy kritikus útján, és a 7 host addig nem mehet ki.
-
----
-
-## Döntéstől független, azonnal javítható hibák
-
-Ezek **nem ADR-kérdések** — az audit találta őket, és jóváhagyás után javíthatók:
-
-| Hiba | Hol | Következmény |
-|---|---|---|
-| `AddAuthentication()` **séma nélkül** + `RequireAuthorization` | `SpaceOS.Modules.CRM/src/Lead.Api/Program.cs:17` | **A CRM host ma használhatatlan** — minden kérés elszáll, Developmentben is |
-| Auth teljes hiánya | `src/ehs/src/Api/Program.cs`, `src/dms/host/Program.cs` | A hostok **védtelenül** futnak |
-| `catch (Exception) { }` az RLS-interceptorban | `src/qa/…/TenantDbConnectionInterceptor.cs:40-47`, `src/ehs/…:40-47` | **Néma tenant-szivárgás** — ennek a törlése önmagában többet ér, mint a többi RLS-munka |
-| Hiányzó `[DbContext]`/`[Migration]` attribútum | `src/hr/…/Migrations/20260707_00{1,2}_*.cs` | A HR sémája **soha nem jött létre** (a DMS/maintenance javította, a HR kimaradt) |
-| Hamis komment: „RLS in the deployed database" | `SpaceOS.Modules.CRM/…/CrmDbContext.cs:8-9` | **Hamis biztonság** — nincs ilyen RLS |
-| Authority-drift | `spaceos-modules-ehs/Ehs.Api/appsettings.json:17-19` (`auth.spaceos.local`) | Eltér a kernel/hr Authorityjétől |
-| Elavult/hibás doksi | `patterns/DATABASE_PATTERNS.md` (3 hiba), `architecture/MULTI_TENANT_RLS_ARCHITECTURE_2026.md` | **Érvénytelen SQL-példa + 3 különböző session-kulcs** — ADR-forrásként félrevezet |
-| Elavult ADR-jelölt | `docs/tasks/EPIC-UI-PORTAL-2026Q3/archive/F2-DMS-FE.md` 2. pont | A DMS-BE-HOST azóta lezárta (→ ADR-064 §3) |
-
----
-
-## Módszertani megjegyzés (a döntés megbízhatóságához)
-
-- **A tényeket kódból ellenőriztük**, nem a task-doksikból. Több forrás-állítás **elavultnak
-  vagy pontatlannak** bizonyult (pl. „egyetlen host sem regisztrál auth-sémát" — a HR igen;
-  „a DMS archive/reopen nyitott" — lezárva; „a migrációk nem hozzák létre a policy-ket" —
-  modulonként eltér, és ahol hamis, ott **rosszabb**: néma szivárgás).
-- ⚠️ **A VPS-en futó modulok (inventory, procurement, cutting…) forrása lokálisan NEM
-  elérhető** (inicializálatlan submodule-ok; a `sales` repo GitHubon nem is létezik). Ezért
-  „hogyan oldják meg a futó modulok" kérdésre **ma nem lehet kódból válaszolni** — az egyetlen
-  ellenőrizhető, futó referencia a **kernel**, az ajánlások erre épülnek.
-  Ha a döntés előtt kell a többi modul mintája:
-  `git submodule update --init src/spaceos-modules-{inventory,cutting,procurement,joinery,abstractions}`
-  vagy VPS-olvasás `/opt/joinerytech/src/` alatt.
-
----
-
-## Formátum
-
-Minden ADR: **Kontextus** (tényekkel, `fájl:sor` hivatkozásokkal) · **Döntendő kérdés** ·
-**Opciók** (következmény / munkaigény / kockázat) · **Ajánlás + indoklás** · **Hatás** ·
-**Döntés** _(Gábor tölti ki)_ · **Kapcsolódó ADR-ek**.
-
-Az ADR-ek **nem döntenek** — opciókat és indokolt ajánlást adnak. A döntés-mező üres.
-</content>
-</invoke>
+Az ADR rögzíti a **miértet** és a tartós határt; a task a **mit és mikor** kérdést, a teszt pedig a ténylegesen teljesült viselkedést bizonyítja.

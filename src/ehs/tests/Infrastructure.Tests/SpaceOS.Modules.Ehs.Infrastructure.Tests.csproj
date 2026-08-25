@@ -24,7 +24,7 @@
     <PackageReference Include="Moq" Version="4.20.*" />
 
     <!-- Testcontainers -->
-    <PackageReference Include="Testcontainers.PostgreSql" Version="3.10.*" />
+    <PackageReference Include="Testcontainers.PostgreSql" Version="4.14.0" />
 
     <!-- EF Core InMemory (for unit tests if needed) -->
     <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="8.0.*" />

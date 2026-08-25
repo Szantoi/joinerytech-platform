@@ -84,3 +84,101 @@ mérés nélkül kockázatként továbbadni** — ez a felmérés pontosan ezér
 | 2 | Keycloak **24 → 26+** upgrade-döntés | Organizations (per-tenant SSO) + 2 évnyi CVE-lemaradás |
 | 3 | HR/DMS app-szerep tényleges provisionálása deploy előtt | a `CHANGE_ME` jelszó szándékosan fail-fast |
 | 4 | A `spaceos_hr`/`spaceos_dms` külön adatbázis vs. közös `spaceos` séma döntés | ma 3 különböző DB-modell fut egyszerre (Gábor döntése) |
+
+---
+
+## Kiegészítés (2026-07-27, root) — élő Keycloak-realm felmérés
+
+Az élő `spaceos` realm (joinerytech.hu/auth, Keycloak `/auth` relatív úttal fut
+— a kcadm-hívásokhoz ez kell, e nélkül minden hitelesítés AUTH_FAIL) állapota:
+
+1. **Mindössze 2 felhasználó van:** `anna.kovacs` (anna.kovacs@joinerytech.hu)
+   és `demo`. A korábbi, `spaceos_keycloak` DB-ből listázott ~19 doorstar-user
+   egy MÁSIK (régi/leszerelt) Keycloak-példány adatbázisából származik — a
+   futó realm nem tartalmazza őket. Deploy/audit-tanulság: a szerep- és
+   user-állításokat a FUTÓ realm admin-API-jából kell igazolni, nem a
+   DB-ből találomra.
+2. **A `portal-app` kliens helyesen konfigurált:** publikus, standard flow,
+   redirect URI-k `https://joinerytech.hu/*` ÉS `http://localhost:*/*`.
+   → A CLAUDE.md-ben évek óta szereplő „Keycloak localhost redirect URI
+   hiányzik, ezért kell a VITE_AUTH_MODE=mock dev-bypass" adósság
+   **elavult** — lokálisan is lehet valódi Keycloak-login.
+3. **ADÓSSÁG (termékesítés-kritikus): a felhasználókon nincs `tid`
+   attribútum, és a realmben nem létezik `Admin`/`Designer`/`Joiner` szerep** —
+   csak `default-roles-spaceos`. Következmény: sikeres bejelentkezés után a
+   portál `tenantId = null`, `roles = []`, `enabledModules = []` értékkel
+   fut; a bérlő-kötött világ-szűrés (ERPSEP-FE-WORLD-GATING) fail-closed
+   viselkedése miatt ilyen tokennel a felhasználó alig látna valamit.
+   → A claim-oldal (tid + realm-szerepek + enabled_modules mapper) felvétele
+   a world-gating ELŐFELTÉTELE, és a Doorstar-onboarding része.
+   Kapcsolódó, korábban rögzített lelet: a hosting `TenantResolver`
+   szerver-oldalon eldobja az `enabled_modules` claimet (PLAN-01 audit).
+4. Jelszó-kezelés: az `anna.kovacs` fiók jelszava 2026-07-27-én root által
+   ideiglenes jelszóra állítva (kötelező csere első belépéskor), Gábor kérésére.
+   A jelszó-érték NEM került repóba.
+
+### Élő Keycloak-konfiguráció változás (2026-07-27, root, Gábor kérésére)
+
+Tünet: sikeres bejelentkezés után a portál világ-rácsa ÜRES.
+Gyökérok (kódból): `HomeScreen.tsx:23-30` — `getVisibleWorlds(roles)` a Keycloak
+realm-szerepekből dönt (Admin/Designer/Joiner), ismeretlen szerepnél
+**üres listát** ad vissza. A realmben viszont EGYETLEN ilyen szerep sem
+létezett (csak `default-roles-spaceos`), tehát minden felhasználó üres
+rácsot kapott — az élő rendszer így nem volt használható.
+
+Elvégzett, visszafordítható konfiguráció (kcadm, `/auth` relatív úttal):
+1. `Admin`, `Designer`, `Joiner` realm-szerepek létrehozva a `spaceos` realmben.
+2. `Admin` szerep hozzárendelve az `anna.kovacs` felhasználóhoz.
+3. A `portal-app` kliensre két protocol mapper felvéve (eddig NULLA mappere
+   volt): `tid` (user attribútum → `tid` claim) és `enabled_modules`
+   (multivalued user attribútum → `enabled_modules` claim). Ezek a portál
+   `parseUserClaims` (AuthContext) elvárt claim-jei.
+
+NYITVA (Gábor-döntés): az `anna.kovacs` felhasználón a `tid` attribútum
+ÉRTÉKE nincs beállítva — a `Tenants` táblában ma a "Doorstar Kft."
+(a1b2c3d4-e5f6-7890-abcd-ef1234567890, EnabledModules={door,cutting}) az
+egyetlen valós, modulokkal rendelkező bérlő; nincs külön JoineryTech-bérlő.
+Egy platform-tulajdonosi fiók ügyfél-bérlőhöz kötése adat-hozzáférési
+döntés, ezért root nem hozta meg. Amíg nincs `tid`, a portál felülete
+látszik, de a bérlő-kötött adathívások kontextus nélkül futnak.
+
+Termékesítési tanulság: a szerep-/claim-oldal (realm-szerepek + tid +
+enabled_modules mapper) az ERPSEP-FE-WORLD-GATING KEMÉNY előfeltétele, és
+az ügyfél-onboarding kötelező lépéslistájának része kell legyen
+(ma egyik sem volt provisionálva — a Doorstar-élesítés előtt ez blokkoló).
+
+### Elvégzett provisioning + bizonyíték (2026-07-27 éjjel)
+
+- `anna.kovacs`: `Admin` realm-szerep + `tid` =
+  `11111111-2222-4333-8444-555555555555` + `enabled_modules` attribútum.
+- Új bérlő a Kernel DB-ben: **„JoineryTech Kft. (demo)"** (Gábor döntése:
+  ne az ügyfél-bérlőhöz kössük a tulajdonosi fiókot).
+  **ÉLŐ MEGERŐSÍTÉSE AZ ADR-067 LELETNEK:** a 7 ERP-modulkulcs
+  (crm/kontrolling/hr/…) beszúrása a `validate_enabled_modules_for_type()`
+  DB-triggerbe ütközött — a Kernel modul-szótára KIZÁRÓLAG iparági kulcsokat
+  ismer (Manufacturer → {door,cabinet,window,cutting,spatial}). A bérlő
+  ezért ezzel a készlettel jött létre. Ez pontosan az ADR-067 „Kernel-allowlist
+  vs portal enabled_modules diszjunkt" pontja, most éles adaton igazolva —
+  a legacy→kanonikus migrációs tábla (ADR-067) nélkül a tenant-kötött
+  világ-szűrés nem implementálható konzisztensen.
+- `spaceos` realm user-profile: `unmanagedAttributePolicy` = `ADMIN_EDIT`
+  (eddig nem volt; enélkül a `tid`/`enabled_modules` attribútum NEM tárolható).
+- Végponttól végpontig bizonyítva egy eldobható próbafiókkal (utána törölve):
+  a token tartalmazza `realm_access.roles=[Admin]`, `tid`, `enabled_modules`.
+- Buktató a jövőbeli onboardinghoz: `firstName`/`lastName` nélkül a KC24
+  `VERIFY_PROFILE` required actiont tesz a fiókra, és a bejelentkezés
+  „Account is not fully set up" hibával áll meg.
+
+### ÚJ, SÚLYOS PRODUCTION-LELET: a Keycloak beágyazott H2-n fut
+
+`/opt/keycloak-app/conf/keycloak.conf`-ban NINCS `db`/`db-url` beállítás, az
+egység `kc.sh start`-tal indul, és az adat a
+`/opt/keycloak-app/data/h2/keycloakdb.mv.db` fájlban él (1,4 MB, aktívan írva).
+A Postgres `spaceos_keycloak` adatbázis (19 user, köztük a doorstar-fiókok)
+egy KORÁBBI telepítés maradványa — a futó rendszer nem használja.
+Következmények: a Keycloak dokumentáció szerint H2 **nem támogatott
+production**-ben (nincs biztonságos mentés/HA, sérülékeny a fájl-korrupcióra);
+a felhasználó- és realm-adatok NINCSENEK a rendszeres Postgres-mentésben;
+skálázás/újratelepítés esetén az identitás-adat elveszhet.
+→ Doorstar-értékesítés ELŐTT rendezendő: migráció Postgresre + mentés.
+Külön task-jelölt: STAB-KEYCLOAK-POSTGRES-MIGRATION.

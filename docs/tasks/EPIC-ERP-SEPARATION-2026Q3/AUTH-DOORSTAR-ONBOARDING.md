@@ -164,12 +164,40 @@ Enélkül a dolgozók **egyetlen közös fiókot** fognak használni, és az aud
   nem állomásonként);
 - a belépés **ne szakítsa meg** a folyamatban lévő munkát.
 
-⚠ **Kapcsolódik a `/shopfloor` PIN-route nyitott Gábor-döntéshez** (platform-portál): ott a
-`PIN=1234` egy **közös** belépő, ami pont az ellentéte ennek a döntésnek. A két tételt együtt
-kell eldönteni, különben a platform és az instance ellentétes mintát tanít.
+✅ **Platform `/shopfloor` P0 biztonsági kapu (2026-08-20):** a korábbi közös
+`PIN=1234` kliensoldali mock út kikerült a kanonikus route/import láncból. A
+`/shopfloor` és az autentikált `/w/shopfloor` is explicit fail-closed képernyőt
+mutat. Újraaktiválás csak személyes OIDC, szerveroldali operátor–munkaállomás
+jogosultság és regisztrált eszközhöz kötés után lehetséges; ez a task F4
+személyes identitás-követelményével így nem kerül ellentmondásba.
 
-### F5 — Doorstar bérlő-rekord + onboarding lefuttatása *(a meglévő runbookkal)*
-Dry-run → végrehajtás → konvergencia-ellenőrzés.
+### F5 — Doorstar bérlő-rekord + onboarding *(BLOKKOLVA a kanonikus providerig)*
+
+A régi `Invoke-KeycloakTenantOnboarding.ps1` runbook `portal-app` + `tid` +
+realm-role modellje 2026-08-20-tól retired és csak hálózatmentes történeti
+elemzésre használható. Nem futtatható vele dry-run, apply vagy konvergencia-
+ellenőrzés. Az új végrehajtási kapu: autoritatív `spaceos_tenants`/permissions/
+enabled_modules projection exact-replace+readbackkal, membership-verzió és
+revoke/deactivate, scoped service principal registry, valamint valódi OIDC/JWKS
+E2E bizonyíték. Addig nincs tenant-aktiválás vagy DB-művelet.
+
+2026-08-20-án elkészült ennek a providernek a lokális, config-vezérelt
+successor szerződése (`provision_keycloak_tenant_projection.py`): native
+nested-only selected-tenant projection, monoton membership/projection verzió,
+revoke/deactivate/reactivate kapu és külön Office→Plant registry. Ez nem oldja
+fel az F5 blokkot: élő Keycloak readback/apply, friss token, online Kernel
+version-check, key-custody/rotation proof és a Plant/Doorstar flat-profile drift
+lezárása továbbra is hiányzik.
+
+## Végrehajtási napló
+
+| Dátum | Szelet | Artefaktum | Ellenőrzés | Tudatosan nem végzett művelet |
+|---|---|---|---|---|
+| 2026-08-11 | Keycloak kliens- és JWT-mapper előkészítés | `scripts/provision_doormanufacturing_keycloak_clients.py`, `config/doormanufacturing-keycloak-clients.sample.json` | offline profile-validáció + 25 Python unit teszt; publikus issuer, loopback-only admin API és Keycloak brief-válasz false-normalizáció külön validálva | nincs élő Keycloak-hívás, apply, user-, tenant-, szerep- vagy DB-művelet; a confidential secretet a script nem kéri le és nem írja ki |
+| 2026-08-20 | Portal/shopfloor P0 fail-closed + legacy onboarding hold | `src/joinerytech-portal/src/App.tsx`, `ShopFloorAccessUnavailablePage.tsx`, `OperatorLoginScreen.tsx`, `scripts/Invoke-KeycloakTenantOnboarding.ps1` | 92 célzott Portal Vitest + 32 provisioning Python teszt zöld; friss Portal production build és artifact-szintű kiosk/import scan zöld | nincs Keycloak-hívás/apply, tenant- vagy DB-művelet, deploy, commit, aláírás vagy aktiválás |
+| 2026-08-20 | Immutable auth-release kapu audit | `scripts/test_verify_doormanufacturing_auth_contract.py` | **NEM ZÖLD:** 1 failure + 1 error, közös ok: `Doorstar validator hash drift` | nincs checksum-átírás, intake- vagy release-módosítás; a pin frissítése és aláírt artifact kiadása release-owner jóváhagyást kér |
+| 2026-08-20 | Native Keycloak authority projection + Office→Plant registry lokális, fail-closed szerződés | `scripts/keycloak_provisioning_transport.py`, `scripts/provision_keycloak_tenant_projection.py`, `config/keycloak-tenant-projection.sample.json`, `KEYCLOAK_AUTHORITY_PROJECTION_AND_SERVICE_PRINCIPAL_2026-08-20.md` | 55 célzott és 87/87 összes provisioning Python teszt; nested-only selected tenant, strict JSON, no-proxy/no-redirect exact loopback és admin-response secret stripping. Adverzariális review után `--apply` profil/credential/network előtt hard-disabled, verify mindig reverse-inventory blokkos | nincs Keycloak/VPS/DB/network/apply, tokenkiadás, kulcsrotáció vagy release-pin módosítás; CAS/adoption/custody/reverse-binding hiány miatt `mutationSafetyEvidence=false`, továbbra NO-GO |
+| 2026-08-20 | Portal + közös Hosting native OIDC/JWKS fogyasztói szerződés | `AuthContext.tsx`, `CanonicalOidcAccessTokenValidator.cs`, `CanonicalOidcEndToEndTests.cs`, `AUTH-OIDC-JWKS-LOCAL-E2E.md` | Portal claim-mátrix 29/29; valódi ASP.NET JwtBearer + lokális RS256/JWKS kulcsgyűrű 26/26; teljes Docker nélküli Hosting 118/118. Exact issuer/aud/azp, JOSE `typ`, Keycloak payload `typ=Bearer`, egy native tenant, két pozitív verzió és online status/content/revoke check | nincs élő browser Code+PKCE, Keycloak discovery/JWKS/rotation, hostonkénti online provider/config, deploy vagy aktiválás; a négy Docker/Testcontainers RLS teszt nem futott, ezért ez nem live RLS-bizonyíték |
 
 ## Átvételi feltételek
 

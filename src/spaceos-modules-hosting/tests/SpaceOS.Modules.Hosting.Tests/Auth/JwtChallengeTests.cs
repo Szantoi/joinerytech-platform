@@ -23,6 +23,7 @@ public sealed class JwtChallengeTests
                 {
                     ["Jwt:Authority"] = "https://keycloak.invalid/realms/spaceos",
                     ["Jwt:Audience"] = "test-api",
+                    ["Jwt:AuthorizedParty"] = "test-browser",
                 }).Build(),
                 new Microsoft.Extensions.Hosting.Internal.HostingEnvironment { EnvironmentName = "Production" }));
         using var client = host.GetTestClient();

@@ -412,9 +412,20 @@ public sealed class KontrollingEndpointsTests : IAsyncLifetime
 
     // ── Cost adjustments: write ─────────────────────────────────────────────
 
-    private async Task<HttpResponseMessage> PostAdjustmentAsync(string json) =>
-        await Client.PostAsync("/api/kontrolling/cost-adjustments",
-            new StringContent(json, Encoding.UTF8, "application/json"));
+    private async Task<HttpResponseMessage> PostAdjustmentAsync(string json, string? userIdHeader = null)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/api/kontrolling/cost-adjustments")
+        {
+            Content = new StringContent(json, Encoding.UTF8, "application/json")
+        };
+
+        if (userIdHeader is not null)
+        {
+            request.Headers.Add("X-User-Id", userIdHeader);
+        }
+
+        return await Client.SendAsync(request);
+    }
 
     [Fact]
     public async Task CreateAdjustment_Returns201_WithTheFreshAdjustment()
@@ -425,7 +436,7 @@ public sealed class KontrollingEndpointsTests : IAsyncLifetime
         var response = await PostAdjustmentAsync("""
             {"projectId":"PRJ-A","category":"anyag","amount":-35000,
              "scope":"project","reason":"Beszállítói jóváírás"}
-            """);
+            """, Guid.NewGuid().ToString());
 
         response.StatusCode.Should().Be(HttpStatusCode.Created);
 

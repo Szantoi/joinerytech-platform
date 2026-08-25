@@ -1,0 +1,33 @@
+{
+  "schemaVersion": "spaceos.door-manufacturing-auth-negative-path-evidence/v1",
+  "id": "spaceos-door-manufacturing-auth-negative-path",
+  "version": "1.0.0",
+  "verdict": "PASS",
+  "checkedAt": "2026-08-11T18:42:05.000Z",
+  "scope": "Offline unit verification of the pinned Door Manufacturing browser-token profile and server-side tenant directory lookup.",
+  "command": "npx vitest run --config vitest.unit.config.ts tests/spaceOsProductionAuth.unit.test.ts",
+  "result": {
+    "testFilesPassed": 1,
+    "testsPassed": 6,
+    "databaseRequired": false,
+    "networkRequired": false
+  },
+  "source": {
+    "validatorPath": "doorstar-instance/src/production-service/src/services/spaceOsProductionAuth.ts",
+    "validatorSha256": "e9b0a2bf5e6454565cbfa43ce25551b902d2a3ec33d7ff2d77b3a4788541b456",
+    "testPath": "doorstar-instance/src/production-service/tests/spaceOsProductionAuth.unit.test.ts",
+    "testSha256": "0e0d7483b385f6cbb023e9eda9ebb210af16f1bed0448f2c7c7d669ae49f32a1"
+  },
+  "coveredNegativePaths": [
+    "non-RS256 or widened environment profile is rejected",
+    "ID-token typ or wrong azp is forbidden",
+    "tenant_id is not accepted as a tid fallback",
+    "malformed tid or absent required module is forbidden",
+    "generic Admin and all unmapped realm roles grant no Instance authority",
+    "unknown or inactive local tenant mapping fails closed"
+  ],
+  "limits": [
+    "This is not a Keycloak client convergence check, live JWT issuance smoke test, user/tenant provisioning result, station-policy proof, database RLS proof, or production deployment approval.",
+    "No bearer credential, client secret, or personal data is included in this evidence."
+  ]
+}

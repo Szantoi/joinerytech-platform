@@ -1,7 +1,10 @@
 # ADR-068: Projekt-orchestration és B2B kézfogás — ownership, két életciklus és MVP-határ
 
-- **Státusz:** PROPOSED — döntésre vár (Gábor). Nem önelfogadva: 8 pont üzleti/jogi/
-  ütemezési döntést igényel, ami nem architektúra-kérdés (lásd 15. fejezet). Minden
+- **Státusz:** **ELFOGADVA (Accepted) — 2026-07-27 (Gábor).** Mind a 8 üzleti/jogi/
+  ütemezési kérdésre megérkezett a válasz (a döntések tételesen a 15. fejezetben,
+  a válaszok mellé rögzítve). A 4. kérdés (jogi kikényszeríthetőség) tudatosan
+  elhalasztott jogi kapu — a pilot-scope-ra a rendszeren belüli saját azonosítás
+  elégségesnek nyilvánítva, ez nem blokkolja az Accepted státuszt. Minden
   architektúra-jellegű döntési pont (a task 11 kötelező pontja) meg van hozva ebben
   a dokumentumban, evidence-alapú.
 - **Dátum:** 2026-07-21
@@ -656,11 +659,12 @@ döntéseket tükrözik, korrekció nélkül kiadhatók.
 
 ---
 
-## 15. Nyitott kérdések Gábornak (nem eldöntve itt)
+## 15. Nyitott kérdések Gábornak — MEGVÁLASZOLVA (2026-07-27)
 
-Ezek üzleti/jogi/ütemezési döntések, nem architekturális kérdések — ezért az
-ADR összesített **Státusza PROPOSED marad**, amíg Gábor nem válaszol rájuk
-(pontosan úgy, mint ADR-066/067 esetében).
+Ezek üzleti/jogi/ütemezési döntések voltak, nem architekturális kérdések.
+**Gábor 2026-07-27-én mindre válaszolt** (a döntések a lista után, a 15.A
+döntési naplóban), ezzel az ADR **Accepted**. Az eredeti kérdések változatlanul
+itt maradnak kontextusnak:
 
 1. **Épüljön-e valaha egy valódi Program/Projekt-burok/Milestone hierarchia** a
    FlowEpic fölé (több epicet összefogó szint), vagy marad tartósan úgy, hogy
@@ -708,6 +712,41 @@ ADR összesített **Státusza PROPOSED marad**, amíg Gábor nem válaszol ráju
    UX/termék-döntés, ami befolyásolja, hogy a JoineryTech Projects UX a kód
    vagy egy lefordított szótárt beszéljen — nem ennek az ADR-nek kell
    eldöntenie.
+
+### 15.A Döntési napló (Gábor, 2026-07-27)
+
+1. **Program/Milestone hierarchia: IGEN, épüljön** — a FlowEpic fölé idővel
+   valódi, több epicet összefogó Program/Projekt-burok + Milestone szint épül.
+   Következmény: a `FlowManagement.FlowProgram/FlowProject/FlowMilestone`
+   POCO-k **retire-státusza változatlan** (az 5. fejezet architektúra-döntése
+   szerint az új hierarchia friss aggregate-ként épül, nem a sosem-migrált
+   POCO-kból) — de a fájlok formális törlése előtt a jövőbeli hierarchia-terv
+   hivatkozhat rájuk mint referencia-vázlatra. Ütemezés: nem a B2B-MVP része.
+2. **Procurement-beszállító mint platform-tenant: IGEN, valaha lehet** —
+   a Procurement-adapter (`B2B-06`) **scope-ban marad**, nem opcionális többé;
+   az ütemezését a B2B-06 task rendezi.
+3. **TenantHandshakeAllowlist mint grant-bemenet: IGEN, „csak ha listán van"** —
+   agreement csak allowlistelt kereskedelmi kapcsolat felé ajánlható fel;
+   az allowlist formális bemenete a `CollaborationParticipantGrant` kiadási
+   politikájának (fail-closed: nincs lista-találat → nincs felajánlás).
+4. **Jogi/compliance határ: ELHALASZTVA** — jogi kérdés, most nem eldönthető.
+   Pilot-scope-ra kimondva: **a rendszeren belüli saját azonosítás (digitális
+   megállapodás: hash + időbélyeg + audit) elégséges**; minősített aláírás
+   bevezetése külön jogi kapu, a kereskedelmi élesítés előtt újra elővenni.
+5. **Szállítási réteg: SAJÁT outbox/inbox** — „mindig darabolunk felelősség
+   mentén": a Collaboration saját, önálló outbox/inbox táblákat épít (a 10.
+   fejezet javaslata megerősítve), nem vesz fel új függőségi élt a Kernel
+   `CrossModuleOutboxDispatcher`-ére.
+6. **Ütemezés: TELJES lánc** — a Doorstar-pilot előtt a teljes `B2B-01..09`
+   lánc kell; nincs szűkített közbülső kiadás.
+7. **Második Kernel domain-sérülés (TenantHandshakeAllowlist.AllowedTradeTypes
+   zárt szótár): MOST JAVÍTJUK** — ugyanolyan sürgősségű, mint az ADR-065
+   FlowEpicScope-ja. Gábor ezzel a Kernel-módosítást explicit jóváhagyta;
+   végrehajtási task: `PROJECT-KERNEL-TRADETYPE-NEUTRAL` (EPIC-PROJECT-CORE).
+8. **WorkflowPhase: a design-doc FSM-je a cél** — a platform tartozik a
+   `WorkflowPhase`-bővítéssel/átnevezéssel (`BACKLOG_READY/IN_DEV/IN_REVIEW/
+   CLOSED_DONE/CLOSED_BLOCKED`); a Projects UX ezt beszéli majd, a kód mai
+   `Discovery/Delivery/ClosedDone` készlete migrálandó.
 
 ---
 

@@ -26,10 +26,15 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Internal transport injection exists solely for the Docker-free security/protocol tests. -->
+    <InternalsVisibleTo Include="SpaceOS.Modules.Hosting.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <!-- Keycloak JWT bearer (SpaceOS.Kernel.Api precedent — ADR-061). -->
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.*" />
     <!-- DbConnectionInterceptor base type for the shared RLS session interceptor (ADR-062). -->
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="8.0.7" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="8.0.11" />
   </ItemGroup>
 
   <ItemGroup>

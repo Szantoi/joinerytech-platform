@@ -51,21 +51,6 @@ repo gyökerében, 2026-07-22 óta). Elsődleges állapot-forrás továbbra is a
 
 ---
 
-## TECH STACK
-
-**Backend:**
-- .NET 8 (Kernel, Modules)
-- Node.js 22 (Orchestrator)
-- PostgreSQL + RLS
-
-**Frontend:**
-- React 18
-- TypeScript 5.x
-- TailwindCSS
-- Orval (OpenAPI codegen)
-
----
-
 ## KAPCSOLAT MÁS SZIGETEKKEL
 
 ```

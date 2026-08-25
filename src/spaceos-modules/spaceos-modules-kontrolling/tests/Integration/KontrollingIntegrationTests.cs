@@ -39,8 +39,7 @@ public class KontrollingIntegrationTests : IAsyncLifetime
     public async Task InitializeAsync()
     {
         // Start PostgreSQL container
-        _postgreSqlContainer = new PostgreSqlBuilder()
-            .WithImage("postgres:16-alpine")
+        _postgreSqlContainer = new PostgreSqlBuilder("postgres:16-alpine")
             .WithDatabase("kontrolling_test")
             .WithUsername("test")
             .WithPassword("test")

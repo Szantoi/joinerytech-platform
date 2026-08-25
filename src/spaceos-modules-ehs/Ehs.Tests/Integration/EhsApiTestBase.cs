@@ -25,8 +25,7 @@ public abstract class EhsApiTestBase : IAsyncLifetime
     public async Task InitializeAsync()
     {
         // 1. Start PostgreSQL container
-        _postgresContainer = new PostgreSqlBuilder()
-            .WithImage("postgres:16-alpine")
+        _postgresContainer = new PostgreSqlBuilder("postgres:16-alpine")
             .WithDatabase("ehs_test")
             .WithUsername("postgres")
             .WithPassword("postgres")

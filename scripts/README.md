@@ -10,10 +10,21 @@ Repo-level automation scripts. Currently:
 - `Invoke-DotNetPackageAudit.ps1` — sequential, read-only NuGet vulnerability
   gate with machine-readable JSON output; explicit project list or `-Discover`
   opt-in is required. See below.
-- `Invoke-KeycloakTenantOnboarding.ps1` + `KeycloakOnboarding.psm1` — idempotent,
-  dry-run-by-default tenant onboarding against the Keycloak Admin API
-  (STAB-TENANT-ONBOARDING-RUNBOOK). See below.
-- `Invoke-KeycloakTenantOnboarding.Tests.ps1` — Pester tests for the above (no Keycloak needed).
+- `Invoke-KeycloakTenantOnboarding.ps1` + `KeycloakOnboarding.psm1` — **retired**
+  legacy `portal-app`/`tid`/realm-role onboarding. Only explicit `-Offline`
+  historical validation is allowed; every live or mutation mode fails closed
+  before profile, credential, or Keycloak access. See below.
+- `Invoke-KeycloakTenantOnboarding.Tests.ps1` — Pester tests for the legacy
+  offline validation and its live-mode safety gate.
+- `provision_doormanufacturing_keycloak_clients.py` and
+  `provision_doormanufacturing_identity.py` — **retired** POSIX/Python legacy
+  Door onboarding paths. Their `tid`/`enabled_modules`/realm-role model conflicts
+  with nested-only authority. Only explicit historical `--offline` validation
+  is allowed; all live/verify/apply/invite paths stop before profile, credential
+  or network access and emit no runnable action plan. See below.
+- `test_provision_doormanufacturing_keycloak_clients.py` and
+  `test_provision_doormanufacturing_identity.py` — offline validation plus the
+  early live-mode safety gates.
 - `federation-watcher.sh` — federation inbox/outbox watcher (unrelated, pre-existing).
 - `check-erp-module-boundaries.mjs` (+ `tests/`) — ERP module-boundary lint check
   (unrelated, pre-existing).
@@ -95,9 +106,17 @@ CI run. From an existing PowerShell session, invoke the script path directly
 with an array (`& ./scripts/Invoke-DotNetPackageAudit.ps1 -Project $projects`);
 the internal audit function intentionally uses a different parameter name.
 
-## Invoke-KeycloakTenantOnboarding.ps1 — idempotent tenant onboarding
+## Invoke-KeycloakTenantOnboarding.ps1 — retired legacy onboarding (offline only)
 
-### Problem it solves
+> **P0 identity safety hold (2026-08-20): do not use this script to read from
+> or write to Keycloak.** Its `portal-app` + generic realm-role + user-attribute
+> design predates the required authoritative tenant projection, membership/version
+> checks, scoped service-principal registry, and exact `azp` verification. The
+> executable rejects its default, `-VerifyOnly`, and `-Apply` modes before it
+> opens the profile, obtains credentials, or makes a network request. Only
+> `-Offline` remains for historical contract analysis and is not activation proof.
+
+### Historical scope
 
 Onboarding a customer means provisioning realm roles, the `tid` and
 `enabled_modules` protocol mappers, the realm's unmanaged-attribute policy, the
@@ -108,20 +127,20 @@ a missing realm role renders an empty world grid, a missing
 without `firstName`/`lastName` gets a Keycloak 24 `VERIFY_PROFILE` action and can
 never log in, and the Kernel DB trigger rejects the seven ERP module keys outright.
 
-The script turns that sequence into a config-driven, repeatable run. Every step is
-*observe → compare → act only on drift*, so an interrupted run is simply re-run,
-and a converged realm reports `PendingCount = 0`.
+The script previously turned that sequence into a config-driven, repeatable run.
+It is now deliberately unable to perform a live read or change, so it cannot be
+used to activate a tenant under the obsolete identity contract.
 
 ### Safety model
 
-- **Dry-run is the default.** Mutations require the explicit `-Apply` switch; a run
-  against the live realm additionally requires Gábor's approval (repo `CLAUDE.md`).
-- **No database writes.** The Kernel tenant record is emitted as an
-  allowlist-validated, `ON CONFLICT DO NOTHING` SQL statement (`-KernelSqlPath`) for
-  the runbook's separately gated DB step.
-- **No secrets in output.** Admin credentials come from `-AdminCredential` or
-  `KEYCLOAK_ADMIN_USER` / `KEYCLOAK_ADMIN_PASSWORD`; neither they, the access token,
-  nor `-TemporaryPassword` are ever printed, summarised or written to a file.
+- **Offline is the only allowed mode.** The default, `-VerifyOnly`, and `-Apply`
+  paths all exit `2` before profile, credential, or network access.
+- **No database writes or runnable DML artifacts.** `-KernelSqlPath` can only
+  contain an explicit `NOT EMITTED` retirement notice; the legacy profile is not
+  authoritative enough to generate a tenant-record statement.
+- **No credential path.** Allowed offline runs reject `-AdminCredential` and
+  `-TemporaryPassword` and never read `KEYCLOAK_ADMIN_USER` or
+  `KEYCLOAK_ADMIN_PASSWORD`.
 - **Fail-closed contract check.** The mirrored Kernel `TenantType` allowlist is
   compared against the ADR-067 alias table
   (`docs/knowledge/contracts/module-id-legacy-aliases.json`) before anything else;
@@ -130,26 +149,18 @@ and a converged realm reports `PendingCount = 0`.
 ### Usage
 
 ```powershell
-# Validate the profile and compute the module/SQL plan without any Keycloak call
+# Validate the profile and compute a historical module analysis without any Keycloak call
 powershell -File scripts/Invoke-KeycloakTenantOnboarding.ps1 -ProfilePath <profile>.json -Offline
 
-# Dry-run against a realm (read-only) + machine-readable artifacts
-powershell -File scripts/Invoke-KeycloakTenantOnboarding.ps1 -ProfilePath <profile>.json `
-  -SummaryPath artifacts/onboarding.json -KernelSqlPath artifacts/kernel-tenant.sql
-
-# Execute; the run ends with an automatic re-plan as a convergence proof
-powershell -File scripts/Invoke-KeycloakTenantOnboarding.ps1 -ProfilePath <profile>.json -Apply
-
-# Read-only convergence check
-powershell -File scripts/Invoke-KeycloakTenantOnboarding.ps1 -ProfilePath <profile>.json -VerifyOnly
+# The following former live commands are intentionally refused (exit 2):
+#   <script> -ProfilePath <profile>.json
+#   <script> -ProfilePath <profile>.json -VerifyOnly
+#   <script> -ProfilePath <profile>.json -Apply
 ```
 
-Exit codes: `0` converged (nothing to do, or `-Apply` succeeded and verified);
-`1` pending drift or a failed verification; `2` usage/validation/tooling error —
-in which case **no Keycloak mutation was attempted**. `-Apply`, `-VerifyOnly` and
-`-Offline` are pairwise mutually exclusive; in particular `-VerifyOnly -Offline` is
-refused, because an offline run cannot verify a realm and its exit 0 would read as
-a false convergence signal in CI.
+Exit codes: `0` for successful `-Offline` validation; `2` for any live/mutation
+mode or validation/tooling error. `-Apply`, `-VerifyOnly` and `-Offline` remain
+pairwise mutually exclusive for stable CLI behaviour.
 
 Config: `config/tenant-onboarding.sample.json`. Runbook, gates and the full pitfall
 list: `docs/knowledge/deployment/TENANT_ONBOARDING_RUNBOOK.md`. Measured evidence
@@ -166,6 +177,117 @@ Invoke-Pester -Path scripts/Invoke-KeycloakTenantOnboarding.Tests.ps1 -Output De
 The decision logic lives in `KeycloakOnboarding.psm1` (no network, no mutation)
 precisely so it can be unit-tested without a Keycloak instance — same split as
 `TestcontainersHygiene.psm1`.
+
+## provision_keycloak_tenant_projection.py — native authority + service registry
+
+This is the successor contract for tenant authority projection. It never calls
+or imports the retired PowerShell execution path. It owns one dedicated
+`spaceos-tenant-authority-v1--<consumerClientId>` scope per declared consumer,
+models only named user or service-account attributes, and blocks a
+consumer when an unmanaged mapper could produce a mixed native+flat token or
+widen the exact audience set.
+
+The small `keycloak_provisioning_transport.py` dependency contains only the
+secret-safe Admin HTTP/token transport and independently pins authentication to
+`http://127.0.0.1:8080/auth`; it disables environment proxies and redirects and
+strips an exact/path-aware set of secret, password, credential and bearer-token
+value fields before product code receives a representation. Canonical mapper
+settings such as `access.token.claim` and `id.token.claim` remain intact for
+exact readback. It imports no Doorstar provisioning policy. Both profile input
+and Keycloak responses reject duplicate JSON object keys. The only non-GET it
+permits is the exact loopback master-realm admin token exchange; every bearer
+Admin POST/PUT/DELETE fails before an opener or socket is created.
+
+The human access-token profile is nested-only:
+
+- `spaceos_tenants` is a native JSON array containing zero or exactly one
+  selected tenant; the non-tokenized registry may retain multiple memberships;
+- each active entry has exactly the three keys `tenant_id`, `permissions` and
+  `enabled_modules`; the latter arrays each contain exactly one configured
+  product grant;
+- registry metadata, additional product grants and multi-membership state remain
+  in `spaceos_membership_registry` and are never mapped wholesale into a token;
+- each consumer pins its own custom audience set and receives a separate opaque
+  user projection attribute, so Door and Plant grants cannot share a mapper;
+  the non-tokenized `spaceos_consumer_projection_registry` makes audience or
+  product-profile changes observable and forces a projection-version increment;
+- each browser client also pins its enabled posture, exact HTTPS redirect/origin
+  allowlists and `S256` PKCE. Door uses only its two tracked callbacks. Plant has
+  no tracked browser callback/BFF contract, so the sample keeps it disabled with
+  empty allowlists and emits a separate activation `Block`;
+- `spaceos_membership_version` and `spaceos_projection_version` are separate,
+  positive native JSON integers;
+- `tid`, top-level `tenant_id`, `permissions` and `enabled_modules` are forbidden
+  alongside the native projection.
+
+The separate `joinerytech-office-to-plant` client carries exact
+`azp=joinerytech-office-to-plant`, `aud=joinerytech-plant-api`, and one nested
+`spaceos_service_principal` claim bounded to tenant, project, station and the
+Plant exact `office.issue_work_package` / `office.read_outbox` /
+`office.ack_outbox` operation vocabulary. It starts disabled unless separately
+evidenced key custody exists.
+
+There is deliberately no implicit mode. Exactly one of the following is
+required, and missing/multiple modes exit 2 before credentials or network:
+
+```powershell
+# No credentials and no network; the only mode used for the local proof.
+python scripts/provision_keycloak_tenant_projection.py `
+  --profile config/keycloak-tenant-projection.sample.json --offline
+
+# Explicit online, read-only desired-vs-observed check.
+python scripts/provision_keycloak_tenant_projection.py `
+  --profile <approved-profile>.json --verify-only
+
+# Reserved mutation mode. It currently exits 2 before profile, credentials or network.
+python scripts/provision_keycloak_tenant_projection.py `
+  --profile <approved-profile>.json --apply
+```
+
+The offline/read-only contract now requires all of the following before a
+future writer could even be reviewed:
+
+- an external RS256 owner/adoption receipt bound to realm, change IDs, config
+  digest, authority subject, every consumer/scope/service internal Keycloak UUID,
+  desired owned-state digest and a separately signed observed baseline digest;
+- a separate RS256 custody receipt bound to the receipt-adopted service client,
+  exact audience/scope/rotation/key-fingerprint metadata and a maximum 31-day
+  validity window;
+- a bounded paginated inventory of every realm client, the complete bounded
+  (classic API non-paginated) client-scope collection, every direct/attached
+  mapper and every default/optional reverse edge, repeated in two identical
+  passes. Attached scopes must match the complete immutable catalog by exact
+  name and ID; duplicate name/ID aliases and malformed or ID-less live mappers
+  fail closed;
+- an allowlisted owned/guard-field observation fingerprint and exact immediate
+  pre-write reread; secret/access/registered-node/foreign response fields never
+  enter that fingerprint. This runtime contains no classic mutation DTO/helper;
+- a future serialized writer must provide disabled-first service handling and
+  verified disabled compensation for every exception, uncertain response or
+  non-convergent final full readback.
+
+The sample intentionally contains only syntactically valid placeholder
+signatures. `TRUSTED_RECEIPT_KEYS` is empty: a real production public anchor must
+arrive in a separately reviewed commit, and its private key must never enter the
+repository. Tests inject an ephemeral 3072-bit/65537 RSA key. Even with valid
+receipts and stable inventory, classic Keycloak Admin REST has no strong atomic
+conditional update across these resources. Therefore CLI `--apply`, imported
+`apply()`, the raise-only internal mutation entrypoint, and every non-GET Admin
+request are all hard-disabled before network; no POST/PUT/DELETE scaffold remains
+callable in the provisioner. `mutationSafetyEvidence` and
+`projectionConvergenceEvidence` remain false until a serialized server-side
+writer/lock/SPI replaces this path.
+
+`keyRotation` is non-secret registry metadata and references the separately
+signed custody receipt. This tool does **not** install, retrieve, return, rotate, or
+revoke a client key; its summary cannot be live rotation evidence. It also does
+not issue a token or prove Kernel/Plant online version checking. Full contract,
+local Plant/Doorstar fixture compatibility and remaining activation blocks:
+`docs/knowledge/architecture/KEYCLOAK_AUTHORITY_PROJECTION_AND_SERVICE_PRINCIPAL_2026-08-20.md`.
+
+```powershell
+python -m unittest scripts/test_provision_keycloak_tenant_projection.py -v
+```
 
 ## Invoke-VpsHealthSmoke.ps1 — read-only VPS smoke check
 
@@ -368,3 +490,38 @@ The suite covers:
 See `docs/tasks/EPIC-PLATFORM-STABILITY-2026Q3/STAB-TESTCONTAINERS-HYGIENE.md`
 ("Végrehajtási napló" / "Átadási bizonyíték") for the actual measured evidence
 this was verified against real Docker Desktop and real Testcontainers runs.
+
+## Retired Door Manufacturing Keycloak provisioners
+
+`provision_doormanufacturing_keycloak_clients.py` and
+`provision_doormanufacturing_identity.py` retain pure parsers only for historical
+profile analysis. Their old direct `tid` / `enabled_modules` mappers, realm-role
+scope and user attributes are incompatible with the nested-only,
+consumer-specific authority contract above. They must not be used to inspect or
+mutate a realm.
+
+The CLI boundary is therefore fail-closed:
+
+- `--offline` is required explicitly and performs only local profile validation;
+  - default, `--verify-only`, `--apply`, and `--send-invite` modes exit `2` before
+    reading the profile or accessing credentials/network;
+  - retained credential/HTTP helpers and the identity script's direct invitation
+    and role-mapping transports also raise the retired-path guard before reading
+    environment credentials or opening a socket;
+  - offline JSON has a profile digest and validation findings, but no client,
+  mapper, role, user, invitation, DML or apply plan;
+- `activationEvidence` and `mutationSafetyEvidence` are always false.
+
+```bash
+# Historical validation only; no runnable desired-state plan.
+python3 scripts/provision_doormanufacturing_keycloak_clients.py \
+  --profile config/doormanufacturing-keycloak-clients.sample.json --offline
+
+python3 scripts/provision_doormanufacturing_identity.py \
+  --profile config/doormanufacturing-identity-onboarding.sample.json --offline
+```
+
+```bash
+python3 -m unittest scripts/test_provision_doormanufacturing_keycloak_clients.py -v
+python3 -m unittest scripts/test_provision_doormanufacturing_identity.py -v
+```

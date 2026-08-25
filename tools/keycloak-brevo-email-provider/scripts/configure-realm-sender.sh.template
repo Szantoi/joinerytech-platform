@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# Template only: review values and execute manually as a root-approved operator.
+# This changes only sender/reply-to realm metadata. It does not contain or read
+# KC_BREVO_API_KEY, and it never sends an e-mail itself.
+set -euo pipefail
+
+: "${KEYCLOAK_TARGET_REALM:=spaceos}"
+: "${KCADM_CONFIG:?Set a root-only, already-authenticated kcadm config file.}"
+: "${BREVO_FROM_EMAIL:?Set the verified Brevo sender e-mail address.}"
+: "${BREVO_FROM_DISPLAY_NAME:?Set the sender display name.}"
+: "${BREVO_REPLY_TO_EMAIL:?Set the monitored reply-to e-mail address.}"
+: "${BREVO_REPLY_TO_DISPLAY_NAME:?Set the reply-to display name.}"
+
+readonly KCADM="/opt/keycloak-app/bin/kcadm.sh"
+
+"${KCADM}" --config "${KCADM_CONFIG}" update "realms/${KEYCLOAK_TARGET_REALM}" \
+  -s "smtpServer.from=${BREVO_FROM_EMAIL}" \
+  -s "smtpServer.fromDisplayName=${BREVO_FROM_DISPLAY_NAME}" \
+  -s "smtpServer.replyTo=${BREVO_REPLY_TO_EMAIL}" \
+  -s "smtpServer.replyToDisplayName=${BREVO_REPLY_TO_DISPLAY_NAME}"

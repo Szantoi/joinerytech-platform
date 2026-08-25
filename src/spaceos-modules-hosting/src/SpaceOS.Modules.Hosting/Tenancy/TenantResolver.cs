@@ -1,6 +1,5 @@
 using System.Security.Claims;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using Microsoft.Extensions.Logging;
 
 namespace SpaceOS.Modules.Hosting.Tenancy;
@@ -8,264 +7,333 @@ namespace SpaceOS.Modules.Hosting.Tenancy;
 /// <summary>Outcome classification of a tenant resolution attempt.</summary>
 public enum TenantResolutionStatus
 {
-    /// <summary>A tenant was resolved from the token (and the optional header was valid).</summary>
+    /// <summary>The canonical token authority resolved exactly one tenant.</summary>
     Resolved,
 
-    /// <summary>The token carries no tenant identity at all (no tid / spaceos_tenants / tenant_id claim).</summary>
+    /// <summary>The token carries no canonical tenant authority claim.</summary>
     NoTenantClaim,
 
-    /// <summary>
-    /// A tenant selection header was sent but its value is not among the tenants present in
-    /// the caller's token — a forgery attempt or a stale client. Must map to HTTP 403.
-    /// </summary>
+    /// <summary>The token carries an ambiguous, legacy or malformed tenant authority.</summary>
+    InvalidTenantAuthority,
+
+    /// <summary>The optional selection header does not match the signed tenant.</summary>
     HeaderNotInTokenTenants,
 }
 
 /// <summary>Result of <see cref="TenantResolver.Resolve"/>.</summary>
-/// <param name="Status">Outcome classification.</param>
-/// <param name="TenantId">The resolved tenant when <paramref name="Status"/> is <see cref="TenantResolutionStatus.Resolved"/>; otherwise <see cref="Guid.Empty"/>.</param>
-/// <param name="RejectedHeaderValue">The offending header value when the header was rejected; otherwise <c>null</c>.</param>
 public sealed record TenantResolutionResult(
     TenantResolutionStatus Status,
     Guid TenantId,
     string? RejectedHeaderValue);
 
 /// <summary>
-/// Pure tenant-resolution logic shared by all module hosts (ADR-061, decision T1):
-/// the tenant identity comes from the JWT; a tenant selection header is only accepted
-/// when it matches a tenant present in the token.
+/// Resolves the versioned, native <c>spaceos_tenants</c> access-token authority.
 /// </summary>
 /// <remarks>
-/// Claim priority mirrors the kernel's <c>TenantSessionInterceptor</c>:
-/// <c>tid</c> → <c>spaceos_tenants</c> (JSON array, with the Keycloak Script-Mapper
-/// double-serialization guard) → legacy <c>tenant_id</c>.
+/// The accepted profile is deliberately singular and unambiguous: exactly one native
+/// <c>spaceos_tenants</c> entry with snake-case <c>tenant_id</c>,
+/// <c>permissions</c> and <c>enabled_modules</c>. Flat <c>tid</c>,
+/// <c>tenant_id</c>, permission/module fallbacks, camel-case aliases and mixed profiles
+/// are rejected. The array may materialize as one JSON-array claim or as one JSON-object
+/// claim after ASP.NET's JWT handler splits the native array; those are the same wire
+/// profile, not compatibility alternatives.
 /// </remarks>
 public static class TenantResolver
 {
-    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
-
-    /// <summary>Entry shape of the <c>spaceos_tenants</c> claim (kernel <c>TenantClaimDto</c> subset).</summary>
-    private sealed record TenantClaimEntry
+    private const int MaximumPermissions = 10;
+    private const int MaximumModules = 10;
+    private const int MaximumValueLength = 100;
+    private const string TenantMembersManage = "tenant.members.manage";
+    private static readonly HashSet<Guid> ReservedTenantIds =
+    [
+        Guid.Empty,
+        Guid.Parse("00000000-0000-0000-0000-000000000001"),
+        Guid.Parse("00000000-0000-0000-0000-000000000002"),
+    ];
+    private static readonly HashSet<string> AllowedEntryProperties = new(StringComparer.Ordinal)
     {
-        // Keycloak's production Script Mapper emits snake_case. The camelCase aliases
-        // preserve pre-ERPSEP test/dev tokens during the migration, without changing the
-        // public wire contract.
-        [JsonPropertyName("tenant_id")]
-        public string? TenantId { get; init; }
+        "tenant_id",
+        "permissions",
+        "enabled_modules",
+        "tenant_type",
+        "brand_skin",
+    };
+    private static readonly HashSet<string> AllowedAuthorityModules = new(StringComparer.Ordinal)
+    {
+        "spaceos.crm",
+        "spaceos.controlling",
+        "spaceos.hr",
+        "spaceos.maintenance",
+        "spaceos.qa",
+        "spaceos.ehs",
+        "spaceos.dms",
+        "joinerytech.door",
+        "joinerytech.plant",
+    };
 
-        [JsonPropertyName("tenantId")]
-        public string? LegacyTenantId { get; init; }
+    private static readonly string[] ProhibitedTopLevelAuthorityClaims =
+    [
+        TenancyDefaults.TenantIdClaim,
+        TenancyDefaults.LegacyTenantIdClaim,
+        TenancyDefaults.EnabledModulesClaim,
+        TenancyDefaults.PermissionsClaim,
+        "tenantId",
+        "spaceosTenants",
+        "enabledModules",
+    ];
 
-        [JsonPropertyName("enabled_modules")]
-        public string[]? EnabledModules { get; init; }
+    internal sealed record CanonicalTenantAuthority(
+        Guid TenantId,
+        IReadOnlySet<string> Permissions,
+        IReadOnlySet<string> EnabledModules);
 
-        [JsonPropertyName("enabledModules")]
-        public string[]? LegacyEnabledModules { get; init; }
-
-        public string? ResolvedTenantId => TenantId ?? LegacyTenantId;
-
-        public IEnumerable<string> ResolvedEnabledModules =>
-            EnabledModules ?? LegacyEnabledModules ?? [];
-    }
-
-    /// <summary>
-    /// Resolves the effective tenant for <paramref name="user"/>, optionally honouring a
-    /// tenant selection header — but only when the header matches a token tenant.
-    /// </summary>
-    /// <param name="user">The authenticated principal.</param>
-    /// <param name="requestedTenantHeader">Raw value of the tenant selection header, or <c>null</c> when absent.</param>
-    /// <param name="logger">Optional logger for claim-parsing warnings.</param>
-    /// <returns>The resolution result; never throws for malformed input.</returns>
+    /// <summary>Resolves the signed tenant and validates an optional tenant header.</summary>
     public static TenantResolutionResult Resolve(
         ClaimsPrincipal user,
         string? requestedTenantHeader,
         ILogger? logger = null)
     {
-        var tokenTenants = CollectTokenTenants(user, logger);
+        ArgumentNullException.ThrowIfNull(user);
 
-        if (tokenTenants.Count == 0)
-            return new TenantResolutionResult(TenantResolutionStatus.NoTenantClaim, Guid.Empty, null);
+        var hasTenantClaim = user.FindAll(TenancyDefaults.TenantListClaim).Any();
+        if (!TryGetCanonicalAuthority(user, logger, out var authority))
+        {
+            return new TenantResolutionResult(
+                hasTenantClaim || HasProhibitedAuthorityClaim(user)
+                    ? TenantResolutionStatus.InvalidTenantAuthority
+                    : TenantResolutionStatus.NoTenantClaim,
+                Guid.Empty,
+                null);
+        }
 
         if (string.IsNullOrWhiteSpace(requestedTenantHeader))
-            return new TenantResolutionResult(TenantResolutionStatus.Resolved, tokenTenants[0], null);
+            return new TenantResolutionResult(TenantResolutionStatus.Resolved, authority.TenantId, null);
 
-        // ADR-061 (T1): the header is an allowlist SELECTION, never an identity source.
-        if (Guid.TryParse(requestedTenantHeader, out var requested) && tokenTenants.Contains(requested))
+        if (Guid.TryParseExact(requestedTenantHeader, "D", out var requested)
+            && requested == authority.TenantId)
+        {
             return new TenantResolutionResult(TenantResolutionStatus.Resolved, requested, null);
+        }
 
         return new TenantResolutionResult(
-            TenantResolutionStatus.HeaderNotInTokenTenants, Guid.Empty, requestedTenantHeader);
+            TenantResolutionStatus.HeaderNotInTokenTenants,
+            Guid.Empty,
+            requestedTenantHeader);
     }
 
     /// <summary>
-    /// Gets the enabled module identifiers for the tenant already resolved by the tenancy
-    /// middleware. Only canonical module IDs are retained. A missing, malformed or
-    /// tenant-mismatched claim yields an empty set (fail closed).
+    /// Returns modules only from the same canonical entry that resolved the tenant.
+    /// Any malformed, legacy, mixed or tenant-mismatched authority returns an empty set.
     /// </summary>
-    /// <remarks>
-    /// The flat claim is kept as a migration fallback for the current Keycloak mapper.
-    /// When a <c>spaceos_tenants</c> claim is present, its entry for <paramref name="tenantId"/>
-    /// is authoritative so a multi-tenant token cannot borrow another tenant's modules.
-    /// This JWT-derived result is an interim gate only; the final ERPSEP-06 Instance Context
-    /// endpoint must revalidate Kernel <c>entitled</c> and <c>enabled</c> state.
-    /// </remarks>
     public static IReadOnlySet<string> GetEnabledModules(
         ClaimsPrincipal user,
         Guid tenantId,
         ILogger? logger = null)
     {
         ArgumentNullException.ThrowIfNull(user);
-        if (tenantId == Guid.Empty)
-            return new HashSet<string>(StringComparer.Ordinal);
-
-        var tenantListClaims = user.FindAll(TenancyDefaults.TenantListClaim).ToArray();
-        var entries = tenantListClaims
-            .SelectMany(claim => ParseTenantListClaim(claim.Value, user, logger));
-
-        var matchedEntries = entries
-            .Where(entry => TryParseGuid(entry.ResolvedTenantId, out var entryTenant) && entryTenant == tenantId)
-            .ToArray();
-
-        // A signed token must contain one authoritative entry per tenant. Unioning
-        // duplicate entries would let a malformed issuer payload widen access.
-        if (matchedEntries.Length == 1)
-            return CanonicalizeModules(matchedEntries[0].ResolvedEnabledModules);
-
-        if (matchedEntries.Length > 1)
-            return new HashSet<string>(StringComparer.Ordinal);
-
-        // A non-empty tenant list without a matching entry is not eligible for a global
-        // fallback: it is malformed for the resolved tenant and therefore denied.
-        if (tenantListClaims.Length > 0)
-            return new HashSet<string>(StringComparer.Ordinal);
-
-        return CanonicalizeModules(user.FindAll(TenancyDefaults.EnabledModulesClaim)
-            .SelectMany(claim => ParseModuleClaim(claim.Value, user, logger)));
+        return tenantId != Guid.Empty
+               && TryGetCanonicalAuthority(user, logger, out var authority)
+               && authority.TenantId == tenantId
+            ? authority.EnabledModules
+            : EmptySet();
     }
 
     /// <summary>
-    /// Collects every tenant id present in the token, in kernel claim priority order.
-    /// The first entry is the default tenant when no header is sent.
+    /// Returns permissions only from the same canonical entry that resolved the tenant.
+    /// Any malformed, legacy, mixed or tenant-mismatched authority returns an empty set.
     /// </summary>
-    private static List<Guid> CollectTokenTenants(ClaimsPrincipal user, ILogger? logger)
+    public static IReadOnlySet<string> GetPermissions(
+        ClaimsPrincipal user,
+        Guid tenantId,
+        ILogger? logger = null)
     {
-        var tenants = new List<Guid>();
-
-        void Add(Guid guid)
-        {
-            if (guid != Guid.Empty && !tenants.Contains(guid))
-                tenants.Add(guid);
-        }
-
-        // Priority 1: flat "tid" claim.
-        if (TryParseGuid(user.FindFirst(TenancyDefaults.TenantIdClaim)?.Value, out var tid))
-            Add(tid);
-
-        // Priority 2: "spaceos_tenants" JSON array claim (KC-T2).
-        foreach (var tenantsClaim in user.FindAll(TenancyDefaults.TenantListClaim))
-        {
-            foreach (var entry in ParseTenantListClaim(tenantsClaim.Value, user, logger))
-            {
-                if (TryParseGuid(entry.ResolvedTenantId, out var listTenant))
-                    Add(listTenant);
-            }
-        }
-
-        // Priority 3: legacy flat "tenant_id" claim (kept during the Keycloak migration).
-        if (TryParseGuid(user.FindFirst(TenancyDefaults.LegacyTenantIdClaim)?.Value, out var legacy))
-            Add(legacy);
-
-        return tenants;
+        ArgumentNullException.ThrowIfNull(user);
+        return tenantId != Guid.Empty
+               && TryGetCanonicalAuthority(user, logger, out var authority)
+               && authority.TenantId == tenantId
+            ? authority.Permissions
+            : EmptySet();
     }
 
-    private static IReadOnlyList<TenantClaimEntry> ParseTenantListClaim(
-        string claimValue,
+    internal static bool TryGetCanonicalAuthority(
         ClaimsPrincipal user,
-        ILogger? logger)
+        ILogger? logger,
+        out CanonicalTenantAuthority authority)
     {
-        try
-        {
-            var trimmed = claimValue.TrimStart();
+        authority = null!;
+        if (HasProhibitedAuthorityClaim(user))
+            return false;
 
-            // Three shapes reach this method, and only the first two were handled before
-            // (measured against a real Keycloak 24 on 2026-07-30 — see
-            // KERNEL_TOKEN_PATH_MEASUREMENT_2026-07-30.md):
-            //
-            //   [ …    the whole array in one claim value;
-            //   " …    the Keycloak Script Mapper JSON.stringify()-ed the array (kernel BE-01 guard);
-            //   { …    the realm emits spaceos_tenants as a JSON ARRAY attribute, and the .NET JWT
-            //          handler then splits it into ONE CLAIM PER ELEMENT — so each value is a
-            //          single object. This fell into the string branch and threw.
-            //
-            // The third shape failed SILENTLY in the worst possible way: tenant resolution kept
-            // working (the flat `tid` claim is priority 1), so the request authenticated and the
-            // tenant resolved — only the ENTITLEMENT disappeared, and the caller got a 403 that is
-            // indistinguishable from "this module is genuinely not enabled".
-            var json = trimmed switch
-            {
-                _ when trimmed.StartsWith('[') => claimValue,
-                _ when trimmed.StartsWith('{') => $"[{claimValue}]",
-                _ => JsonSerializer.Deserialize<string>(claimValue, JsonOptions) ?? claimValue
-            };
-
-            return JsonSerializer.Deserialize<List<TenantClaimEntry>>(json, JsonOptions) ?? [];
-        }
-        catch (JsonException ex)
-        {
-            logger?.LogWarning(ex,
-                "Failed to deserialize the {Claim} claim for subject {Sub}; treating it as absent.",
-                TenancyDefaults.TenantListClaim, user.FindFirst("sub")?.Value);
-            return [];
-        }
-    }
-
-    private static IEnumerable<string> ParseModuleClaim(
-        string claimValue,
-        ClaimsPrincipal user,
-        ILogger? logger)
-    {
-        if (string.IsNullOrWhiteSpace(claimValue))
-            return [];
+        var claims = user.FindAll(TenancyDefaults.TenantListClaim).ToArray();
+        if (claims.Length != 1)
+            return false;
 
         try
         {
-            var value = claimValue.Trim();
-            if (value.StartsWith('['))
-                return JsonSerializer.Deserialize<string[]>(value, JsonOptions) ?? [];
-
-            // Keycloak mappers may stringify an array. A quoted scalar is accepted too,
-            // but only after canonical-ID validation below.
-            if (value.StartsWith('"'))
+            using var document = JsonDocument.Parse(claims[0].Value, new JsonDocumentOptions
             {
-                var unwrapped = JsonSerializer.Deserialize<string>(value, JsonOptions);
-                return unwrapped is null
-                    ? []
-                    : ParseModuleClaim(unwrapped, user, logger);
+                AllowTrailingCommas = false,
+                CommentHandling = JsonCommentHandling.Disallow,
+                MaxDepth = 8,
+            });
+
+            var root = document.RootElement;
+            JsonElement entry;
+            if (root.ValueKind == JsonValueKind.Array)
+            {
+                if (root.GetArrayLength() != 1)
+                    return false;
+                entry = root[0];
+            }
+            else if (root.ValueKind == JsonValueKind.Object)
+            {
+                // JsonWebTokenHandler materializes a native one-element JSON array as
+                // one object-valued Claim. A JSON string containing an object/array is
+                // intentionally not accepted.
+                entry = root;
+            }
+            else
+            {
+                return false;
             }
 
-            return [value];
+            return TryParseEntry(entry, out authority);
         }
-        catch (JsonException ex)
+        catch (JsonException exception)
         {
-            logger?.LogWarning(ex,
-                "Failed to deserialize the {Claim} claim for subject {Sub}; treating it as empty.",
-                TenancyDefaults.EnabledModulesClaim, user.FindFirst("sub")?.Value);
-            return [];
+            logger?.LogWarning(
+                exception,
+                "Rejected malformed {Claim} authority for subject {Sub}.",
+                TenancyDefaults.TenantListClaim,
+                user.FindFirst("sub")?.Value);
+            return false;
         }
     }
 
-    private static IReadOnlySet<string> CanonicalizeModules(IEnumerable<string> modules)
+    private static bool TryParseEntry(
+        JsonElement entry,
+        out CanonicalTenantAuthority authority)
     {
-        var result = new HashSet<string>(StringComparer.Ordinal);
-        foreach (var module in modules)
+        authority = null!;
+        if (entry.ValueKind != JsonValueKind.Object)
+            return false;
+
+        var properties = entry.EnumerateObject().ToArray();
+        if (properties.Length is < 3 or > 5
+            || properties.Select(static property => property.Name).Distinct(StringComparer.Ordinal).Count()
+               != properties.Length
+            || properties.Any(property => !AllowedEntryProperties.Contains(property.Name))
+            || !properties.Any(static property => property.NameEquals("tenant_id"))
+            || !properties.Any(static property => property.NameEquals("permissions"))
+            || !properties.Any(static property => property.NameEquals("enabled_modules"))
+            || !HasValidOptionalMetadata(entry, "tenant_type")
+            || !HasValidOptionalMetadata(entry, "brand_skin"))
         {
-            var value = module?.Trim();
-            if (IsCanonicalModuleId(value))
-                result.Add(value!);
+            return false;
         }
 
-        return result;
+        var tenantText = entry.GetProperty("tenant_id");
+        if (tenantText.ValueKind != JsonValueKind.String
+            || !TryParseCanonicalTenantId(tenantText.GetString(), out var tenantId)
+            || !TryParseSortedUniqueStrings(
+                entry.GetProperty("permissions"), MaximumPermissions, IsCanonicalPermission, out var permissions)
+            || !TryParseSortedUniqueStrings(
+                entry.GetProperty("enabled_modules"), MaximumModules, IsAllowedAuthorityModuleId, out var modules))
+        {
+            return false;
+        }
+
+        var permissionModules = permissions
+            .Where(static permission => permission != TenantMembersManage)
+            .Select(static permission => permission[..permission.LastIndexOf('.')])
+            .ToArray();
+
+        // One effective permission per module, and the exact same module set in both
+        // signed arrays. This prevents consumers from choosing the wider of two claims.
+        if (permissionModules.Distinct(StringComparer.Ordinal).Count() != permissionModules.Length
+            || permissionModules.Length != modules.Count
+            || permissionModules.Any(module => !modules.Contains(module)))
+        {
+            return false;
+        }
+
+        authority = new CanonicalTenantAuthority(tenantId, permissions, modules);
+        return true;
     }
+
+    private static bool HasValidOptionalMetadata(JsonElement entry, string propertyName)
+    {
+        if (!entry.TryGetProperty(propertyName, out var metadata))
+            return true;
+        if (metadata.ValueKind != JsonValueKind.String)
+            return false;
+
+        var value = metadata.GetString();
+        return value is not null && value.Trim().Length > 0 && value.Length <= MaximumValueLength;
+    }
+
+    private static bool TryParseSortedUniqueStrings(
+        JsonElement element,
+        int maximumCount,
+        Func<string?, bool> validator,
+        out IReadOnlySet<string> values)
+    {
+        values = EmptySet();
+        if (element.ValueKind != JsonValueKind.Array || element.GetArrayLength() > maximumCount)
+            return false;
+
+        var parsed = new List<string>(element.GetArrayLength());
+        foreach (var item in element.EnumerateArray())
+        {
+            if (item.ValueKind != JsonValueKind.String)
+                return false;
+
+            var value = item.GetString();
+            if (value is null || value.Length > MaximumValueLength || !validator(value))
+                return false;
+            parsed.Add(value);
+        }
+
+        if (parsed.Distinct(StringComparer.Ordinal).Count() != parsed.Count
+            || !parsed.SequenceEqual(parsed.Order(StringComparer.Ordinal), StringComparer.Ordinal))
+        {
+            return false;
+        }
+
+        values = new HashSet<string>(parsed, StringComparer.Ordinal);
+        return true;
+    }
+
+    private static bool TryParseCanonicalTenantId(string? value, out Guid tenantId)
+    {
+        tenantId = Guid.Empty;
+        return value is not null
+               && value == value.ToLowerInvariant()
+               && Guid.TryParseExact(value, "D", out tenantId)
+               && !ReservedTenantIds.Contains(tenantId);
+    }
+
+    private static bool HasProhibitedAuthorityClaim(ClaimsPrincipal user)
+        => ProhibitedTopLevelAuthorityClaims.Any(claim => user.FindAll(claim).Any());
+
+    private static bool IsCanonicalPermission(string? value)
+    {
+        if (value == TenantMembersManage)
+            return true;
+        if (string.IsNullOrEmpty(value))
+            return false;
+
+        var actionSeparator = value.LastIndexOf('.');
+        if (actionSeparator <= 0 || actionSeparator == value.Length - 1)
+            return false;
+
+        var action = value[(actionSeparator + 1)..];
+        return action is "view" or "edit" or "admin"
+               && IsAllowedAuthorityModuleId(value[..actionSeparator]);
+    }
+
+    internal static bool IsAllowedAuthorityModuleId(string? value)
+        => value is not null && AllowedAuthorityModules.Contains(value);
 
     internal static bool IsCanonicalModuleId(string? value)
     {
@@ -276,13 +344,13 @@ public static class TenantResolver
         if (separator <= 0 || separator == value.Length - 1 || value.IndexOf('.', separator + 1) >= 0)
             return false;
 
-        return IsModuleIdPart(value.AsSpan(0, separator), allowLeadingDigit: false)
-            && IsModuleIdPart(value.AsSpan(separator + 1), allowLeadingDigit: false);
+        return IsModuleIdPart(value.AsSpan(0, separator))
+               && IsModuleIdPart(value.AsSpan(separator + 1));
     }
 
-    private static bool IsModuleIdPart(ReadOnlySpan<char> value, bool allowLeadingDigit)
+    private static bool IsModuleIdPart(ReadOnlySpan<char> value)
     {
-        if (value.IsEmpty || (!allowLeadingDigit && !char.IsAsciiLetterLower(value[0])))
+        if (value.IsEmpty || !char.IsAsciiLetterLower(value[0]))
             return false;
 
         var previousWasHyphen = false;
@@ -290,25 +358,14 @@ public static class TenantResolver
         {
             if (!(char.IsAsciiLetterLower(character) || char.IsAsciiDigit(character) || character == '-'))
                 return false;
-
-            if (character == '-')
-            {
-                if (previousWasHyphen)
-                    return false;
-
-                previousWasHyphen = true;
-                continue;
-            }
-
-            previousWasHyphen = false;
+            if (character == '-' && previousWasHyphen)
+                return false;
+            previousWasHyphen = character == '-';
         }
 
         return !previousWasHyphen;
     }
 
-    private static bool TryParseGuid(string? value, out Guid guid)
-    {
-        guid = Guid.Empty;
-        return !string.IsNullOrWhiteSpace(value) && Guid.TryParse(value, out guid) && guid != Guid.Empty;
-    }
+    private static IReadOnlySet<string> EmptySet()
+        => new HashSet<string>(StringComparer.Ordinal);
 }

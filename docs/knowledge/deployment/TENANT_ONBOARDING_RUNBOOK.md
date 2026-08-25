@@ -7,6 +7,23 @@
 > (`docs/knowledge/architecture/LIVE_AUTH_AND_RLS_ASSESSMENT_2026-07-25.md`,
 > „Elvégzett provisioning + bizonyíték" szakasz) — ez a runbook azt emeli scriptbe.
 
+> ⚠️ **RETIRED — P0 identity safety hold (2026-08-20).** Ez a runbook és az
+> `Invoke-KeycloakTenantOnboarding.ps1` a régi `portal-app` + `tid` + generikus
+> realm-role modellt írja le. Nem tartalmaz autoritatív `spaceos_tenants`
+> projectiont, membership/projection verziót és revoke-ellenőrzést, scoped
+> service-principal registryt vagy exact `azp` kaput. A script minden online és
+> `-Apply` módját a profil, hitelesítő adat és hálózat elérése előtt letiltja;
+> kizárólag a hálózatmentes `-Offline` történeti elemzés használható. **Sem ezt a
+> runbookot, sem az offline eredményét nem szabad tenant-aktiválási bizonyítéknak
+> vagy éles/teljes tesztüzemi végrehajtási eljárásnak tekinteni.**
+
+> **Új lokális successor szerződés:**
+> `scripts/provision_keycloak_tenant_projection.py` és
+> `docs/knowledge/architecture/KEYCLOAK_AUTHORITY_PROJECTION_AND_SERVICE_PRINCIPAL_2026-08-20.md`.
+> Ez már nested-only projectiont, verzió/lifecycle kaput és külön Office→Plant
+> registryt ír le, de élő apply/readback/token bizonyíték még nincs, ezért az
+> alábbi aktiválási tiltást nem oldja fel.
+
 Ez a lépéssor a **világ-gating (ERPSEP-FE-WORLD-GATING) kemény előfeltétele**:
 provisionálás nélkül a bejelentkező felhasználó `tenantId = null`, `roles = []`,
 `enabledModules = []` értékkel fut, és fail-closed módon üres világ-rácsot lát.
@@ -76,67 +93,51 @@ Minta: `config/tenant-onboarding.sample.json`. A profil **nem tartalmaz titkot**
 
 ---
 
-## 4. Futtatás
+## 4. Történeti offline elemzés (az élő futtatás letiltva)
 
 ```powershell
-# 0) Profil-ellenőrzés Keycloak nélkül (CI-ben is futtatható)
+# Az egyetlen engedélyezett mód: profil-ellenőrzés Keycloak nélkül.
+# Nem generál futtatható tenant-SQL-t és nem aktiválási bizonyíték.
 powershell -File scripts/Invoke-KeycloakTenantOnboarding.ps1 -ProfilePath <profil>.json -Offline
 
-# 1) Dry-run: mit CSINÁLNA (alapértelmezés — mutáció nélkül)
-powershell -File scripts/Invoke-KeycloakTenantOnboarding.ps1 -ProfilePath <profil>.json `
-  -SummaryPath artifacts/onboarding-dryrun.json -KernelSqlPath artifacts/kernel-tenant.sql
-
-# 2) Végrehajtás (a futás végén automatikus visszaellenőrzés)
-powershell -File scripts/Invoke-KeycloakTenantOnboarding.ps1 -ProfilePath <profil>.json -Apply
-
-# 3) Konvergencia-ellenőrzés bármikor (read-only)
-powershell -File scripts/Invoke-KeycloakTenantOnboarding.ps1 -ProfilePath <profil>.json -VerifyOnly
+# A következő korábbi élő módok kötelezően exit 2-vel leállnak:
+#   <script> -ProfilePath <profil>.json
+#   <script> -ProfilePath <profil>.json -VerifyOnly
+#   <script> -ProfilePath <profil>.json -Apply
 ```
 
-Kilépési kódok: **0** = konvergált (nincs teendő / az `-Apply` sikeres és
-visszaellenőrzött), **1** = van függő eltérés (dry-run) vagy a verify bukott,
-**2** = használati/validációs/eszköz-hiba (ilyenkor **egyetlen Keycloak-mutáció sem** történt).
+Kilépési kódok: **0** = sikeres offline történeti elemzés, **2** = élő/mutációs
+mód, használati vagy validációs hiba. A `0` **nem** konvergencia- vagy
+aktiválási bizonyíték.
 
-A három kapcsoló-pár kizárja egymást: `-Apply`+`-VerifyOnly`, `-Apply`+`-Offline`,
-`-VerifyOnly`+`-Offline`. Az utolsó azért, mert egy offline futás nem tud realmet
-ellenőrizni — enélkül a `-VerifyOnly -Offline` exit 0-t adna Keycloak-érintés nélkül,
-amit egy CI-hívó konvergenciának olvasna.
+A kapcsoló-kombinációk továbbra is fail-closed: `-Apply`+`-VerifyOnly`,
+`-Apply`+`-Offline` és `-VerifyOnly`+`-Offline` hibával áll le. Az egyetlen
+érvényes offline futás admin-hitelesítő adatot és ideiglenes jelszót sem fogad el.
 
-Az stdout mindig pontosan egy JSON-dokumentumot is tartalmaz (terv, claim-értékek,
-Kernel-SQL, validációs findingek) — géppel feldolgozható, `-SummaryPath`-tal fájlba is megy.
+Az stdout egy géppel feldolgozható, történeti JSON-elemzést tartalmaz. A
+`kernelTenantSql` mező kötelezően `NOT EMITTED` jelzést hordoz; nem DML-artefaktum.
 
-**Idempotencia:** minden lépés *megfigyel → összehasonlít → csak eltérésre hat*.
-Egy megszakadt futás egyszerűen újrafuttatható; a második futás `PendingCount = 0`.
+Az offline futás megismételhető, de **nem** konvergencia-ellenőrzés és nem változtat
+semmilyen külső állapotot.
 
 ---
 
-## 5. Ideiglenes jelszó
+## 5. [RETIRED] Ideiglenes jelszó
 
-```powershell
-$p = Read-Host -AsSecureString 'Ideiglenes jelszó'
-powershell -File ... -Apply -TemporaryPassword $p
-```
-
-Csak az **ebben a futásban létrehozott** felhasználókra kerül rá, `temporary = true`
-(a KC az első belépéskor cserét kényszerít). A jelszó soha nem kerül logba, summarybe
-vagy fájlba. Meglévő fiók jelszavát a script **nem** írja felül.
+Az `-Apply` út nem érhető el, az offline mód pedig minden `-TemporaryPassword`
+paramétert hibával elutasít. Jelszó- vagy meghívó-kezelés csak az új, review-zott
+identity provider/projection megvalósítás részeként térhet vissza.
 
 ---
 
-## 6. Kernel bérlő-rekord — külön kapu
+## 6. [RETIRED] Kernel bérlő-rekord — külön kapu
 
-A script **nem ír adatbázisba**. Helyette allowlist-validált, idempotens SQL-t emit-el
-(`-KernelSqlPath`), amit **csak Gábor kimondott jóváhagyásával** szabad lefuttatni.
-Ha a TenantType kötelező modulja hiányzik a megvásárolt készletből, az artefaktum
-**szándékosan nem futtatható** (indoklást tartalmazó, `INSERT` nélküli blokk) — a
-trigger úgyis elutasítaná, és egy biztosan elhasaló SQL a jóváhagyási kapu mögött
-csak félrevezető éles hibát okozna. Ilyenkor a profil `tenant.modules` mezőjét kell
-javítani, nem a fájlt átírni.
+Az offline script **nem ír adatbázisba és nem generál SQL-t**. `-KernelSqlPath`
+esetén is csak egy `NOT EMITTED` jelzés kerül a fájlba. A korábbi minta alább
+történeti magyarázat, nem végrehajtási recept.
 
 ```sql
-INSERT INTO "Tenants" ("Id","Name","TenantType","EnabledModules","IsArchived")
-VALUES ('<GUID>','<Név>','Manufacturer',ARRAY['cutting','door'],false)
-ON CONFLICT ("Id") DO NOTHING;
+-- NOT EMITTED: legacy tenant identity is not an authoritative projection.
 ```
 
 ### ⚠ A modulkulcs-csapda (ADR-067, élő adaton igazolva)
@@ -199,27 +200,56 @@ később kódgenerátor váltja ki).
 
 ---
 
-## 8. Éles onboarding — sorrend és kapuk
+## 8. Éles onboarding — BLOKKOLVA
 
-1. Profil elkészítése (ügyféladat, nem repóba) → `-Offline` ellenőrzés.
-2. **Keycloak H2 adatfájl mentése** (7.7 pont).
-3. `-SummaryPath` + `-KernelSqlPath` dry-run az éles realm ellen (read-only) →
-   a terv bemutatása.
-4. **Gábor-kapu** → `-Apply`.
-5. A verify automatikusan lefut; ha bukik, a hiányzó lépések tételesen kiírásra kerülnek.
-6. **Modul-host policy csak ezután kapcsolható be.** A kiadott access tokenben a
-   kiválasztott tenant `spaceos_tenants` entryjének `enabled_modules` listája kizárólag
-   kanonikus ADR-067 ModuleId-ket tartalmazhat (pl. `spaceos.maintenance`). A legacy
-   rövid kulcsos Kernel-entry vagy claim szándékosan **403** a
-   `RequireEnabledModule` policy alatt; előbb a Keycloak-claimet kell kanonizálni,
-   utána lehet endpoint-policyt élesíteni.
-7. **Gábor-kapu** → a Kernel-SQL futtatása a `spaceos` DB-n (port 5433).
-8. Belépés-ellenőrzés: a token tartalmazza a `tid`-et, az `enabled_modules`-t és a
-   `realm_access.roles`-ban a portál-szerepet.
+Ez a runbook nem végrehajtási sorrend többé. Új tenant vagy teljes tesztüzemi
+aktiválás csak a P0 identity lánc elkészülte után indulhat: autoritatív
+`spaceos_tenants`/permissions/enabled_modules projection exact-replace+readbackkal,
+membership-verzió és revoke/deactivate, scoped service-principal registry,
+valódi OIDC/JWKS token- és `azp`-ellenőrzés, valamint külön jóváhagyott release
+artifact. Addig nincs Keycloak-apply, nincs tenant-DB DML és nincs modul-host
+aktiválás ebből a dokumentumból.
+
+### 8.1 Új native projection — lokálisan elkészült, élőben még tiltott
+
+A successor profile exact human claimje
+`spaceos_tenants:[{tenant_id,permissions,enabled_modules}]`, egyszerre legfeljebb
+egy kiválasztott tenanttal. A többes membership registry nem jelent több
+authorityt ugyanabban a tokenben. A natív claim mellett flat `tid`, top-level
+`tenant_id`, `permissions` vagy `enabled_modules` tilos. A külön
+`spaceos_membership_version` és `spaceos_projection_version` pozitív natív JSON
+integer, és csak exact online registry-egyezés engedhet kérést.
+
+A `joinerytech-office-to-plant` gépi identitás külön nested
+`spaceos_service_principal` claimet kap exact Plant audience-szel és
+tenant/project/station/DPEX scope-pal. A minta disabled és nem tartalmaz
+kulcsanyagot. A `keyRotation` kizárólag metaadat + külön custody-evidence hash;
+a script nem rotál vagy ad át kulcsot, így ez nem live key-rotation proof.
+
+Biztonságos lokális ellenőrzés:
+
+```powershell
+python scripts/provision_keycloak_tenant_projection.py `
+  --profile config/keycloak-tenant-projection.sample.json --offline
+python -m unittest scripts/test_provision_keycloak_tenant_projection.py -v
+```
+
+Nincs implicit online dry-run: `--verify-only` külön explicit választás. A
+`--apply` jelenleg safety-disabled és profil-, credential- vagy hálózatolvasás
+előtt `exit 2`; nem oldható fel pusztán operátori jóváhagyással. Előbb CAS/ETag
+vagy egyenértékű single-writer guard, immutable client-adoption/custody receipt,
+teljes realm-client reverse-binding inventory, disposable Keycloak próba és
+két-tenant OIDC/JWKS E2E kell. A Plant ADR-0005 és a Doorstar
+`v2.0.0-candidate.1` flat/mixed profilja addig külön contract-drift blokk.
 
 ---
 
 ## 9. Tesztek
+
+- `scripts/test_provision_keycloak_tenant_projection.py` — standard-library
+  offline suite: nested-only/selected-tenant wire shape, mixed-claim tiltás,
+  monoton verzió, revoke/deactivate/reactivate, exact service scope, key-
+  metadata határ, bounded retry és credential/network előtti CLI guard.
 
 - `scripts/Invoke-KeycloakTenantOnboarding.Tests.ps1` — Pester 5.x, 48 teszt
   (alias-tábla, allowlist-tükör, modul-terv, profil-validáció, idempotencia-tervek,

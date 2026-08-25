@@ -1,0 +1,27 @@
+{
+  "schemaVersion": "spaceos.modules-hosting-auth-boundary/v1",
+  "id": "spaceos-modules-hosting-auth-boundary",
+  "version": "1.0.0",
+  "status": "released-source-attestation",
+  "issuedAt": "2026-08-11T18:00:00.000Z",
+  "materialization": "This is a source-bound interface attestation, not a NuGet publication or a claim that a binary package was deployed.",
+  "hostingPackage": {
+    "packageId": "SpaceOS.Modules.Hosting",
+    "packageVersion": "0.1.0-preview.2",
+    "projectPath": "src/spaceos-modules-hosting/src/SpaceOS.Modules.Hosting/SpaceOS.Modules.Hosting.csproj",
+    "projectSha256": "69de1f40341d348cbeb7864a6c3a693b3514e0b164c35f4f5aa2d49794c2ee63",
+    "readmePath": "src/spaceos-modules-hosting/README.md",
+    "readmeSha256": "e2e96a6d85edf54e269a1d16d615cfbcbaee474351213a13573e488f59d0c1ce"
+  },
+  "requiredBoundary": {
+    "issuerValidation": "Public HTTPS issuer and JWKS only; the Keycloak loopback Admin API is not an issuer.",
+    "tenantResolution": "Use an authenticated tenant context. Request-provided tenant selectors are not authoritative.",
+    "errors": "401 and 403 use application/problem+json with a body correlationId.",
+    "persistence": "The eventual Door Manufacturing migration must use an application role that cannot bypass FORCE ROW LEVEL SECURITY."
+  },
+  "profileReference": {
+    "id": "spaceos-door-manufacturing-auth-profile",
+    "version": "1.0.0",
+    "sha256": "40ca1d82e19b319c2ee7c4825c955cebcf586cb477675fb6c34a88c3aa51b7c7"
+  }
+}

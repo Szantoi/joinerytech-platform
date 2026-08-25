@@ -13,24 +13,30 @@ namespace SpaceOS.Modules.Hosting.Tenancy;
 /// </remarks>
 public static class TenancyDefaults
 {
-    /// <summary>Flat JWT claim carrying the caller's tenant id (kernel priority 1).</summary>
+    /// <summary>Retired flat tenant selector. Its presence makes the canonical profile invalid.</summary>
     public const string TenantIdClaim = "tid";
 
     /// <summary>
-    /// Keycloak claim carrying the caller's full tenant list as a JSON array of
-    /// <c>{ "tenantId": "..." }</c> entries (kernel priority 2, KC-T2).
+    /// Keycloak claim carrying exactly one native tenant-authority entry.
     /// </summary>
     public const string TenantListClaim = "spaceos_tenants";
 
     /// <summary>
-    /// JWT claim carrying the caller's enabled canonical module identifiers. This is a
-    /// temporary authorization input until the Kernel-backed entitled/enabled lookup in
-    /// ERPSEP-06 is available; a missing or malformed value must never grant access.
+    /// Retired top-level module fallback. Its presence makes the canonical profile invalid.
     /// </summary>
     public const string EnabledModulesClaim = "enabled_modules";
 
-    /// <summary>Legacy flat claim kept for backward compatibility (kernel priority 3).</summary>
+    /// <summary>Retired flat tenant alias. Its presence makes the canonical profile invalid.</summary>
     public const string LegacyTenantIdClaim = "tenant_id";
+
+    /// <summary>Retired top-level permission fallback.</summary>
+    public const string PermissionsClaim = "permissions";
+
+    /// <summary>Signed positive integer membership revision checked against online state.</summary>
+    public const string MembershipVersionClaim = "spaceos_membership_version";
+
+    /// <summary>Signed positive integer projection revision checked against online state.</summary>
+    public const string ProjectionVersionClaim = "spaceos_projection_version";
 
     /// <summary>
     /// Tenant selection header used by the JoineryTech module clients. Per ADR-061 (T1) the

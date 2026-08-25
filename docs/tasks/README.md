@@ -1,120 +1,49 @@
-# JoineryTech végrehajtási backlog — agent belépési pont
+# JoineryTech végrehajtási backlog és task-protokoll
 
-> **Állapotforrás:** [`EPICS.yaml`](../../EPICS.yaml)  
-> **Minőségi szerződés:** [`QUALITY.md`](../../QUALITY.md)  
-> **Aktuális checkpoint:**
-> [`PROJECT_STATE_CHECKPOINT_2026-07-23.md`](../knowledge/architecture/PROJECT_STATE_CHECKPOINT_2026-07-23.md)
-> **Előző teljes felmérés:**
-> [`PROJECT_STATE_ASSESSMENT_2026-07-18.md`](../knowledge/architecture/PROJECT_STATE_ASSESSMENT_2026-07-18.md)
+Ez a mappa fejlesztői/agent végrehajtási dokumentáció. Nem termékbemutató és nem önálló állapotforrás: az aktuális program- és epic-státusz egyetlen forrása az [`EPICS.yaml`](../../EPICS.yaml).
 
-Ez az index azt rögzíti, hogy egy fejlesztő agent **melyik feladatot, milyen
-előfeltételekkel és milyen bizonyítékkal** hajthat végre. Az `EPICS.yaml` mondja
-meg a státuszt; az egyedi task-fájl a végrehajtási szerződés és később a mementó.
+## Mielőtt munkát kezdesz
 
-## Kötelező agent-protokoll
+1. Olvasd el az [`AGENTS.md`](../../AGENTS.md) és [`QUALITY.md`](../../QUALITY.md) fájlt.
+2. Keresd meg az epicet az [`EPICS.yaml`](../../EPICS.yaml)-ban, és ellenőrizd a függőségeit.
+3. Ha létezik, olvasd el az epic saját `README.md`-jét; különben az `EPICS.yaml`-ban jelölt `plan_doc` vagy task-hivatkozást. Ezután olvasd el a kiosztott task teljes tartalmát.
+4. Rögzítsd a preflightot: HEAD, érintett submodule HEAD, munkafa-státusz, baseline és ismert pre-existing hiba.
+5. Módosíts kizárólag a task mutációs határán belül. Idegen dirty diffet ne formázz és ne javíts mellékesen.
 
-1. Olvasd el teljesen: `AGENTS.md`, `QUALITY.md`, az epic `README.md`-je és a
-   kiosztott task-fájl.
-2. Ellenőrizd a függőségeket az `EPICS.yaml`-ban. `pending` előfeltétel mellett
-   ne kezdj mutációba.
-3. Rögzítsd a preflightot a saját task-fájlodban: HEAD, érintett submodule HEAD,
-   munkafa-státusz, baseline teszt és ismert pre-existing hiba.
-4. Csak a task **Mutációs határ** szakaszában felsorolt fákat módosítsd. Idegen
-   dirty diffet ne formázz, ne mozgass és ne javíts mellékesen.
-5. A legkisebb bukó tesztet írd meg először; utána implementáció, célzott teszt,
-   majd az előírt széles regresszió következik.
-6. Tilos tesztet törölni/skippelni, globális timeouttal elfedni, wire-mezőt vagy
-   endpointot kitalálni, illetve warningot új baseline-ná minősíteni.
-7. A task-fájl végén töltsd ki a `Végrehajtási napló` és `Átadási bizonyíték`
-   részt. Commitot csak a root készít, ha a task külön nem engedélyezi.
-8. Kész task az epic `archive/` mappájába kerül; az `EPICS.yaml` státuszát root
-   vagy conductor frissíti.
+## A task-fájl szerepe
 
-## Aktív végrehajtási sávok
+Egy végrehajtási tasknak meg kell mondania:
 
-| Sáv | Epic | Cél | Belépési pont |
-|---|---|---|---|
-| A | Platform Stability | auth/RLS bizonyíték, stabil tesztkapuk, reprodukálható futás | [`EPIC-PLATFORM-STABILITY-2026Q3/`](EPIC-PLATFORM-STABILITY-2026Q3/README.md) |
-| B | UI Worlds | production + warehouse valós API-kontraktussal | [`EPIC-UI-WORLDS-2026Q3/`](EPIC-UI-WORLDS-2026Q3/README.md) |
-| C | Project Core | Projects/FlowEpic/B2BHandshake bounded-context döntés | [`EPIC-PROJECT-CORE-2026Q3/`](EPIC-PROJECT-CORE-2026Q3/README.md) |
-| D | ERP Separation | horizontális ERP, modulcsomagok, bundle és instance-kontraktus | [`EPIC-ERP-SEPARATION-2026Q3/`](EPIC-ERP-SEPARATION-2026Q3/README.md) |
-| E | B2B Collaboration | vállalatközi agreement, delegált munka, participant-RLS és adatcsere | [`EPIC-B2B-COLLABORATION-2026Q3/`](EPIC-B2B-COLLABORATION-2026Q3/README.md) |
-
-## Függőségi térkép
-
-```text
-STAB-EHS-INTEGRATION -> STAB-TESTCONTAINERS-HYGIENE
-STAB-RLS-PROOF ───────────────────────┐
-STAB-EHS-INTEGRATION ─────────────────┤
-STAB-TESTCONTAINERS-HYGIENE ──────────┼──> STAB-RELEASE-REPRO
-STAB-FE-TEST-GATE ────────────────────┘
-
-WORLDS-API-AUDIT (done) ──────────────┐
-                                      ├──> WORLDS-PRODUCTION-FE
-                                      │             │
-WORLDS-CUTTING-AUTHFIX ───────────────┴─────────────┴──> WORLDS-PRODUCTION-API-GATE
-                                                                  │
-                                                                  v
-                                                WORLDS-PRODUCTION-REVIEW
-                                                                  │
-WORLDS-INV-OFFCUT-ROUTEFIX -> WORLDS-INV-READ-API ────────────────┤
-                                                                  ├──> WORLDS-WAREHOUSE-FE
-WORLDS-PROC-BUILDFIX -> WORLDS-PROC-PO-FSM ───────────────────────┤             │
-                                                                                v
-                                                        WORLDS-WAREHOUSE-API-GATE
-                                                                                │
-                                                                                v
-                                                         WORLDS-WAREHOUSE-REVIEW
-
-WORLDS-INV-READ-API -> WORLDS-LOTS-ZONES-DECISION
-
-PROJECT-BOUNDARY-AUDIT -> PROJECT-CORE-ADR
-                           -> B2B-01
-
-B2B-01 -> B2B-02 + B2B-03 + B2B-04
-B2B-02 + B2B-03 + B2B-04 -> B2B-05
-B2B-01 + B2B-03 + B2B-04 + ERPSEP-03 -> B2B-06
-B2B-02 + B2B-03 + B2B-04 + B2B-05 + B2B-06 -> B2B-07
-B2B-07 + MODULE-PACKAGES -> B2B-08
-B2B-07 + B2B-08 -> B2B-09 -> Doorstar handshake gate/pilot
-
-ERPSEP-01 -> ERPSEP-02 -> MODULE-PACKAGES ─┐
-          -> ERPSEP-03 -> ERPSEP-07 ───────┼-> ERPSEP-08 -> ERPSEP-09
-                         ERPSEP-05 ────────┤
-                         ERPSEP-06 ────────┘
-```
-
-## Párhuzamossági szabályok
-
-- A portált (`src/joinerytech-portal`) egyszerre **egy** frontend agent mutálhatja.
-- Inventory, procurement és cutting külön submodule, ezért külön agent dolgozhat
-  rajtuk, ha a gyökér `EPICS.yaml`-hoz és közös dokumentumhoz nem nyúlnak.
-- A platform security task több modulon halad át; amíg fut, ugyanazon modul
-  persistence/migrációs fáit más agent nem módosíthatja.
-- A Project Core audit read-only módon párhuzamosítható; az ADR egyetlen szerzőé.
-- A B2B-02/03/04 az elfogadott B2B-01 contract után párhuzamosítható, de a közös
-  Collaboration domain/persistence fákat explicit agent-lock védi.
-- Az ERP boundary audit read-only párhuzamosítható a Doorstar mapping audittal;
-  egyik agent sem mutálhatja a másik repositoryját.
-- `EPICS.yaml`, `docs/tasks/README.md` és epic-README-k root/conductor tulajdonúak.
+- a célt és üzleti okot;
+- az előfeltételeket és függőségeket;
+- az engedélyezett forrás- és mutációs határt;
+- a mérhető elfogadási kritériumot;
+- a futtatandó teszt- és ellenőrző parancsot;
+- a stop/escalate feltételt;
+- az átadási bizonyítékot és a következő biztonságos lépést.
 
 ## Definition of Ready
 
-Egy task akkor adható ki, ha van:
-
-- egyértelmű cél és üzleti ok;
-- lezárt vagy felsorolt előfeltétel;
-- konkrét forrás- és mutációs határ;
-- mérhető elfogadási kritérium;
-- futtatható tesztparancs és stop/escalate feltétel.
+Task csak akkor indítható, ha a cél, a tulajdonos, a függőségek, a fájlhatár és a bizonyítási mód egyértelmű. Ha egy döntés, kontraktus vagy külső jogosultság hiányzik, a taskot ne implementációval próbáld feloldani; jelöld a blokkolót és eszkaláld.
 
 ## Definition of Done
 
-Egy task csak akkor `done`, ha:
+Egy task akkor kész, ha:
 
-- minden acceptance criterion bizonyítva;
-- célzott és előírt regressziós teszt zöld;
-- nincs új lint/build warning vagy elárvult Testcontainers-konténer;
-- a task-fájlban szerepel a változott fájlok, tesztszámok, ismert gapek és a
-  következő biztonságos lépés;
-- a root diff-review-ja megtörtént.
+- minden elfogadási kritérium bizonyított;
+- a célzott és előírt regressziós kapu lefutott, vagy a dokumentált környezeti korlát világos;
+- nincs új, elhallgatott warning vagy ismert regresszió;
+- a task tartalmazza a módosított fájlokat, futtatott parancsokat, eredményt és megmaradt gapet;
+- a szükséges független review megtörtént.
+
+## Archívum és történet
+
+A lezárt taskok az adott epic `archive/` mappájába kerülnek. Ezek bizonyítékok és mementók: visszaolvasásra valók, nem az aktuális nyitott backlog megállapítására.
+
+## Kapcsolódó dokumentumok
+
+- [Projekt README](../../README.md)
+- [Állapot és tervezés](../STATUS.md)
+- [Architektúra áttekintés](../ARCHITECTURE.md)
+- [ADR-index](../knowledge/adr/README.md)
+- [Fejlesztői útmutató](../DEVELOPMENT.md)

@@ -1,4 +1,5 @@
 using SpaceOS.Modules.Hosting.Auth;
+using SpaceOS.Modules.Hosting.Authorization;
 using SpaceOS.Modules.Hosting.Tenancy;
 using SpaceOS.Modules.Kontrolling.Api;
 using SpaceOS.Modules.Kontrolling.Api.Endpoints;
@@ -17,6 +18,7 @@ builder.Services.AddSwaggerGen();
 // Jwt:Audience, fail-fast), Jwt:Mode=Development for local runs (refuses to start
 // outside the Development environment, kontrolling precedent preserved).
 builder.Services.AddSpaceOsModuleAuth(builder.Configuration, builder.Environment);
+builder.Services.AddRequiredEnabledModulePolicy("spaceos.controlling");
 
 // DbContext, repositories, MediatR, validators, the configured thresholds,
 // the project source and the JSON wire format (enums as strings).
@@ -41,7 +43,8 @@ app.UseSpaceOsModuleTenancy();
 
 app.MapHealthChecks("/health").AllowAnonymous();
 
-app.MapKontrollingEndpoints();
+var controllingEndpoints = app.MapGroup("").RequireEnabledModule("spaceos.controlling");
+controllingEndpoints.MapKontrollingEndpoints();
 
 app.Run();
 

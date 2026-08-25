@@ -24,12 +24,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Pinned at the LOWEST version any of the 7 module test projects already reference
-         (DMS: Testcontainers.PostgreSql 3.7.0) so NuGet's nearest-wins resolution never treats
-         a module's own (higher) pin as a downgrade (NU1605). Npgsql likewise floors below every
-         module's Npgsql.EntityFrameworkCore.PostgreSQL-transitive version. -->
+    <!-- Keep the shared fixture on the same supported Testcontainers line as all seven module
+         test projects. Npgsql likewise floors below every module's
+         Npgsql.EntityFrameworkCore.PostgreSQL-transitive version. -->
     <PackageReference Include="Npgsql" Version="8.0.3" />
-    <PackageReference Include="Testcontainers.PostgreSql" Version="3.7.0" />
+    <PackageReference Include="Testcontainers.PostgreSql" Version="4.14.0" />
   </ItemGroup>
 
 </Project>

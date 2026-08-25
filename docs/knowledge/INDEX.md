@@ -1,206 +1,89 @@
-# JoineryTech Knowledge Base — Faipar SaaS Platform
+# JoineryTech technikai tudásindex
 
-**Sziget:** JoineryTech (`/opt/joinerytech/`)
-**Fókusz:** Faipar SaaS Platform
-**Port:** 3458-3459
-**Frissítve:** 2026-07-23
+Ez az index a technikai dokumentáció belépési pontja. A célja navigáció, nem állapotnapló: ami ma fut, az a forráskódból, konfigurációból és friss ellenőrzésből derül ki; ami ma prioritás, az az [`EPICS.yaml`](../../EPICS.yaml)-ban szerepel.
 
----
+## Források elsőbbsége
 
-## Aktuális belépési pontok — 2026-07-23
+| Kérdés | Elsődleges forrás |
+|---|---|
+| Aktuális program- vagy task-státusz | [`EPICS.yaml`](../../EPICS.yaml) |
+| Futásidejű viselkedés és függőségverzió | Az érintett komponens forrása, manifestje és friss tesztje |
+| Architekturális döntés | [ADR-index](adr/README.md) |
+| Közös vagy külső API-szerződés | [Kontraktus-index](contracts/README.md) |
+| Auth, tenant, RLS működése | [Hosting README](../../src/spaceos-modules-hosting/README.md) és ADR-061/062 |
+| Futtatási vagy provisioning eljárás | [Üzemeltetési index](deployment/README.md) |
 
-> Az alábbi dokumentumok az aktuális állapot elsődleges tudástári forrásai. A
-> `docs/joinerytech/` történeti design- és prototípus-korpusz; az élő cél- és
-> státuszforrás az `EPICS.yaml`.
+## Kezdd itt
 
-- [`architecture/PROJECT_STATE_CHECKPOINT_2026-07-23.md`](architecture/PROJECT_STATE_CHECKPOINT_2026-07-23.md)
-  — aktuális working-tree állapot, kész/félkész/blokkolt szeletek, biztonságos
-  folytatási sorrend és rollout-kapuk
-- [`architecture/PROJECT_STATE_ASSESSMENT_2026-07-18.md`](architecture/PROJECT_STATE_ASSESSMENT_2026-07-18.md)
-  — előző teljes programfelmérés, QUALITY-megfelelés, kockázatok és lehetőségek
-- [`architecture/SPACEOS_MODULAR_PRODUCT_ARCHITECTURE_2026-07-18.md`](architecture/SPACEOS_MODULAR_PRODUCT_ARCHITECTURE_2026-07-18.md)
-  — ERP/domain szétválasztás, modul-bundle, instance pack és agent-végrehajtási terv
-- [`../../EPICS.yaml`](../../EPICS.yaml) — élő program/epic goal-config
-- [`../tasks/README.md`](../tasks/README.md) — agent-végrehajtási backlog,
-  függőségek, fájlhatárok és Definition of Done
-- [`architecture/WORLDS_API_CONTRACTS_2026-07-18.md`](architecture/WORLDS_API_CONTRACTS_2026-07-18.md)
-  — production + warehouse API-first kontraktusaudit
-- [`architecture/CUTTING_AUTH_TENANCY_CONTRACT_2026-07-21.md`](architecture/CUTTING_AUTH_TENANCY_CONTRACT_2026-07-21.md)
-  — Cutting JWT/tenant/policy szerződés és ERP-től független SpaceOS-minta
-- [`architecture/CUTTING_SECURITY_AUDIT_2026-07-21.md`](architecture/CUTTING_SECURITY_AUDIT_2026-07-21.md)
-  — internal auth, adapterhatár, rate limit, runtime dependency audit és agent-ready hardening kapuk
-- [`engineering/CUTTING_DEVELOPMENT_TEST_RUNBOOK.md`](engineering/CUTTING_DEVELOPMENT_TEST_RUNBOOK.md)
-  — reprodukálható Cutting build, célzott security gate és teljes-suite triázs
-- [`architecture/PORTAL_WORLDS_INVENTORY_2026-07-16.md`](architecture/PORTAL_WORLDS_INVENTORY_2026-07-16.md)
-  — modernizált és legacy világok leltára
-- [`adr/README.md`](adr/README.md) — ADR-059..064 döntések és végrehajtási kapuk
-- [`architecture/VPS_SERVICE_STATE_2026-07-16.md`](architecture/VPS_SERVICE_STATE_2026-07-16.md)
-  — VPS service-történet és ellenőrzési minta
+- [Projekt- és repository-térkép](../ARCHITECTURE.md)
+- [Fejlesztői útmutató](../DEVELOPMENT.md)
+- [Architekturális dokumentumtérkép](architecture/README.md)
+- [ADR-index](adr/README.md)
+- [Task-protokoll](../tasks/README.md)
 
----
+## Architektúra és rendszerszintű döntések
 
-## Áttekintés
+| Téma | Kiindulópont |
+|---|---|
+| Modulok, trust-határok és komponensek | [ECOSYSTEM_MODULE_ARCHITECTURE.md](architecture/ECOSYSTEM_MODULE_ARCHITECTURE.md) |
+| Moduláris termék- és instance-architektúra | [SPACEOS_MODULAR_PRODUCT_ARCHITECTURE_2026-07-18.md](architecture/SPACEOS_MODULAR_PRODUCT_ARCHITECTURE_2026-07-18.md) |
+| Auth + tenant-azonosság | [ADR-061](adr/ADR-061-host-auth-es-tenant-identitas.md) |
+| Tenant-izoláció és RLS | [ADR-062](adr/ADR-062-rls-tenant-izolacio.md) |
+| Aktuális helyi authority/provisioning szerződés | [KEYCLOAK_AUTHORITY_PROJECTION_AND_SERVICE_PRINCIPAL_2026-08-20.md](architecture/KEYCLOAK_AUTHORITY_PROJECTION_AND_SERVICE_PRINCIPAL_2026-08-20.md) |
+| Modul-katalógus és lifecycle | [ADR-067](adr/ADR-067-module-catalog-and-lifecycle.md) |
+| Projects és B2B ownership | [ADR-068](adr/ADR-068-project-core-and-b2b-collaboration-ownership.md), [ADR-072](adr/ADR-072-projects-module-ownership.md) |
+| Planning/scheduling | [ADR-069](adr/ADR-069-planning-domain-and-product-package.md), [ADR-070](adr/ADR-070-scheduling-core-external-dependencies.md) |
 
-A JoineryTech sziget a **faipari SaaS platform fejlesztési központja**. 7 modult tartalmaz:
-- **CRM** — Customer Relationship Management
-- **HR** — Human Resources
-- **EHS** — Environment, Health & Safety
-- **Kontrolling** — Cost tracking, EAC
-- **Maintenance** — Eszköz karbantartás
-- **QA** — Quality Assurance
-- **DMS** — Document Management System
+Az `architecture/` mappa további térképe: [architecture/README.md](architecture/README.md).
 
----
+## Domain
 
-## Dokumentum Kategóriák
+| Modul | Domainmodell |
+|---|---|
+| CRM | [CRM_DOMAIN_MODEL.md](domain/CRM_DOMAIN_MODEL.md) |
+| HR | [HR_DOMAIN_MODEL.md](domain/HR_DOMAIN_MODEL.md) |
+| QA | [QA_DOMAIN_MODEL.md](domain/QA_DOMAIN_MODEL.md) |
+| Maintenance | [MAINTENANCE_DOMAIN_MODEL.md](domain/MAINTENANCE_DOMAIN_MODEL.md) |
+| DMS | [DMS_DOMAIN_MODEL.md](domain/DMS_DOMAIN_MODEL.md) |
+| ERP core | [ERP_CORE_DOMAIN_CONTRACT.md](domain/ERP_CORE_DOMAIN_CONTRACT.md) |
+| B2B collaboration | [B2B_COLLABORATION_DOMAIN_CONTRACT.md](domain/B2B_COLLABORATION_DOMAIN_CONTRACT.md) |
 
-### patterns/ (16 dokumentum)
+A `domain/code/` mappa példákat és implementációs segédanyagokat tartalmaz; a futó modellhez mindig az adott modul forrása az elsődleges.
 
-**Backend Patterns:**
-- `DATABASE_PATTERNS.md` — EF Core, RLS, Testcontainers
-- `EVENT_SOURCING_PATTERNS.md` — Domain events
-- `CONTRACT_FIRST_DEVELOPMENT.md` — OpenAPI → code generation
-- `SECURITY_PATTERNS.md` — JWT, RBAC, RLS
+## Minták és fejlesztési szabványok
 
-**Frontend Patterns:**
-- `DATAHAVEN_UI_PATTERNS.md` — Dashboard komponensek
-- `FRONTEND_DRAG_DROP_PATTERNS.md` — Drag & drop patterns
-- `FRONTEND_VERIFICATION_WORKFLOW.md` — Frontend review workflow
-- `REACT_18_TYPESCRIPT_MODERNIZATION.md` — React 18 best practices
-- `LOCALSTORAGE_KPI_DASHBOARD_PATTERN.md` — LocalStorage KPI cache
-- `OFFLINE_FIRST_WIZARD_PATTERN.md` — Offline-first forms
-- `UX_DESIGN_PRINCIPLES.md` — UX guidelines
+### Backend és adat
 
-**Code Generation:**
-- `CODE_GENERATOR_CATALOGUE.md` — Roslyn, Orval, Plop.js
-- `CODEGEN_TOOLCHAIN_PATTERN.md` — Orval + NSwag workflow
+- [DATABASE_PATTERNS.md](patterns/DATABASE_PATTERNS.md)
+- [CONTRACT_FIRST_DEVELOPMENT.md](patterns/CONTRACT_FIRST_DEVELOPMENT.md)
+- [SECURITY_PATTERNS.md](patterns/SECURITY_PATTERNS.md)
+- [TESTING_STRATEGIES.md](patterns/TESTING_STRATEGIES.md)
+- [BACKEND_PATTERNS.md](engineering/BACKEND_PATTERNS.md)
 
-**Migration & Testing:**
-- `JOINERYTECH_MIGRATION_PATTERNS.md` — Migration patterns
-- `TESTING_STRATEGIES.md` — E2E, Integration, Unit testing
-- `ENTERPRISE_GOVERNANCE_PATTERNS.md` — Governance
+### Frontend
 
-### architecture/ (folyamatosan bővülő, dátumozott állapotokkal)
+- [DESIGN_SYSTEM_SPEC_V1.md](patterns/DESIGN_SYSTEM_SPEC_V1.md)
+- [FRONTEND_VERIFICATION_WORKFLOW.md](patterns/FRONTEND_VERIFICATION_WORKFLOW.md)
+- [REACT_18_TYPESCRIPT_MODERNIZATION.md](patterns/REACT_18_TYPESCRIPT_MODERNIZATION.md) — történeti minta; az aktuális Portal manifest az irányadó verziókhoz
+- [UX_DESIGN_PRINCIPLES.md](patterns/UX_DESIGN_PRINCIPLES.md)
 
-- `DOTNET_8_CLEAN_ARCHITECTURE_2026.md` — .NET 8 Clean Architecture
-- `MULTI_TENANT_RLS_ARCHITECTURE_2026.md` — PostgreSQL RLS multi-tenancy
-- `GRAPH_BASED_WORKFLOW.md` — Graph workflow engine
-- `ECOSYSTEM_MODULE_ARCHITECTURE.md` — 7 modul architektúra
-- `ARCHITECTURAL_PATTERNS_CATALOGUE.md` — Összefoglaló
-- `ADR_CATALOGUE.md` — Architekturális döntések
-- `ADR-048-Datahaven-UI-Planning-Components.md` — Planning UI
-- `PROJECT_STATE_ASSESSMENT_2026-07-18.md` — aktuális program- és projektállapot
-- `SPACEOS_MODULAR_PRODUCT_ARCHITECTURE_2026-07-18.md` — moduláris termékcsalád-célarchitektúra
-- `SPACEOS_B2B_HANDSHAKE_ARCHITECTURE_2026-07-21.md` — vállalatközi kézfogás, delegált munka, digitális megállapodás és participant-RLS
-- `PORTAL_WORLDS_INVENTORY_2026-07-16.md` — portál világ-leltár
-- `WORLDS_API_CONTRACTS_2026-07-18.md` — API-first production/warehouse kontraktusok
-- `CUTTING_AUTH_TENANCY_CONTRACT_2026-07-21.md` — hitelesített tenant- és
-  Manufacturer policy kontraktus
-- `CUTTING_SECURITY_AUDIT_2026-07-21.md` — Cutting boundary/supply-chain leletek,
-  javítások, maradék kockázatok és review kapu
-- `VPS_SERVICE_STATE_2026-07-16.md` — VPS service-állapot és helyreállítás
+### Mérnöki segédanyag
 
-### engineering/ (9+ dokumentum)
+- [Backend .NET](engineering/backend_dotnet.knowledge.md)
+- [Frontend React](engineering/frontend_react.knowledge.md)
+- [Backend tesztelés](engineering/testing_backend_dotnet.knowledge.md)
+- [Frontend tesztelés](engineering/testing_frontend_react.knowledge.md)
+- [Cutting fejlesztési/test runbook](engineering/CUTTING_DEVELOPMENT_TEST_RUNBOOK.md)
 
-- `backend_dotnet.knowledge.md`
-- `database_efcore.knowledge.md`
-- `efcore_installation.knowledge.md`
-- `frontend_react.knowledge.md`
-- `testing_backend_dotnet.knowledge.md`
-- `testing_frontend_react.knowledge.md`
-- `testing_strategy.knowledge.md`
-- `BACKEND_PATTERNS.md`
-- `CUTTING_DEVELOPMENT_TEST_RUNBOOK.md` — Cutting bootstrap, build, security
-  tesztkapu és ismert tesztadósságok
+## Kontraktusok, deployment és adatvédelem
 
-### domain/ (6+ dokumentum)
+- [Kontraktus-index](contracts/README.md)
+- [Üzemeltetési index](deployment/README.md)
+- [Doorstar-lánc integrációs terv](architecture/DOORSTAR_CHAIN_INTEGRATION_PLAN_2026-08-10.md) — dátumozott integrációs terv, nem automatikus aktiválási engedély
+- [Doorstar multi-tenant release progress](architecture/DOORSTAR_MULTITENANT_RELEASE_PROGRESS_2026-08-12.md) — dátumozott evidence; a release állapotát mindig a megfelelő ownerrel és az élő tervvel ellenőrizd
 
-**7 Modul Domain Modellek:**
-- `CRM_DOMAIN_MODEL.md`
-- `HR_DOMAIN_MODEL.md`
-- `QA_DOMAIN_MODEL.md`
-- `MAINTENANCE_DOMAIN_MODEL.md`
-- `DMS_DOMAIN_MODEL.md`
-- `code/` mappa (implementation templates)
+## Kontextusok és történeti anyag
 
-**Project Docs:**
-- `BACKEND_ARCHITECTURE_PLAN.md`
-- `ZUSTAND_INTEGRATION_STRATEGY.md`
-- `PROJECT_STATUS.md`
+A `context/` mappa agent- és domainkontextusok gyűjteménye. Több fájl pillanatfelvétel, ezért a dátumát és hatályát olvasd a tartalom előtt. A termékvízióhoz [VISION.md](context/VISION.md) ad hátteret, de a benne szereplő mérőszámokat és roadmapet ne kezeld élő státuszként.
 
-### snippets/ (6 dokumentum)
-
-- `react-hook.md`
-- `testcontainers-setup.md`
-- `jwt-pattern.md`
-- `efcore-migration.md`
-- `rls-template.md`
-- `zustand-store.md`
-
-### datahaven/ (3 dokumentum)
-
-- `FILE_UPLOAD_GUIDE.md`
-- `KANBAN_API_GUIDE.md`
-- `PLANNING_UI_USER_GUIDE.md`
-
-### graph/ (1 dokumentum)
-
-- `GRAPH_WORKFLOW_USAGE.md`
-
-### context/ (5 dokumentum)
-
-- `CUTTING_CONTEXT.md` — Vágólap modul kontextus
-- `JOINERY_CONTEXT.md` — Asztalos modul kontextus
-- `KERNEL_CONTEXT.md` — Kernel modul kontextus
-- `PORTAL_CONTEXT.md` — Portal kontextus
-- `VISION.md` — JoineryTech vízió
-
-### deployment/ (1 dokumentum)
-
-- `KNOWN_GOTCHAS.md` — Telepítési csapdák
-
----
-
-## Technológiák
-
-**Backend:**
-- .NET 8 (Minimal API + Clean Architecture)
-- PostgreSQL (RLS multi-tenancy)
-- EF Core 8
-- MediatR (CQRS)
-
-**Frontend:**
-- React 19.2 (TypeScript 6.0)
-- Vite 8
-- TanStack Query (React Query v5)
-- Zustand (state management)
-- Orval (OpenAPI → hooks)
-
-**DevOps:**
-- Testcontainers
-- Vitest
-- Playwright (E2E)
-
----
-
-## Kapcsolódó Dokumentumok
-
-- `/opt/joinerytech/CLAUDE.md` — Terminál konfigurációk
-- `/opt/spaceos/docs/architecture/4-ISLAND-ARCHITECTURE.md` — 4-sziget áttekintés
-- `/opt/joinerytech/docs/joinerytech/` — Legacy domain docs (migráció alatt)
-
----
-
-## Következő Lépések
-
-1. **Félkész EHS szeletek atomikus lezárása** — wizard teljes kapu + review,
-   majd a risk backend validation/TestServer kapu
-2. **Security rollout** — Nexus rotáció/policy, Cutting proxy/capability/ownership
-3. **Dependency-remediation** — platform NuGet/RCE szeletek és runtime-források
-4. **ERP ADR-k** — ADR-066/067 nyitott tulajdonosi és trust-döntések
-5. **Modulcsomagolás és Doorstar kapu** — csak elfogadott ADR-ek után
-6. **B2B kézfogás** — agreement/work lifecycle, participant-RLS, evidence és pilot
-
----
-
-_JoineryTech Knowledge Base — aktuális index: 2026-07-23_
+A `docs/joinerytech/` prototípus- és designkorpuszhoz a [legacy index](../joinerytech/README.md) ad eligazítást.

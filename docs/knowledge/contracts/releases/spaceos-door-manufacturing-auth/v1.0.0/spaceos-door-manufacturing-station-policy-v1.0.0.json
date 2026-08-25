@@ -1,0 +1,29 @@
+{
+  "schemaVersion": "spaceos.door-manufacturing-station-policy/v1",
+  "id": "spaceos-door-manufacturing-station-policy",
+  "version": "1.0.0",
+  "status": "released-policy-contract-not-implemented",
+  "issuedAt": "2026-08-11T18:00:00.000Z",
+  "purpose": "Define the authority boundary for a Door Manufacturing station without placing station selection in a browser request or JWT claim.",
+  "inputs": {
+    "authenticatedIdentity": "Validated access-token sub and the scoped realm-role authorities from spaceos-door-manufacturing-auth-profile/v1.0.0.",
+    "tenant": "Local Tenant.id resolved server-side from active Tenant.key == normalized JWT tid.",
+    "stationMembership": "Tenant-scoped application database record owned by the Door Manufacturing Instance."
+  },
+  "prohibitions": [
+    "No station claim in the browser access token.",
+    "X-Station, X-Role, X-Principal, tenant headers, query parameters, cookies, and browser storage cannot select or authorize a station.",
+    "A principal-to-station mapping cannot cross a tenant boundary.",
+    "A valid JWT alone does not grant a station action."
+  ],
+  "decision": {
+    "allow": "The server resolves an active membership for the authenticated principal, local tenant, requested resource, and operation-specific authority.",
+    "deny": "Missing, inactive, foreign-tenant, or insufficient membership returns 403 application/problem+json with correlationId in the body.",
+    "audit": "Persist only the local tenant, local station, internal principal correlation key, operation, decision, and correlationId. Do not persist a bearer credential."
+  },
+  "implementationState": {
+    "runtimeEndpoint": "none",
+    "platformInstanceContext": "The referenced Instance Context OpenAPI is version 1.0.0-draft.1; no live platform endpoint or station resolver is asserted by this contract.",
+    "activationRequirement": "The Door Manufacturing Instance must implement this policy on tenant-scoped storage and prove foreign-station rejection before a station-gated production route is mounted."
+  }
+}

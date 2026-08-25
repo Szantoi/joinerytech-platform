@@ -16,8 +16,7 @@ public class IntegrationTestFixture : IAsyncLifetime
 
     public IntegrationTestFixture()
     {
-        _container = new PostgreSqlBuilder()
-            .WithImage("postgres:16-alpine")
+        _container = new PostgreSqlBuilder("postgres:16-alpine")
             .WithDatabase("hr_test")
             .WithUsername("postgres")
             .WithPassword("postgres")

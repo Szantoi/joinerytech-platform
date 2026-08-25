@@ -1,51 +1,56 @@
 #requires -Version 5.1
 <#
 .SYNOPSIS
-    Idempotent tenant onboarding for the SpaceOS/JoineryTech Keycloak realm.
+    RETIRED: legacy tenant onboarding for the SpaceOS/JoineryTech Keycloak realm.
     STAB-TENANT-ONBOARDING-RUNBOOK (EPIC-PLATFORM-STABILITY-2026Q3).
 
 .DESCRIPTION
-    Turns the manual 2026-07-27 provisioning sequence (realm roles, tid +
-    enabled_modules protocol mappers, unmanaged-attribute policy, user attributes,
-    role mapping, tenant record) into a repeatable, config-driven script.
+    This script models the retired 2026-07-27 provisioning shape (generic realm
+    roles plus tid/enabled_modules user attributes on portal-app). That shape is
+    not the P0 identity contract: it has no authoritative tenant projection,
+    membership/projection version, service-principal registry, or exact azp gate.
 
-    DRY-RUN IS THE DEFAULT. Without -Apply the script only reads the realm and
-    prints the plan; every mutation requires the explicit -Apply switch, and a run
-    against the live realm additionally requires Gabor's approval (repo CLAUDE.md).
+    Therefore every mode that could contact Keycloak or mutate it is disabled.
+    Only -Offline remains available for historical/profile analysis; it is
+    network-free and must not be used as activation evidence.
 
-    Idempotency: every step is observe -> compare -> act-only-on-drift, so a second
-    run of the same profile reports PendingCount = 0 and changes nothing.
+    OFFLINE IS THE ONLY ALLOWED MODE. Default, -VerifyOnly and -Apply all exit 2
+    before profile, credential, or Keycloak access.
 
-    The Kernel tenant record is NOT written by this script. Live DB mutation is a
-    separate gate, so the script emits an allowlist-validated SQL statement for the
-    runbook's DB step instead (see -KernelSqlPath).
+    A second offline run has no external side effect. The prior observe/compare/
+    apply implementation remains in the source only as an auditable historical
+    record; the entry point cannot reach it.
 
-    Admin credentials come from -AdminCredential or the KEYCLOAK_ADMIN_USER /
-    KEYCLOAK_ADMIN_PASSWORD environment variables. They are never written to the
-    console, the summary or the SQL artifact.
+    The Kernel tenant record is never written or emitted as runnable SQL. If
+    -KernelSqlPath is supplied, it receives an explicit NOT EMITTED notice.
+
+    Admin credentials and temporary passwords are rejected in the allowed offline
+    mode, and no credential is obtained from the environment.
 
 .PARAMETER ProfilePath
     Onboarding profile JSON (see config/tenant-onboarding.sample.json).
 
 .PARAMETER Apply
-    Execute the plan. Without it the script is strictly read-only.
+    Retained only for command-line compatibility. It is always refused before
+    profile access, credential access, or a Keycloak call.
 
 .PARAMETER Offline
-    Validate the profile and compute the module/SQL plan without contacting
-    Keycloak. Useful in CI and as reviewable evidence.
+    Validate the legacy profile and compute a historical module analysis without
+    contacting Keycloak. It emits no runnable Kernel SQL and is not activation evidence.
 
 .PARAMETER VerifyOnly
-    Read-only convergence check: exits 1 if anything still differs from the profile.
+    Retained only for command-line compatibility. It is always refused before
+    profile access, credential access, or a Keycloak call.
 
 .PARAMETER TemporaryPassword
-    Optional temporary password set on users CREATED by this run (temporary = true,
-    so Keycloak forces a change at first login). Never logged.
+    Retained only for command-line compatibility. It is rejected because the
+    retired mutation path is unavailable.
 
 .EXAMPLE
     powershell -File scripts/Invoke-KeycloakTenantOnboarding.ps1 -ProfilePath config/tenant-onboarding.sample.json -Offline
 
 .EXAMPLE
-    powershell -File scripts/Invoke-KeycloakTenantOnboarding.ps1 -ProfilePath <profile>.json -Apply -SummaryPath artifacts/onboarding.json
+    # Live and Apply modes are deliberately refused (exit 2).
 #>
 [CmdletBinding()]
 param(
@@ -388,6 +393,21 @@ try {
     # Allowing both would let the Offline branch return exit 0, which a CI verify caller
     # would read as "converged" without a single Keycloak check.
     if ($VerifyOnly -and $Offline) { throw '-VerifyOnly and -Offline are mutually exclusive: an offline run cannot verify a realm.' }
+    if ($Offline -and ($AdminCredential -or $TemporaryPassword)) {
+        throw 'Admin credentials and temporary passwords are unavailable in retired offline mode; do not supply secrets to this script.'
+    }
+
+    # P0 identity safety gate (2026-08-20): this legacy workflow provisions a
+    # generic portal-app/tid/realm-role model. It has no authoritative
+    # spaceos_tenants projection, membership-version revocation, or scoped
+    # service-principal registry. Do not let a read-only-looking dry run send an
+    # admin password to an obsolete profile endpoint, and do not permit its
+    # mutation path to make that model live. This guard deliberately precedes
+    # Test-Path/profile parsing and every credential/network function.
+    if (-not $Offline) {
+        throw 'Legacy Keycloak tenant onboarding is retired for P0 identity safety. Only -Offline historical validation is permitted; default, -VerifyOnly, and -Apply modes are disabled before any profile, credential, or Keycloak access.'
+    }
+
     if (-not (Test-Path -LiteralPath $ProfilePath)) { throw "Profile not found: $ProfilePath" }
 
     $profileData = Get-Content -LiteralPath $ProfilePath -Raw -Encoding UTF8 | ConvertFrom-Json
@@ -437,19 +457,19 @@ try {
         Write-Step "TenantType '$($profileData.tenant.tenantType)' requires module '$missing' in the Kernel record; the INSERT would be rejected without it." 'Warn'
     }
 
-    $kernelSql = New-KernelTenantStatement -TenantId ([string] $profileData.tenant.id) -Name ([string] $profileData.tenant.name) `
-        -TenantType ([string] $profileData.tenant.tenantType) -KernelEnabledModules @($modulePlan.KernelEnabledModules) `
-        -MissingRequired @($modulePlan.MissingKernelRequired)
+    # Even offline output must not leave an obsolete tenant-record DML fragment
+    # that could later be pasted into a database. The historical module analysis
+    # is retained, but the legacy execution artifact is explicitly non-runnable.
+    $kernelSql = @"
+-- RETIRED: Invoke-KeycloakTenantOnboarding.ps1 may not emit tenant DML.
+-- NOT EMITTED: the legacy portal-app/tid/realm-role identity profile is not an
+-- authoritative tenant projection and cannot be used for activation or DB writes.
+"@
     if ($KernelSqlPath) {
         $sqlDirectory = Split-Path -Parent $KernelSqlPath
         if ($sqlDirectory -and -not (Test-Path -LiteralPath $sqlDirectory)) { New-Item -ItemType Directory -Path $sqlDirectory -Force | Out-Null }
         Set-Content -LiteralPath $KernelSqlPath -Value $kernelSql -Encoding UTF8
-        if (@($modulePlan.MissingKernelRequired).Count -gt 0) {
-            Write-Step "Kernel tenant SQL REFUSED (not runnable, reason written to the file): $KernelSqlPath" 'Warn'
-        }
-        else {
-            Write-Step "Kernel tenant SQL written (NOT executed): $KernelSqlPath" 'Ok'
-        }
+        Write-Step "Legacy Kernel tenant SQL withheld (not runnable, reason written to the file): $KernelSqlPath" 'Warn'
     }
 
     $mode = 'DryRun'

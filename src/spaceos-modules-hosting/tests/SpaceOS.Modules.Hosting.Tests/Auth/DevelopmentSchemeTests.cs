@@ -12,7 +12,7 @@ namespace SpaceOS.Modules.Hosting.Tests.Auth;
 
 /// <summary>
 /// The Development scheme must behave exactly like production tenancy-wise: the synthetic
-/// principal carries a real <c>tid</c>, and a forged tenant header is still rejected.
+/// principal carries the canonical native projection, and a forged tenant header is still rejected.
 /// </summary>
 public sealed class DevelopmentSchemeTests
 {
@@ -33,7 +33,7 @@ public sealed class DevelopmentSchemeTests
     }
 
     private sealed record WhoAmIResponse(bool HasTenant, Guid? TenantId);
-    private sealed record EnabledModulesClaimResponse(string? Value);
+    private sealed record TenantProjectionClaimResponse(string? Value);
 
     [Fact]
     public async Task Development_host_authenticates_with_the_configured_tenant()
@@ -86,6 +86,21 @@ public sealed class DevelopmentSchemeTests
     }
 
     [Fact]
+    public async Task Development_host_uses_the_method_aware_admin_grant_for_writes()
+    {
+        using var host = await TenancyTestHost.StartAsync(
+            services => services.AddSpaceOsModuleAuth(
+                DevConfig("spaceos.maintenance"),
+                new Microsoft.Extensions.Hosting.Internal.HostingEnvironment { EnvironmentName = "Development" }),
+            environment: "Development");
+        using var client = host.GetTestClient();
+
+        var response = await client.PostAsync("/maintenance/protected", content: null);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
     public async Task Development_host_without_modules_is_forbidden_by_the_module_gate()
     {
         using var host = await TenancyTestHost.StartAsync(
@@ -101,7 +116,7 @@ public sealed class DevelopmentSchemeTests
     }
 
     [Fact]
-    public async Task Development_host_emits_configured_modules_as_a_json_array_claim()
+    public async Task Development_host_emits_configured_modules_in_the_native_projection()
     {
         using var host = await TenancyTestHost.StartAsync(
             services => services.AddSpaceOsModuleAuth(
@@ -113,12 +128,14 @@ public sealed class DevelopmentSchemeTests
         var response = await client.GetAsync("/claims/enabled-modules");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        var body = await response.Content.ReadFromJsonAsync<EnabledModulesClaimResponse>();
-        Assert.Equal("[\"spaceos.maintenance\",\"spaceos.qa\"]", body!.Value);
+        var body = await response.Content.ReadFromJsonAsync<TenantProjectionClaimResponse>();
+        Assert.Equal(
+            "[{\"tenant_id\":\"11111111-1111-1111-1111-111111111111\",\"permissions\":[\"spaceos.maintenance.admin\",\"spaceos.qa.admin\"],\"enabled_modules\":[\"spaceos.maintenance\",\"spaceos.qa\"]}]",
+            body!.Value);
     }
 
     [Fact]
-    public async Task Development_host_without_modules_emits_no_entitlement_claim()
+    public async Task Development_host_without_modules_emits_an_empty_native_projection()
     {
         using var host = await TenancyTestHost.StartAsync(
             services => services.AddSpaceOsModuleAuth(
@@ -130,7 +147,9 @@ public sealed class DevelopmentSchemeTests
         var response = await client.GetAsync("/claims/enabled-modules");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        var body = await response.Content.ReadFromJsonAsync<EnabledModulesClaimResponse>();
-        Assert.Null(body!.Value);
+        var body = await response.Content.ReadFromJsonAsync<TenantProjectionClaimResponse>();
+        Assert.Equal(
+            "[{\"tenant_id\":\"11111111-1111-1111-1111-111111111111\",\"permissions\":[],\"enabled_modules\":[]}]",
+            body!.Value);
     }
 }

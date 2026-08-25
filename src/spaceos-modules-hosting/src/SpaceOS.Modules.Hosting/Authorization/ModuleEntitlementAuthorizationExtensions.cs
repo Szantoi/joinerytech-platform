@@ -10,14 +10,16 @@ using SpaceOS.Modules.Hosting.Tenancy;
 
 namespace SpaceOS.Modules.Hosting.Authorization;
 
-/// <summary>Registers and applies fail-closed, canonical module-ID authorization policies.</summary>
+/// <summary>Registers and applies fail-closed, canonical module entitlement policies.</summary>
 public static class ModuleEntitlementAuthorizationExtensions
 {
     private const string PolicyPrefix = "SpaceOS.Module.Enabled.";
 
     /// <summary>
     /// Registers a named policy that requires the resolved tenant to have the requested
-    /// canonical module enabled. Missing/malformed claims and unavailable tenant context deny.
+    /// canonical module enabled and a method-appropriate permission. Read methods require
+    /// <c>view</c>, <c>edit</c> or <c>admin</c>; every other method requires <c>edit</c> or
+    /// <c>admin</c>. Missing/malformed claims and unavailable tenant context deny.
     /// </summary>
     public static IServiceCollection AddRequiredEnabledModulePolicy(
         this IServiceCollection services,
@@ -31,7 +33,10 @@ public static class ModuleEntitlementAuthorizationExtensions
         services.AddHttpContextAccessor();
         services.AddAuthorization(options =>
             options.AddPolicy(PolicyName(moduleId), policy =>
-                policy.Requirements.Add(new EnabledModuleRequirement(moduleId))));
+            {
+                policy.RequireAuthenticatedUser();
+                policy.Requirements.Add(new EnabledModuleRequirement(moduleId));
+            }));
         services.TryAddEnumerable(
             ServiceDescriptor.Scoped<IAuthorizationHandler, EnabledModuleAuthorizationHandler>());
         return services;
@@ -96,7 +101,11 @@ public static class ModuleEntitlementAuthorizationExtensions
             var tenant = TenantResolver.Resolve(context.User, requestedTenant, _logger);
             if (tenant.Status == TenantResolutionStatus.Resolved
                 && TenantResolver.GetEnabledModules(context.User, tenant.TenantId, _logger)
-                    .Contains(requirement.ModuleId))
+                    .Contains(requirement.ModuleId)
+                && HasMethodPermission(
+                    TenantResolver.GetPermissions(context.User, tenant.TenantId, _logger),
+                    requirement.ModuleId,
+                    httpContext.Request.Method))
             {
                 context.Succeed(requirement);
             }
@@ -108,5 +117,23 @@ public static class ModuleEntitlementAuthorizationExtensions
             => context.Request.Headers.TryGetValue(name, out StringValues values)
                 ? values.FirstOrDefault(static value => !string.IsNullOrWhiteSpace(value))
                 : null;
+
+        private static bool HasMethodPermission(
+            IReadOnlySet<string> permissions,
+            string moduleId,
+            string method)
+        {
+            if (permissions.Contains($"{moduleId}.admin")
+                || permissions.Contains($"{moduleId}.edit"))
+            {
+                return true;
+            }
+
+            return HttpMethods.IsGet(method)
+                   || HttpMethods.IsHead(method)
+                   || HttpMethods.IsOptions(method)
+                ? permissions.Contains($"{moduleId}.view")
+                : false;
+        }
     }
 }

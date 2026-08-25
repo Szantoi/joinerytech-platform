@@ -29,8 +29,7 @@ namespace SpaceOS.Modules.Ehs.Infrastructure.Tests;
 /// </summary>
 public sealed class EhsPostgresFixture : IAsyncLifetime
 {
-    private readonly PostgreSqlContainer _container = new PostgreSqlBuilder()
-        .WithImage("postgres:16-alpine")
+    private readonly PostgreSqlContainer _container = new PostgreSqlBuilder("postgres:16-alpine")
         .WithDatabase("ehs_test")
         .WithUsername("test")
         .WithPassword("test")

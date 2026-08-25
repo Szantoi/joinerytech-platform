@@ -40,8 +40,7 @@ public sealed class NonSuperuserRlsFixture : IAsyncDisposable
     /// <param name="database">The Postgres database name for this module's isolated container.</param>
     public NonSuperuserRlsFixture(string database)
     {
-        _container = new PostgreSqlBuilder()
-            .WithImage("postgres:16-alpine")
+        _container = new PostgreSqlBuilder("postgres:16-alpine")
             .WithDatabase(database)
             // Testcontainers' postgres image creates this user via initdb -> it IS a
             // superuser. That is intentional here: it is the migrator/admin role (Preflight +

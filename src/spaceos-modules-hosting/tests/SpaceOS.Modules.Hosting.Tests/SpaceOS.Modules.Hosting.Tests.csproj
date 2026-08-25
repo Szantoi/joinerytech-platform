@@ -16,7 +16,7 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <!-- Docker-free in-memory host for the auth/tenancy pipeline contract tests. -->
-    <PackageReference Include="Microsoft.AspNetCore.TestHost" Version="8.0.7" />
+    <PackageReference Include="Microsoft.AspNetCore.TestHost" Version="8.0.11" />
   </ItemGroup>
 
   <ItemGroup>

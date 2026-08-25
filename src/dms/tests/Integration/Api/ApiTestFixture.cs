@@ -31,8 +31,7 @@ public class ApiTestFixture : IAsyncLifetime
 
     public ApiTestFixture()
     {
-        _dbContainer = new PostgreSqlBuilder()
-            .WithImage("postgres:16-alpine")
+        _dbContainer = new PostgreSqlBuilder("postgres:16-alpine")
             .WithDatabase("dms_test")
             .WithUsername("postgres")
             .WithPassword("postgres")

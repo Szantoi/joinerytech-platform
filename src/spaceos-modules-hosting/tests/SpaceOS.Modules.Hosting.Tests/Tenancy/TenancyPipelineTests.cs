@@ -85,7 +85,7 @@ public sealed class TenancyPipelineTests : IAsyncLifetime
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
         Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
         var body = await response.Content.ReadAsStringAsync();
-        Assert.Contains("not in the caller's authorized tenant list", body);
+        Assert.Contains("does not match the caller's signed selected tenant", body);
         Assert.Contains("correlationId", body);
     }
 
@@ -102,7 +102,7 @@ public sealed class TenancyPipelineTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Multi_tenant_token_may_select_any_member_tenant()
+    public async Task Multi_entry_token_cannot_implicitly_select_first_or_header_selected_tenant()
     {
         using var request = new HttpRequestMessage(HttpMethod.Get, "/whoami");
         request.Headers.Add("X-Test-Tenants", $"{TenantA},{TenantB}");
@@ -110,18 +110,16 @@ public sealed class TenancyPipelineTests : IAsyncLifetime
 
         var response = await _client.SendAsync(request);
 
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        var body = await response.Content.ReadFromJsonAsync<WhoAmIResponse>();
-        Assert.Equal(TenantB, body!.TenantId);
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        var body = await response.Content.ReadAsStringAsync();
+        Assert.Contains("tenant authority is invalid", body);
     }
 
     [Fact]
-    public async Task Multi_tenant_token_may_not_select_a_foreign_tenant()
+    public async Task Multi_entry_token_is_denied_even_without_a_selection_header()
     {
         using var request = new HttpRequestMessage(HttpMethod.Get, "/whoami");
         request.Headers.Add("X-Test-Tenants", $"{TenantA},{TenantB}");
-        request.Headers.Add(TenancyDefaults.TenantHeader, TenantC.ToString());
-
         var response = await _client.SendAsync(request);
 
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
@@ -171,6 +169,90 @@ public sealed class TenancyPipelineTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task View_permission_cannot_call_a_write_endpoint()
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/maintenance/protected");
+        request.Headers.Add("X-Test-Tid", TenantA.ToString());
+        request.Headers.Add("X-Test-Enabled-Modules", "spaceos.maintenance");
+
+        var response = await _client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    [Theory]
+    [InlineData("spaceos.maintenance.edit")]
+    [InlineData("spaceos.maintenance.admin")]
+    public async Task Edit_or_admin_permission_can_call_a_write_endpoint(string permission)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/maintenance/protected");
+        request.Headers.Add("X-Test-Tid", TenantA.ToString());
+        request.Headers.Add("X-Test-Enabled-Modules", "spaceos.maintenance");
+        request.Headers.Add("X-Test-Permissions", permission);
+
+        var response = await _client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Theory]
+    [InlineData("GET")]
+    [InlineData("HEAD")]
+    [InlineData("OPTIONS")]
+    public async Task View_permission_allows_only_safe_method_matrix_entries(string method)
+    {
+        using var request = ModuleRequest(method, "spaceos.maintenance.view");
+
+        var response = await _client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Theory]
+    [InlineData("POST")]
+    [InlineData("PUT")]
+    [InlineData("PATCH")]
+    [InlineData("DELETE")]
+    [InlineData("TRACE")]
+    [InlineData("CUSTOM")]
+    public async Task View_permission_denies_every_non_safe_method_matrix_entry(string method)
+    {
+        using var request = ModuleRequest(method, "spaceos.maintenance.view");
+
+        var response = await _client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    [Theory]
+    [InlineData("spaceos.maintenance.edit", "PUT")]
+    [InlineData("spaceos.maintenance.admin", "DELETE")]
+    [InlineData("spaceos.maintenance.admin", "CUSTOM")]
+    public async Task Edit_or_admin_permission_survives_nested_group_conventions(
+        string permission,
+        string method)
+    {
+        using var request = ModuleRequest(method, permission);
+
+        var response = await _client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task A_different_modules_edit_permission_cannot_cross_the_module_gate()
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/maintenance/protected");
+        request.Headers.Add("X-Test-Tid", TenantA.ToString());
+        request.Headers.Add("X-Test-Enabled-Modules", "spaceos.qa");
+        request.Headers.Add("X-Test-Permissions", "spaceos.qa.edit");
+
+        var response = await _client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    [Fact]
     public async Task Enabled_module_policy_denies_missing_or_empty_module_claim()
     {
         using var missing = new HttpRequestMessage(HttpMethod.Get, "/maintenance/protected");
@@ -190,6 +272,14 @@ public sealed class TenancyPipelineTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Enabled_module_policy_challenges_an_unauthenticated_request()
+    {
+        var response = await _client.GetAsync("/maintenance/protected");
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
     public async Task Forged_tenant_header_cannot_bypass_an_otherwise_valid_module_claim()
     {
         using var request = new HttpRequestMessage(HttpMethod.Get, "/maintenance/protected");
@@ -200,5 +290,14 @@ public sealed class TenancyPipelineTests : IAsyncLifetime
         var response = await _client.SendAsync(request);
 
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    private static HttpRequestMessage ModuleRequest(string method, string permission)
+    {
+        var request = new HttpRequestMessage(new HttpMethod(method), "/maintenance/nested/method-probe");
+        request.Headers.Add("X-Test-Tid", TenantA.ToString());
+        request.Headers.Add("X-Test-Enabled-Modules", "spaceos.maintenance");
+        request.Headers.Add("X-Test-Permissions", permission);
+        return request;
     }
 }

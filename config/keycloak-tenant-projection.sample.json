@@ -1,0 +1,282 @@
+{
+  "schemaVersion": "spaceos-keycloak-authority-projection/v1",
+  "keycloak": {
+    "publicBaseUrl": "https://joinerytech.hu/auth",
+    "adminBaseUrl": "http://127.0.0.1:8080/auth",
+    "realm": "spaceos",
+    "adminRealm": "master",
+    "adminClientId": "admin-cli"
+  },
+  "retryPolicy": {
+    "maxAttempts": 3,
+    "initialDelayMs": 250,
+    "maxDelayMs": 2000
+  },
+  "mutationSafety": {
+    "adoptionPolicy": {
+      "mode": "signed-exact-existing-resources-only",
+      "ownerReceiptId": "15111111-1111-4111-8111-111111111111",
+      "resources": [
+        {
+          "kind": "authority-user",
+          "logicalId": "9b866dda-44e6-4c9f-b0f5-4c0c3d8aa237",
+          "resourceId": "9b866dda-44e6-4c9f-b0f5-4c0c3d8aa237",
+          "disposition": "mutate-exact-existing",
+          "desiredOwnedStateSha256": "445f5990dba41f2fefba499dd83355df239ff5f5bf1270af7d5aa52521b2bc51",
+          "observedOwnedStateSha256": "445f5990dba41f2fefba499dd83355df239ff5f5bf1270af7d5aa52521b2bc51"
+        },
+        {
+          "kind": "client-scope",
+          "logicalId": "spaceos-tenant-authority-v1--doormanufacturing-web",
+          "resourceId": "13111111-1111-4111-8111-111111111111",
+          "disposition": "adopt-exact-existing",
+          "desiredOwnedStateSha256": "3b615d075873b354bf97c80fdc6e83bdb59fd3dbeb5be70e4e4a4bb04ff0cd7d",
+          "observedOwnedStateSha256": "3b615d075873b354bf97c80fdc6e83bdb59fd3dbeb5be70e4e4a4bb04ff0cd7d"
+        },
+        {
+          "kind": "client-scope",
+          "logicalId": "spaceos-tenant-authority-v1--joinerytech-plant-web",
+          "resourceId": "13222222-2222-4222-8222-222222222222",
+          "disposition": "adopt-exact-existing",
+          "desiredOwnedStateSha256": "88b8125accaff5628ff230aaa6f7c54ccd3e2ea9a5d9f4721137105332fcd89b",
+          "observedOwnedStateSha256": "88b8125accaff5628ff230aaa6f7c54ccd3e2ea9a5d9f4721137105332fcd89b"
+        },
+        {
+          "kind": "consumer-client",
+          "logicalId": "doormanufacturing-web",
+          "resourceId": "12111111-1111-4111-8111-111111111111",
+          "disposition": "bind-exact-existing",
+          "desiredOwnedStateSha256": "bcf498eb6437f37a7cce031518e778c7056e57511a1b8db1bf81d3944b4fa1c6",
+          "observedOwnedStateSha256": "bcf498eb6437f37a7cce031518e778c7056e57511a1b8db1bf81d3944b4fa1c6"
+        },
+        {
+          "kind": "consumer-client",
+          "logicalId": "joinerytech-plant-web",
+          "resourceId": "12222222-2222-4222-8222-222222222222",
+          "disposition": "bind-exact-existing",
+          "desiredOwnedStateSha256": "0b8c5f5b7ec36315ed34e14f60a7b9e268e9667beca609faf3bad1847ba84cb2",
+          "observedOwnedStateSha256": "0b8c5f5b7ec36315ed34e14f60a7b9e268e9667beca609faf3bad1847ba84cb2"
+        },
+        {
+          "kind": "service-client",
+          "logicalId": "joinerytech-office-to-plant",
+          "resourceId": "14111111-1111-4111-8111-111111111111",
+          "disposition": "adopt-exact-existing-disabled",
+          "desiredOwnedStateSha256": "877fb93bdd3004cb407e253403b1349aa687b388804ec0f5fd9d93b072829644",
+          "observedOwnedStateSha256": "877fb93bdd3004cb407e253403b1349aa687b388804ec0f5fd9d93b072829644"
+        }
+      ]
+    },
+    "inventoryPolicy": {
+      "pageSize": 100,
+      "maxPages": 100,
+      "stablePasses": 2,
+      "allowedScopeBindings": [
+        {
+          "clientId": "doormanufacturing-web",
+          "scopeName": "spaceos-tenant-authority-v1--doormanufacturing-web",
+          "binding": "default"
+        },
+        {
+          "clientId": "joinerytech-plant-web",
+          "scopeName": "spaceos-tenant-authority-v1--joinerytech-plant-web",
+          "binding": "default"
+        }
+      ]
+    },
+    "rereadPolicy": {
+      "strategy": "observe-plan-reread-sha256",
+      "requireExactFingerprint": true,
+      "atomicityRequirement": "external-serialized-writer-or-keycloak-spi-required"
+    },
+    "compensationPolicy": {
+      "disableServiceBeforeAnyMutation": true,
+      "disableOnAnyUncertainty": true,
+      "requireDisabledReadback": true
+    },
+    "consumerEligibilityPolicy": {
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "bearerOnly": false,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "authorizationServicesEnabled": false,
+      "fullScopeAllowed": false,
+      "pkceCodeChallengeMethod": "S256"
+    },
+    "ownerReceipt": {
+      "payload": {
+        "schemaVersion": "spaceos-keycloak-owner-adoption-receipt/v1",
+        "receiptId": "15111111-1111-4111-8111-111111111111",
+        "issuedAt": "2026-08-20T00:00:00.000Z",
+        "expiresAt": "2026-09-19T00:00:00.000Z",
+        "ownerId": "platform-security-owner",
+        "realm": "spaceos",
+        "authoritySubjectId": "9b866dda-44e6-4c9f-b0f5-4c0c3d8aa237",
+        "consumerClientIds": [
+          "doormanufacturing-web",
+          "joinerytech-plant-web"
+        ],
+        "managedScopeNames": [
+          "spaceos-tenant-authority-v1--doormanufacturing-web",
+          "spaceos-tenant-authority-v1--joinerytech-plant-web"
+        ],
+        "serviceClientId": "joinerytech-office-to-plant",
+        "authorityChangeId": "49248d22-b2fe-43f1-a2c3-2cf02bd1f46f",
+        "serviceChangeId": "b8389871-034d-4892-81c9-5d7d9259c15e",
+        "configurationSha256": "5c60891d1317060cae860eba37fa769088355eaa29e349a4004d46c994b9a9a1",
+        "adoptionPolicySha256": "f63923233113f9c8e597cfce767ce6cc629106e581f0b52956665cf12dd34590",
+        "inventoryPolicySha256": "ca49a3ff47c260665c987d81aff52a030d7a4963f47d834f7de5679eb3afd8fd"
+      },
+      "signature": {
+        "algorithm": "RS256",
+        "keyId": "owner-signer-unconfigured",
+        "value": "AA"
+      }
+    },
+    "custodyReceipt": {
+      "payload": {
+        "schemaVersion": "spaceos-keycloak-service-custody-receipt/v1",
+        "receiptId": "16111111-1111-4111-8111-111111111111",
+        "issuedAt": "2026-08-20T00:00:00.000Z",
+        "expiresAt": "2026-09-19T00:00:00.000Z",
+        "custodianId": "platform-key-custodian",
+        "nonce": "17111111-1111-4111-8111-111111111111",
+        "realm": "spaceos",
+        "clientInternalId": "14111111-1111-4111-8111-111111111111",
+        "clientId": "joinerytech-office-to-plant",
+        "audience": "joinerytech-plant-api",
+        "scopeSha256": "b2cd5d61086a49c3faee3773180aca302237035f3a736638c6ac1482196b0cd9",
+        "keyState": "not-provisioned",
+        "activeVersion": 0,
+        "activeKeyId": null,
+        "keyFingerprintSha256": null,
+        "activatedAt": null,
+        "rotateAfter": null,
+        "overlapUntil": null,
+        "serviceChangeId": "b8389871-034d-4892-81c9-5d7d9259c15e",
+        "configurationSha256": "5c60891d1317060cae860eba37fa769088355eaa29e349a4004d46c994b9a9a1"
+      },
+      "signature": {
+        "algorithm": "RS256",
+        "keyId": "custody-signer-unconfigured",
+        "value": "AA"
+      }
+    }
+  },
+  "authorityScope": {
+    "name": "spaceos-tenant-authority-v1",
+    "consumerProjections": [
+      {
+        "clientId": "doormanufacturing-web",
+        "audiences": [
+          "doormanufacturing-instance-api",
+          "kernel-api"
+        ],
+        "moduleId": "joinerytech.door",
+        "permission": "joinerytech.door.admin",
+        "enabled": true,
+        "redirectUris": [
+          "https://doormanufacturing.joinerytech.hu/calc/auth/callback",
+          "https://doormanufacturing.joinerytech.hu/flow/auth/callback"
+        ],
+        "webOrigins": [
+          "https://doormanufacturing.joinerytech.hu"
+        ]
+      },
+      {
+        "clientId": "joinerytech-plant-web",
+        "audiences": [
+          "joinerytech-plant-api",
+          "joinerytech-plant-web"
+        ],
+        "moduleId": "joinerytech.plant",
+        "permission": "joinerytech.plant.admin",
+        "enabled": false,
+        "redirectUris": [],
+        "webOrigins": []
+      }
+    ],
+    "prohibitedFlatClaims": [
+      "tid",
+      "tenant_id",
+      "permissions",
+      "enabled_modules"
+    ]
+  },
+  "authority": {
+    "subjectId": "9b866dda-44e6-4c9f-b0f5-4c0c3d8aa237",
+    "selectedTenantId": "11111111-2222-4333-8444-555555555555",
+    "projectionVersion": 1,
+    "memberships": [
+      {
+        "tenant_id": "11111111-2222-4333-8444-555555555555",
+        "tenant_type": "Manufacturer",
+        "brand_skin": "doorstar",
+        "permissions": [
+          "joinerytech.door.admin",
+          "joinerytech.plant.admin",
+          "spaceos.crm.admin",
+          "tenant.members.manage"
+        ],
+        "enabled_modules": [
+          "joinerytech.door",
+          "joinerytech.plant",
+          "spaceos.crm"
+        ],
+        "membership_version": 1,
+        "status": "active"
+      }
+    ],
+    "audit": {
+      "changeId": "49248d22-b2fe-43f1-a2c3-2cf02bd1f46f",
+      "actorId": "platform-release-operator",
+      "reasonCode": "P0_NATIVE_PROJECTION_BOOTSTRAP",
+      "changedAt": "2026-08-20T20:00:00.000Z",
+      "action": "bootstrap"
+    }
+  },
+  "servicePrincipalRegistry": [
+    {
+      "purpose": "office-to-plant",
+      "clientId": "joinerytech-office-to-plant",
+      "audience": "joinerytech-plant-api",
+      "status": "disabled",
+      "membershipVersion": 1,
+      "projectionVersion": 1,
+      "scope": {
+        "tenant_id": "11111111-2222-4333-8444-555555555555",
+        "project_ids": [
+          "e179c41d-7a24-4102-bb73-f99e0d055e9c"
+        ],
+        "station_ids": [
+          "station-cnc-01"
+        ],
+        "permissions": [
+          "office.ack_outbox",
+          "office.issue_work_package",
+          "office.read_outbox"
+        ]
+      },
+      "keyRotation": {
+        "state": "not-provisioned",
+        "activeVersion": 0,
+        "activeKeyId": null,
+        "previousKeyId": null,
+        "activatedAt": null,
+        "rotateAfter": null,
+        "overlapUntil": null,
+        "custodyReceiptId": "16111111-1111-4111-8111-111111111111"
+      },
+      "audit": {
+        "changeId": "b8389871-034d-4892-81c9-5d7d9259c15e",
+        "actorId": "platform-release-operator",
+        "reasonCode": "P0_SERVICE_PRINCIPAL_REGISTRY_BOOTSTRAP",
+        "changedAt": "2026-08-20T20:00:00.000Z",
+        "action": "bootstrap"
+      }
+    }
+  ]
+}

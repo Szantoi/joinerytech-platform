@@ -21,8 +21,7 @@ namespace SpaceOS.Modules.HR.Tests.Integration;
 /// </summary>
 public class TrainingCompletedEventHandler_Tests : IAsyncLifetime
 {
-    private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder()
-        .WithImage("postgres:16-alpine")
+    private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder("postgres:16-alpine")
         .WithDatabase("spaceos_hr_test")
         .WithUsername("postgres")
         .WithPassword("postgres")

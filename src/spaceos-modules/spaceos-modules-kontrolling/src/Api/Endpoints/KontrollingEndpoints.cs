@@ -13,6 +13,7 @@ using SpaceOS.Modules.Kontrolling.Application.DTOs;
 using SpaceOS.Modules.Kontrolling.Application.Portfolio;
 using SpaceOS.Modules.Kontrolling.Application.Queries;
 using SpaceOS.Modules.Kontrolling.Domain.Enums;
+using SpaceOS.Modules.Hosting.Auth;
 
 /// <summary>
 /// The Kontrolling module's REST surface (minimal API).
@@ -44,8 +45,7 @@ public static class KontrollingEndpoints
     /// <summary>Tenant scope of the request (EHS/QA/Maintenance precedent).</summary>
     private const string TenantHeader = "X-Tenant-Id";
 
-    /// <summary>The acting user, recorded on audit fields.</summary>
-    private const string UserHeader = "X-User-Id";
+    private static Guid CallerUserId(HttpContext httpContext) => httpContext.User.GetRequiredUserId();
 
     /// <summary>Maps the Kontrolling endpoints onto the host.</summary>
     public static IEndpointRouteBuilder MapKontrollingEndpoints(this IEndpointRouteBuilder app)
@@ -196,9 +196,10 @@ public static class KontrollingEndpoints
         [FromBody] CreateCostAdjustmentRequest request,
         [FromServices] IMediator mediator,
         [FromHeader(Name = TenantHeader)] Guid tenantId,
-        [FromHeader(Name = UserHeader)] Guid userId,
+        HttpContext httpContext,
         CancellationToken ct)
     {
+        var userId = CallerUserId(httpContext);
         var command = new CreateAdjustmentCommand(
             TenantId: tenantId,
             ProjectCode: request.ProjectId,
@@ -222,9 +223,10 @@ public static class KontrollingEndpoints
         [FromRoute] Guid id,
         [FromServices] IMediator mediator,
         [FromHeader(Name = TenantHeader)] Guid tenantId,
-        [FromHeader(Name = UserHeader)] Guid userId,
+        HttpContext httpContext,
         CancellationToken ct)
     {
+        var userId = CallerUserId(httpContext);
         var result = await mediator.Send(new DeleteAdjustmentCommand(tenantId, id, userId), ct);
         return result.IsSuccess
             ? Results.NoContent()
@@ -284,9 +286,10 @@ public static class KontrollingEndpoints
         [FromBody] SetOverheadConfigRequest request,
         [FromServices] IMediator mediator,
         [FromHeader(Name = TenantHeader)] Guid tenantId,
-        [FromHeader(Name = UserHeader)] Guid userId,
+        HttpContext httpContext,
         CancellationToken ct)
     {
+        var userId = CallerUserId(httpContext);
         var result = await mediator.Send(
             new SetOverheadConfigCommand(tenantId, request.AllocationMethod, request.OverheadRate, userId),
             ct);
@@ -300,9 +303,10 @@ public static class KontrollingEndpoints
         [FromBody] UpdateOverheadConfigRequest request,
         [FromServices] IMediator mediator,
         [FromHeader(Name = TenantHeader)] Guid tenantId,
-        [FromHeader(Name = UserHeader)] Guid userId,
+        HttpContext httpContext,
         CancellationToken ct)
     {
+        var userId = CallerUserId(httpContext);
         var result = await mediator.Send(
             new UpdateOverheadConfigCommand(tenantId, request.AllocationMethod, request.OverheadRate, userId),
             ct);
@@ -316,9 +320,10 @@ public static class KontrollingEndpoints
         [FromBody] AddOverheadRuleRequest request,
         [FromServices] IMediator mediator,
         [FromHeader(Name = TenantHeader)] Guid tenantId,
-        [FromHeader(Name = UserHeader)] Guid userId,
+        HttpContext httpContext,
         CancellationToken ct)
     {
+        var userId = CallerUserId(httpContext);
         var result = await mediator.Send(
             new AddOverheadRuleCommand(tenantId, request.Category, request.Exclude, request.CustomRate, userId),
             ct);
@@ -332,9 +337,10 @@ public static class KontrollingEndpoints
         [FromRoute] string category,
         [FromServices] IMediator mediator,
         [FromHeader(Name = TenantHeader)] Guid tenantId,
-        [FromHeader(Name = UserHeader)] Guid userId,
+        HttpContext httpContext,
         CancellationToken ct)
     {
+        var userId = CallerUserId(httpContext);
         if (!KontrollingWire.Category.TryParse(category, out var costCategory))
         {
             return KontrollingEndpointResults.BadRequest(

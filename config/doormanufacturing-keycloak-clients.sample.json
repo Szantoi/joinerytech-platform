@@ -1,0 +1,35 @@
+{
+  "version": "doormanufacturing-keycloak-clients/v1",
+  "description": "Door Manufacturing Keycloak client profile. It is declarative and contains no credentials, client secret, tenant, user, role, or database data.",
+  "keycloak": {
+    "publicBaseUrl": "https://joinerytech.hu/auth",
+    "adminBaseUrl": "http://127.0.0.1:8080/auth",
+    "realm": "spaceos",
+    "adminRealm": "master",
+    "adminClientId": "admin-cli"
+  },
+  "jwtContract": {
+    "issuer": "https://joinerytech.hu/auth/realms/spaceos",
+    "allowedAlgorithms": ["RS256"],
+    "tenantClaim": "tid",
+    "modulesClaim": "enabled_modules",
+    "audience": "doormanufacturing-instance-api",
+    "browserAuthorizedParty": "doormanufacturing-web"
+  },
+  "publicOrigin": "https://doormanufacturing.joinerytech.hu",
+  "clients": {
+    "web": {
+      "clientId": "doormanufacturing-web",
+      "redirectUris": [
+        "https://doormanufacturing.joinerytech.hu/flow/auth/callback",
+        "https://doormanufacturing.joinerytech.hu/calc/auth/callback"
+      ],
+      "webOrigins": [
+        "https://doormanufacturing.joinerytech.hu"
+      ]
+    },
+    "instanceApi": {
+      "clientId": "doormanufacturing-instance-api"
+    }
+  }
+}

@@ -58,12 +58,18 @@ internal static class TenancyTestHost
                         // Production hosts never expose raw JWT claims through an endpoint.
                         endpoints.MapGet("/claims/enabled-modules", (HttpContext context) => Results.Ok(new
                         {
-                            value = context.User.FindFirst(TenancyDefaults.EnabledModulesClaim)?.Value,
+                            value = context.User.FindFirst(TenancyDefaults.TenantListClaim)?.Value,
                         })).RequireAuthorization();
 
-                        endpoints.MapGroup("/maintenance")
-                            .RequireEnabledModule("spaceos.maintenance")
-                            .MapGet("/protected", () => Results.Ok(new { ok = true }));
+                        var maintenance = endpoints.MapGroup("/maintenance")
+                            .RequireEnabledModule("spaceos.maintenance");
+                        maintenance.MapGet("/protected", () => Results.Ok(new { ok = true }));
+                        maintenance.MapPost("/protected", () => Results.Ok(new { ok = true }));
+                        maintenance.MapGroup("/nested")
+                            .MapMethods(
+                                "/method-probe",
+                                ["GET", "HEAD", "OPTIONS", "POST", "PUT", "PATCH", "DELETE", "TRACE", "CUSTOM"],
+                                () => Results.Ok(new { ok = true }));
                     });
                 }))
             .StartAsync();

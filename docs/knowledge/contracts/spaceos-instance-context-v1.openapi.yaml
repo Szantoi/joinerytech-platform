@@ -1,0 +1,251 @@
+openapi: 3.1.0
+info:
+  title: SpaceOS Instance Context API
+  version: 1.0.0-draft.1
+  description: |
+    Contract-first draft for ERPSEP-06. It is the authenticated composition source for
+    the portal shell and generated consumer clients; it is not a client-controlled
+    configuration endpoint.
+
+    The server derives tenant and caller identity exclusively from the validated JWT.
+    `X-Tenant-Id`, `X-SpaceOS-Active-Tenant`, module, role, station and brand headers
+    are never sources of truth. The active-tenant headers are only a selection among
+    tenant IDs already present in the token and are validated by the shared hosting
+    tenant resolver.
+
+    `modules[].usable` is the only portal visibility decision. A false or missing state
+    must hide the module and deny direct module API access. The final implementation
+    derives entitled/enabled state from the Kernel Tenant aggregate, not from a stale
+    JWT module claim. Until that source ships, this document remains a draft and no
+    runtime endpoint is published from it.
+  contact:
+    name: JoineryTech Platform
+  license:
+    name: Proprietary
+servers:
+  - url: https://api.joinerytech.hu
+    description: Planned production platform endpoint
+  - url: http://localhost:5000
+    description: Planned local development endpoint
+tags:
+  - name: Platform
+    description: Authenticated platform composition context
+security:
+  - BearerAuth: []
+paths:
+  /api/platform/instance-context:
+    get:
+      operationId: getInstanceContext
+      tags: [Platform]
+      summary: Get the authenticated instance composition context
+      description: |
+        Returns the current caller-and-tenant-specific composition. The response is
+        calculated server-side from the validated JWT, signed module catalog, installed
+        module inventory, current Kernel entitlement/enabled state and target-module
+        permissions. It has no tenant, module, role, station or brand request parameter.
+
+        Clients may send `If-None-Match` only to revalidate a previously returned ETag.
+        The server must recompute the authorization-relevant context before returning 304;
+        entitlement revocation, catalog revocation or brand invalidation must change the ETag.
+      parameters:
+        - name: If-None-Match
+          in: header
+          required: false
+          description: ETag returned by an earlier successful response.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Current authenticated composition context.
+          headers:
+            ETag:
+              description: Strong context revision. Changes when any authorization- or composition-relevant input changes.
+              required: true
+              schema:
+                type: string
+            Cache-Control:
+              description: Must be `private, no-cache, max-age=0`; clients must revalidate before reuse.
+              required: true
+              schema:
+                type: string
+                const: private, no-cache, max-age=0
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InstanceContext'
+        '304':
+          description: The revalidated context has not changed. No response body.
+          headers:
+            ETag:
+              description: The current strong context revision.
+              required: true
+              schema:
+                type: string
+            Cache-Control:
+              description: Must be `private, no-cache, max-age=0`.
+              required: true
+              schema:
+                type: string
+                const: private, no-cache, max-age=0
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '503':
+          $ref: '#/components/responses/ContextUnavailable'
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Validated by the platform Keycloak JWT bearer configuration.
+  schemas:
+    InstanceContext:
+      type: object
+      additionalProperties: false
+      required:
+        - schemaVersion
+        - instanceId
+        - tenantId
+        - platformVersion
+        - catalogVersion
+        - brand
+        - terminology
+        - modules
+        - featureFlags
+      properties:
+        schemaVersion:
+          type: string
+          const: spaceos.instance-context/v1
+        instanceId:
+          type: string
+          pattern: '^[a-z][a-z0-9-]{1,30}$'
+          description: Server-owned instance identifier; never accepted from a request header.
+        tenantId:
+          type: string
+          format: uuid
+          description: Active tenant resolved from the authenticated token and validated tenant selection.
+        platformVersion:
+          type: string
+          pattern: '^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$'
+        catalogVersion:
+          type: string
+          description: Signed catalog revision used to calculate known/installed state.
+        brand:
+          $ref: '#/components/schemas/BrandContext'
+        terminology:
+          type: object
+          additionalProperties:
+            type: string
+          description: Display-text overrides only; domain IDs and API keys are never translated.
+        modules:
+          type: array
+          items:
+            $ref: '#/components/schemas/ModuleContext'
+        featureFlags:
+          type: object
+          additionalProperties:
+            type: boolean
+          description: Server-computed, tenant-scoped presentation flags. Unknown flags must be treated as false.
+    BrandContext:
+      type: object
+      additionalProperties: false
+      required: [id, version, source]
+      properties:
+        id:
+          type: string
+          description: Signed brand-pack ID, or `platform.default` when the requested pack is absent or invalid.
+        version:
+          type: string
+          pattern: '^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$'
+        source:
+          type: string
+          enum: [signed-pack, platform-fallback]
+        tokensUrl:
+          type: string
+          format: uri-reference
+          pattern: '^/'
+          description: Present only for a verified, allowlisted static asset URL.
+    ModuleContext:
+      type: object
+      additionalProperties: false
+      required: [id, version, availability, permissions]
+      properties:
+        id:
+          type: string
+          pattern: '^(spaceos|joinerytech|[a-z][a-z0-9-]{1,30})\.[a-z][a-z0-9-]{1,60}$'
+          description: ADR-067 canonical ModuleId. Legacy aliases never appear in this response.
+        version:
+          type: string
+          pattern: '^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$'
+        availability:
+          $ref: '#/components/schemas/ModuleAvailability'
+        permissions:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+          description: Permissions effective for the authenticated caller in this module.
+        uiEntry:
+          type: string
+          format: uri-reference
+          pattern: '^/ui/'
+          description: Present only when availability.usable is true and the signed manifest has a verified UI entry.
+    ModuleAvailability:
+      type: object
+      additionalProperties: false
+      required: [known, installed, entitled, enabled, usable]
+      properties:
+        known:
+          type: boolean
+          description: The module exists in the verified signed catalog.
+        installed:
+          type: boolean
+          description: The verified module bundle and required migrations are installed for this instance.
+        entitled:
+          type: boolean
+          description: Current Kernel Tenant entitlement state; JWT claims are not authoritative here.
+        enabled:
+          type: boolean
+          description: Current Kernel Tenant enabled state; must be a subset of entitled.
+        usable:
+          type: boolean
+          description: True only when known, installed, entitled and enabled are true and required caller permissions are satisfied.
+    ProblemDetails:
+      type: object
+      additionalProperties: true
+      required: [type, title, status, correlationId]
+      properties:
+        type:
+          type: string
+          format: uri-reference
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        correlationId:
+          type: string
+          minLength: 1
+          description: HttpContext.TraceIdentifier emitted consistently by authentication and tenancy ProblemDetails; not an Activity.Id.
+  responses:
+    Unauthorized:
+      description: Missing, expired or invalid bearer token.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    Forbidden:
+      description: Authenticated caller has no resolvable tenant or is not permitted to read the context.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    ContextUnavailable:
+      description: Catalog signature, entitlement source or required brand state could not be verified. The server fails closed and returns no composition.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'

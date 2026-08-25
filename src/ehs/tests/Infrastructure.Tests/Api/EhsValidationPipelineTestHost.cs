@@ -88,8 +88,6 @@ public sealed class EhsValidationPipelineTestHost : IAsyncDisposable
                         cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
                     });
                     services.AddValidatorsFromAssembly(applicationAssembly);
-                    services.AddAutoMapper(applicationAssembly);
-
                     services.AddSingleton(RiskBandConfiguration.Default);
                     services.AddSingleton<IRiskAssessmentRepository>(riskAssessments);
                     services.AddSingleton<IEhsLocationRepository>(locations);

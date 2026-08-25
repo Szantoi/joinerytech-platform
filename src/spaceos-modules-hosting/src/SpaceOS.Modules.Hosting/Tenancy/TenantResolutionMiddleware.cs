@@ -66,17 +66,26 @@ public sealed class TenantResolutionMiddleware
                     "Rejected tenant selection header {HeaderValue}: not in the token tenant set of subject {Sub}.",
                     result.RejectedHeaderValue, subject);
                 await WriteForbiddenAsync(context,
-                    "The requested tenant is not in the caller's authorized tenant list.")
+                    "The requested tenant does not match the caller's signed selected tenant.")
                     .ConfigureAwait(false);
                 return;
 
             case TenantResolutionStatus.NoTenantClaim:
-            default:
                 _logger.LogWarning(
-                    "Authenticated subject {Sub} carries no tenant identity (tid/spaceos_tenants/tenant_id claim missing).",
+                    "Authenticated subject {Sub} carries no canonical spaceos_tenants authority.",
                     subject);
                 await WriteForbiddenAsync(context,
                     "The access token carries no tenant identity.")
+                    .ConfigureAwait(false);
+                return;
+
+            case TenantResolutionStatus.InvalidTenantAuthority:
+            default:
+                _logger.LogWarning(
+                    "Rejected malformed, mixed or legacy tenant authority for subject {Sub}.",
+                    subject);
+                await WriteForbiddenAsync(context,
+                    "The access token tenant authority is invalid.")
                     .ConfigureAwait(false);
                 return;
         }

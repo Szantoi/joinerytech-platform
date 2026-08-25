@@ -8,6 +8,8 @@ node_modules/
 dist/
 logs/
 *.log
+__pycache__/
+*.py[cod]
 
 # Secrets
 .env
@@ -23,6 +25,11 @@ Thumbs.db
 # IDE
 .vscode/
 .idea/
+
+# Local agent/browser state and generated Java archives
+.codex/
+.playwright-mcp/
+**/target/
 
 
 # .NET build artifacts (QUALITY.md 7. pont — futtatási/köztes fájl nem kerül gitre)

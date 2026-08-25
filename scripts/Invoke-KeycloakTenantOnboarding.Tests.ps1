@@ -405,6 +405,28 @@ Describe 'New-KernelTenantStatement -- emitted, never executed' {
 }
 
 Describe 'Script contract (no Keycloak needed)' {
+    It 'hard-disables the default online mode before it reads a profile or contacts Keycloak' {
+        $script = Join-Path $script:ScriptRoot 'Invoke-KeycloakTenantOnboarding.ps1'
+        $missingProfile = Join-Path $TestDrive 'missing-online-profile.json'
+
+        $output = & powershell -NoProfile -File $script -ProfilePath $missingProfile 2>&1
+
+        $LASTEXITCODE | Should -Be 2
+        ($output -join "`n") | Should -Match 'Legacy Keycloak tenant onboarding is retired for P0 identity safety'
+        ($output -join "`n") | Should -Not -Match 'Profile not found'
+    }
+
+    It 'hard-disables Apply before it reads a profile or contacts Keycloak' {
+        $script = Join-Path $script:ScriptRoot 'Invoke-KeycloakTenantOnboarding.ps1'
+        $missingProfile = Join-Path $TestDrive 'missing-apply-profile.json'
+
+        $output = & powershell -NoProfile -File $script -ProfilePath $missingProfile -Apply 2>&1
+
+        $LASTEXITCODE | Should -Be 2
+        ($output -join "`n") | Should -Match 'Legacy Keycloak tenant onboarding is retired for P0 identity safety'
+        ($output -join "`n") | Should -Not -Match 'Profile not found'
+    }
+
     It 'refuses -Apply together with -Offline' {
         $script = Join-Path $script:ScriptRoot 'Invoke-KeycloakTenantOnboarding.ps1'
         $profilePath = Join-Path $script:RepoRoot 'config/tenant-onboarding.sample.json'
@@ -423,7 +445,7 @@ Describe 'Script contract (no Keycloak needed)' {
         ($output -join "`n") | Should -Match 'mutually exclusive'
     }
 
-    It 'runs the sample profile offline, emits the plan and exits 0' {
+    It 'runs the sample profile offline, emits only a non-runnable historical analysis and exits 0' {
         $script = Join-Path $script:ScriptRoot 'Invoke-KeycloakTenantOnboarding.ps1'
         $profilePath = Join-Path $script:RepoRoot 'config/tenant-onboarding.sample.json'
         $output = & powershell -NoProfile -File $script -ProfilePath $profilePath -Offline 2>&1
@@ -434,7 +456,8 @@ Describe 'Script contract (no Keycloak needed)' {
         $json.mode | Should -Be 'Offline'
         $json.tenant.kernelEnabledModules | Should -Be @('cutting')
         @($json.tenant.notRepresentableInKernel | ForEach-Object { $_.ModuleId }) | Should -Contain 'spaceos.crm'
-        $json.kernelTenantSql | Should -Match 'ON CONFLICT'
+        $json.kernelTenantSql | Should -Match 'NOT EMITTED'
+        $json.kernelTenantSql | Should -Not -Match 'INSERT INTO'
     }
 
     It 'fails validation (exit 2) without contacting Keycloak when a user has no lastName' {
@@ -445,7 +468,7 @@ Describe 'Script contract (no Keycloak needed)' {
         $profile.keycloak.baseUrl = 'http://127.0.0.1:1/unreachable'
         $profile | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $broken -Encoding UTF8
 
-        $output = & powershell -NoProfile -File $script -ProfilePath $broken 2>&1
+        $output = & powershell -NoProfile -File $script -ProfilePath $broken -Offline 2>&1
         $LASTEXITCODE | Should -Be 2
         ($output -join "`n") | Should -Match 'VERIFY_PROFILE|Account is not fully set up'
     }

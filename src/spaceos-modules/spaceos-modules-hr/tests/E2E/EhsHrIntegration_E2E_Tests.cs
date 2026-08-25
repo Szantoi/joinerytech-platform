@@ -19,8 +19,7 @@ namespace SpaceOS.Modules.HR.Tests.E2E;
 /// </summary>
 public class EhsHrIntegration_E2E_Tests : IAsyncLifetime
 {
-    private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder()
-        .WithImage("postgres:16-alpine")
+    private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder("postgres:16-alpine")
         .WithDatabase("spaceos_hr_e2e_test")
         .WithUsername("postgres")
         .WithPassword("postgres")

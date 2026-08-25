@@ -79,7 +79,6 @@ public sealed class KontrollingEndpointTestHost : IAsyncLifetime
 
         Client = _app.GetTestClient();
         Client.DefaultRequestHeaders.Add("X-Tenant-Id", TenantId.ToString());
-        Client.DefaultRequestHeaders.Add("X-User-Id", UserId.ToString());
     }
 
     public async Task DisposeAsync()
@@ -103,7 +102,7 @@ public sealed class TestAuthHandler(
 
     protected override Task<AuthenticateResult> HandleAuthenticateAsync()
     {
-        var identity = new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, "test-user")], Scheme);
+        var identity = new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, KontrollingEndpointTestHost.UserId.ToString())], Scheme);
         return Task.FromResult(AuthenticateResult.Success(
             new AuthenticationTicket(new ClaimsPrincipal(identity), Scheme)));
     }

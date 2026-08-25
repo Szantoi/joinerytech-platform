@@ -1,4 +1,5 @@
 using SpaceOS.Modules.Hosting.Auth;
+using SpaceOS.Modules.Hosting.Authorization;
 using SpaceOS.Modules.Hosting.Tenancy;
 using SpaceOS.Modules.HR.Api;
 using SpaceOS.Modules.HR.Api.Endpoints;
@@ -17,6 +18,7 @@ builder.Services.AddHrApiJsonOptions();
 // SpaceOS.Modules.Hosting replaces the hand-copied (and already drifted) JWT block —
 // the copy had lost the realm_access role mapping and the ProblemDetails 401/403.
 builder.Services.AddSpaceOsModuleAuth(builder.Configuration, builder.Environment);
+builder.Services.AddRequiredEnabledModulePolicy("spaceos.hr");
 
 // Add HR module services (DbContext, Repositories, MediatR, capacity config, Validators,
 // Hr:PayGrades options) — includes the shared tenancy registration.
@@ -41,9 +43,10 @@ app.UseSpaceOsModuleTenancy();
 
 app.MapHealthChecks("/health").AllowAnonymous();
 
-// Map HR endpoints
-app.MapEmployeeEndpoints();
-app.MapAbsenceEndpoints();
-app.MapCapacityEndpoints();
+// Every business endpoint requires the signed, online-checked HR entitlement.
+var hrEndpoints = app.MapGroup("").RequireEnabledModule("spaceos.hr");
+hrEndpoints.MapEmployeeEndpoints();
+hrEndpoints.MapAbsenceEndpoints();
+hrEndpoints.MapCapacityEndpoints();
 
 app.Run();

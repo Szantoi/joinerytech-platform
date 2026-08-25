@@ -1,0 +1,7 @@
+[Service]
+# PID 1 reads this root-only file before dropping privileges to the keycloak user.
+EnvironmentFile=/etc/spaceos/keycloak-brevo-email.env
+
+# Selects the ServiceLoader provider id. The API key itself is never an SPI property.
+Environment=KC_SPI_EMAIL_SENDER_PROVIDER=brevo
+Environment=KC_SPI_EMAIL_SENDER_BREVO_ENABLED=true

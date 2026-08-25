@@ -1,5 +1,6 @@
 using FluentValidation;
 using SpaceOS.Modules.Hosting.Auth;
+using SpaceOS.Modules.Hosting.Authorization;
 using SpaceOS.Modules.Hosting.Tenancy;
 using SpaceOS.Modules.QA.Api;
 using SpaceOS.Modules.QA.Api.Endpoints;
@@ -17,6 +18,7 @@ builder.Services.AddQaApiJsonOptions();
 // Shared module-host auth + tenancy (ADR-061): Keycloak JWT bearer, fail-fast config;
 // the QA module previously had NO runnable host at all.
 builder.Services.AddSpaceOsModuleAuth(builder.Configuration, builder.Environment);
+builder.Services.AddRequiredEnabledModulePolicy("spaceos.qa");
 
 // QA module services (DbContext + shared RLS interceptor, repositories, MediatR).
 builder.Services.AddQAInfrastructure(builder.Configuration);
@@ -46,10 +48,11 @@ app.UseSpaceOsModuleTenancy();
 
 app.MapHealthChecks("/health").AllowAnonymous();
 
-// QA endpoints (all groups RequireAuthorization-gated in the module).
-app.MapQACheckpointEndpoints();
-app.MapInspectionEndpoints();
-app.MapTicketEndpoints();
-app.MapQAMetricsEndpoints();
+// QA endpoints require both authentication and the signed, online-checked module grant.
+var qaEndpoints = app.MapGroup("").RequireEnabledModule("spaceos.qa");
+qaEndpoints.MapQACheckpointEndpoints();
+qaEndpoints.MapInspectionEndpoints();
+qaEndpoints.MapTicketEndpoints();
+qaEndpoints.MapQAMetricsEndpoints();
 
 app.Run();

@@ -19,7 +19,7 @@ namespace SpaceOS.Modules.Ehs.Api;
 public static class EhsServiceCollectionExtensions
 {
     /// <summary>
-    /// Registers all EHS module services (DbContext, Repositories, MediatR, AutoMapper, Validators).
+    /// Registers all EHS module services (DbContext, Repositories, MediatR, Validators).
     /// </summary>
     public static IServiceCollection AddEhsModule(
         this IServiceCollection services,
@@ -74,11 +74,7 @@ public static class EhsServiceCollectionExtensions
             cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
         });
 
-        // 7. AutoMapper (Domain → DTO mapping)
-        services.AddAutoMapper(
-            Assembly.Load("SpaceOS.Modules.Ehs.Application"));
-
-        // 8. FluentValidation (Command validators)
+        // 7. FluentValidation (Command validators)
         services.AddValidatorsFromAssembly(
             Assembly.Load("SpaceOS.Modules.Ehs.Application"));
 

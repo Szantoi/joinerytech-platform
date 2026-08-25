@@ -2,6 +2,7 @@ using SpaceOS.Modules.Ehs.Api;
 using SpaceOS.Modules.Ehs.Api.Endpoints;
 using SpaceOS.Modules.Ehs.Application.Wire;
 using SpaceOS.Modules.Hosting.Auth;
+using SpaceOS.Modules.Hosting.Authorization;
 using SpaceOS.Modules.Hosting.Tenancy;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -24,8 +25,9 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 // Shared module-host auth (ADR-061): Keycloak JWT bearer from the Jwt section, kernel-parity
 // wiring, fail-fast configuration. The pre-ADR host ran with NO authentication at all.
 builder.Services.AddSpaceOsModuleAuth(builder.Configuration, builder.Environment);
+builder.Services.AddRequiredEnabledModulePolicy("spaceos.ehs");
 
-// Add EHS module services (DbContext, Repositories, MediatR, AutoMapper, Validators)
+// Add EHS module services (DbContext, Repositories, MediatR, Validators)
 // — includes AddSpaceOsModuleTenancy (claims tenant context + RLS interceptor).
 builder.Services.AddEhsModule(builder.Configuration);
 
@@ -49,14 +51,15 @@ app.UseSpaceOsModuleTenancy();
 
 app.MapHealthChecks("/health").AllowAnonymous();
 
-// Map EHS endpoints (all groups RequireAuthorization-gated)
-app.MapIncidentEndpoints();
-app.MapRiskAssessmentEndpoints();
-app.MapTrainingRecordEndpoints();
-app.MapLocationEndpoints();
-app.MapHazardousMaterialEndpoints();
-app.MapPpeEndpoints();
-app.MapSafetyWalkEndpoints();
-app.MapCorrectiveActionEndpoints();
+// Every business endpoint requires the signed, online-checked EHS entitlement.
+var ehsEndpoints = app.MapGroup("").RequireEnabledModule("spaceos.ehs");
+ehsEndpoints.MapIncidentEndpoints();
+ehsEndpoints.MapRiskAssessmentEndpoints();
+ehsEndpoints.MapTrainingRecordEndpoints();
+ehsEndpoints.MapLocationEndpoints();
+ehsEndpoints.MapHazardousMaterialEndpoints();
+ehsEndpoints.MapPpeEndpoints();
+ehsEndpoints.MapSafetyWalkEndpoints();
+ehsEndpoints.MapCorrectiveActionEndpoints();
 
 app.Run();

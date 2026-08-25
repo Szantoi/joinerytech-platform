@@ -2,6 +2,7 @@ using SpaceOS.Modules.CRM.Api;
 using SpaceOS.Modules.CRM.Api.Endpoints;
 using SpaceOS.Modules.CRM.Infrastructure;
 using SpaceOS.Modules.Hosting.Auth;
+using SpaceOS.Modules.Hosting.Authorization;
 using SpaceOS.Modules.Hosting.Tenancy;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -20,6 +21,7 @@ builder.Services.AddCrmModule(builder.Configuration);
 // RequireAuthorization() combination made EVERY request die with
 // "No authenticationScheme was specified" — the host was unusable, even in Development.
 builder.Services.AddSpaceOsModuleAuth(builder.Configuration, builder.Environment);
+builder.Services.AddRequiredEnabledModulePolicy("spaceos.crm");
 
 builder.Services.AddHealthChecks();
 
@@ -40,10 +42,11 @@ app.UseSpaceOsModuleTenancy();
 
 app.MapHealthChecks("/health").AllowAnonymous();
 
-// Map CRM endpoints
-app.MapLeadEndpoints();
-app.MapOpportunityEndpoints();
-app.MapCrmTaskEndpoints();
+// Every business endpoint requires the signed, online-checked CRM entitlement.
+var crmEndpoints = app.MapGroup("").RequireEnabledModule("spaceos.crm");
+crmEndpoints.MapLeadEndpoints();
+crmEndpoints.MapOpportunityEndpoints();
+crmEndpoints.MapCrmTaskEndpoints();
 
 app.Run();
 

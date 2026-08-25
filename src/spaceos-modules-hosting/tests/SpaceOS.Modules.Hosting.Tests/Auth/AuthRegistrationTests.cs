@@ -55,6 +55,49 @@ public sealed class AuthRegistrationTests
     }
 
     [Fact]
+    public void Missing_AuthorizedParty_throws()
+    {
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            new ServiceCollection().AddSpaceOsModuleAuth(
+                Config(
+                    ("Jwt:Authority", "https://joinerytech.hu/auth/realms/spaceos"),
+                    ("Jwt:Audience", "ehs-api")),
+                Environment("Production")));
+
+        Assert.Contains("Jwt:AuthorizedParty", exception.Message);
+    }
+
+    [Fact]
+    public void Unsupported_Jose_token_type_throws()
+    {
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            new ServiceCollection().AddSpaceOsModuleAuth(
+                Config(
+                    ("Jwt:Authority", "https://joinerytech.hu/auth/realms/spaceos"),
+                    ("Jwt:Audience", "ehs-api"),
+                    ("Jwt:AuthorizedParty", "portal-app"),
+                    ("Jwt:TokenType", "Bearer")),
+                Environment("Production")));
+
+        Assert.Contains("Jwt:TokenType", exception.Message);
+    }
+
+    [Fact]
+    public void Unsupported_access_token_payload_type_throws()
+    {
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            new ServiceCollection().AddSpaceOsModuleAuth(
+                Config(
+                    ("Jwt:Authority", "https://joinerytech.hu/auth/realms/spaceos"),
+                    ("Jwt:Audience", "ehs-api"),
+                    ("Jwt:AuthorizedParty", "portal-app"),
+                    ("Jwt:AccessTokenPayloadType", "ID")),
+                Environment("Production")));
+
+        Assert.Contains("Jwt:AccessTokenPayloadType", exception.Message);
+    }
+
+    [Fact]
     public void Unknown_mode_throws()
     {
         var exception = Assert.Throws<InvalidOperationException>(() =>
@@ -109,11 +152,14 @@ public sealed class AuthRegistrationTests
         services.AddSpaceOsModuleAuth(
             Config(
                 ("Jwt:Authority", "https://joinerytech.hu/auth/realms/spaceos"),
-                ("Jwt:Audience", "ehs-api")),
+                ("Jwt:Audience", "ehs-api"),
+                ("Jwt:AuthorizedParty", "portal-app")),
             Environment("Production"));
 
         Assert.Contains(services, static d =>
             d.ServiceType == typeof(Microsoft.AspNetCore.Authentication.IAuthenticationService));
+        Assert.Contains(services, static d =>
+            d.ServiceType == typeof(IOnlineIdentityAuthorityStateProvider));
     }
 
     [Fact]

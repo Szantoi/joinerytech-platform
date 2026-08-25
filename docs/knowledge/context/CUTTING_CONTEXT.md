@@ -31,7 +31,7 @@ Elsődleges dokumentumok:
 
 - [Cutting auth- és tenant-kontraktus](../architecture/CUTTING_AUTH_TENANCY_CONTRACT_2026-07-21.md)
 - [Cutting fejlesztési és tesztelési runbook](../engineering/CUTTING_DEVELOPMENT_TEST_RUNBOOK.md)
-- [WORLDS-CUTTING-AUTHFIX task](../../tasks/EPIC-UI-WORLDS-2026Q3/WORLDS-CUTTING-AUTHFIX.md)
+- [WORLDS-CUTTING-AUTHFIX task](../../tasks/EPIC-UI-WORLDS-2026Q3/archive/WORLDS-CUTTING-AUTHFIX.md)
 
 ### Sprint eredmények (2026-06-22/23)
 
@@ -215,3 +215,28 @@ Elsődleges forrás:
 - Bizonyíték: célzott 36/36 + 3/3, teljes suite 1069/1069, clean solution build
   0 warning/0 error.
 - Stop: commit/pin/deploy csak független review és internal caller secret rollout után.
+
+### Második kör — 2026-07-22
+
+- Read-only VPS bizonyíték: az éles `bf9bd4e` build még elfogadja a literális
+  internal `true` fejlécet, miközben az Nginx a `/cutting/internal/*` útvonalat is
+  továbbítja. Aktív P0; mutáló támadáspróba nem történt.
+- Azonnali sorrend: edge deny → független review → rotált backend/caller rollout →
+  `listener PID == MainPID` smoke. Task: `STAB-CUTTING-EDGE-PROXY-INCIDENT`.
+- Ugyanezen a napon a külön incident task lezárta az azonnali edge P0-t: Nginx
+  internal deny, review-zott `4341390` backend, külső `404`/health `200`, loopback
+  legacy-header `403` és PID-egyezés bizonyított. A fenti két pont auditkori snapshot.
+- A kliens által küldhető `X-Original-Host` tenant authority volt; a lokális javítás
+  már kizárólag trusted forwarded middleware után olvas `Request.Host` értéket, és
+  base-domain/exact-host allowlisttel old tenantot. Három adversarial review-kör után
+  APPROVED: 76/76 fő célzott teszt, 9/9 legacy teszt, clean build 0/0. Deploy nincs;
+  az éles proxy/tenant konfiguráció és a forwarded-header staging smoke külön kapu.
+- A publikus 48 bites plaintext token nem elég a SpaceOS digitális megállapodási
+  alapjához. Read/action capability, expiry, hash, quote+terms snapshot és
+  append-only acceptance evidence külön taskot kapott.
+- A CLI/REST ág jelenleg félkész, ezért a legsúlyosabb RCE/SSRF út dormant, de
+  aktiválás csak server-owned executable/destination és teljes conformance után.
+- A modern public quote tenant/space-owner nélküli PII-t tárol; a legacy és modern
+  quote modellt owner-aware application flow-ba kell konszolidálni.
+- A Cutting repó `publish-fix/` könyvtárában 517 követett artifact (~51,54 MiB)
+  található; tip-cleanup + CI SBOM/provenance és history secret-scan szükséges.

@@ -1,0 +1,36 @@
+{
+  "version": "doormanufacturing-identity-onboarding/v1",
+  "description": "Retired historical-validation example only. It contains no password, secret or token and cannot be used for live onboarding.",
+  "keycloak": {
+    "publicBaseUrl": "https://joinerytech.hu/auth",
+    "adminBaseUrl": "http://127.0.0.1:8080/auth",
+    "realm": "spaceos",
+    "adminRealm": "master",
+    "adminClientId": "admin-cli"
+  },
+  "tenant": {
+    "id": "11111111-1111-4111-8111-111111111111",
+    "name": "Historical example tenant",
+    "tenantType": "Manufacturer",
+    "jwtModules": [
+      "joinerytech.door",
+      "joinerytech.cutting",
+      "joinerytech.production"
+    ]
+  },
+  "user": {
+    "username": "historical-owner@example.invalid",
+    "email": "historical-owner@example.invalid",
+    "firstName": "Historical",
+    "lastName": "Owner",
+    "realmRoles": [
+      "doormanufacturing.admin",
+      "doormanufacturing.production-manager"
+    ]
+  },
+  "invite": {
+    "clientId": "doormanufacturing-web",
+    "redirectUri": "https://doormanufacturing.joinerytech.hu/flow/auth/callback",
+    "lifespanSeconds": 43200
+  }
+}

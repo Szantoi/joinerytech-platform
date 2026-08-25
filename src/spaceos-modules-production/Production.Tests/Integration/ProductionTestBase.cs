@@ -21,8 +21,7 @@ public class ProductionTestBase : IAsyncLifetime
 
     public ProductionTestBase()
     {
-        _postgresContainer = new PostgreSqlBuilder()
-            .WithImage("postgres:16-alpine")
+        _postgresContainer = new PostgreSqlBuilder("postgres:16-alpine")
             .WithDatabase("production_test")
             .WithUsername("test")
             .WithPassword("test")

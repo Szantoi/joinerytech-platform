@@ -1,10 +1,11 @@
 # ADR-067: Kanonikus ModuleId, aláírt modul-katalógus és modul-életciklus
 
-- **Státusz:** JAVASOLT (Proposed) — **nem elfogadva**. Lásd „Nyitott kérdések Gábornak" —
-  a package registry kérdését Gábor 2026-07-21-én eldöntötte (GitHub Packages), de a
-  trust root modell és a kereskedelmi entitlement-tulajdonos döntése még hiányzik, a
-  task saját „Stop / eszkaláció" szabálya szerint ez az ADR emiatt marad Proposed, amíg
-  Gábor mindet el nem dönti és explicit el nem fogadja.
+- **Státusz:** **ELFOGADVA (Accepted) — 2026-07-27 (Gábor).** A három blokkoló döntés
+  mind megvan: package registry = GitHub Packages (2026-07-21), trust root = **B) TUF-szerű
+  root+intermediate modell** (2026-07-27, indoklás: „még minden fejlesztés alatt van,
+  mindig a biztosabb megoldást választjuk, át lehet alakítani"), entitlement-tulajdonos =
+  **Kernel-mező** (2026-07-27). A 4. nyitott kérdés (revocation-terjesztési csatorna/SLA)
+  nem blokkoló ops-kérdés, az implementációs taskokban zárandó.
 - **Dátum:** 2026-07-21
 - **Felvetette:** `ERPSEP-02` (EPIC-ERP-SEPARATION-2026Q3), ERPSEP-01 kimenetére építve
   (`docs/knowledge/architecture/ERP_CAPABILITY_BOUNDARY_AUDIT_2026-07-18.md`, különösen
@@ -147,7 +148,10 @@ fájl). Kulcsdöntések:
   digestjén, plusz a bundle-tartalom (backend image digest, frontend asset-fák digestje)
   ugyanabban az aláírt struktúrában — így egy aláírás fedi a manifestet ÉS a
   tartalom-integritást (nem csak a metaadatot).
-- **Trust root (nyitott, `decision_required`):** két életképes modell:
+- **Trust root — ELDÖNTVE (Gábor, 2026-07-27): B) TUF-szerű modell.** A lenti A/B
+  elemzésből a B-t választotta („mindig a biztosabb megoldást választjuk, át lehet
+  alakítani") — offline root key Gábornál, napi release-aláírás rotálható
+  intermediate-kulccsal. A korábbi két modell dokumentálva marad:
   - **A) Egyszerű, egykulcsos modell** — egyetlen "platform signing key" (privát kulcs
     kizárólag a CI release-pipeline-ban, publikus kulcs a Kernel build-jébe égetve
     konfigurációként). Alacsony komplexitás, de kulcs-kompromittálódás esetén teljes
@@ -301,30 +305,31 @@ szükséges (Elfogadási kritérium #6).
 
 ---
 
-## Nyitott kérdések Gábornak (ezért Proposed, nem Accepted)
+## Nyitott kérdések Gábornak (döntési napló)
 
-1. **Trust root modell:** A) egykulcsos platform signing key, vagy B) TUF-szerű
-   root+intermediate séma? (5. döntés) — üzemeltetési komplexitás vs. kompromittálódási
-   kockázat közötti választás, amit nem lehet tisztán architektúra-oldalról eldönteni.
-   **Még nyitott.**
+1. ~~**Trust root modell:** A) egykulcsos platform signing key, vagy B) TUF-szerű
+   root+intermediate séma? (5. döntés)~~ **ELDÖNTVE (Gábor, 2026-07-27): B) TUF-szerű
+   root+intermediate modell.** Indoklás: fejlesztés alatt mindig a biztosabb megoldás
+   választandó, később átalakítható. Ld. az 5. döntés frissített szövege.
 2. ~~**Package/bundle registry:** self-hosted OCI/Verdaccio-jellegű megoldás, GitHub
    Packages, vagy a jelenlegi git-submodule-mintát követő fájlrendszer-alapú tárolás?~~
    **ELDÖNTVE (Gábor, 2026-07-21): GitHub Packages.** Ld. az 5. döntés frissített
    szövege.
-3. **Licenc/entitlement tulajdonos:** lesz-e valódi kereskedelmi entitlement-rendszer
+3. ~~**Licenc/entitlement tulajdonos:** lesz-e valódi kereskedelmi entitlement-rendszer
    (billing-integráció), vagy az `entitled` állapot tartósan a Kernel `Tenant`
-   aggregate-jén belüli, kézzel/admin-API-val karbantartott mező marad? Ez határozza meg,
-   hogy a 3. döntésben vázolt `EntitledModules` mező honnan kapja az adatát.
-   **Még nyitott.**
+   aggregate-jén belüli, kézzel/admin-API-val karbantartott mező marad?~~
+   **ELDÖNTVE (Gábor, 2026-07-27): Kernel-mező.** Az `entitled` állapot igazságforrása
+   a Kernel `Tenant` aggregate-en belüli, admin-API-val karbantartott mező
+   (`EntitledModules`, 3. döntés); külső kereskedelmi/billing-rendszer bevezetése
+   későbbi, külön döntés — a mező-alapú modell arra migrálható.
 4. **Revocation-terjesztési csatorna és SLA:** ha egy modul-verziót vagy signing-kulcsot
    vissza kell vonni, milyen gyorsan és milyen csatornán kell ennek elérnie minden
    futó instance-ot? (Ez különösen releváns, mert a VPS-hozzáférés ma SSH-alapú, nincs
-   automatizált push-csatorna a running instance-ok felé.) **Még nyitott.**
+   automatizált push-csatorna a running instance-ok felé.) **Még nyitott — nem blokkoló
+   (ops-kérdés), az ERPSEP-05/08 implementáció zárja.**
 
-A package registry kérdése (2.) lezárult, de a trust root (1.) és az entitlement-
-tulajdonos (3.) még nyitott, ezért ez az ADR **Proposed** marad — Gábor jóváhagyása
-(vagy tételes blokkolólistája) szükséges az Accepted státuszhoz és bármilyen
-implementáció elindításához.
+Mindhárom blokkoló kérdés (1–3.) lezárult, ezért az ADR **2026-07-27-től ACCEPTED** —
+az E2+ implementációs sáv (MODULE-PACKAGES, ERPSEP-05/06) elindítható.
 
 ## Kapcsolódó ADR-ek és források
 

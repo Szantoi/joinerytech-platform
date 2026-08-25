@@ -3,6 +3,7 @@ using SpaceOS.Modules.DMS.Api;
 using SpaceOS.Modules.DMS.Api.Endpoints;
 using SpaceOS.Modules.DMS.Infrastructure.Persistence;
 using SpaceOS.Modules.Hosting.Auth;
+using SpaceOS.Modules.Hosting.Authorization;
 using SpaceOS.Modules.Hosting.Tenancy;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -19,6 +20,7 @@ builder.Services.AddDmsApiJsonOptions();
 // Shared module-host auth (ADR-061): Keycloak JWT bearer from the Jwt section, kernel-parity
 // wiring, fail-fast configuration. The pre-ADR host ran with NO authentication at all.
 builder.Services.AddSpaceOsModuleAuth(builder.Configuration, builder.Environment);
+builder.Services.AddRequiredEnabledModulePolicy("spaceos.dms");
 
 // DMS module services (shared tenancy + adapter, DbContext + RLS, repositories,
 // blob store stub, expiry options, MediatR handlers)
@@ -51,8 +53,9 @@ app.UseSpaceOsModuleTenancy();
 
 // Map DMS endpoints (Document core — DMS-BE-HOST; the DocumentCategory/Tag
 // slice is handler-ready, its endpoint layer is a separate task).
-// Every business group is RequireAuthorization-gated (DocumentEndpoints).
-app.MapDocumentEndpoints();
+// Every business group requires authentication and the signed, online-checked DMS grant.
+var dmsEndpoints = app.MapGroup("").RequireEnabledModule("spaceos.dms");
+dmsEndpoints.MapDocumentEndpoints();
 
 // Liveness probe (grounded "it runs" evidence — QUALITY.md 8.)
 app.MapGet("/health", () => Results.Ok(new { status = "ok", module = "dms" }))

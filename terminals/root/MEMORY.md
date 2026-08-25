@@ -274,3 +274,27 @@ nem a diff-szétvágás. EHS-WIZARD-HU done-hoz: Gábor vizuális QA.
   forrásdrift és nem része a kiadásnak.
 - Detached alrepónál új, távoli codex ág kell; force-push, history-rewrite és
   kézi submodule-SHA hamisítás nem elfogadható.
+
+---
+
+## Kernel kontrollált adatbázis-próba — 2026-08-25
+
+- A `spaceos-kernel` `codex/kernel-identity-authority` ágán a
+  `9fa208e` commit lezárta a 0037 RefreshTokens forward-only rehearsal kapuit;
+  az ág normál push-sal távolra került. Ez még nem merge/deploy és nem módosítja
+  a publikus Kernel `develop` vagy a parent submodule SHA-ját.
+- A friss forrásból futó, explicit opt-in helyi Docker/PostgreSQL próba teljesen
+  zöld: Identity Authority 8, SpatialTaskLinks 2, Ecosystem Actor Types 2,
+  SprintC 4 és RefreshTokens 6 teszt. A RefreshTokens-kör valós deferred-slot
+  logical subscriptiont, aktív publisher slotot és ténylegesen replikált sort
+  bizonyított; minden tesztkonténer eldobható volt.
+- A rehearsal történetét a teljes EF-discoverable lánchoz kötjük, nem rövidített
+  history-hoz. A standalone 0037 script-verifier kötelező friss Release buildet
+  végez a `--no-build` EF generálás előtt, így nem minősíthet elavult artefaktot.
+- Kapuk: Release build 0 warning/0 error, offline Kernel tesztek 1123/1123,
+  verifier és PowerShell parser zöld, független diff-review P0 nélkül.
+- **Továbbra activation NO-GO:** a globális AppDbContext snapshot-paritás nincs
+  megoldva; Doorstarban még nincs M2M `private_key_jwt`/`client_credentials`
+  adapter, helyi trusted-TLS Keycloak realm és dedikált, nem perzisztens teljes
+  technikai próbastack. Emberi bearer továbbítása, VPS/éles DB/Keycloak módosítás
+  továbbra tiltott.

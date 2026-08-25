@@ -734,21 +734,21 @@ kihirdetve**, `PROJ-01` kiadva.
 
 ---
 
-## 🔴 Következő folytatás — Kernel séma-konformancia, majd Doorstar (2026-08-21)
+## ✅ 0037 kontrollált Kernel DB-rehearsal lezárva — 2026-08-25
 
-- [ ] Fejezd be a forward-only 0037_ReconcileRefreshTokens fail-closed szerződését:
+- [x] A forward-only 0037_ReconcileRefreshTokens fail-closed szerződése:
       külső, a táblára mutató FK; PostgreSQL inheritance mindkét iránya; canonical
       táblával együtt jelen levő case-lookalike; publication/subscription membership
       mind legyen tiltott. Minden hibás ágnál migration-history változatlan maradjon.
-- [ ] A RefreshTokens rehearsalben külön bizonyítsd a hét aktív oszlopos és az
+- [x] A RefreshTokens rehearsalben bizonyított a hét aktív oszlopos és az
       attisdropped állapot elutasítását, a fresh és applied history pontos tartalmát,
       valamint a 0013 nem-discoverable állapotát.
-- [ ] Készüljön metadata-only generated-script verifier: 0036 < 0037 <
+- [x] Elkészült a metadata-only generated-script verifier: 0036 < 0037 <
       __EFMigrationsHistory-be írás, a required preflightok jelen vannak, nincs
       kézi 0013/history stamp.
-- [ ] Független source review és teljes statikus/build teszt után futtasd újra a
-      kontrollált helyi Docker rehearsal-t; csak zöld futás után jelölhető a
-      séma-konformancia kapu teljesítettnek.
+- [x] Független source review és teljes statikus/build teszt után újrafutott a
+      kontrollált helyi Docker rehearsal: 8+2+2+4+6 zöld. Ez a szűk, 0037-es
+      kontrollált DB-kapu teljesítése, nem globális snapshot-paritás.
 - [ ] Döntsd el külön a globális AppDbContext snapshot-paritás rendezését.
       has-pending-model-changes jelenleg NO-GO; snapshotot vagy migration-historyt
       nem szabad ennek megkerülésére kézzel módosítani.
@@ -757,10 +757,11 @@ kihirdetve**, `PROJ-01` kiadva.
       Kernel /api/internal/identity-authority/resolve; emberi bearer token és a
       régi /api/tenant-access/authorize szerződés nem továbbítható.
 
-### ⛔ Mai befagyasztás
+### ⛔ Korábbi befagyasztás — feloldva a 2026-08-25-i folytatási utasításra
 
-- [ ] Ne indíts új Dockeres rehearsal-t, ne deployolj, és ne nyúlj Doorstarhoz,
-      Keycloakhöz, VPS-hez vagy éles adatbázishoz új folytatási jóváhagyás nélkül.
+- [x] A kontrollált, csak helyi Docker rehearsal folytatási jóváhagyással
+      lefutott. Deploy, Doorstar/Keycloak/VPS/éles adatbázis-művelet továbbra sem
+      engedett külön aktiválási jóváhagyás nélkül.
 
 ---
 

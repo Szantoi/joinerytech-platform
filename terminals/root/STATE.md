@@ -427,3 +427,24 @@ doccapture DC-03a · 2× frontend. Kettő közülük **a kritikus úton van**.
   forrásmódosítás a publikált alrepo-kban.
 - Nem történt deploy, DB- vagy Keycloak-művelet. A korábbi migration/snapshot és
   Doorstar testüzemi NO-GO-k változatlanok.
+
+---
+
+## 2026-08-25 — Kernel kontrollált DB-rehearsal: COMPLETE / activation NO-GO
+
+- A Kernel feature branch `codex/kernel-identity-authority` aktuális távoli
+  commitja `9fa208e`; nincs merge `develop`-ba, parent submodule bump, deploy,
+  VPS-, Doorstar-, Keycloak- vagy éles adatbázis-művelet.
+- A friss source build után a csak lokális, eldobható PostgreSQL 16 kontrollált
+  futás teljes eredménye: 8 Identity Authority + 2 SpatialTaskLinks + 2
+  Ecosystem Actor Types + 4 SprintC + 6 RefreshTokens teszt zöld. A 0037 körben
+  valós logical replication subscription, aktív slot és sentinel-DML replikáció
+  igazolt; a 0037 preflight history-módosítás nélkül állt le.
+- Utókapuk zöldek: 1123/1123 offline Kernel teszt; Release build 0 warning/0
+  error; 0037 generated-script verifier és PowerShell parser zöld; diff-review
+  P0=0. A verifier saját friss Release buildet követel, ezért nem támaszkodik
+  elavult binárisra.
+- **Nem ügyfél-próba:** a globális snapshot-paritás továbbra külön NO-GO. A
+  teljes Doorstar–Keycloak–Kernel próbához a Doorstar M2M adapter, friss
+  `private_key_jwt` service credential, trusted local TLS realm és dedikált
+  perzisztencia nélküli stack hiányzik.

@@ -298,3 +298,29 @@ nem a diff-szétvágás. EHS-WIZARD-HU done-hoz: Gábor vizuális QA.
   adapter, helyi trusted-TLS Keycloak realm és dedikált, nem perzisztens teljes
   technikai próbastack. Emberi bearer továbbítása, VPS/éles DB/Keycloak módosítás
   továbbra tiltott.
+
+---
+
+## Doorstar M0 + Kernel snapshot checkpoint — 2026-08-25
+
+- A fenti „nincs adapter” állítás a mostani állapotban már csak a futó
+  integrációra igaz: a Doorstar `6589fb7`
+  (`codex/doorstar-identity-authority-m2m`) ágán elkészült a tiszta baseline-os,
+  default-off, source-only M2M kliens. Nincs route/BFF/Prisma/OpenAPI/runtime
+  bekötés, ezért ez nem tesztüzem és nem DSCONV-03-zárás.
+- A kliens kizárólag `client_credentials + private_key_jwt` service tokent küld
+  a fix Kernel resolvernek; humán bearer mezőt elutasít. Konfiguráció-hiánynál
+  disabled, részleges/inkanonikus config, insecure TLS/proxy és szerződéssértő
+  válasz esetén fail-closed. Fókuszált teszt 48/48, build és OpenAPI 85/85 zöld;
+  két független review P0/P1 nélkül.
+- A Doorstar teljes unit suite 122/124: a két régi, nem M0-hoz tartozó hiba a
+  planning fixture SHA pin és a RAG candidate dry-run validator drift. Ezeket
+  nem szabad auth-slice-ban átírni.
+- A Kernel `ab68d43`
+  (`codex/kernel-appdbcontext-snapshot-reconciliation`) ág dokumentálja és
+  pineli az EF 8.0.11 toolingot. A 9fa208e candidate helyi migration rehearsal
+  zöld, de `has-pending-model-changes` exit 1 miatt a teljes snapshot-paritás
+  továbbra activation NO-GO; az ág nem végez DB/Keycloak/VPS/deploy műveletet.
+- Próbaüzem következő sorrendje: Doorstar M1 tiszta control-plane/evidence/session
+  alap → M2 BFF → Kernel snapshot reconciliation és release-attestation →
+  külön jóváhagyott, eldobható local Keycloak–Kernel–Doorstar E2E.

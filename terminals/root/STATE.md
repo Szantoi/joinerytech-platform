@@ -448,3 +448,20 @@ doccapture DC-03a · 2× frontend. Kettő közülük **a kritikus úton van**.
   teljes Doorstar–Keycloak–Kernel próbához a Doorstar M2M adapter, friss
   `private_key_jwt` service credential, trusted local TLS realm és dedikált
   perzisztencia nélküli stack hiányzik.
+
+---
+
+## 2026-08-25 — Doorstar próbaüzemi előkészítés: M0 kész, aktiválás zárt
+
+- Feltolt Doorstar ág: `6589fb7` / `codex/doorstar-identity-authority-m2m`.
+  A source-only M2M resolver kliens 48/48 célzott unit, build és 85/85 OpenAPI
+  kapun zöld. Semmilyen alkalmazásútvonal nem hívja; Keycloak, adatbázis, VPS,
+  credential és deploy nem változott.
+- Feltolt Kernel dokumentációs ág: `ab68d43` /
+  `codex/kernel-appdbcontext-snapshot-reconciliation`; a dotnet-ef 8.0.11
+  restore/azonosítás reprodukálható. A globális snapshot-parity továbbra NO-GO,
+  és a clean `develop` buildhez hiányzó ignore-olt fejlesztői kulcsot nem
+  másoltuk/generáltuk.
+- Következő aktív feladat a Doorstar M1 minimalista control-plane/evidence/session
+  design; majd csak külön review után jöhet implementáció. A shared/local E2E
+  továbbra explicit emberi aktiválási jóváhagyást kér.

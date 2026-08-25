@@ -774,3 +774,20 @@ kihirdetve**, `PROJ-01` kiadva.
       a fájl ignore alatt van és nem került commitba.
 - [ ] A Contracts/Nesting kizárólag generált bin/obj build-kimeneteit csak külön,
       kifejezett housekeeping feladatban szabad törölni vagy tisztítani.
+
+---
+
+## Doorstar identity-authority próbaüzem — aktuális sorrend (2026-08-25)
+
+- [x] M0: tiszta baseline-os, default-off Doorstar M2M resolver kliens feltolva
+      (`6589fb7`); 48/48 célzott unit, build és OpenAPI zöld. Nem runtime
+      integráció, nem ad ki sessiont és nem használ humán bearer tokent.
+- [x] A Kernel 9fa208e kontrollált, eldobható migration rehearsal bizonyítéka és
+      a külön snapshot-parity NO-GO/EF tool pin rögzítve (`ab68d43`).
+- [ ] P0 — Doorstar M1: külön reviewzott, minimális control-plane/evidence/session
+      model design és csak utána clean Prisma/migration/RLS negatív smoke. Legacy
+      66-táblás migráció/extraction tiltott.
+- [ ] P0 — Kernel forward-only snapshot reconciliation owner-döntése és reviewzott
+      release-attestation; snapshot-only fix vagy history stamp tiltott.
+- [ ] M2: BFF/route a tokenmentes evidence-hez; majd M3/M4 csak külön jóváhagyott,
+      perzisztencia nélküli local Keycloak–Kernel–Doorstar stacken két-tenant E2E.

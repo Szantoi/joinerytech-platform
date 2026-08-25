@@ -260,3 +260,17 @@ nem a diff-szétvágás. EHS-WIZARD-HU done-hoz: Gábor vizuális QA.
   és statikus kapuk → kontrollált Docker újrafutás → snapshot-paritás döntése →
   Doorstar service-token adapter. Sem emberi bearer továbbítás, sem Keycloak/Doorstar/
   VPS/éles DB művelet nem engedett e kapuk előtt.
+
+---
+
+## Több-repós publikálási invariáns — 2026-08-25
+
+- A fő repo és minden tényleges forrásmódosítást tartalmazó inicializált alrepo
+  külön commitot kapott és a távoli SHA read-only ellenőrzéssel igazolt. A parent
+  main csak már távolról elérhető submodule commitokra mutathat.
+- Nem kerülhet repóba helyi agent-hitelesítő, böngésző-pillanatkép vagy generált
+  build-artefakt. A helyi Codex-konfiguráció, Playwright állapot és Maven target
+  ezért ignore alatt marad; a maradó Contracts/Nesting bin/obj módosítás nem
+  forrásdrift és nem része a kiadásnak.
+- Detached alrepónál új, távoli codex ág kell; force-push, history-rewrite és
+  kézi submodule-SHA hamisítás nem elfogadható.

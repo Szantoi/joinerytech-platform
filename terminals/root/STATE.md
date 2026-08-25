@@ -412,3 +412,18 @@ doccapture DC-03a · 2× frontend. Kettő közülük **a kritikus úton van**.
   activation NO-GO. Doorstar szolgáltatás-token adaptere csak a Kernel zöld
   rehearsal + snapshot-döntés után következhet; emberi bearer tokent nem továbbítunk
   a Kernel belső identity-authority végpontjához.
+
+---
+
+## 2026-08-25 — repository sync: COMPLETE
+
+- A platform main fd8e4a0 commitja távolra került, és a parent a már publikált
+  Kernel, Portal, Contracts, Cutting, Inventory, Procurement, Joinery és Scheduling
+  submodule SHA-kat rögzíti.
+- A távoli SHA-k külön ellenőrzése zöld. A Kernel develop commitját, illetve a
+  detached alrepo-k új codex ágait normál, nem force push vitte fel.
+- Csak két helyi, generált build-artifakt állapot maradt: Contracts (44 bin/obj)
+  és Nesting (29 bin/obj). Ezeket nem töröltük és nem commitoltuk; nincs maradó
+  forrásmódosítás a publikált alrepo-kban.
+- Nem történt deploy, DB- vagy Keycloak-művelet. A korábbi migration/snapshot és
+  Doorstar testüzemi NO-GO-k változatlanok.

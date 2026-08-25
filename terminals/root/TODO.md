@@ -761,3 +761,15 @@ kihirdetve**, `PROJ-01` kiadva.
 
 - [ ] Ne indíts új Dockeres rehearsal-t, ne deployolj, és ne nyúlj Doorstarhoz,
       Keycloakhöz, VPS-hez vagy éles adatbázishoz új folytatási jóváhagyás nélkül.
+
+---
+
+## ✅ Repository-szinkron — 2026-08-25
+
+- [x] A fő repo és minden forrásmódosítást tartalmazó inicializált alrepo
+      commitolása, normál push-a és távoli SHA-ellenőrzése; a főrepo submodule
+      mutatói a távoli commitokra rögzítve.
+- [ ] A helyi Codex-hitelesítő rotációjának/újrakiadásának operátori ellenőrzése;
+      a fájl ignore alatt van és nem került commitba.
+- [ ] A Contracts/Nesting kizárólag generált bin/obj build-kimeneteit csak külön,
+      kifejezett housekeeping feladatban szabad törölni vagy tisztítani.

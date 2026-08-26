@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://joinerytech.hu/contracts/spaceos-identity-entitlement/v2.0.0/schema",
+  "title": "SpaceOS identity and entitlement contract v2.0.0",
+  "description": "Strict envelope schema for the non-secret released profile. The offline verifier also enforces all canonical claim grammar and cross-artifact rules.",
+  "type": "object",
+  "required": ["schemaVersion", "id", "version", "status", "issuedAt", "releaseSemantics", "identityProvider", "humanToken", "servicePrincipalToken", "plantUserDeviceStationPopToken", "onlineMembershipReadback", "consumerAcceptance"],
+  "properties": {
+    "schemaVersion": {"const": "spaceos.identity-entitlement-contract/v2"},
+    "id": {"const": "spaceos-identity-entitlement"},
+    "version": {"const": "2.0.0"},
+    "status": {"const": "released-contract-not-activated"},
+    "issuedAt": {"type": "string", "format": "date-time"},
+    "releaseSemantics": {"$ref": "#/$defs/releaseSemantics"},
+    "identityProvider": {"$ref": "#/$defs/identityProvider"},
+    "humanToken": {"$ref": "#/$defs/humanToken"},
+    "servicePrincipalToken": {"$ref": "#/$defs/servicePrincipalToken"},
+    "plantUserDeviceStationPopToken": {"$ref": "#/$defs/plantPopToken"},
+    "onlineMembershipReadback": {"$ref": "#/$defs/readback"},
+    "consumerAcceptance": {"$ref": "#/$defs/consumerAcceptance"}
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "string": {"type": "string", "minLength": 1, "maxLength": 4096},
+    "strings": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "#/$defs/string"}},
+    "releaseSemantics": {
+      "type": "object", "required": ["releasedMeans", "doesNotMean"],
+      "properties": {"releasedMeans": {"$ref": "#/$defs/string"}, "doesNotMean": {"$ref": "#/$defs/string"}}, "additionalProperties": false
+    },
+    "identityProvider": {
+      "type": "object", "required": ["issuer", "jwksUri", "allowedAlgorithms", "keyRotation"],
+      "properties": {
+        "issuer": {"const": "https://joinerytech.hu/auth/realms/spaceos"},
+        "jwksUri": {"const": "https://joinerytech.hu/auth/realms/spaceos/protocol/openid-connect/certs"},
+        "allowedAlgorithms": {"const": ["RS256"]},
+        "keyRotation": {"$ref": "#/$defs/keyRotation"}
+      }, "additionalProperties": false
+    },
+    "keyRotation": {
+      "type": "object", "required": ["kidRequired", "kidSource", "overlapRule", "retirementRule", "unknownKidRule", "noKidFallback", "maximumVerificationKeyCacheSeconds"],
+      "properties": {
+        "kidRequired": {"const": true}, "kidSource": {"const": "protected JOSE header only"},
+        "overlapRule": {"$ref": "#/$defs/string"}, "retirementRule": {"$ref": "#/$defs/string"},
+        "unknownKidRule": {"$ref": "#/$defs/string"}, "noKidFallback": {"const": true}, "maximumVerificationKeyCacheSeconds": {"const": 300}
+      }, "additionalProperties": false
+    },
+    "humanToken": {
+      "type": "object", "required": ["profile", "principalKind", "jose", "payload", "nativeTenantProjection", "doorstarHumanConsumer"],
+      "properties": {
+        "profile": {"const": "spaceos-human-doorstar-v2"}, "principalKind": {"const": "human"},
+        "jose": {"$ref": "#/$defs/jose"}, "payload": {"$ref": "#/$defs/humanPayload"},
+        "nativeTenantProjection": {"$ref": "#/$defs/nativeTenantProjection"}, "doorstarHumanConsumer": {"$ref": "#/$defs/humanConsumer"}
+      }, "additionalProperties": false
+    },
+    "jose": {
+      "type": "object", "required": ["protectedHeader"], "properties": {"protectedHeader": {"$ref": "#/$defs/protectedHeader"}}, "additionalProperties": false
+    },
+    "protectedHeader": {
+      "type": "object", "required": ["required", "forbidden", "rule"],
+      "properties": {
+        "required": {
+          "type": "object", "required": ["alg", "kid", "typ"],
+          "properties": {"alg": {"const": "RS256"}, "kid": {"$ref": "#/$defs/string"}, "typ": {"const": "JWT"}}, "additionalProperties": false
+        }, "forbidden": {"$ref": "#/$defs/strings"}, "rule": {"$ref": "#/$defs/string"}
+      }, "additionalProperties": false
+    },
+    "humanPayload": {
+      "type": "object", "required": ["issuer", "audience", "authorizedParty", "tokenType", "principalDiscriminator", "subject", "time"],
+      "properties": {
+        "issuer": {"$ref": "#/$defs/claimEquals"}, "audience": {"$ref": "#/$defs/audience"},
+        "authorizedParty": {"$ref": "#/$defs/authorizedParty"}, "tokenType": {"$ref": "#/$defs/tokenType"},
+        "principalDiscriminator": {"$ref": "#/$defs/principalDiscriminator"}, "subject": {"$ref": "#/$defs/claimRule"}, "time": {"$ref": "#/$defs/time"}
+      }, "additionalProperties": false
+    },
+    "claimEquals": {"type": "object", "required": ["claim", "equals"], "properties": {"claim": {"$ref": "#/$defs/string"}, "equals": {"$ref": "#/$defs/string"}}, "additionalProperties": false},
+    "claimRule": {"type": "object", "required": ["claim", "rule"], "properties": {"claim": {"$ref": "#/$defs/string"}, "rule": {"$ref": "#/$defs/string"}}, "additionalProperties": false},
+    "audience": {
+      "type": "object", "required": ["claim", "encoding", "exactly", "noAdditionalAudience", "rule"],
+      "properties": {"claim": {"const": "aud"}, "encoding": {"const": "duplicate-free string array"}, "exactly": {"const": ["doormanufacturing-instance-api", "kernel-api"]}, "noAdditionalAudience": {"const": true}, "rule": {"$ref": "#/$defs/string"}}, "additionalProperties": false
+    },
+    "authorizedParty": {"type": "object", "required": ["claim", "equals", "noClientIdFallback"], "properties": {"claim": {"const": "azp"}, "equals": {"const": "doormanufacturing-web"}, "noClientIdFallback": {"const": true}}, "additionalProperties": false},
+    "tokenType": {"type": "object", "required": ["claim", "equals", "rule"], "properties": {"claim": {"const": "typ"}, "equals": {"const": "Bearer"}, "rule": {"$ref": "#/$defs/string"}}, "additionalProperties": false},
+    "principalDiscriminator": {"type": "object", "required": ["claim", "equals", "rule"], "properties": {"claim": {"const": "spaceos_principal_kind"}, "equals": {"const": "human"}, "rule": {"$ref": "#/$defs/string"}}, "additionalProperties": false},
+    "time": {"type": "object", "required": ["requiredClaims", "maximumLifetimeSeconds", "maximumClockSkewSeconds", "rule"], "properties": {"requiredClaims": {"const": ["iat", "exp"]}, "maximumLifetimeSeconds": {"const": 900}, "maximumClockSkewSeconds": {"const": 60}, "rule": {"$ref": "#/$defs/string"}}, "additionalProperties": false},
+    "nativeTenantProjection": {
+      "type": "object", "required": ["claim", "entries", "entryFields", "tenantIdField", "tenantIdFormat", "permissionsField", "enabledModulesField", "arrayRule", "doorstarEntitlement", "membershipVersionClaim", "projectionVersionClaim", "versionRule", "noFlatProjectionFallback", "noMultiTenantProjection"],
+      "properties": {
+        "claim": {"const": "spaceos_tenants"}, "entries": {"const": 1}, "entryFields": {"const": ["enabled_modules", "permissions", "tenant_id"]}, "tenantIdField": {"const": "tenant_id"}, "tenantIdFormat": {"$ref": "#/$defs/string"}, "permissionsField": {"const": "permissions"}, "enabledModulesField": {"const": "enabled_modules"}, "arrayRule": {"$ref": "#/$defs/string"}, "doorstarEntitlement": {"$ref": "#/$defs/doorstarEntitlement"}, "membershipVersionClaim": {"const": "spaceos_membership_version"}, "projectionVersionClaim": {"const": "spaceos_projection_version"}, "versionRule": {"$ref": "#/$defs/string"}, "noFlatProjectionFallback": {"const": true}, "noMultiTenantProjection": {"const": true}
+      }, "additionalProperties": false
+    },
+    "doorstarEntitlement": {"type": "object", "required": ["enabledModulesExactly", "acceptedPermissionsExactlyOneOf", "rule"], "properties": {"enabledModulesExactly": {"const": ["joinerytech.door"]}, "acceptedPermissionsExactlyOneOf": {"const": ["joinerytech.door.admin", "joinerytech.door.edit", "joinerytech.door.view"]}, "rule": {"$ref": "#/$defs/string"}}, "additionalProperties": false},
+    "humanConsumer": {"type": "object", "required": ["onlyAcceptedPrincipalKind", "forbiddenClaims", "forbiddenClaimPrefixes", "forbiddenProjectionAliases", "noFallbackOrUnion"], "properties": {"onlyAcceptedPrincipalKind": {"const": "human"}, "forbiddenClaims": {"$ref": "#/$defs/strings"}, "forbiddenClaimPrefixes": {"const": ["spaceos_plant_"]}, "forbiddenProjectionAliases": {"$ref": "#/$defs/strings"}, "noFallbackOrUnion": {"$ref": "#/$defs/string"}}, "additionalProperties": false},
+    "servicePrincipalToken": {"type": "object", "required": ["profile", "principalKind", "requiredClaims", "prohibitedHumanClaims", "rule", "doorstarHumanConsumerDisposition"], "properties": {"profile": {"const": "spaceos-service-principal-v2"}, "principalKind": {"const": "service"}, "requiredClaims": {"$ref": "#/$defs/strings"}, "prohibitedHumanClaims": {"$ref": "#/$defs/strings"}, "rule": {"$ref": "#/$defs/string"}, "doorstarHumanConsumerDisposition": {"const": "reject"}}, "additionalProperties": false},
+    "plantPopToken": {"type": "object", "required": ["profile", "principalKind", "requiredClaims", "proofOfPossession", "rule", "doorstarHumanConsumerDisposition"], "properties": {"profile": {"const": "spaceos-plant-user-device-station-pop-v2"}, "principalKind": {"const": "plant_user_device"}, "requiredClaims": {"$ref": "#/$defs/strings"}, "proofOfPossession": {"$ref": "#/$defs/plantProof"}, "rule": {"$ref": "#/$defs/string"}, "doorstarHumanConsumerDisposition": {"const": "reject"}}, "additionalProperties": false},
+    "plantProof": {"type": "object", "required": ["accessTokenConfirmationClaim", "requestProof", "deviceClaim", "stationClaim", "namespaces", "ownership"], "properties": {"accessTokenConfirmationClaim": {"const": "cnf.jkt"}, "requestProof": {"$ref": "#/$defs/string"}, "deviceClaim": {"const": "device_id"}, "stationClaim": {"const": "station_id"}, "namespaces": {"$ref": "#/$defs/strings"}, "ownership": {"$ref": "#/$defs/string"}}, "additionalProperties": false},
+    "readback": {"type": "object", "required": ["authoritySource", "runtimeEndpoint", "requiredBeforeAuthorityGrant", "cacheRule", "binding", "bindingRule", "activeRule", "revocationRule", "downgradeRule", "staleTokenRule", "unavailableRule", "tenantIsolationRule"], "properties": {"authoritySource": {"$ref": "#/$defs/string"}, "runtimeEndpoint": {"const": "not asserted or activated by this release"}, "requiredBeforeAuthorityGrant": {"const": true}, "cacheRule": {"$ref": "#/$defs/string"}, "binding": {"const": ["sub", "tenant_id", "permissions", "enabled_modules", "spaceos_membership_version", "spaceos_projection_version", "iat"]}, "bindingRule": {"$ref": "#/$defs/string"}, "activeRule": {"$ref": "#/$defs/string"}, "revocationRule": {"$ref": "#/$defs/string"}, "downgradeRule": {"$ref": "#/$defs/string"}, "staleTokenRule": {"$ref": "#/$defs/string"}, "unavailableRule": {"$ref": "#/$defs/string"}, "tenantIsolationRule": {"$ref": "#/$defs/string"}}, "additionalProperties": false},
+    "consumerAcceptance": {"type": "object", "required": ["releaseId", "exactVersion", "integrityAlgorithm", "requiredFiles", "rejectedSelectors", "sourceRefPolicy"], "properties": {"releaseId": {"const": "spaceos-identity-entitlement"}, "exactVersion": {"const": "2.0.0"}, "integrityAlgorithm": {"const": "SHA-256"}, "requiredFiles": {"$ref": "#/$defs/strings"}, "rejectedSelectors": {"$ref": "#/$defs/strings"}, "sourceRefPolicy": {"$ref": "#/$defs/string"}}, "additionalProperties": false}
+  }
+}

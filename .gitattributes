@@ -1,0 +1,8 @@
+# Content-addressed release payloads are verified byte-for-byte by consumers.
+# Do not let a checkout's platform-specific newline conversion alter them.
+docs/knowledge/contracts/releases/spaceos-identity-entitlement/v2.0.0/** -text
+
+# The local offline verification tools are source code, not release payloads;
+# keep their checkout representation deterministic as well.
+scripts/verify_spaceos_identity_entitlement_contract.mjs text eol=lf
+scripts/test_verify_spaceos_identity_entitlement_contract.mjs text eol=lf

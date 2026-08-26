@@ -1,0 +1,94 @@
+{
+  "_type": "https://in-toto.io/Statement/v1",
+  "subject": [
+    {
+      "name": "spaceos-identity-entitlement-v2.0.0.schema.json",
+      "digest": {
+        "sha256": "ca4e068e75ecd3e4ccb0c9a98f99ba6f5b541756f2512510a8b488e4057223a9"
+      }
+    },
+    {
+      "name": "spaceos-identity-entitlement-v2.0.0.json",
+      "digest": {
+        "sha256": "55299695716595f6bbea4004ac166338d4e01641ac38a3f5bd2e802b54fff3ea"
+      }
+    },
+    {
+      "name": "spaceos-identity-entitlement-package-v2.0.0.json",
+      "digest": {
+        "sha256": "3391ab420098fbc423d4c7fa04b9b231da63e9e69baaa6995c19ecc69c708348"
+      }
+    },
+    {
+      "name": "spaceos-identity-entitlement-compatibility-v2.0.0.json",
+      "digest": {
+        "sha256": "66c8ff183303e68cd94102128586810fc5717505053cad42fbedc75fee009717"
+      }
+    },
+    {
+      "name": "spaceos-identity-entitlement-test-vectors-v2.0.0.json",
+      "digest": {
+        "sha256": "fa813815e1cb9d98b2e5702221d84eb37b0d9deec3ea017b806c7009dc323682"
+      }
+    },
+    {
+      "name": "spaceos-identity-entitlement-sbom-v2.0.0.cdx.json",
+      "digest": {
+        "sha256": "7d5de50f3cbeb986e7ebef259317a134d88f90673a934a26ce427ea445a91088"
+      }
+    }
+  ],
+  "predicateType": "https://slsa.dev/provenance/v1",
+  "predicate": {
+    "buildDefinition": {
+      "buildType": "https://joinerytech.hu/buildtypes/spaceos-identity-entitlement-release/v1",
+      "externalParameters": {
+        "releaseId": "spaceos-identity-entitlement",
+        "version": "2.0.0",
+        "selectorPolicy": "content-addressed-only",
+        "runtimeActivation": false
+      },
+      "internalParameters": {
+        "integrityAlgorithm": "SHA-256",
+        "networkRequired": false,
+        "liveIssuerOrPlantEvidence": false
+      },
+      "resolvedDependencies": [
+        {
+          "uri": "file:spaceos-identity-entitlement-v2.0.0.schema.json",
+          "digest": {
+            "sha256": "ca4e068e75ecd3e4ccb0c9a98f99ba6f5b541756f2512510a8b488e4057223a9"
+          }
+        },
+        {
+          "uri": "file:spaceos-identity-entitlement-v2.0.0.json",
+          "digest": {
+            "sha256": "55299695716595f6bbea4004ac166338d4e01641ac38a3f5bd2e802b54fff3ea"
+          }
+        },
+        {
+          "uri": "file:spaceos-identity-entitlement-package-v2.0.0.json",
+          "digest": {
+            "sha256": "3391ab420098fbc423d4c7fa04b9b231da63e9e69baaa6995c19ecc69c708348"
+          }
+        }
+      ]
+    },
+    "runDetails": {
+      "builder": {
+        "id": "joinerytech-platform/offline-contract-release"
+      },
+      "metadata": {
+        "invocationId": "spaceos-identity-entitlement-v2.0.0-offline-conformance",
+        "startedOn": "2026-08-26T00:00:00.000Z",
+        "finishedOn": "2026-08-26T00:00:00.000Z"
+      },
+      "byproducts": [
+        {
+          "name": "publication-policy",
+          "value": "No VCS ref is authoritative without an explicit publication receipt. The content-addressed artifact hashes are mandatory and a local/branch/latest selector is rejected."
+        }
+      ]
+    }
+  }
+}

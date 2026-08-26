@@ -1,0 +1,106 @@
+{
+  "schemaVersion": "spaceos.identity-entitlement-compatibility/v2",
+  "id": "spaceos-identity-entitlement-compatibility",
+  "version": "2.0.0",
+  "hashAlgorithm": "SHA-256",
+  "compatibilityBasis": {
+    "profileId": "spaceos-human-doorstar-v2",
+    "contractSchemaArtifactSha256": "ca4e068e75ecd3e4ccb0c9a98f99ba6f5b541756f2512510a8b488e4057223a9",
+    "contractArtifactSha256": "55299695716595f6bbea4004ac166338d4e01641ac38a3f5bd2e802b54fff3ea",
+    "issuer": "https://joinerytech.hu/auth/realms/spaceos",
+    "jwksUri": "https://joinerytech.hu/auth/realms/spaceos/protocol/openid-connect/certs",
+    "allowedAlgorithms": [
+      "RS256"
+    ],
+    "maximumVerificationKeyCacheSeconds": 300,
+    "protectedJoseRequired": {
+      "alg": "RS256",
+      "kid": "required",
+      "typ": "JWT"
+    },
+    "protectedJoseForbidden": [
+      "b64=false",
+      "crit",
+      "jku",
+      "x5u"
+    ],
+    "protectedJoseTyp": "JWT",
+    "payloadTyp": "Bearer",
+    "requiredTimeClaims": [
+      "iat",
+      "exp"
+    ],
+    "maximumTokenLifetimeSeconds": 900,
+    "maximumClockSkewSeconds": 60,
+    "audienceExactly": [
+      "doormanufacturing-instance-api",
+      "kernel-api"
+    ],
+    "azp": "doormanufacturing-web",
+    "principalKindClaim": "spaceos_principal_kind",
+    "principalKind": "human",
+    "tenantProjectionClaim": "spaceos_tenants",
+    "tenantProjectionEntries": 1,
+    "tenantProjectionEntryFields": [
+      "enabled_modules",
+      "permissions",
+      "tenant_id"
+    ],
+    "tenantIdFormat": "lowercase RFC-variant UUID, excluding reserved all-zero tenant identifiers",
+    "enabledModulesExactly": [
+      "joinerytech.door"
+    ],
+    "acceptedPermissionsExactlyOneOf": [
+      "joinerytech.door.admin",
+      "joinerytech.door.edit",
+      "joinerytech.door.view"
+    ],
+    "membershipVersionClaim": "spaceos_membership_version",
+    "projectionVersionClaim": "spaceos_projection_version",
+    "readbackBinding": [
+      "sub",
+      "tenant_id",
+      "permissions",
+      "enabled_modules",
+      "spaceos_membership_version",
+      "spaceos_projection_version",
+      "iat"
+    ],
+    "humanForbiddenClaims": [
+      "cnf",
+      "dpop_jkt",
+      "device_id",
+      "station_id",
+      "spaceos_service_principal",
+      "spaceos_plant_principal",
+      "spaceos_plant_user",
+      "spaceos_plant_device",
+      "spaceos_plant_station",
+      "spaceos_plant_pop",
+      "spaceos_pop_nonce"
+    ],
+    "humanForbiddenClaimPrefixes": [
+      "spaceos_plant_"
+    ],
+    "humanForbiddenProjectionAliases": [
+      "enabled_modules",
+      "enabledModules",
+      "membershipVersion",
+      "permissions",
+      "projectionVersion",
+      "realm_access",
+      "spaceosTenants",
+      "spaceOsTenants",
+      "tenant_id",
+      "tenant_ref",
+      "tenantId",
+      "tid"
+    ],
+    "servicePrincipalKind": "service",
+    "plantPrincipalKind": "plant_user_device",
+    "selectorPolicy": "content-addressed-only"
+  },
+  "compatibilityHash": "1967fbcef466476c4cbb87174901cd63921ae70440df750b43a29708f46dcc34",
+  "hashInput": "UTF-8 JSON with recursively lexicographically sorted object keys, JSON primitive serialization, and original array order; hash only compatibilityBasis, never this whole document.",
+  "compatibilityRule": "Any change to the compatibility basis changes the compatibility hash and requires a new explicitly pinned release acceptance decision."
+}

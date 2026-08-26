@@ -1,0 +1,71 @@
+{
+  "schemaVersion": "spaceos.identity-entitlement-release-manifest/v2",
+  "release": {
+    "id": "spaceos-identity-entitlement",
+    "version": "2.0.0",
+    "status": "released-contract-not-activated",
+    "selectorPolicy": "content-addressed-only"
+  },
+  "integrity": {
+    "algorithm": "SHA-256",
+    "checksumFile": "SHA256SUMS",
+    "checksumRecordEncoding": "lowercase-hex-two-spaces-filename",
+    "payloadArtifactCount": 8,
+    "manifestSelfHashRule": "The manifest hash is carried by SHA256SUMS, but this manifest has no self-entry in artifacts, preventing a self-referential hash cycle."
+  },
+  "artifacts": {
+    "README.md": {
+      "role": "release-readme",
+      "sha256": "00b6e7019ac84c171b40731c786debcaae9eb2a1052eb504231dec228836f834"
+    },
+    "spaceos-identity-entitlement-v2.0.0.schema.json": {
+      "role": "json-schema",
+      "sha256": "ca4e068e75ecd3e4ccb0c9a98f99ba6f5b541756f2512510a8b488e4057223a9"
+    },
+    "spaceos-identity-entitlement-v2.0.0.json": {
+      "role": "canonical-contract",
+      "sha256": "55299695716595f6bbea4004ac166338d4e01641ac38a3f5bd2e802b54fff3ea"
+    },
+    "spaceos-identity-entitlement-package-v2.0.0.json": {
+      "role": "package-metadata",
+      "sha256": "3391ab420098fbc423d4c7fa04b9b231da63e9e69baaa6995c19ecc69c708348"
+    },
+    "spaceos-identity-entitlement-test-vectors-v2.0.0.json": {
+      "role": "offline-conformance-vectors",
+      "sha256": "fa813815e1cb9d98b2e5702221d84eb37b0d9deec3ea017b806c7009dc323682"
+    },
+    "spaceos-identity-entitlement-compatibility-v2.0.0.json": {
+      "role": "compatibility-metadata",
+      "sha256": "66c8ff183303e68cd94102128586810fc5717505053cad42fbedc75fee009717"
+    },
+    "spaceos-identity-entitlement-sbom-v2.0.0.cdx.json": {
+      "role": "cyclonedx-sbom",
+      "sha256": "7d5de50f3cbeb986e7ebef259317a134d88f90673a934a26ce427ea445a91088"
+    },
+    "spaceos-identity-entitlement-provenance-v2.0.0.intoto.json": {
+      "role": "in-toto-provenance",
+      "sha256": "a78297ffacfc06554ddac5984f0461cff03eb18c55823ddadad1c9bfdd4437b0"
+    }
+  },
+  "compatibility": {
+    "artifact": "spaceos-identity-entitlement-compatibility-v2.0.0.json",
+    "compatibilityHash": "1967fbcef466476c4cbb87174901cd63921ae70440df750b43a29708f46dcc34"
+  },
+  "consumerSelection": {
+    "required": [
+      "exact release id",
+      "exact version",
+      "exact SHA256SUMS",
+      "exact release manifest"
+    ],
+    "rejected": [
+      "latest",
+      "semver-range",
+      "branch",
+      "local-build",
+      "working-tree-path",
+      "undocumented-ref"
+    ],
+    "publicationRefPolicy": "No tag or commit is asserted here. A future tag/commit receipt is additional evidence only if it records the exact content hashes; an unrecorded ref is rejected."
+  }
+}

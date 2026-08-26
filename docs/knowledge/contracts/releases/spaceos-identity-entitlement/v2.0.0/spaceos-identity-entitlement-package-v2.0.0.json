@@ -1,0 +1,61 @@
+{
+  "schemaVersion": "spaceos.identity-entitlement-package/v2",
+  "id": "spaceos-identity-entitlement-package",
+  "release": {
+    "contractId": "spaceos-identity-entitlement",
+    "version": "2.0.0",
+    "status": "released-contract-not-activated",
+    "distribution": "content-addressed-release-directory"
+  },
+  "consumerSelection": {
+    "releaseId": "spaceos-identity-entitlement",
+    "exactVersion": "2.0.0",
+    "selectorMode": "content-addressed-only",
+    "requiredIntegrityFiles": [
+      "SHA256SUMS",
+      "release-manifest-v2.0.0.json"
+    ],
+    "rejectedSelectors": [
+      "latest",
+      "semver-range",
+      "branch",
+      "moving-tag-without-exact-hashes",
+      "local-build",
+      "working-tree-path",
+      "unpinned-url",
+      "undocumented-ref"
+    ],
+    "publicationRefPolicy": "No tag or commit is invented by this artifact. A future annotated immutable tag and full commit id can be accepted only when an explicit publication receipt records them alongside this exact package digest; hashes remain mandatory."
+  },
+  "artifacts": {
+    "schema": {
+      "path": "spaceos-identity-entitlement-v2.0.0.schema.json",
+      "sha256": "ca4e068e75ecd3e4ccb0c9a98f99ba6f5b541756f2512510a8b488e4057223a9"
+    },
+    "contract": {
+      "path": "spaceos-identity-entitlement-v2.0.0.json",
+      "sha256": "55299695716595f6bbea4004ac166338d4e01641ac38a3f5bd2e802b54fff3ea"
+    },
+    "testVectors": {
+      "path": "spaceos-identity-entitlement-test-vectors-v2.0.0.json",
+      "sha256": "fa813815e1cb9d98b2e5702221d84eb37b0d9deec3ea017b806c7009dc323682"
+    },
+    "compatibility": {
+      "path": "spaceos-identity-entitlement-compatibility-v2.0.0.json",
+      "sha256": "66c8ff183303e68cd94102128586810fc5717505053cad42fbedc75fee009717",
+      "compatibilityHash": "1967fbcef466476c4cbb87174901cd63921ae70440df750b43a29708f46dcc34"
+    }
+  },
+  "supplementalArtifacts": {
+    "sbom": "spaceos-identity-entitlement-sbom-v2.0.0.cdx.json",
+    "provenance": "spaceos-identity-entitlement-provenance-v2.0.0.intoto.json",
+    "releaseManifest": "release-manifest-v2.0.0.json",
+    "readme": "README.md"
+  },
+  "hashRules": {
+    "algorithm": "SHA-256",
+    "fileHashEncoding": "lowercase hexadecimal",
+    "manifestRole": "The release manifest carries the package, schema, compatibility, SBOM, provenance, and every other payload file hash.",
+    "selfReferenceRule": "The package does not self-hash and SHA256SUMS does not include itself; their hashes are carried by the manifest/checksum root to avoid a cryptographic cycle."
+  }
+}

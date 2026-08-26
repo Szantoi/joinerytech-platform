@@ -1,0 +1,128 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.5",
+  "serialNumber": "urn:uuid:ab10fba1-3bd8-4c3d-9d35-0ea77f3b6f20",
+  "version": 1,
+  "metadata": {
+    "timestamp": "2026-08-26T00:00:00.000Z",
+    "component": {
+      "type": "application",
+      "bom-ref": "spaceos-identity-entitlement-package@2.0.0",
+      "name": "spaceos-identity-entitlement-package",
+      "version": "2.0.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "3391ab420098fbc423d4c7fa04b9b231da63e9e69baaa6995c19ecc69c708348"
+        }
+      ],
+      "properties": [
+        {
+          "name": "spaceos:release-selector",
+          "value": "content-addressed-only"
+        },
+        {
+          "name": "spaceos:runtime-activation",
+          "value": "false"
+        }
+      ]
+    },
+    "tools": {
+      "components": [
+        {
+          "type": "application",
+          "name": "node",
+          "version": ">=20",
+          "description": "Local verifier runtime; no npm package dependency is required."
+        }
+      ]
+    }
+  },
+  "components": [
+    {
+      "type": "file",
+      "bom-ref": "contract-schema",
+      "name": "spaceos-identity-entitlement-v2.0.0.schema.json",
+      "version": "2.0.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "ca4e068e75ecd3e4ccb0c9a98f99ba6f5b541756f2512510a8b488e4057223a9"
+        }
+      ]
+    },
+    {
+      "type": "file",
+      "bom-ref": "contract-profile",
+      "name": "spaceos-identity-entitlement-v2.0.0.json",
+      "version": "2.0.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "55299695716595f6bbea4004ac166338d4e01641ac38a3f5bd2e802b54fff3ea"
+        }
+      ]
+    },
+    {
+      "type": "file",
+      "bom-ref": "package-metadata",
+      "name": "spaceos-identity-entitlement-package-v2.0.0.json",
+      "version": "2.0.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "3391ab420098fbc423d4c7fa04b9b231da63e9e69baaa6995c19ecc69c708348"
+        }
+      ]
+    },
+    {
+      "type": "file",
+      "bom-ref": "test-vectors",
+      "name": "spaceos-identity-entitlement-test-vectors-v2.0.0.json",
+      "version": "2.0.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "fa813815e1cb9d98b2e5702221d84eb37b0d9deec3ea017b806c7009dc323682"
+        }
+      ]
+    },
+    {
+      "type": "file",
+      "bom-ref": "compatibility-metadata",
+      "name": "spaceos-identity-entitlement-compatibility-v2.0.0.json",
+      "version": "2.0.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "66c8ff183303e68cd94102128586810fc5717505053cad42fbedc75fee009717"
+        }
+      ]
+    },
+    {
+      "type": "file",
+      "bom-ref": "release-readme",
+      "name": "README.md",
+      "version": "2.0.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "00b6e7019ac84c171b40731c786debcaae9eb2a1052eb504231dec228836f834"
+        }
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "ref": "spaceos-identity-entitlement-package@2.0.0",
+      "dependsOn": [
+        "contract-schema",
+        "contract-profile",
+        "package-metadata",
+        "test-vectors",
+        "compatibility-metadata",
+        "release-readme"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+00b6e7019ac84c171b40731c786debcaae9eb2a1052eb504231dec228836f834  README.md
+3996677430f4d92603d9088fdc684596274e18dc91b7e1864790a57ea422c7fd  release-manifest-v2.0.0.json
+66c8ff183303e68cd94102128586810fc5717505053cad42fbedc75fee009717  spaceos-identity-entitlement-compatibility-v2.0.0.json
+3391ab420098fbc423d4c7fa04b9b231da63e9e69baaa6995c19ecc69c708348  spaceos-identity-entitlement-package-v2.0.0.json
+a78297ffacfc06554ddac5984f0461cff03eb18c55823ddadad1c9bfdd4437b0  spaceos-identity-entitlement-provenance-v2.0.0.intoto.json
+7d5de50f3cbeb986e7ebef259317a134d88f90673a934a26ce427ea445a91088  spaceos-identity-entitlement-sbom-v2.0.0.cdx.json
+fa813815e1cb9d98b2e5702221d84eb37b0d9deec3ea017b806c7009dc323682  spaceos-identity-entitlement-test-vectors-v2.0.0.json
+55299695716595f6bbea4004ac166338d4e01641ac38a3f5bd2e802b54fff3ea  spaceos-identity-entitlement-v2.0.0.json
+ca4e068e75ecd3e4ccb0c9a98f99ba6f5b541756f2512510a8b488e4057223a9  spaceos-identity-entitlement-v2.0.0.schema.json

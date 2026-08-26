@@ -1,0 +1,251 @@
+{
+  "schemaVersion": "spaceos.identity-entitlement-contract/v2",
+  "id": "spaceos-identity-entitlement",
+  "version": "2.0.0",
+  "status": "released-contract-not-activated",
+  "issuedAt": "2026-08-26T00:00:00.000Z",
+  "releaseSemantics": {
+    "releasedMeans": "This is a versioned, hash-verifiable identity and entitlement contract that a Doorstar consumer may pin exactly.",
+    "doesNotMean": "It does not assert that Keycloak, JWKS, an entitlement resolver, a tenant membership, a Doorstar route, a Plant runtime, a device, a station, or a proof-of-possession verifier is active."
+  },
+  "identityProvider": {
+    "issuer": "https://joinerytech.hu/auth/realms/spaceos",
+    "jwksUri": "https://joinerytech.hu/auth/realms/spaceos/protocol/openid-connect/certs",
+    "allowedAlgorithms": [
+      "RS256"
+    ],
+    "keyRotation": {
+      "kidRequired": true,
+      "kidSource": "protected JOSE header only",
+      "overlapRule": "During a planned rotation, an issuer may publish old and new verification keys concurrently. A consumer verifies only a key with the exact protected-header kid and never tries every key.",
+      "retirementRule": "After the old kid is absent from the published JWKS, it is denied on the next verification-key refresh and therefore within maximumVerificationKeyCacheSeconds. An emergency key compromise requires cache purge/restart or an equivalent operator-approved override; this static release does not perform that operation.",
+      "unknownKidRule": "An unknown kid causes one bounded refresh of the configured JWKS source; a missing or still unknown kid is denied. A request must never supply a JWKS URL or key.",
+      "noKidFallback": true,
+      "maximumVerificationKeyCacheSeconds": 300
+    }
+  },
+  "humanToken": {
+    "profile": "spaceos-human-doorstar-v2",
+    "principalKind": "human",
+    "jose": {
+      "protectedHeader": {
+        "required": {
+          "alg": "RS256",
+          "kid": "non-empty issuer-selected key identifier",
+          "typ": "JWT"
+        },
+        "forbidden": [
+          "crit",
+          "jku",
+          "x5u",
+          "b64=false"
+        ],
+        "rule": "The consumer validates this protected JOSE typ before accepting payload claims. alg=none and every non-RS256 algorithm are denied."
+      }
+    },
+    "payload": {
+      "issuer": {
+        "claim": "iss",
+        "equals": "https://joinerytech.hu/auth/realms/spaceos"
+      },
+      "audience": {
+        "claim": "aud",
+        "encoding": "duplicate-free string array",
+        "exactly": [
+          "doormanufacturing-instance-api",
+          "kernel-api"
+        ],
+        "noAdditionalAudience": true,
+        "rule": "A scalar audience, a missing member, a duplicate, or a third member is denied."
+      },
+      "authorizedParty": {
+        "claim": "azp",
+        "equals": "doormanufacturing-web",
+        "noClientIdFallback": true
+      },
+      "tokenType": {
+        "claim": "typ",
+        "equals": "Bearer",
+        "rule": "The signed payload typ is a distinct mandatory rule from protected JOSE typ=JWT."
+      },
+      "principalDiscriminator": {
+        "claim": "spaceos_principal_kind",
+        "equals": "human",
+        "rule": "The discriminator must be present as a top-level signed string and have this exact lowercase value."
+      },
+      "subject": {
+        "claim": "sub",
+        "rule": "A non-empty signed subject is required. Doorstar may derive a non-reversible local correlation key but must not take a subject from a request field."
+      },
+      "time": {
+        "requiredClaims": [
+          "iat",
+          "exp"
+        ],
+        "maximumLifetimeSeconds": 900,
+        "maximumClockSkewSeconds": 60,
+        "rule": "exp, nbf when present, and iat are validated before entitlement. iat must not be after exp."
+      }
+    },
+    "nativeTenantProjection": {
+      "claim": "spaceos_tenants",
+      "entries": 1,
+      "entryFields": [
+        "enabled_modules",
+        "permissions",
+        "tenant_id"
+      ],
+      "tenantIdField": "tenant_id",
+      "tenantIdFormat": "lowercase RFC-variant UUID, excluding reserved all-zero tenant identifiers",
+      "permissionsField": "permissions",
+      "enabledModulesField": "enabled_modules",
+      "arrayRule": "Each entitlement array is non-empty, duplicate-free, and lexicographically sorted. Unknown values grant no authority.",
+      "doorstarEntitlement": {
+        "enabledModulesExactly": [
+          "joinerytech.door"
+        ],
+        "acceptedPermissionsExactlyOneOf": [
+          "joinerytech.door.admin",
+          "joinerytech.door.edit",
+          "joinerytech.door.view"
+        ],
+        "rule": "A human Doorstar token carries exactly one recognized permission and exactly the Doorstar module. A generic realm role, another module, or a local capability map is not a substitute."
+      },
+      "membershipVersionClaim": "spaceos_membership_version",
+      "projectionVersionClaim": "spaceos_projection_version",
+      "versionRule": "Both version claims are top-level positive safe integers. Camel-case, flat, legacy, or alias version claims are not substitutes.",
+      "noFlatProjectionFallback": true,
+      "noMultiTenantProjection": true
+    },
+    "doorstarHumanConsumer": {
+      "onlyAcceptedPrincipalKind": "human",
+      "forbiddenClaims": [
+        "cnf",
+        "dpop_jkt",
+        "device_id",
+        "station_id",
+        "spaceos_service_principal",
+        "spaceos_plant_principal",
+        "spaceos_plant_user",
+        "spaceos_plant_device",
+        "spaceos_plant_station",
+        "spaceos_plant_pop",
+        "spaceos_pop_nonce"
+      ],
+      "forbiddenClaimPrefixes": [
+        "spaceos_plant_"
+      ],
+      "forbiddenProjectionAliases": [
+        "tid",
+        "tenant_id",
+        "tenantId",
+        "tenant_ref",
+        "permissions",
+        "enabled_modules",
+        "enabledModules",
+        "realm_access",
+        "spaceosTenants",
+        "spaceOsTenants",
+        "membershipVersion",
+        "projectionVersion"
+      ],
+      "noFallbackOrUnion": "Doorstar is a human-token consumer. It must reject, rather than reinterpret, service-principal, Plant, flat-projection, device, station, confirmation, or proof-of-possession semantics."
+    }
+  },
+  "servicePrincipalToken": {
+    "profile": "spaceos-service-principal-v2",
+    "principalKind": "service",
+    "requiredClaims": [
+      "spaceos_principal_kind",
+      "sub",
+      "client_id",
+      "spaceos_service_principal"
+    ],
+    "prohibitedHumanClaims": [
+      "spaceos_tenants",
+      "spaceos_membership_version",
+      "spaceos_projection_version"
+    ],
+    "rule": "A machine-to-machine service credential is a separate profile and may be accepted only by an explicitly configured service-principal consumer. It cannot acquire human authority through matching issuer, audience, azp, or a tenant-like field.",
+    "doorstarHumanConsumerDisposition": "reject"
+  },
+  "plantUserDeviceStationPopToken": {
+    "profile": "spaceos-plant-user-device-station-pop-v2",
+    "principalKind": "plant_user_device",
+    "requiredClaims": [
+      "spaceos_principal_kind",
+      "cnf",
+      "dpop_jkt",
+      "device_id",
+      "station_id",
+      "spaceos_plant_user",
+      "spaceos_plant_device",
+      "spaceos_plant_station",
+      "spaceos_plant_pop"
+    ],
+    "proofOfPossession": {
+      "accessTokenConfirmationClaim": "cnf.jkt",
+      "requestProof": "DPoP proof must bind its public-key thumbprint to cnf.jkt and satisfy the Plant-owned method/URL/nonce/replay rules.",
+      "deviceClaim": "device_id",
+      "stationClaim": "station_id",
+      "namespaces": [
+        "spaceos_plant_user",
+        "spaceos_plant_device",
+        "spaceos_plant_station",
+        "spaceos_plant_pop"
+      ],
+      "ownership": "JoineryTech Plant owns runtime user/device/station identity, proof verification, replay protection, station authorization, and execution authority."
+    },
+    "rule": "This is not a bearer-human profile and is not a fallback for a Doorstar Office consumer. Doorstar must reject it before any Plant or Office authority is derived.",
+    "doorstarHumanConsumerDisposition": "reject"
+  },
+  "onlineMembershipReadback": {
+    "authoritySource": "authoritative SpaceOS membership and entitlement resolver",
+    "runtimeEndpoint": "not asserted or activated by this release",
+    "requiredBeforeAuthorityGrant": true,
+    "cacheRule": "No cached readback may extend an authority grant. Each protected authority decision requires a current online readback bound to the already signature-validated token.",
+    "binding": [
+      "sub",
+      "tenant_id",
+      "permissions",
+      "enabled_modules",
+      "spaceos_membership_version",
+      "spaceos_projection_version",
+      "iat"
+    ],
+    "bindingRule": "Every listed value must exactly equal the signed human token projection after normalizing only the documented lowercase UUID representation. Do not select a different tenant, capability, date, or status automatically.",
+    "activeRule": "readback.active must be boolean true",
+    "revocationRule": "active=false, a missing membership, an unresolved tenant, or an invalid readback is a deny. A token remains denied even when its signature and exp are otherwise valid.",
+    "downgradeRule": "Any permissions, modules, membership version, or projection version mismatch is a deny. A later local or token-derived expansion never overrides the readback.",
+    "staleTokenRule": "The signed integer iat must be greater than or equal to readback.accept_tokens_issued_at_or_after. A lower iat is a deny even before exp.",
+    "unavailableRule": "Readback outage, timeout, malformed response, or non-authoritative response is unavailable/fail-closed and grants no authority.",
+    "tenantIsolationRule": "The target local tenant must equal the one signed tenant_id and the one readback tenant_id. A token for another active tenant is denied; the request cannot select the tenant."
+  },
+  "consumerAcceptance": {
+    "releaseId": "spaceos-identity-entitlement",
+    "exactVersion": "2.0.0",
+    "integrityAlgorithm": "SHA-256",
+    "requiredFiles": [
+      "SHA256SUMS",
+      "release-manifest-v2.0.0.json",
+      "spaceos-identity-entitlement-v2.0.0.schema.json",
+      "spaceos-identity-entitlement-v2.0.0.json",
+      "spaceos-identity-entitlement-package-v2.0.0.json",
+      "spaceos-identity-entitlement-compatibility-v2.0.0.json",
+      "spaceos-identity-entitlement-sbom-v2.0.0.cdx.json",
+      "spaceos-identity-entitlement-provenance-v2.0.0.intoto.json",
+      "spaceos-identity-entitlement-test-vectors-v2.0.0.json"
+    ],
+    "rejectedSelectors": [
+      "latest",
+      "semver-range",
+      "branch",
+      "moving-tag-without-exact-hashes",
+      "local-build",
+      "working-tree-path",
+      "unpinned-url",
+      "undocumented-ref"
+    ],
+    "sourceRefPolicy": "A future immutable annotated tag and full commit id may supplement this content-addressed bundle only when recorded in a publication receipt. A consumer must reject any unrecorded branch or ref and must not replace hash verification with VCS selector trust."
+  }
+}
